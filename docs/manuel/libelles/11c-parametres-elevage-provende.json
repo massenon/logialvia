@@ -1,0 +1,67 @@
+{
+  "ecran": "11c-parametres-elevage-provende",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter",
+    "Calendriers Prophylaxie",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "Numérotation Bandes & Sujets",
+    "Rationnement"
+  ],
+  "champs": [
+    "(indication) Rechercher un intrant…"
+  ],
+  "colonnes": [
+    "ACTIONS",
+    "CODE",
+    "INT-001",
+    "INT-002",
+    "INT-003",
+    "INT-004",
+    "INT-005",
+    "INTRANT",
+    "PRIX INDICATIF (FCFA/KG)",
+    "SEUIL D'ALERTE",
+    "STOCK ACTUEL"
+  ],
+  "infobulles": [
+    "Modifier",
+    "Supprimer"
+  ],
+  "textes": [
+    "10 kg",
+    "15 kg",
+    "16 kg",
+    "1 500",
+    "25 kg",
+    "29 kg",
+    "300",
+    "42 kg",
+    "5 intrant(s) de provende",
+    "5 kg",
+    "500",
+    "51 kg",
+    "600",
+    "62 kg",
+    "700",
+    "8 kg",
+    "Ajouter",
+    "Calendriers Prophylaxie",
+    "Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.",
+    "Coquille d'huître",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "Intrants entrant dans la composition de la provende — synchronisés avec Gestion Stocks et la Fabrication de Provende.",
+    "La quantité en stock ne se saisit pas ici : elle ne bouge que par une réception de commande, une fabrication de provende ou un ajustement d'inventaire — chacun laissant sa trace dans le journal des mouvements. Le prix indicatif affiché est le Prix Moyen Pondéré réellement calculé par le module Approvisionnement.",
+    "Maïs",
+    "Numérotation Bandes & Sujets",
+    "Paramètres Élevage",
+    "Poudre de poisson",
+    "Rationnement",
+    "Rechercher un intrant…",
+    "Soja",
+    "Tourteau de palmiste"
+  ]
+}

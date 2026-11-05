@@ -1,0 +1,38 @@
+{
+  "ecran": "11d-parametres-elevage-numerotation",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Calendriers Prophylaxie",
+    "Enregistrer Tous les Formats de Numérotation",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "Numérotation Bandes & Sujets",
+    "Rationnement"
+  ],
+  "champs": [],
+  "colonnes": [
+    "AVICULTURE (GOLIATHS & PINTADES)",
+    "CUNICULTURE (LAPINS)",
+    "PISCICULTURE (POISSONS-CHATS)",
+    "PRÉFIXE BANDE",
+    "PRÉFIXE BASSIN",
+    "PRÉFIXE CAGE",
+    "PRÉFIXE ENCLOS"
+  ],
+  "infobulles": [],
+  "textes": [
+    "Calendriers Prophylaxie",
+    "Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.",
+    "Conventions par filière",
+    "Enregistrer Tous les Formats de Numérotation",
+    "Exporter PDF",
+    "Formatage des identifiants générés sur le terrain, avec aperçu en temps réel.",
+    "Formats enregistrés",
+    "Intrants de Provende",
+    "Numérotation Bandes & Sujets",
+    "Numérotation des Bandes & Sujets Par Espèce",
+    "Paramètres Élevage",
+    "Rationnement"
+  ]
+}

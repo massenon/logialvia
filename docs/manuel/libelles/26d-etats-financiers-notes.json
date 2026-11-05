@@ -1,0 +1,44 @@
+{
+  "ecran": "26d-etats-financiers-notes",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Bilan",
+    "Compte de Résultat",
+    "Exporter PDF (Onglet Actif)",
+    "Flux de Trésorerie",
+    "Notes Annexes"
+  ],
+  "champs": [],
+  "colonnes": [
+    "COMPTE",
+    "EXERCICE",
+    "INTITULÉ",
+    "MONTANT",
+    "NATURE"
+  ],
+  "infobulles": [],
+  "textes": [
+    "16 920",
+    "2026",
+    "411",
+    "Aucun compte de stock (classe 3) n'est mouvementé. La valorisation des intrants est tenue par le module Stocks & Achats ; sa reprise en comptabilité suppose une écriture d'inventaire, non encore automatisée.",
+    "Aucune immobilisation enregistrée. Le plan comptable ne comporte aujourd'hui aucun compte de classe 2 mouvementé — les bâtiments d'élevage et le matériel doivent y être saisis pour apparaître ici.",
+    "Bilan",
+    "Bilan, Compte de Résultat, Tableau des Flux de Trésorerie et Notes Annexes — conformité SYSCOHADA.",
+    "Clients",
+    "Compte de Résultat",
+    "Créance",
+    "Exporter PDF (Onglet Actif)",
+    "Flux de Trésorerie",
+    "L'ancienneté des créances affichée par le prototype (« 12 jours », « Urgent ») n'est pas reprise ici : elle se calcule sur les échéances client du module Ventes, pas sur les soldes comptables agrégés. Le suivi client par client est disponible sur l'écran Clients & Créances.",
+    "Note 1 — Méthodes Comptables",
+    "Note 2 — Immobilisations",
+    "Note 3 — Stocks",
+    "Note 4 — Créances et Dettes",
+    "Note 5 — Engagements Hors Bilan",
+    "Notes Annexes",
+    "États Financiers"
+  ]
+}

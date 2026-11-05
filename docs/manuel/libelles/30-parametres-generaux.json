@@ -1,0 +1,41 @@
+{
+  "ecran": "30-parametres-generaux",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Sauvegardes"
+  ],
+  "champs": [],
+  "colonnes": [],
+  "infobulles": [],
+  "textes": [
+    "Activer un module affiche immédiatement sa fiche et son raccourci dans le menu latéral et le panneau d'accès rapide.",
+    "Activité principale confirmée — toujours actif",
+    "Copie fidèle — désactivée par défaut",
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Désactivé — l'onglet Données de Test est verrouillé",
+    "Fiche construite, paramètres non confirmés",
+    "Filière dupliquée — désactivée par défaut",
+    "Gestion Utilisateurs",
+    "Goliaths",
+    "Goliaths et Pintades sont l'activité principale confirmée d'ALLMANY et restent toujours actifs. Les filières ci-dessous sont désactivées par défaut — activez-les uniquement si l'activité démarre réellement.",
+    "Lapins (Cuniculture)",
+    "Mode « Données de Test »",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Paramètres Généraux",
+    "Pintades",
+    "Poissons-Chats (Pisciculture)",
+    "Poulets / Pondeuses",
+    "Sauvegardes",
+    "Tant qu'il est désactivé, personne ne peut effacer les ventes, les achats ni les écritures — pas même une administratrice. Laissez-le fermé une fois l'exploitation démarrée."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "ecran": "33-contact-editeur",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Enregistrer et copier le message",
+    "Question Générale",
+    "Signaler un Problème"
+  ],
+  "champs": [
+    "(indication) Décrivez votre question ou suggestion...",
+    "(indication) ex : Question sur le module Comptabilité"
+  ],
+  "colonnes": [
+    "MESSAGE *",
+    "OBJET *"
+  ],
+  "infobulles": [
+    "Copier le numéro"
+  ],
+  "textes": [
+    "Aucun message enregistré. Ceux que vous rédigez ci-dessus sont conservés ici jusqu'à ce que vous les marquiez comme transmis.",
+    "Autres moyens de contact",
+    "Contactez l'Éditeur",
+    "Dr MASSENON Rhodes — Ingénierie logicielle — +229 01 51 33 50 40",
+    "Décrivez votre question ou suggestion...",
+    "Enregistrer et copier le message",
+    "FAGUEZ SARL — Question générale ou signalement d'un problème technique.",
+    "L'application est hors-ligne et n'envoie aucun e-mail. Le message est enregistré ci-dessous et copié dans le presse-papiers : collez-le dans WhatsApp ou dans votre messagerie, à destination du +229 01 51 33 50 40. Le prototype web affichait « Message envoyé » sans rien envoyer.",
+    "Messages enregistrés (0)",
+    "Poser une question générale",
+    "Question Générale",
+    "Signaler un Problème",
+    "ex : Question sur le module Comptabilité"
+  ]
+}

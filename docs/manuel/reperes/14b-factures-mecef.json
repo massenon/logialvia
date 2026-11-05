@@ -1,0 +1,33 @@
+{
+  "ecran": "14b-factures-mecef",
+  "reperes": [
+    {
+      "nom": "mecef-emettre",
+      "x": 85.17,
+      "y": 3.53,
+      "largeur": 13.1,
+      "hauteur": 5.04
+    },
+    {
+      "nom": "mecef-kpi",
+      "x": 1.74,
+      "y": 23.68,
+      "largeur": 96.53,
+      "hauteur": 13.98
+    },
+    {
+      "nom": "mecef-filtres",
+      "x": 1.74,
+      "y": 40.68,
+      "largeur": 96.53,
+      "hauteur": 6.05
+    },
+    {
+      "nom": "mecef-tableau",
+      "x": 1.74,
+      "y": 49.75,
+      "largeur": 96.53,
+      "hauteur": 41.81
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "ecran": "30e-parametres-general-sauvegardes",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Exporter une table",
+    "Gestion Utilisateurs",
+    "Générer une sauvegarde",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Ouvrir le dossier",
+    "Sauvegardes"
+  ],
+  "champs": [],
+  "colonnes": [],
+  "infobulles": [
+    "Copier le chemin"
+  ],
+  "textes": [
+    "Aucune sauvegarde complète n'a jamais été générée. Toute la comptabilité, les ventes et les fiches d'élevage tiennent dans un seul fichier sur cet ordinateur : une panne de disque les emporterait sans recours.",
+    "Aucune sauvegarde. Générez-en une avant la première journée de saisie : toute la comptabilité, les ventes et les fiches d'élevage tiennent dans un seul fichier sur cet ordinateur.",
+    "C:\\Users\\tempuser\\AppData\\Local\\Temp\\logialvia-manuel-5dfedf93\\LogiALVIA/Sauvegardes",
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Exporter une table",
+    "Gestion Utilisateurs",
+    "Générer une sauvegarde",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Ouvrir le dossier",
+    "Paramètres Généraux",
+    "Sauvegardes",
+    "Sauvegardes de la Base de Données"
+  ]
+}

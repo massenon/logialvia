@@ -1,0 +1,50 @@
+{
+  "ecran": "32-aide-a-propos",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Achats & Fournisseurs",
+    "Clients & Relances",
+    "Comment activer ou désactiver une filière (ex. Lapins) ?",
+    "Comment administrer une dose et décrémenter le stock ?",
+    "Comment enregistrer une nouvelle vente ?",
+    "Comment fonctionne l'alerte de stock critique ?",
+    "Comment relancer un client avec un solde impayé ?",
+    "Comptabilité",
+    "Rapports & États",
+    "Santé Animale",
+    "Stocks & Catalogue",
+    "Ventes & Clients",
+    "Élevage & Couveuse"
+  ],
+  "champs": [
+    "(indication) Rechercher dans l'aide (ex : vente, stock, module...)"
+  ],
+  "colonnes": [
+    "FOIRE AUX QUESTIONS",
+    "MODULES DU LOGICIEL"
+  ],
+  "infobulles": [],
+  "textes": [
+    "Achats & Fournisseurs",
+    "Aide & À Propos",
+    "Clients & Relances",
+    "Comment activer ou désactiver une filière (ex. Lapins) ?",
+    "Comment administrer une dose et décrémenter le stock ?",
+    "Comment enregistrer une nouvelle vente ?",
+    "Comment fonctionne l'alerte de stock critique ?",
+    "Comment relancer un client avec un solde impayé ?",
+    "Comptabilité",
+    "Développé dans le cadre du PAEB par FAGUEZ SARL — Dr Rhodes MASSENON (ingénierie logicielle)",
+    "LogiALVIA v1.0.0 — Application de Gestion et de Suivi Avicole d'ALLMANY.",
+    "LogiALVIA — Application de Gestion et de Suivi Avicole d'ALLMANY",
+    "Rapports & États",
+    "Rechercher dans l'aide (ex : vente, stock, module...)",
+    "Santé Animale",
+    "Stocks & Catalogue",
+    "Ventes & Clients",
+    "Version v1.0.0",
+    "À propos",
+    "Élevage & Couveuse"
+  ]
+}

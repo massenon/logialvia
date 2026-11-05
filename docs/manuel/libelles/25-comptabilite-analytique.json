@@ -1,0 +1,50 @@
+{
+  "ecran": "25-comptabilite-analytique",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Exporter PDF"
+  ],
+  "champs": [],
+  "colonnes": [
+    "CENTRE DE COÛT / PROFIT",
+    "COÛTS DIRECTS",
+    "EXERCICE",
+    "MARGE",
+    "REVENUS",
+    "TAUX DE MARGE",
+    "TOTAL"
+  ],
+  "infobulles": [],
+  "textes": [
+    "100,0 %",
+    "10 000",
+    "10 000 FCFA de marge sur 10 000 FCFA",
+    "11 200",
+    "11 200 FCFA de marge sur 11 200 FCFA",
+    "14 000",
+    "14 000 FCFA de marge sur 14 000 FCFA",
+    "2026",
+    "26 000",
+    "26 000 FCFA de marge sur 26 000 FCFA",
+    "4 200",
+    "4 200 FCFA de marge sur 4 200 FCFA",
+    "65 400",
+    "Avicole — filière non précisée",
+    "Commerce Annexe",
+    "Comparaison Visuelle des Marges",
+    "Comptabilité Analytique",
+    "Comptes 701, 601 et 622 sans imputation analytique",
+    "Exporter PDF",
+    "Imputation analytique",
+    "Lapins",
+    "Marges par centre de profit",
+    "Marges réelles par activité, calculées sur les écritures de l'exercice 2026.",
+    "Pintades",
+    "Pondeuses",
+    "Une répartition Goliaths / Pintades / Lapins / Poissons-chats exigerait un axe analytique sur chaque écriture : le modèle de données n'en comporte pas, et aucun écran ne le saisit. Un sac de provende nourrit d'ailleurs plusieurs espèces à la fois — le rattacher à une seule serait une estimation, pas une comptabilité. Les marges ci-dessous sont calculées sur les comptes réellement mouvementés.",
+    "Ventilation par activité, et non par filière",
+    "—"
+  ]
+}

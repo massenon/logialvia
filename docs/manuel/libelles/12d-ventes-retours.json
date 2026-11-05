@@ -1,0 +1,30 @@
+{
+  "ecran": "12d-ventes-retours",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Devis Prestations",
+    "Enregistrer Vente",
+    "Historique des Ventes",
+    "Retours et Avoirs"
+  ],
+  "champs": [],
+  "colonnes": [
+    "0 FCFA",
+    "CA DU JOUR",
+    "PANIER MOYEN",
+    "VENTES EN ATTENTE (AVANCE)"
+  ],
+  "infobulles": [],
+  "textes": [
+    "5",
+    "Aucune vente annulée. Cette vue se remplit automatiquement depuis les annulations faites dans l'onglet Historique — aucune saisie directe n'est possible ici.",
+    "Aucune vente aujourd'hui",
+    "Devis Prestations",
+    "Enregistrer Vente",
+    "Historique des Ventes",
+    "Retours et Avoirs",
+    "Ventes",
+    "—"
+  ]
+}

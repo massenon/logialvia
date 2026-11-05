@@ -1,0 +1,39 @@
+{
+  "ecran": "30c-parametres-general-utilisateurs",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter un Utilisateur",
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Sauvegardes",
+    "Supprimer"
+  ],
+  "champs": [],
+  "colonnes": [],
+  "infobulles": [],
+  "textes": [
+    "Actions",
+    "Administratrice",
+    "Administratrice Principale",
+    "Ajouter un Utilisateur",
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "Gestion des Utilisateurs",
+    "Identifiant",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Nom Complet",
+    "Paramètres Généraux",
+    "Rôle",
+    "Sauvegardes",
+    "Supprimer",
+    "admin"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "ecran": "21-grand-livre",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Exporter PDF",
+    "—"
+  ],
+  "champs": [
+    "(indication) Rechercher un libellé, une référence…"
+  ],
+  "colonnes": [
+    "COMPTE :",
+    "EXERCICE"
+  ],
+  "infobulles": [],
+  "textes": [
+    "101 — Capital Social",
+    "121 — Report à Nouveau",
+    "131 — Résultat de l'Exercice",
+    "2026",
+    "31 — Stocks de Marchandises (Commerce Annexe)",
+    "32 — Stocks de Matières (Intrants Provende)",
+    "401 — Fournisseurs",
+    "411 — Clients",
+    "419 — Clients — Avances Reçues",
+    "512 — Banques — Mobile Money",
+    "531 — Caisse",
+    "601 — Achats de Matières (Intrants Provende)",
+    "602 — Achats de Marchandises (Commerce Annexe)",
+    "613 — Locations",
+    "616 — Assurances",
+    "622 — Frais Vétérinaires",
+    "624 — Transports",
+    "628 — Charges Diverses de Gestion",
+    "701 — Ventes de Produits Avicoles",
+    "707 — Ventes de Marchandises (Commerce Annexe)",
+    "AU",
+    "DU",
+    "Exporter PDF",
+    "Grand Livre",
+    "Liste chronologique des écritures d'un compte, avec solde progressif.",
+    "Rechercher un libellé, une référence…",
+    "Sélectionner un compte",
+    "Sélectionnez un compte ci-dessus pour afficher ses écritures et son solde progressif.",
+    "—"
+  ]
+}

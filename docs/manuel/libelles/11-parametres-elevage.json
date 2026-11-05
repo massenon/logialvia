@@ -1,0 +1,69 @@
+{
+  "ecran": "11-parametres-elevage",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter",
+    "Calendriers Prophylaxie",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "Numérotation Bandes & Sujets",
+    "Rationnement",
+    "Réinitialiser",
+    "Toutes espèces"
+  ],
+  "champs": [
+    "(indication) Rechercher un stade physiologique…"
+  ],
+  "colonnes": [
+    "ACTIONS",
+    "CONFIRMÉ ?",
+    "ESPÈCE",
+    "RATION (G/TÊTE/J)",
+    "STADE PHYSIOLOGIQUE"
+  ],
+  "infobulles": [
+    "Ce stade ne correspond à aucune catégorie de la fiche Lapins : il est documentaire et ne pilote aucun calcul de provende.",
+    "Ce stade ne correspond à aucune catégorie de la fiche Pintades : il est documentaire et ne pilote aucun calcul de provende.",
+    "Modifier la ration",
+    "Supprimer le barème"
+  ],
+  "textes": [
+    "110 g/j",
+    "12 barème(s)",
+    "120 g/j",
+    "25 g/j",
+    "30 g/j",
+    "45 g/j",
+    "60 g/j",
+    "8 g/j",
+    "Ajouter",
+    "Alevin",
+    "Alevins",
+    "Calendriers Prophylaxie",
+    "Chair / Jeune",
+    "Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.",
+    "Confirmé (Référence Cuniculture)",
+    "Exporter PDF",
+    "Goliathau",
+    "Goliaths",
+    "Générique (Aviculture, à confirmer)",
+    "Intrants de Provende",
+    "Juvénile",
+    "Lapins",
+    "Mature",
+    "Numérotation Bandes & Sujets",
+    "Paramètres Élevage",
+    "Pintadau",
+    "Pintades",
+    "Poissons-Chats",
+    "Poussins",
+    "Ration normative en grammes/tête/jour — utilisée pour le calcul automatique dans les fiches journalières.",
+    "Rationnement",
+    "Rechercher un stade physiologique…",
+    "Reproducteur",
+    "Réinitialiser",
+    "Sevré / Lapereaux",
+    "Toutes espèces"
+  ]
+}

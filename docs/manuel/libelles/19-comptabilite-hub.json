@@ -1,0 +1,46 @@
+{
+  "ecran": "19-comptabilite-hub",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Paramètres Généraux > Données de l'Entreprise"
+  ],
+  "champs": [],
+  "colonnes": [
+    "EXERCICE",
+    "MARGE NETTE (ANALYTIQUE)",
+    "RÉSULTAT CUMULÉ",
+    "TOTAL ACTIF (BILAN)",
+    "TRÉSORERIE (JOURNAL)"
+  ],
+  "infobulles": [],
+  "textes": [
+    "2026",
+    "Balance Générale",
+    "Bilan de l'Entreprise",
+    "Bilan, Résultat, Flux, Notes Annexes",
+    "Ce que je possède, ce que je dois",
+    "Clôture d'Exercice",
+    "Comptabilité",
+    "Comptabilité Analytique",
+    "Comptabilité complète SYSCOHADA — Plan Comptable, Journal, Grand Livre, Balance, États Financiers et Clôture d'Exercice.",
+    "Configurer la conformité MeCeF",
+    "Conformité Fiscale Électronique (MeCeF/e-MECeF) — En Attente de Configuration",
+    "Grand Livre",
+    "Journal Comptable",
+    "Marges réelles par filière",
+    "Module Actif — Comptabilité SYSCOHADA Complète",
+    "Modules Actifs & IFU/RCCM",
+    "Paramètres Généraux > Données de l'Entreprise",
+    "Plan Comptable",
+    "Plan Comptable, Journal, Grand Livre, Balance Générale, États Financiers (Bilan, Compte de Résultat, Flux de Trésorerie, Notes Annexes), Clôture Périodique et Annuelle, Comptabilité Analytique par filière.",
+    "Périodique et annuelle, report à nouveau",
+    "Renseignez l'IFU et le RCCM depuis",
+    "Soldes de tous les comptes",
+    "Structure SYSCOHADA",
+    "Écritures chronologiques",
+    "Écritures par compte, solde progressif",
+    "États Financiers"
+  ]
+}

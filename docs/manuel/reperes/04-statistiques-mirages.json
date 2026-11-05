@@ -1,0 +1,19 @@
+{
+  "ecran": "04-statistiques-mirages",
+  "reperes": [
+    {
+      "nom": "mirages-kpi",
+      "x": 1.74,
+      "y": 14.74,
+      "largeur": 96.53,
+      "hauteur": 32.12
+    },
+    {
+      "nom": "mirages-tableau",
+      "x": 1.74,
+      "y": 59.45,
+      "largeur": 96.53,
+      "hauteur": 31.11
+    }
+  ]
+}

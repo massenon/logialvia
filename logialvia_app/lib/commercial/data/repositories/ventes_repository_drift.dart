@@ -1,0 +1,603 @@
+import '../../../administration/domain/services/service_archivage.dart';
+import 'package:drift/drift.dart';
+
+import '../../../core/database/app_database.dart';
+import '../../../core/events/domain_event.dart';
+import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
+import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
+import '../../domain/entities/produit_vendable.dart';
+import '../../domain/entities/livraison.dart';
+import '../../domain/entities/vente.dart';
+import '../../domain/repositories/ventes_repository.dart';
+
+class VentesRepositoryDrift implements VentesRepository {
+  VentesRepositoryDrift(this._db, this._bus)
+    : _ecritures = GenererEcrituresAutomatiques(
+        ComptabiliteRepositoryDrift(_db),
+      );
+
+  final AppDatabase _db;
+  final EventBus _bus;
+
+  /// BR-CPT-003 — génération des écritures de vente.
+  final GenererEcrituresAutomatiques _ecritures;
+
+  /// Ventile un panier entre les comptes de produits selon la catégorie du
+  /// produit : « Commerce Annexe » → 707, tout le reste → 701.
+  /// Ventile un panier par **(compte, centre analytique)**.
+  ///
+  /// Le compte répond à la question comptable — 707 pour le commerce annexe,
+  /// 701 pour l'avicole — et le centre à la question de gestion : de quelle
+  /// filière vient ce revenu.
+  ///
+  /// ⚠️ Sans ce second axe, tout l'avicole tombait dans un seul bloc alors que
+  /// `comptabilite-analytique.html` l.146-149 ventile bien **Goliaths** et
+  /// **Pintades** séparément. Le centre vient de `PRODUITS_VENDABLES.espece`
+  /// pour un animal vivant, de la catégorie sinon.
+  Future<Map<(String, String?), double>> _ventilerVente(
+    List<LignePanier> panier,
+  ) async {
+    final ventilation = <(String, String?), double>{};
+    for (final ligne in panier) {
+      final produit = await (_db.select(
+        _db.produitsVendables,
+      )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
+      final cle = _cle(produit);
+      ventilation[cle] = (ventilation[cle] ?? 0) + ligne.total;
+    }
+    return ventilation;
+  }
+
+  (String, String?) _cle(ProduitVendableRow? produit) {
+    if (produit?.cat == 'Commerce Annexe') {
+      return (ComptesAutomatiques.ventesMarchandises, 'Commerce Annexe');
+    }
+    return (
+      ComptesAutomatiques.ventesAvicoles,
+      // `espece` porte l'identifiant de la filiere ; a defaut le produit est
+      // avicole sans filiere identifiee (oeufs vendus au detail, par exemple)
+      // et reste non impute plutot que rattache arbitrairement.
+      _centreDepuisEspece(produit?.espece),
+    );
+  }
+
+  static String? _centreDepuisEspece(String? espece) => switch (espece) {
+    'goliaths' => 'Goliaths',
+    'pintades' => 'Pintades',
+    'lapins' => 'Lapins',
+    'poissons-chats' => 'Poissons-Chats',
+    'poulets' => 'Poulets',
+    'pondeuses' => 'Pondeuses',
+    _ => null,
+  };
+
+  /// Même ventilation, sur les lignes déjà enregistrées — contrepassation.
+  ///
+  /// L'écriture inverse doit porter **les mêmes centres** que l'écriture
+  /// d'origine, sans quoi l'annulation d'une vente de goliaths retirerait du
+  /// revenu à un autre centre.
+  Future<Map<(String, String?), double>> _ventilerLignesEnregistrees(
+    List<LigneVenteRow> lignes,
+  ) async {
+    final ventilation = <(String, String?), double>{};
+    for (final ligne in lignes) {
+      final produit = await (_db.select(
+        _db.produitsVendables,
+      )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
+      final cle = _cle(produit);
+      ventilation[cle] = (ventilation[cle] ?? 0) + ligne.qte * ligne.pu;
+    }
+    return ventilation;
+  }
+
+  @override
+  Future<List<ProduitVendable>> chargerCatalogue() async {
+    final lignes = await (_db.select(
+      _db.produitsVendables,
+    )..orderBy([(p) => OrderingTerm.asc(p.name)])).get();
+    return lignes.map(_produitVersDomaine).toList();
+  }
+
+  @override
+  Future<List<Vente>> chargerVentes({int limite = 200}) async {
+    // Strict Avoid §8 : pagination des le depart sur une table a croissance
+    // illimitee, jamais ajoutee apres coup.
+    final ventes =
+        await (_db.select(_db.ventes)
+              ..orderBy([(v) => OrderingTerm.desc(v.dateVente)])
+              ..limit(limite))
+            .get();
+    if (ventes.isEmpty) return const [];
+
+    final references = ventes.map((v) => v.ref).toList();
+    final lignes = await (_db.select(
+      _db.lignesVente,
+    )..where((l) => l.venteRef.isIn(references))).get();
+
+    final lignesParVente = <String, List<LigneVente>>{};
+    for (final ligne in lignes) {
+      lignesParVente
+          .putIfAbsent(ligne.venteRef, () => [])
+          .add(
+            LigneVente(
+              produitId: ligne.produitId,
+              nom: ligne.name,
+              quantite: ligne.qte,
+              prixUnitaire: ligne.pu,
+              espece: ligne.espece,
+            ),
+          );
+    }
+
+    return [
+      for (final v in ventes)
+        _venteVersDomaine(v, lignesParVente[v.ref] ?? const []),
+    ];
+  }
+
+  @override
+  Future<Vente?> chargerVente(String reference) async {
+    final vente = await (_db.select(
+      _db.ventes,
+    )..where((v) => v.ref.equals(reference))).getSingleOrNull();
+    if (vente == null) return null;
+
+    final lignes = await (_db.select(
+      _db.lignesVente,
+    )..where((l) => l.venteRef.equals(reference))).get();
+
+    return _venteVersDomaine(vente, [
+      for (final l in lignes)
+        LigneVente(
+          produitId: l.produitId,
+          nom: l.name,
+          quantite: l.qte,
+          prixUnitaire: l.pu,
+          espece: l.espece,
+        ),
+    ]);
+  }
+
+  /// ## Transaction atomique — BR-VTE-002
+  ///
+  /// C'est le point que le Master Prompt §2.3 désigne nommément comme l'échec à
+  /// ne pas reproduire : côté web, `validateSale()` générait une référence
+  /// aléatoire **sans rien persister**. Ici, les 4 écritures sont dans une
+  /// seule transaction Drift — si l'une échoue, aucune n'est appliquée.
+  @override
+  Future<ResultatEncaissement> enregistrerVente({
+    required String client,
+    required String mode,
+    required String statut,
+    required double montantPaye,
+    required List<LignePanier> panier,
+    Livraison? livraison,
+    String? ligneMobileMoney,
+    DateTime? echeance,
+    DateTime? date,
+  }) async {
+    final maintenant = date ?? DateTime.now();
+    // Les frais d'une livraison **facturee separement** entrent dans le total :
+    // c'est la seule lecture coherente du libelle. Le prototype affiche le
+    // champ sans jamais l'ajouter.
+    final total =
+        panier.fold<double>(0, (s, l) => s + l.total) +
+        (livraison?.supplementFacture ?? 0);
+
+    final vente = await _db.transaction(() async {
+      final reference = await _prochaineReference(maintenant.year);
+
+      // 1. La vente
+      await _db
+          .into(_db.ventes)
+          .insert(
+            VentesCompanion.insert(
+              ref: reference,
+              client: client,
+              dateVente: maintenant,
+              mode: mode,
+              status: statut,
+              total: total,
+              paye: montantPaye,
+              livraisonMode: Value(livraison?.mode.code),
+              livraisonFrais: Value(livraison?.frais),
+              livraisonAdresse: Value(livraison?.adresse),
+              livraisonContact: Value(livraison?.contact),
+              ligneMobileMoney: Value(ligneMobileMoney),
+              echeance: Value(echeance),
+            ),
+          );
+
+      for (final ligne in panier) {
+        // 2. Les lignes
+        await _db
+            .into(_db.lignesVente)
+            .insert(
+              LignesVenteCompanion.insert(
+                venteRef: reference,
+                produitId: ligne.produitId,
+                name: ligne.nom,
+                qte: ligne.quantite,
+                pu: ligne.prixUnitaire,
+                espece: Value(ligne.espece),
+              ),
+            );
+
+        // 3. Le decrement de stock, borne a 0 (BR-ELV-001 par extension).
+        await _decrementerStock(ligne.produitId, ligne.quantite.round());
+
+        // 4. Le compteur de ventes du jour de la fiche d'elevage
+        //    (BR-ELV-010), si le produit est un animal vivant.
+        if (ligne.espece != null) {
+          await _ajusterFicheVentesJour(
+            espece: ligne.espece!,
+            date: maintenant,
+            delta: ligne.quantite.round(),
+          );
+        }
+      }
+
+      return Vente(
+        reference: reference,
+        client: client,
+        date: maintenant,
+        mode: mode,
+        statut: statut,
+        total: total,
+        paye: montantPaye,
+        ligneMobileMoney: ligneMobileMoney,
+        echeance: echeance,
+        lignes: [
+          for (final l in panier)
+            LigneVente(
+              produitId: l.produitId,
+              nom: l.nom,
+              quantite: l.quantite,
+              prixUnitaire: l.prixUnitaire,
+              espece: l.espece,
+              unite: l.unite,
+            ),
+        ],
+      );
+    });
+
+    // BR-CPT-003 — ecritures comptables, APRES la transaction de vente : une
+    // vente reste valide meme si le mois comptable est cloture (l'ecriture est
+    // alors refusee et signalee, pas la vente).
+    await _ecritures.pourVente(
+      reference: vente.reference,
+      date: vente.date,
+      mode: mode,
+      statut: statut,
+      total: total,
+      paye: montantPaye,
+      ventilation: await _ventilerVente(panier),
+    );
+
+    // Publie APRES la transaction : notifier des ecrans d'une ecriture qui
+    // aurait pu etre annulee serait pire que ne rien notifier.
+    _bus.publier(
+      VenteValideeEvent(
+        venteRef: vente.reference,
+        lignes: [
+          for (final l in panier)
+            LigneVenteInfo(
+              produitId: l.produitId,
+              quantite: l.quantite,
+              espece: l.espece,
+            ),
+        ],
+      ),
+    );
+
+    return ResultatEncaissement(vente: vente);
+  }
+
+  @override
+  Future<void> annulerVente({
+    required String reference,
+    required String motif,
+  }) async {
+    final lignesInfo = <LigneVenteInfo>[];
+    Map<(String, String?), double> ventilation = const {};
+    VenteRow? venteAnnulee;
+
+    await _db.transaction(() async {
+      final vente = await (_db.select(
+        _db.ventes,
+      )..where((v) => v.ref.equals(reference))).getSingleOrNull();
+      if (vente == null) {
+        throw StateError('Vente $reference introuvable.');
+      }
+      if (vente.status == StatutVente.annulee) {
+        throw StateError('Vente $reference déjà annulée.');
+      }
+
+      final lignes = await (_db.select(
+        _db.lignesVente,
+      )..where((l) => l.venteRef.equals(reference))).get();
+
+      venteAnnulee = vente;
+      ventilation = await _ventilerLignesEnregistrees(lignes);
+
+      for (final ligne in lignes) {
+        // Restitution du stock (FRS-VTE-05).
+        await _incrementerStock(ligne.produitId, ligne.qte.round());
+
+        // Le compteur de la fiche d'elevage doit etre decremente : sans cela,
+        // une vente annulee continuerait de compter comme une sortie du jour.
+        if (ligne.espece != null) {
+          await _ajusterFicheVentesJour(
+            espece: ligne.espece!,
+            date: vente.dateVente,
+            delta: -ligne.qte.round(),
+          );
+        }
+
+        lignesInfo.add(
+          LigneVenteInfo(
+            produitId: ligne.produitId,
+            quantite: ligne.qte,
+            espece: ligne.espece,
+          ),
+        );
+      }
+
+      // BR-VTE-004 : annulation logique, jamais de suppression physique.
+      await (_db.update(
+        _db.ventes,
+      )..where((v) => v.ref.equals(reference))).write(
+        VentesCompanion(
+          status: const Value(StatutVente.annulee),
+          motifAnnulation: Value(motif),
+        ),
+      );
+    });
+
+    // Contrepassation comptable — une ecriture ne se supprime pas, elle
+    // s'annule par une ecriture inverse.
+    final annulee = venteAnnulee;
+    if (annulee != null) {
+      await _ecritures.pourAnnulationVente(
+        reference: reference,
+        date: DateTime.now(),
+        mode: annulee.mode,
+        total: annulee.total,
+        paye: annulee.paye,
+        ventilation: ventilation,
+      );
+    }
+
+    _bus.publier(VenteAnnuleeEvent(venteRef: reference, lignes: lignesInfo));
+  }
+
+  @override
+  Future<void> enregistrerPaiement({
+    required String reference,
+    required double montant,
+  }) async {
+    String? modeVente;
+
+    await _db.transaction(() async {
+      final vente = await (_db.select(
+        _db.ventes,
+      )..where((v) => v.ref.equals(reference))).getSingleOrNull();
+      if (vente == null) throw StateError('Vente $reference introuvable.');
+      if (vente.status == StatutVente.annulee) {
+        throw StateError('Une vente annulée ne peut pas être encaissée.');
+      }
+
+      modeVente = vente.mode;
+
+      // Ne jamais encaisser plus que le total dû.
+      final nouveauPaye = (vente.paye + montant).clamp(0.0, vente.total);
+
+      await (_db.update(
+        _db.ventes,
+      )..where((v) => v.ref.equals(reference))).write(
+        VentesCompanion(
+          paye: Value(nouveauPaye),
+          // Doc F4 Écran 3 : si `paye == total`, le statut passe de
+          // 'Avance' à 'Payée'.
+          status: Value(
+            nouveauPaye >= vente.total ? StatutVente.payee : StatutVente.avance,
+          ),
+        ),
+      );
+    });
+
+    // Encaissement d'une creance : Tresorerie au debit, Clients au credit.
+    await _ecritures.pourReglement(
+      reference: reference,
+      date: DateTime.now(),
+      mode: modeVente ?? 'Espèces',
+      montant: montant,
+      estEncaissement: true,
+    );
+  }
+
+  @override
+  Future<ProduitVendable> creerProduit(ProduitVendable produit) async {
+    final id = await _db
+        .into(_db.produitsVendables)
+        .insert(
+          ProduitsVendablesCompanion.insert(
+            sku: Value(produit.sku),
+            name: produit.nom,
+            cat: produit.categorie,
+            price: produit.prix,
+            priceMax: Value(produit.prixMax),
+            unit: produit.unite,
+            icon: produit.icone,
+            stock: produit.stock,
+            threshold: produit.seuil,
+            espece: Value(produit.espece),
+            coutRevient: Value(produit.coutRevient),
+          ),
+        );
+    return ProduitVendable(
+      id: id,
+      sku: produit.sku,
+      nom: produit.nom,
+      categorie: produit.categorie,
+      prix: produit.prix,
+      prixMax: produit.prixMax,
+      unite: produit.unite,
+      icone: produit.icone,
+      stock: produit.stock,
+      seuil: produit.seuil,
+      espece: produit.espece,
+      coutRevient: produit.coutRevient,
+    );
+  }
+
+  @override
+  Future<void> mettreAJourProduit(ProduitVendable produit) async {
+    await (_db.update(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produit.id))).write(
+      ProduitsVendablesCompanion(
+        name: Value(produit.nom),
+        cat: Value(produit.categorie),
+        price: Value(produit.prix),
+        priceMax: Value(produit.prixMax),
+        unit: Value(produit.unite),
+        icon: Value(produit.icone),
+        stock: Value(produit.stock),
+        threshold: Value(produit.seuil),
+        espece: Value(produit.espece),
+        coutRevient: Value(produit.coutRevient),
+      ),
+    );
+  }
+
+  @override
+  Future<void> supprimerProduit(
+    int produitId, {
+    String? utilisateurId,
+    String? utilisateurNom,
+  }) async {
+    final ligne = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).getSingleOrNull();
+
+    await ServiceArchivage(_db).archiver(
+      type: TypeArchivable.produits,
+      cle: produitId,
+      designation: ligne?.name ?? 'Produit #$produitId',
+      utilisateurId: utilisateurId,
+      utilisateurNom: utilisateurNom,
+    );
+  }
+
+  // ---------------------------------------------------------------- internes
+
+  /// Référence 'V-AAAA-NNN' — Doc D1.
+  Future<String> _prochaineReference(int annee) async {
+    final prefixe = 'V-$annee-';
+    final existantes = await (_db.select(
+      _db.ventes,
+    )..where((v) => v.ref.like('$prefixe%'))).get();
+
+    var maximum = 0;
+    for (final vente in existantes) {
+      final numero = int.tryParse(vente.ref.substring(prefixe.length));
+      if (numero != null && numero > maximum) maximum = numero;
+    }
+    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+  }
+
+  Future<void> _decrementerStock(int produitId, int quantite) async {
+    final produit = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).getSingleOrNull();
+    if (produit == null) return;
+
+    await (_db.update(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).write(
+      ProduitsVendablesCompanion(
+        stock: Value((produit.stock - quantite).clamp(0, 1 << 30)),
+      ),
+    );
+  }
+
+  Future<void> _incrementerStock(int produitId, int quantite) async {
+    final produit = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).getSingleOrNull();
+    if (produit == null) return;
+
+    await (_db.update(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).write(
+      ProduitsVendablesCompanion(stock: Value(produit.stock + quantite)),
+    );
+  }
+
+  /// `FICHE_VENTES_JOUR` — `UNIQUE(espece, date)`, incrément cumulatif.
+  Future<void> _ajusterFicheVentesJour({
+    required String espece,
+    required DateTime date,
+    required int delta,
+  }) async {
+    final jour = DateTime(date.year, date.month, date.day);
+
+    final existant =
+        await (_db.select(_db.ficheVentesJour)
+              ..where((f) => f.espece.equals(espece) & f.date.equals(jour)))
+            .getSingleOrNull();
+
+    if (existant == null) {
+      if (delta <= 0) return;
+      await _db
+          .into(_db.ficheVentesJour)
+          .insert(
+            FicheVentesJourCompanion.insert(
+              espece: espece,
+              date: jour,
+              qte: Value(delta),
+            ),
+          );
+      return;
+    }
+
+    await (_db.update(
+      _db.ficheVentesJour,
+    )..where((f) => f.id.equals(existant.id))).write(
+      FicheVentesJourCompanion(
+        qte: Value((existant.qte + delta).clamp(0, 1 << 30)),
+      ),
+    );
+  }
+
+  ProduitVendable _produitVersDomaine(ProduitVendableRow ligne) =>
+      ProduitVendable(
+        id: ligne.id,
+        sku: ligne.sku,
+        nom: ligne.name,
+        categorie: ligne.cat,
+        prix: ligne.price,
+        prixMax: ligne.priceMax,
+        unite: ligne.unit,
+        icone: ligne.icon,
+        stock: ligne.stock,
+        seuil: ligne.threshold,
+        espece: ligne.espece,
+        coutRevient: ligne.coutRevient,
+      );
+
+  Vente _venteVersDomaine(VenteRow ligne, List<LigneVente> lignes) => Vente(
+    reference: ligne.ref,
+    client: ligne.client,
+    date: ligne.dateVente,
+    mode: ligne.mode,
+    statut: ligne.status,
+    total: ligne.total,
+    paye: ligne.paye,
+    motifAnnulation: ligne.motifAnnulation,
+    lignes: lignes,
+    ligneMobileMoney: ligne.ligneMobileMoney,
+    echeance: ligne.echeance,
+  );
+}

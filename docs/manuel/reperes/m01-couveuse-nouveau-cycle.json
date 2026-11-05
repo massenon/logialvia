@@ -1,0 +1,12 @@
+{
+  "ecran": "m01-couveuse-nouveau-cycle",
+  "reperes": [
+    {
+      "nom": "bouton-declarer-cycle",
+      "x": 82.56,
+      "y": 3.53,
+      "largeur": 15.7,
+      "hauteur": 5.04
+    }
+  ]
+}

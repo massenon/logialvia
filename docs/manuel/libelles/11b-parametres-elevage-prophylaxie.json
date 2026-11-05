@@ -1,0 +1,61 @@
+{
+  "ecran": "11b-parametres-elevage-prophylaxie",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter une Échéance",
+    "Calendriers Prophylaxie",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "Numérotation Bandes & Sujets",
+    "Rationnement",
+    "🐔 Goliaths",
+    "🐟 Poissons-Chats",
+    "🐰 Lapins",
+    "🦃 Pintades"
+  ],
+  "champs": [
+    "(indication) Rechercher un traitement, un produit…"
+  ],
+  "colonnes": [
+    "ACTIONS",
+    "J15",
+    "JOUR DU CYCLE",
+    "PRODUIT",
+    "RÉMANENCE",
+    "TRAITEMENT"
+  ],
+  "infobulles": [
+    "Supprimer",
+    "Éditer"
+  ],
+  "textes": [
+    "5j",
+    "7j",
+    "Ajouter une Échéance",
+    "Amprolium",
+    "Anti-coccidien (1/4)",
+    "Calendrier daté depuis la mise en bande, puis affiché dans « Traitements & Prophylaxie » des fiches journalières.",
+    "Calendrier — Goliaths",
+    "Calendriers Prophylaxie",
+    "Ce calendrier est le référentiel des soins à programmer. Ses échéances sont indexées sur le jour du cycle : elles se datent depuis la mise en bande, déclarée sur chaque fiche d'élevage. La section « Traitements & Prophylaxie » de la saisie journalière affiche alors les échéances du jour, et chacune peut être planifiée dans le Calendrier de Soins. Sans bande déclarée, aucune échéance n'est datable — la fiche le signale au lieu de supposer un début de cycle.",
+    "Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.",
+    "Déparasitage",
+    "Exporter PDF",
+    "Intrants de Provende",
+    "J1",
+    "J5",
+    "Levamisole Volaille",
+    "Numérotation Bandes & Sujets",
+    "Paramètres Élevage",
+    "Rationnement",
+    "Rechercher un traitement, un produit…",
+    "Vaccin HB1",
+    "Vaccin Newcastle (Rappel)",
+    "—",
+    "🐔 Goliaths",
+    "🐟 Poissons-Chats",
+    "🐰 Lapins",
+    "🦃 Pintades"
+  ]
+}

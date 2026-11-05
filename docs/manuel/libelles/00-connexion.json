@@ -1,0 +1,36 @@
+{
+  "ecran": "00-connexion",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Mot de passe oublié ?",
+    "SE CONNECTER",
+    "Se souvenir de moi"
+  ],
+  "champs": [
+    "(indication) ALLMANY2026",
+    "(indication) admin"
+  ],
+  "colonnes": [
+    "ALLMANY ET COMPAGNIE",
+    "ALLMANY2026",
+    "MOT DE PASSE",
+    "NOM D'UTILISATEUR OU EMAIL",
+    "SE CONNECTER"
+  ],
+  "infobulles": [
+    "Afficher le mot de passe"
+  ],
+  "textes": [
+    "Bienvenue !",
+    "Connectez-vous à votre espace LogiALVIA.",
+    "Français",
+    "Gestion et Suivi Avicole Intégré",
+    "LogiALVIA",
+    "Mot de passe oublié ?",
+    "Se souvenir de moi",
+    "admin",
+    "v1.0.0",
+    "© 2026 LogiALVIA — Projet d'Appui à l'Entrepreneuriat au Bénin (PAEB) — FAGUEZ SARL"
+  ]
+}

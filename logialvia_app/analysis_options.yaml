@@ -1,0 +1,21 @@
+# Configuration obligatoire — Doc K1 §2.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: true             # jamais de print() en production, utiliser debugPrint sous kDebugMode (Doc I3 §3)
+    prefer_const_constructors: true
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    unnecessary_this: true
+    require_trailing_commas: true # facilite les diffs de revue de code
+    # NOTE (ecart avec Doc K1 §2) : `unused_element` y figurait dans la liste `linter.rules`,
+    # mais ce n'est pas un lint — c'est un diagnostic de l'analyseur, deja actif par defaut
+    # et remonte en warning. Le declarer ici provoquerait une erreur "unknown lint".
+    # L'objectif de Strict Avoid §12 (detection du code mort) reste donc bien couvert.
+
+analyzer:
+  errors:
+    todo: ignore   # les TODO(dette) sont volontaires, Strict Avoid §4 — pas des erreurs
+  exclude:
+    - "**/*.g.dart" # fichiers generes par Drift/build_runner

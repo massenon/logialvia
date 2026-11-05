@@ -1,0 +1,336 @@
+import '../../../administration/domain/services/service_archivage.dart';
+import 'package:flutter/foundation.dart';
+
+import '../../../core/resultat/resultat.dart';
+import '../../data/repositories/parametres_elevage_repository_drift.dart';
+import '../../domain/entities/parametres_elevage.dart';
+
+/// Paramètres Élevage — Doc F3, `parametres-elevage.html` (4 onglets).
+///
+/// Un seul ViewModel pour les 4 onglets : ils configurent le même objet
+/// métier — la manière dont les fiches journalières calculent et rappellent.
+class ParametresElevageViewModel extends ChangeNotifier {
+  ParametresElevageViewModel(this._repository);
+
+  final ParametresElevageRepository _repository;
+
+  bool _chargement = true;
+  bool get chargement => _chargement;
+
+  List<BaremeRation> _baremes = const [];
+  List<EcheanceProphylaxie> _echeances = const [];
+  List<TypeProvende> _provendes = const [];
+  FormatsNumerotation _formats = const FormatsNumerotation();
+
+  List<BaremeRation> get baremes => _baremes;
+  List<TypeProvende> get provendes => _provendes;
+  FormatsNumerotation get formats => _formats;
+
+  Future<void> charger() async {
+    _chargement = true;
+    notifyListeners();
+    await _rafraichir();
+    // Le brouillon de numerotation part de l'etat persiste ; il n'est jamais
+    // reinitialise par les rafraichissements des autres onglets, sans quoi une
+    // saisie en cours serait perdue au moindre enregistrement de ration.
+    _brouillon = _formats;
+    _chargement = false;
+    notifyListeners();
+  }
+
+  Future<void> _rafraichir() async {
+    _baremes = await _repository.chargerBaremes();
+    _echeances = await _repository.chargerProphylaxie();
+    _provendes = await _repository.chargerTypesProvende();
+    _formats = await _repository.chargerFormatsNumerotation();
+  }
+
+  // ------------------------------------------------- Onglet 1 : Rationnement
+
+  String _rechercheRation = '';
+  String? _especeRation;
+  String get rechercheRation => _rechercheRation;
+  String? get especeRation => _especeRation;
+
+  void definirRechercheRation(String valeur) {
+    _rechercheRation = valeur;
+    notifyListeners();
+  }
+
+  void definirEspeceRation(String? valeur) {
+    _especeRation = valeur;
+    notifyListeners();
+  }
+
+  void reinitialiserFiltresRation() {
+    _rechercheRation = '';
+    _especeRation = null;
+    notifyListeners();
+  }
+
+  List<BaremeRation> get baremesFiltres {
+    final terme = _rechercheRation.trim().toLowerCase();
+    return _baremes.where((b) {
+      if (_especeRation != null && b.espece != _especeRation) return false;
+      if (terme.isEmpty) return true;
+      return b.stade.toLowerCase().contains(terme) ||
+          EspecesParametrables.libelle(b.espece).toLowerCase().contains(terme);
+    }).toList();
+  }
+
+  Future<Resultat<void>> ajouterBareme({
+    required String espece,
+    required String stade,
+    required String ration,
+  }) async {
+    final valeur = int.tryParse(ration.trim());
+    if (stade.trim().isEmpty || valeur == null || valeur <= 0) {
+      return const Echec('Veuillez renseigner le stade et la ration.');
+    }
+    // Une ration de plusieurs kilos par tete et par jour est une faute de
+    // frappe, pas un bareme : la plus forte du prototype est 120 g.
+    if (valeur > 5000) {
+      return const Echec(
+        'Une ration de plus de 5 000 g par tête et par jour est invraisemblable.',
+      );
+    }
+
+    try {
+      await _repository.creerBareme(
+        espece: espece,
+        stade: stade.trim(),
+        rationGrammesParJour: valeur,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec ajout bareme: $e');
+      return const Echec('Ce barème n\'a pas pu être enregistré.');
+    }
+  }
+
+  Future<Resultat<void>> modifierRation({
+    required BaremeRation bareme,
+    required String ration,
+  }) async {
+    final valeur = int.tryParse(ration.trim());
+    if (valeur == null || valeur <= 0) {
+      return const Echec('La ration doit être un nombre de grammes positif.');
+    }
+    if (valeur > 5000) {
+      return const Echec(
+        'Une ration de plus de 5 000 g par tête et par jour est invraisemblable.',
+      );
+    }
+
+    try {
+      await _repository.modifierRation(
+        id: bareme.id,
+        rationGrammesParJour: valeur,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec modification ration: $e');
+      return const Echec('Cette ration n\'a pas pu être modifiée.');
+    }
+  }
+
+  Future<Resultat<void>> supprimerBareme(
+    BaremeRation bareme, {
+    AuteurArchivage? auteur,
+  }) async {
+    try {
+      await _repository.supprimerBareme(
+        bareme.id,
+        utilisateurId: auteur?.id,
+        utilisateurNom: auteur?.nom,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec suppression bareme: $e');
+      return const Echec('Ce barème n\'a pas pu être supprimé.');
+    }
+  }
+
+  // ------------------------------------------------- Onglet 2 : Prophylaxie
+
+  String _especeProphylaxie = EspecesParametrables.toutes.first.id;
+  String _rechercheProphylaxie = '';
+  String get especeProphylaxie => _especeProphylaxie;
+  String get rechercheProphylaxie => _rechercheProphylaxie;
+
+  void changerEspeceProphylaxie(String espece) {
+    _especeProphylaxie = espece;
+    notifyListeners();
+  }
+
+  void definirRechercheProphylaxie(String valeur) {
+    _rechercheProphylaxie = valeur;
+    notifyListeners();
+  }
+
+  List<EcheanceProphylaxie> get echeancesFiltrees {
+    final terme = _rechercheProphylaxie.trim().toLowerCase();
+    return _echeances.where((e) {
+      if (e.espece != _especeProphylaxie) return false;
+      if (terme.isEmpty) return true;
+      return e.traitement.toLowerCase().contains(terme) ||
+          e.produit.toLowerCase().contains(terme);
+    }).toList();
+  }
+
+  Future<Resultat<void>> enregistrerEcheance({
+    EcheanceProphylaxie? existante,
+    required String jour,
+    required String traitement,
+    required String produit,
+    required String remanence,
+  }) async {
+    final jourCycle = int.tryParse(jour.trim());
+    if (jourCycle == null ||
+        traitement.trim().isEmpty ||
+        produit.trim().isEmpty) {
+      return const Echec(
+        'Veuillez renseigner le jour, le traitement et le produit.',
+      );
+    }
+    // `min="1" max="31"` dans le formulaire du prototype.
+    if (jourCycle < 1 || jourCycle > 31) {
+      return const Echec('Le jour du cycle doit être compris entre 1 et 31.');
+    }
+    final remanenceJours = int.tryParse(remanence.trim()) ?? 0;
+    if (remanenceJours < 0) {
+      return const Echec('La rémanence ne peut pas être négative.');
+    }
+
+    try {
+      await _repository.enregistrerEcheance(
+        id: existante?.id,
+        espece: existante?.espece ?? _especeProphylaxie,
+        jourCycle: jourCycle,
+        traitement: traitement.trim(),
+        produit: produit.trim(),
+        remanenceJours: remanenceJours,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec echeance prophylaxie: $e');
+      return const Echec('Cette échéance n\'a pas pu être enregistrée.');
+    }
+  }
+
+  Future<Resultat<void>> supprimerEcheance(
+    EcheanceProphylaxie echeance, {
+    AuteurArchivage? auteur,
+  }) async {
+    try {
+      await _repository.supprimerEcheance(
+        echeance.id,
+        utilisateurId: auteur?.id,
+        utilisateurNom: auteur?.nom,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec suppression echeance: $e');
+      return const Echec('Cette échéance n\'a pas pu être supprimée.');
+    }
+  }
+
+  // ---------------------------------------------------- Onglet 3 : Provende
+
+  String _rechercheProvende = '';
+  String get rechercheProvende => _rechercheProvende;
+
+  void definirRechercheProvende(String valeur) {
+    _rechercheProvende = valeur;
+    notifyListeners();
+  }
+
+  List<TypeProvende> get provendesFiltrees {
+    final terme = _rechercheProvende.trim().toLowerCase();
+    if (terme.isEmpty) return _provendes;
+    return _provendes
+        .where((p) => p.nom.toLowerCase().contains(terme))
+        .toList();
+  }
+
+  // ------------------------------------------------ Onglet 4 : Numérotation
+
+  /// Aperçu en direct pendant la frappe, **avant** enregistrement — le
+  /// prototype recalcule ses aperçus à chaque `oninput`.
+  FormatsNumerotation _brouillon = const FormatsNumerotation();
+  FormatsNumerotation get brouillon => _brouillon;
+
+  bool get numerotationModifiee =>
+      _brouillon.enclos != _formats.enclos ||
+      _brouillon.cage != _formats.cage ||
+      _brouillon.bande != _formats.bande ||
+      _brouillon.bassin != _formats.bassin;
+
+  /// Aligne le brouillon sur l'état persisté — appelé à l'ouverture de l'onglet.
+  void reinitialiserBrouillon() {
+    _brouillon = _formats;
+    notifyListeners();
+  }
+
+  void modifierBrouillon({
+    String? enclos,
+    String? cage,
+    String? bande,
+    String? bassin,
+  }) {
+    _brouillon = _brouillon.copyWith(
+      enclos: enclos,
+      cage: cage,
+      bande: bande,
+      bassin: bassin,
+    );
+    notifyListeners();
+  }
+
+  Future<Resultat<void>> enregistrerNumerotation() async {
+    // Un prefixe vide produirait des identifiants « 1, 2, 3 » indistinguables
+    // d'une cage a un bassin. Le prototype retombe silencieusement sur sa valeur
+    // par defaut ; ici le refus est explicite.
+    final vides = <String>[
+      if (_brouillon.enclos.trim().isEmpty) 'Enclos',
+      if (_brouillon.cage.trim().isEmpty) 'Cage',
+      if (_brouillon.bande.trim().isEmpty) 'Bande',
+      if (_brouillon.bassin.trim().isEmpty) 'Bassin',
+    ];
+    if (vides.isNotEmpty) {
+      return Echec(
+        'Préfixe manquant : ${vides.join(', ')}. Un préfixe vide rendrait les '
+        'identifiants indistinguables d\'une filière à l\'autre.',
+      );
+    }
+
+    try {
+      final nettoye = FormatsNumerotation(
+        enclos: _brouillon.enclos.trim(),
+        cage: _brouillon.cage.trim(),
+        bande: _brouillon.bande.trim(),
+        bassin: _brouillon.bassin.trim(),
+      );
+      await _repository.enregistrerFormatsNumerotation(nettoye);
+      await _rafraichir();
+      _brouillon = _formats;
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec numerotation: $e');
+      return const Echec(
+        'Les formats de numérotation n\'ont pas pu être enregistrés.',
+      );
+    }
+  }
+}

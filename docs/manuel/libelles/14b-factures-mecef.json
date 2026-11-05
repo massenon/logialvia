@@ -1,0 +1,69 @@
+{
+  "ecran": "14b-factures-mecef",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Exporter PDF",
+    "Normalisée",
+    "Rejetée",
+    "Toutes",
+    "À transmettre",
+    "Émettre une Facture"
+  ],
+  "champs": [
+    "(indication) Rechercher une référence ou un client…"
+  ],
+  "colonnes": [
+    "-7 500 FCFA",
+    "2 800 FCFA",
+    "3 200 FCFA",
+    "400 FCFA",
+    "7 500 FCFA",
+    "ACTIONS",
+    "CLIENT",
+    "DATE",
+    "FA-2026-001",
+    "FACTURÉ NET",
+    "FV-2026-001",
+    "FV-2026-002",
+    "FV-2026-003",
+    "NORMALISÉES",
+    "REJETÉES",
+    "RÉFÉRENCE",
+    "STATUT",
+    "TOTAL TTC",
+    "À TRANSMETTRE"
+  ],
+  "infobulles": [
+    "Saisir le code de normalisation",
+    "Transmettre à e-MECeF",
+    "Émettre un avoir"
+  ],
+  "textes": [
+    "0",
+    "1",
+    "15/08/2026",
+    "17/08/2026",
+    "19/08/2026",
+    "25/08/2026",
+    "3",
+    "Client Comptant",
+    "Code MeCeF reçu de la DGI",
+    "Exporter PDF",
+    "Facturation MeCeF",
+    "Factures de vente et factures d'avoir, conformité fiscale.",
+    "Factures de vente moins avoirs",
+    "Factures et avoirs",
+    "KOMBETTO Adjara",
+    "Non encore normalisées",
+    "Normalisée",
+    "Rechercher une référence ou un client…",
+    "Rejetée",
+    "Toutes",
+    "Transmission e-MECeF non configurée. Les factures sont émises et imprimables, mais restent « À transmettre » : elles ne valent pas facture normalisée. Renseignez l'URL du service et le jeton dans Paramètres Général, ou reportez le code de normalisation à la main une fois la facture transmise.",
+    "Transmission refusée",
+    "sur FV-2026-002",
+    "À transmettre",
+    "Émettre une Facture"
+  ]
+}

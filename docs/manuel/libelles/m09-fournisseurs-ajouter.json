@@ -1,0 +1,38 @@
+{
+  "ecran": "m09-fournisseurs-ajouter",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter un Fournisseur",
+    "Annuler",
+    "Enregistrer",
+    "Exporter PDF"
+  ],
+  "champs": [],
+  "colonnes": [
+    "0 FCFA",
+    "ACHATS CUMULÉS (MOIS)",
+    "ADRESSE",
+    "DETTE TOTALE",
+    "DETTES SOLDÉES (MOIS)",
+    "FOURNISSEURS ACTIFS",
+    "FOURNIT",
+    "NOM *",
+    "TÉLÉPHONE"
+  ],
+  "infobulles": [
+    "Fermer"
+  ],
+  "textes": [
+    "0",
+    "Ajouter un Fournisseur",
+    "Annuler",
+    "Aucun fournisseur enregistré. Il en faut au moins un pour pouvoir passer une commande.",
+    "Aucune dette ouverte. Les commandes non entièrement réglées apparaissent ici.",
+    "Dettes Fournisseurs",
+    "Enregistrer",
+    "Ex. « Maïs, Soja »",
+    "Exporter PDF",
+    "Fournisseurs"
+  ]
+}

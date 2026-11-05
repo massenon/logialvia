@@ -1,0 +1,30 @@
+{
+  "ecran": "30f-parametres-general-corbeille",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Sauvegardes"
+  ],
+  "champs": [],
+  "colonnes": [],
+  "infobulles": [],
+  "textes": [
+    "Corbeille",
+    "Corbeille — 0 élément(s)",
+    "Dans tous les modules, « Supprimer » archive au lieu de détruire : produits, intrants, barèmes, échéances de prophylaxie, lots d'incubation, utilisateurs, écritures et messages arrivent ici et peuvent être remis en place.",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "La corbeille est vide. Tout ce qui est supprimé dans l'application vient ici, et peut être restauré.",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Paramètres Généraux",
+    "Sauvegardes"
+  ]
+}

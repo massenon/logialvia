@@ -1,0 +1,46 @@
+{
+  "ecran": "26c-etats-financiers-tresorerie",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Bilan",
+    "Compte de Résultat",
+    "Exporter PDF (Onglet Actif)",
+    "Flux de Trésorerie",
+    "Notes Annexes"
+  ],
+  "champs": [],
+  "colonnes": [
+    "EXERCICE",
+    "FLUX NET DE TRÉSORERIE D'EXPLOITATION",
+    "FLUX NET DE TRÉSORERIE D'INVESTISSEMENT",
+    "FLUX NET DE TRÉSORERIE DE FINANCEMENT",
+    "VARIATION DE TRÉSORERIE DE LA PÉRIODE"
+  ],
+  "infobulles": [],
+  "textes": [
+    "-16 920",
+    "-65 400",
+    "2026",
+    "48 480",
+    "65 400",
+    "Acquisitions d'Immobilisations",
+    "Apports en Capital et Emprunts",
+    "Bilan",
+    "Bilan, Compte de Résultat, Tableau des Flux de Trésorerie et Notes Annexes — conformité SYSCOHADA.",
+    "Charge non décaissée",
+    "Compte de Résultat",
+    "Dotations aux Amortissements",
+    "Exporter PDF (Onglet Actif)",
+    "Flux de Trésorerie",
+    "Incohérence de 65 400 FCFA entre la Trésorerie de clôture du TAFIRE (-16 920 FCFA) et la Trésorerie-Actif du Bilan (48 480 FCFA).",
+    "La Trésorerie à la Clôture doit être égale à la Trésorerie-Actif du Bilan (onglet Bilan) — vérification automatique ci-dessous.",
+    "Notes Annexes",
+    "Résultat Net de l'Exercice",
+    "TABLEAU DES FLUX DE TRÉSORERIE (TAFIRE simplifié)",
+    "Variation du Besoin en Fonds de Roulement",
+    "États Financiers",
+    "—"
+  ]
+}

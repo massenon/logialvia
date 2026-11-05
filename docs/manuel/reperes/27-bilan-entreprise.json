@@ -1,0 +1,12 @@
+{
+  "ecran": "27-bilan-entreprise",
+  "reperes": [
+    {
+      "nom": "bandeau-equilibre",
+      "x": 1.74,
+      "y": 13.98,
+      "largeur": 96.53,
+      "hauteur": 7.05
+    }
+  ]
+}

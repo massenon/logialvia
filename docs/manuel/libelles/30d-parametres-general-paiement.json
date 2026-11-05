@@ -1,0 +1,39 @@
+{
+  "ecran": "30d-parametres-general-paiement",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Gestion Utilisateurs",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Sauvegardes"
+  ],
+  "champs": [],
+  "colonnes": [
+    "CONDITIONS DE PAIEMENT",
+    "MODES DE RÈGLEMENT"
+  ],
+  "infobulles": [],
+  "textes": [
+    "Avance (Solde Restant Dû)",
+    "Comptant",
+    "Conformément au CDCT, seuls 2 modes de règlement sont retenus — pas de virement bancaire ni de multi-comptes.",
+    "Corbeille",
+    "Données de Test",
+    "Données de l'Entreprise",
+    "Espèces",
+    "Gestion Utilisateurs",
+    "Mobile Money",
+    "Modes de Paiement",
+    "Modules Actifs",
+    "Paramètres Généraux",
+    "Sauvegardes",
+    "Toujours actif",
+    "Vente soldée à l'encaissement",
+    "Vente à crédit — suivie dans Clients & Créances",
+    "« Avance (Solde Restant Dû) » figurait jusqu'ici parmi les modes de règlement. C'est une condition de paiement : une avance se verse en espèces ou en Mobile Money, comme toute autre vente. Les deux se choisissent désormais séparément au point de vente, ce qui permet enfin de savoir avec quoi une avance a été encaissée."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "ecran": "m06-stocks-provende",
+  "reperes": [
+    {
+      "nom": "bouton-fabrication",
+      "x": 70.94,
+      "y": 3.02,
+      "largeur": 14.68,
+      "hauteur": 5.04
+    },
+    {
+      "nom": "tableau-stocks",
+      "x": 1.74,
+      "y": 28.09,
+      "largeur": 96.53,
+      "hauteur": 58.82
+    }
+  ]
+}

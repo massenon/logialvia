@@ -1,0 +1,53 @@
+{
+  "ecran": "10c-soins-infirmerie",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Calendrier des Doses",
+    "Décès",
+    "Exporter PDF",
+    "Nouveau Soin",
+    "Nouvelle Entrée",
+    "Registre des Soins",
+    "Réintégrer",
+    "Suivi Infirmerie"
+  ],
+  "champs": [],
+  "colonnes": [
+    "14 600 FCFA",
+    "COÛT VÉTÉRINAIRE (MOIS)",
+    "DOSES ADMINISTRÉES (MOIS)",
+    "EN QUARANTAINE / TRAITEMENT",
+    "PLANIFIÉES À VENIR"
+  ],
+  "infobulles": [],
+  "textes": [
+    "0",
+    "09/08/2026",
+    "1",
+    "16/08/2026",
+    "2",
+    "Actions",
+    "Boiterie, isolement préventif",
+    "Calendrier des Doses",
+    "Date d'Entrée",
+    "Décès",
+    "En cours",
+    "Exporter PDF",
+    "Goliath #G-014",
+    "Infirmerie",
+    "Lot / Sujet",
+    "Motif",
+    "Niveau d'Isolement",
+    "Nouveau Soin",
+    "Nouvelle Entrée",
+    "Pintade #P-003",
+    "Quarantaine stricte",
+    "Registre des Soins",
+    "Réintégrer",
+    "Soins & Calendrier",
+    "Statut",
+    "Suivi Infirmerie",
+    "Suspicion Newcastle"
+  ]
+}

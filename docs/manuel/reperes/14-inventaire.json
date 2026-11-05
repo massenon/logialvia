@@ -1,0 +1,26 @@
+{
+  "ecran": "14-inventaire",
+  "reperes": [
+    {
+      "nom": "inventaire-export",
+      "x": 87.91,
+      "y": 3.65,
+      "largeur": 10.35,
+      "hauteur": 5.04
+    },
+    {
+      "nom": "inventaire-filtres",
+      "x": 1.74,
+      "y": 12.34,
+      "largeur": 96.53,
+      "hauteur": 10.33
+    },
+    {
+      "nom": "inventaire-kpi",
+      "x": 1.74,
+      "y": 25.69,
+      "largeur": 96.53,
+      "hauteur": 16.12
+    }
+  ]
+}

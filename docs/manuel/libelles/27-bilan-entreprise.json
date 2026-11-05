@@ -1,0 +1,38 @@
+{
+  "ecran": "27-bilan-entreprise",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "2026",
+    "Exporter PDF"
+  ],
+  "champs": [],
+  "colonnes": [
+    "65 400 FCFA",
+    "ACTIF",
+    "EXERCICE",
+    "PASSIF",
+    "TOTAL ACTIF",
+    "TOTAL PASSIF"
+  ],
+  "infobulles": [],
+  "textes": [
+    "13 230",
+    "16 920",
+    "2026",
+    "35 250",
+    "65 400",
+    "Banques — Mobile Money  (512)",
+    "Bilan de l'Entreprise",
+    "Bilan équilibré — Total Actif = Total Passif = 65 400 FCFA.",
+    "Caisse  (531)",
+    "Capital Initial  (101)",
+    "Clients (Solde Restant Dû)  (411)",
+    "Exercice 2026 — au 25/08/2026. Ce que possède l'entreprise à gauche, d'où provient cet argent à droite.",
+    "Exporter PDF",
+    "Fournisseurs (Dettes)  (401)",
+    "Résultat de l'Exercice  (13)",
+    "Stocks (Intrants + Marchandises)  (31/32)",
+    "—"
+  ]
+}

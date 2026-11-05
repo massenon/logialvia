@@ -1,0 +1,12 @@
+{
+  "ecran": "20-journal-comptable",
+  "reperes": [
+    {
+      "nom": "bouton-nouvelle-ecriture",
+      "x": 86.38,
+      "y": 3.02,
+      "largeur": 11.89,
+      "hauteur": 5.04
+    }
+  ]
+}

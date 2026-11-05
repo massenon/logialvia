@@ -1,0 +1,43 @@
+{
+  "ecran": "12b-ventes-devis",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Devis Prestations",
+    "Enregistrer Vente",
+    "Générer le Devis",
+    "Historique des Ventes",
+    "Retours et Avoirs"
+  ],
+  "champs": [
+    "Client *",
+    "Montant Estimé (FCFA) *",
+    "Objet / Prestation *",
+    "Validité (jours)"
+  ],
+  "colonnes": [
+    "0 FCFA",
+    "CA DU JOUR",
+    "PANIER MOYEN",
+    "VENTES EN ATTENTE (AVANCE)"
+  ],
+  "infobulles": [],
+  "textes": [
+    "5",
+    "Aucun devis émis pour le moment.",
+    "Aucune vente aujourd'hui",
+    "Client *",
+    "Devis Prestations",
+    "Devis Émis",
+    "Enregistrer Vente",
+    "Générer le Devis",
+    "Générer un Devis",
+    "Historique des Ventes",
+    "Montant Estimé (FCFA) *",
+    "Objet / Prestation *",
+    "Retours et Avoirs",
+    "Validité (jours)",
+    "Ventes",
+    "—"
+  ]
+}

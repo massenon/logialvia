@@ -1,0 +1,27 @@
+{
+  "ecran": "16-fournisseurs",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Ajouter un Fournisseur",
+    "Exporter PDF"
+  ],
+  "champs": [],
+  "colonnes": [
+    "0 FCFA",
+    "ACHATS CUMULÉS (MOIS)",
+    "DETTE TOTALE",
+    "DETTES SOLDÉES (MOIS)",
+    "FOURNISSEURS ACTIFS"
+  ],
+  "infobulles": [],
+  "textes": [
+    "0",
+    "Ajouter un Fournisseur",
+    "Aucun fournisseur enregistré. Il en faut au moins un pour pouvoir passer une commande.",
+    "Aucune dette ouverte. Les commandes non entièrement réglées apparaissent ici.",
+    "Dettes Fournisseurs",
+    "Exporter PDF",
+    "Fournisseurs"
+  ]
+}

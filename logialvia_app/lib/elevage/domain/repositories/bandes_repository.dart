@@ -1,0 +1,27 @@
+import '../entities/bande.dart';
+
+/// Dépôt des bandes — la mise en place qui donne son J1 au cycle.
+abstract class BandesRepository {
+  /// Toutes les bandes d'une filière, la plus récente d'abord.
+  Future<List<Bande>> chargerBandes(String espece);
+
+  /// La bande qui couvre cette date, s'il y en a une.
+  ///
+  /// Renvoie `null` plutôt que la dernière bande connue : afficher le cycle
+  /// d'une bande clôturée sur un jour qu'elle ne couvre pas donnerait un jour
+  /// de cycle faux, et donc une prophylaxie fausse.
+  Future<Bande?> bandeCouvrant({
+    required String espece,
+    required DateTime date,
+  });
+
+  Future<Bande> creerBande({
+    required String espece,
+    required String code,
+    required DateTime dateMiseEnBande,
+    int? effectifInitial,
+    String? observations,
+  });
+
+  Future<void> cloturerBande({required int id, required DateTime dateCloture});
+}

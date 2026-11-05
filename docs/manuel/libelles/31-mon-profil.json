@@ -1,0 +1,45 @@
+{
+  "ecran": "31-mon-profil",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "Mettre à jour le mot de passe"
+  ],
+  "champs": [
+    "(indication) Min. 8 caractères, 1 majuscule, 1 chiffre"
+  ],
+  "colonnes": [
+    "ACTION",
+    "ANCIEN MOT DE PASSE *",
+    "CONFIRMER LE NOUVEAU MOT DE PASSE *",
+    "DATE",
+    "MODULE",
+    "MÉTADONNÉES DE SESSION",
+    "NOUVEAU MOT DE PASSE *"
+  ],
+  "infobulles": [],
+  "textes": [
+    "1",
+    "25/08/2026 23:45",
+    "AP",
+    "Actif",
+    "Administratrice",
+    "Administratrice Principale",
+    "Authentification",
+    "Ces informations sont en lecture seule. Seule une Administratrice peut modifier les détails du profil depuis Paramètres Généraux > Gestion Utilisateurs.",
+    "Connexion réussie",
+    "Connexions enregistrées",
+    "Dernière connexion",
+    "Informations de session, sécurité et journal d'activité personnel.",
+    "Journal d'Audit — Dernières Actions",
+    "L'adresse IP affichée par la maquette n'est pas reprise : l'application est monoposte et hors-ligne, il n'existe ni session distante ni adresse à journaliser. Le nombre de connexions enregistrées, lui, est réel.",
+    "Le mot de passe est haché en SHA-256 avec un sel aléatoire régénéré à chaque changement, et n'est jamais journalisé. Les 3 règles de complexité annoncées sont réellement appliquées — le prototype ne vérifiait que la longueur.",
+    "Mettre à jour le mot de passe",
+    "Min. 8 caractères, 1 majuscule, 1 chiffre",
+    "Modifier le Mot de Passe",
+    "Mon Profil",
+    "Première connexion",
+    "Statut du compte",
+    "admin"
+  ]
+}

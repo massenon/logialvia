@@ -1,0 +1,19 @@
+{
+  "ecran": "01-tableau-de-bord",
+  "reperes": [
+    {
+      "nom": "filtre-periode",
+      "x": 1.74,
+      "y": 10.83,
+      "largeur": 96.53,
+      "hauteur": 8.31
+    },
+    {
+      "nom": "kpi-panel",
+      "x": 1.74,
+      "y": 22.17,
+      "largeur": 96.53,
+      "hauteur": 61.96
+    }
+  ]
+}

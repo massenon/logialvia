@@ -1,0 +1,12 @@
+{
+  "ecran": "m02-couveuse-incubateur",
+  "reperes": [
+    {
+      "nom": "bouton-declarer-cycle",
+      "x": 82.56,
+      "y": 3.53,
+      "largeur": 15.7,
+      "hauteur": 5.04
+    }
+  ]
+}

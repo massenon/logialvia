@@ -1,0 +1,48 @@
+{
+  "ecran": "29d-rapports-dettes",
+  "titres": [],
+  "onglets": [],
+  "boutons": [
+    "01/08/2026",
+    "25/08/2026",
+    "Créances Clients",
+    "Dettes Fournisseurs",
+    "Exporter PDF",
+    "Rapport de Stocks",
+    "Rapport Élevage",
+    "Recettes et Dépenses",
+    "Tous les statuts",
+    "État de Trésorerie"
+  ],
+  "champs": [],
+  "colonnes": [
+    "0 FCFA",
+    "DETTES URGENTES",
+    "FOURNISSEURS CRÉDITEURS",
+    "TOTAL DETTES FOURNISSEURS"
+  ],
+  "infobulles": [],
+  "textes": [
+    "0",
+    "01/08/2026",
+    "25/08/2026",
+    "Aucune dette fournisseur : tous les achats sont intégralement réglés.",
+    "Créances Clients",
+    "Dettes Fournisseurs",
+    "Dettes fournisseurs",
+    "Exporter PDF",
+    "Normal",
+    "Rapport de Stocks",
+    "Rapport Élevage",
+    "Rapports & États",
+    "Recettes et Dépenses",
+    "Sur la base fournisseurs",
+    "Tous les statuts",
+    "Toutes dettes actives",
+    "Urgent",
+    "au",
+    "Échéance dépassée",
+    "État de Trésorerie",
+    "États de synthèse, période du 01/08/2026 au 25/08/2026."
+  ]
+}
