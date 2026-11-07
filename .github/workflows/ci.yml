@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyse-et-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: logialvia_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Analyse statique
+        run: flutter analyze
+
+      # `captures_test.dart` n'ecrit pas dans le depot sans GENERER_MANUEL=1.
+      - name: Tests
+        run: flutter test --reporter expanded
+
+      - name: Les tests ne modifient pas docs/manuel
+        run: git diff --exit-code -- ../docs

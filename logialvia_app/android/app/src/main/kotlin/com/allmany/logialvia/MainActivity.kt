@@ -1,4 +1,4 @@
-package com.example.logialvia_app
+package com.allmany.logialvia
 
 import io.flutter.embedding.android.FlutterActivity
 

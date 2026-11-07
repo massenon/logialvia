@@ -28,10 +28,10 @@ flutter build windows --release
 
 SDK : Dart `^3.12.2` / Flutter `>=3.41` (vérifié avec Flutter 3.47.9).
 
-⚠️ `test/manuel/captures_test.dart` **réécrit** `docs/manuel/captures/*.png` et
-`docs/manuel/libelles/*.json`, et son contenu dépend de la date du jour. Ne pas committer
-ces fichiers après un simple `flutter test` ; les restaurer avec
-`git checkout -- docs/manuel` sauf régénération volontaire du manuel.
+⚠️ `test/manuel/captures_test.dart` n'écrit dans `docs/manuel/` (captures PNG + libellés
+JSON, dépendants de la date du jour) que si `GENERER_MANUEL=1` ; sinon la sortie va dans un
+dossier temporaire. Régénération volontaire du manuel :
+`GENERER_MANUEL=1 flutter test test/manuel/captures_test.dart`.
 
 ## Architecture
 
