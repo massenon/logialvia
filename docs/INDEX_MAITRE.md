@@ -270,3 +270,13 @@
 ## Principe de Non-Généricité — tenu sur l'ensemble de la série
 
 Chaque document s'appuie sur le contenu réel des 31 fichiers HTML, sur les bugs réellement rencontrés et corrigés pendant ce projet (répartition en %, SRH/TS, ventes non persistées, id de seed erronés), et sur les vraies valeurs extraites des fichiers sources. Là où une information manquait réellement, ce document le signale explicitement plutôt que de la remplacer par une supposition plausible.
+
+---
+
+## L. Version Web (Laravel + Livewire) — `docs/logialvia/`
+
+Jeu de prompts et de spécifications pour construire le **web** de LogiALVIA avec Claude Code
+(architecture Laravel 12 + Livewire 3, design system identique au poste, PWA, e-MECeF, synchronisation).
+Point d'entrée : [`logialvia/README.md`](logialvia/README.md) ; guide de portage depuis AgriERP :
+[`logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md`](logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md).
+Source : dossier `docs/logialvia/` du monorepo `massenon/agrierp` (branche `claude/sleepy-dijkstra-uvt68t`, commit `3cdf9c7`).
