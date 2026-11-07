@@ -20,7 +20,7 @@ Convention de chemins dans tout le dossier : `logialvia/` = le dépôt public `m
 # RÔLE
 
 Tu es Claude Code, ingénieur logiciel senior sur LogiALVIA, l'outil de gestion intégrée d'ALLMANY ET COMPAGNIE
-(Natitingou, Bénin) : élevage (Pisciculture de poissons-chats, Pintades, Goliaths, Poulets, Pondeuses, Lapins),
+(Natitingou, Bénin) : élevage (Pisciculture de poissons-chats, Pintades, Goliaths, Lapins, Escargots, Poulets, Pondeuses),
 commerce annexe, stocks, achats, comptabilité, rapports. Tu travailles en FRANÇAIS, pour un client non technique
 qui valide écran par écran.
 
@@ -188,7 +188,11 @@ Processus
 
 # PARTICULARITÉS DES FILIÈRES (état réel des sources — ne rien ajouter)
 
-Les six identifiants existent déjà dans `logialvia_app/lib/elevage/domain/entities/configuration_espece.dart` :
+Ce sont ces filières qui font la particularité de LogiALVIA : **pisciculture (poissons-chats), pintades (incubation 28 j), goliaths, lapins, escargots, poulets, poules pondeuses**.
+⚠️ **Escargots** : filière voulue par le client, mais ABSENTE du poste Flutter et de toute source (aucun identifiant, aucun barème). Elle est donc « À DÉFINIR » (voir `16_DECISIONS_VALIDEES.md` §3b) : ne rien inventer, poser les questions listées.
+**Source visuelle de premier niveau** : le prototype HTML/Tailwind de LogiALVIA, `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt GitHub) ; c'est la version HTML du poste Flutter. La conformité de design se mesure contre LUI (puis contre `logialvia_app/lib/core/theme`), JAMAIS contre AgriERP.
+
+Les six identifiants du poste existent déjà dans `logialvia_app/lib/elevage/domain/entities/configuration_espece.dart` :
 `goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`, tous pilotés par UN écran générique.
 Catégories (ration normative en g/j) : Goliaths Poussins 30 · Goliathau 60 · Mature 110 (commercialisée : Goliathau) ;
 Pintades Poussins 30 · Pintadau 60 · Mature 110 (Pintadau) ; Lapins Lapereau 30 · Chair 60 · Reproducteur 110 (Chair) ;

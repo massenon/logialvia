@@ -88,7 +88,7 @@ Règles de séquencement :
 7. **Rapport au format du MASTER PROMPT** (ticket, fait, vérifié, non fait, écarts, questions, risques), court et factuel.
 8. **Documentation vivante.** Un doc faux découvert en route se corrige dans le même ensemble de changements (A2 §7 de logialvia) ; ces prompts eux-mêmes se mettent à jour quand une source change.
 9. **Sources en conflit** : on suit la hiérarchie du MASTER PROMPT (web validé -> poste/prototype -> docs de logialvia -> règles d'AgriERP) ; une contradiction se documente et se fait trancher, elle ne se résout pas en silence.
-10. **Particularités LogiALVIA** : six filières déjà configurées (`goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`) pilotées par UN écran générique ; le barème Goliaths est « non confirmé » dans les sources (question au client avant tout calcul de ration) ; la ration des poissons-chats est TRANCHÉE en % de biomasse (DV-01), ses taux restent des repères à valider.
+10. **Particularités LogiALVIA** : pisciculture, pintades (incubation 28 j), goliaths, lapins, **escargots (filière voulue, absente des sources : À DÉFINIR, `16_` §3b)**, poulets, poules pondeuses. Six filières déjà configurées (`goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`) pilotées par UN écran générique ; le barème Goliaths est « non confirmé » dans les sources (question au client avant tout calcul de ration) ; la ration des poissons-chats est TRANCHÉE en % de biomasse (DV-01), ses taux restent des repères à valider.
 
 ---
 
@@ -101,7 +101,7 @@ Règles de séquencement :
 | **Poste** | Client Flutter Windows hors ligne (Drift/SQLite). |
 | **Web** | Application Laravel + Livewire, serveur de référence une fois un module validé. |
 | **Doctrine de portage** | `docs/DOCTRINE_PORTAGE.md` : fidélité web <-> poste, « la vue web est la référence ». |
-| **Filière** | Famille d'élevage : pisciculture (poissons-chats), pintades, goliaths, poulets, pondeuses, lapins. |
+| **Filière** | Famille d'élevage : pisciculture (poissons-chats), pintades, goliaths, lapins, escargots (à définir), poulets, pondeuses. |
 | **Fiche (journalière)** | Écran de saisie d'une filière : achats, nés, mortalité, ventes, effectif par catégorie, rationnement. |
 | **Catégorie** | Tranche d'âge d'une filière (ex. Poussins / Goliathau / Mature), avec sa ration normative en g/j. |
 | **Bande / lot** | Groupe d'animaux suivi ensemble. |
@@ -128,7 +128,7 @@ Règles de séquencement :
 
 ## 6. Constats importants à connaître avant de commencer
 
-- Le prototype HTML de LogiALVIA (31 pages) n'est PAS dans le dépôt cloné (`logialvia/` ne contient que `docs/`, `logialvia_app/`, `logo/`) : plusieurs mesures visuelles restent « à confirmer » tant qu'il n'est pas fourni.
+- Le prototype HTML/Tailwind de LogiALVIA (31 pages, version HTML du poste Flutter) est sur le poste du client : `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt GitHub). Il n'est PAS dans le dépôt GitHub : le fournir (copie ou dépôt) avant toute mesure visuelle, sinon elle reste « à confirmer ». La conformité de design est celle de LogiALVIA, pas d'AgriERP.
 - Les outils `audit_typographie.py` / `apparier_typographie.py` cités par les docs de logialvia sont absents de `logialvia/logialvia_app/outils/`.
 - LogiALVIA est en Roboto (variable, locale), marine/or ; AgriERP en Inter, vert/jaune : ne pas mélanger les chartes.
 - Quatre rôles (TRANCHÉ DV-07, 08/11/2026 : `admin`, `comptable`, `caissier`, `animalier`) ; LogiALVIA n'en avait que trois (comptabilité réservée à `admin`).

@@ -165,6 +165,21 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 
 Aucune filière ruminants n'existe aujourd'hui. **Non adopté, pour plus tard** : la ration d'un ruminant se calcule en **matière sèche de 2,5 à 3,5 % du poids vif par jour**, sur le **poids moyen** du groupe (et non sur le nombre de têtes). Ordre de grandeur non validé ; aucune règle, aucune colonne, aucun test n'en découle tant que le client n'ouvre pas la filière.
 
+## 3b. Filière escargots (héliciculture) — voulue par le client, ABSENTE des sources
+
+- **Constat.** Les filières du poste sont `goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses` (`configuration_espece.dart`). Aucun fichier du poste, du guide ni d'AgriERP ne contient « escargot ». Le client la compte pourtant parmi les particularités de LogiALVIA.
+- **Règle.** Rien n'est inventé : pas de barème, de ration, de durée de cycle ni de catégorie tant que le client n'a pas répondu. Identifiant **proposé** (non adopté) : `escargots`, module `heliciculture`.
+- **Questions à poser au client (précises).**
+  1. Espèce élevée (Achatine, Archachatina…) ?
+  2. Stades à suivre (œufs, naissains, jeunes, adultes, reproducteurs) et libellés exacts ?
+  3. Unité de vente : au kilo, à la pièce, ou les deux (comme le poisson, DV-02) ?
+  4. Cycle : durée ponte → éclosion, âge de maturité, seuil de mortalité d'alerte ?
+  5. Alimentation : aliment, ration par stade, fréquence ?
+  6. Produits de soin ou prophylaxie, s'il y en a ?
+  7. Faut-il un écran de fiche générique comme les autres filières, ou des champs propres (humidité, température, densité par m²) ?
+- **Impact quand elle sera décidée.** Poste Flutter (nouvelle entrée de `configuration_espece.dart`, barème, prophylaxie), web (`23_MODULE_ELEVAGE_PAR_FILIERE.md`, module actif, droits, rapports, tableau de bord, numérotation « ENCLOS/BASSIN/… »), base (`30_`), tests (`31_`).
+- **Statut.** OUVERT — aucune implémentation avant réponse.
+
 ## 4. Nouvelles questions ouvertes nées de ces décisions
 
 | Id | Question | Décision liée |
