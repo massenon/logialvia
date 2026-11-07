@@ -39,6 +39,28 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
     'poissons-chats': 'Poissons-Chats',
   };
 
+  /// Route de la fiche d'elevage de chaque filiere.
+  ///
+  /// ⚠️ Le chemin ne se deduit PAS du code espece : poulets et pondeuses
+  /// partagent un seul ecran a deux onglets (`/elevage/poulets-pondeuses`,
+  /// Doc H2). Construire `'/elevage/$espece'` produisait `/elevage/poulets`
+  /// et `/elevage/pondeuses`, qu'aucune route ne declare — d'ou
+  /// « GoException: no routes for location: /elevage/poulets » au clic sur
+  /// la carte de la filiere.
+  static const Map<String, String> _routeEspece = {
+    'goliaths': '/elevage/goliaths',
+    'pintades': '/elevage/pintades',
+    'lapins': '/elevage/lapins',
+    'poulets': '/elevage/poulets-pondeuses',
+    'pondeuses': '/elevage/poulets-pondeuses',
+    'poissons-chats': '/elevage/poissons-chats',
+  };
+
+  /// Repli sur le tableau de bord Elevage pour une espece inconnue, plutot
+  /// qu'une route inexistante.
+  static String _route(String espece) =>
+      _routeEspece[espece] ?? '/elevage/dashboard';
+
   static const Map<String, String> _iconeEspece = {
     'goliaths': 'pets',
     'pintades': 'pets',
@@ -234,7 +256,7 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
         espece: espece,
         libelle: _libelleEspece[espece] ?? espece,
         icone: _iconeEspece[espece] ?? 'pets',
-        route: '/elevage/$espece',
+        route: _route(espece),
         effectif: 0,
         effectifMatures: 0,
         libelleJeunes: _libelleJeunesParEspece[espece] ?? 'Jeunes',
@@ -251,7 +273,7 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
       espece: espece,
       libelle: _libelleEspece[espece] ?? espece,
       icone: _iconeEspece[espece] ?? 'pets',
-      route: '/elevage/$espece',
+      route: _route(espece),
       effectif: derniere.effectif,
       effectifMatures: derniere.effCat3Day,
       libelleJeunes: _libelleJeunesParEspece[espece] ?? 'Jeunes',

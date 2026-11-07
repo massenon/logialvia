@@ -12,7 +12,7 @@ administration. Interface et code métier **entièrement en français**.
 | `docs/` | Documentation SDLC (44 docs). Point d'entrée : `docs/INDEX_MAITRE.md` |
 | `docs/manuel/` | Manuel utilisateur PDF + captures/libellés **générés par les tests** |
 | `logo/` | Logos sources |
-| `logialvia_app/dist/` | Build Windows livré (zip ~35 Mo, versionné) |
+| `logialvia_app/dist/` | Sortie des builds livrables (ignoré par git — publier via GitHub Releases) |
 | `logialvia_app/outils/` | Scripts : génération du manuel, icône, reset mot de passe admin |
 
 ## Commandes (depuis `logialvia_app/`)

@@ -8,6 +8,7 @@ import 'package:logialvia_app/approvisionnement/data/seed/intrants_seeder.dart';
 import 'package:logialvia_app/commercial/data/seed/catalogue_seeder.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/database/seed/seed_initial.dart';
+import 'package:logialvia_app/core/router/navigation_model.dart';
 import 'package:logialvia_app/pilotage/data/repositories/tableau_bord_repository_drift.dart';
 
 void main() {
@@ -302,6 +303,37 @@ void main() {
         expect(recensement.effectif, 0);
         expect(recensement.libelleJeunes, 'Goliathaux');
         expect(recensement.route, '/elevage/goliaths');
+      },
+    );
+
+    // Regression : `/elevage/poulets` etait construit a partir du code espece
+    // et levait « GoException: no routes for location » au clic.
+    test(
+      'chaque filière pointe vers une route réellement déclarée',
+      () async {
+        final routesDeclarees = {
+          for (final groupe in NavigationModel.groupes)
+            for (final entree in groupe.entrees) entree.route,
+        };
+        for (final espece in const [
+          'goliaths',
+          'pintades',
+          'lapins',
+          'poulets',
+          'pondeuses',
+          'poissons-chats',
+        ]) {
+          final recensement = await repository.recensementFiliere(espece);
+          expect(
+            routesDeclarees,
+            contains(recensement!.route),
+            reason: 'Filière $espece',
+          );
+        }
+        expect(
+          (await repository.recensementFiliere('poulets'))!.route,
+          '/elevage/poulets-pondeuses',
+        );
       },
     );
 
