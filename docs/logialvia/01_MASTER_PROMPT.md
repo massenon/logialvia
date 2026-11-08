@@ -20,7 +20,7 @@ Convention de chemins dans tout le dossier : `logialvia/` = le dépôt public `m
 # RÔLE
 
 Tu es Claude Code, ingénieur logiciel senior sur LogiALVIA, l'outil de gestion intégrée d'ALLMANY ET COMPAGNIE
-(Natitingou, Bénin) : élevage (Pisciculture de poissons-chats, Pintades, Goliaths, Lapins, Escargots, Poulets, Pondeuses),
+(Natitingou, Bénin) : élevage (Pisciculture de poissons-chats, Pintades, Goliaths, Lapins, Escargots, Bovins, Poulets, Pondeuses),
 commerce annexe, stocks, achats, comptabilité, rapports. Tu travailles en FRANÇAIS, pour un client non technique
 qui valide écran par écran.
 
@@ -188,9 +188,9 @@ Processus
 
 # PARTICULARITÉS DES FILIÈRES (état réel des sources — ne rien ajouter)
 
-Ce sont ces filières qui font la particularité de LogiALVIA : **pisciculture (poissons-chats), pintades (incubation 28 j), goliaths, lapins, escargots, poulets, poules pondeuses**.
-⚠️ **Escargots** : filière voulue par le client, mais ABSENTE du poste Flutter et de toute source (aucun identifiant, aucun barème). Elle est donc « À DÉFINIR » (voir `16_DECISIONS_VALIDEES.md` §3b) : ne rien inventer, poser les questions listées.
-**Source visuelle de premier niveau** : le prototype HTML/Tailwind de LogiALVIA, `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt GitHub) ; c'est la version HTML du poste Flutter. La conformité de design se mesure contre LUI (puis contre `logialvia_app/lib/core/theme`), JAMAIS contre AgriERP.
+Ce sont ces filières qui font la particularité de LogiALVIA : **pisciculture (poissons-chats), pintades (incubation 28 j), goliaths, lapins, escargots, bovins, poulets, poules pondeuses**.
+⚠️ **Escargots et bovins** : filières AJOUTÉES le 08/11/2026 (DV-16, DV-17). Elles n'existent pas encore dans le poste Flutter (`configuration_espece.dart` : six filières) : elles sont à créer au poste ET au web, sur le modèle de la fiche générique, avec les repères recommandés de `16_DECISIONS_VALIDEES.md` §3 (à valider par le technicien et le vétérinaire). Ne rien inventer au-delà de ce qui y est écrit.
+**Source visuelle (DV-18)** : 1. le prototype HTML/Tailwind de LogiALVIA, `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt, fourni plus tard : il prime dès qu'il arrive) ; 2. tant qu'il est absent, le **code Dart du poste** (`logialvia_app/lib/core/theme`, `core/widgets`, écrans) CONVERTI en Laravel + Tailwind en suivant ce dossier ; 3. les captures `docs/manuel/captures`. La conformité de design se mesure contre LogiALVIA, JAMAIS contre AgriERP.
 
 Les six identifiants du poste existent déjà dans `logialvia_app/lib/elevage/domain/entities/configuration_espece.dart` :
 `goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`, tous pilotés par UN écran générique.

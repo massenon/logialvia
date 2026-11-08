@@ -28,7 +28,7 @@ conventions de LogiAgriERP (`/home/user/agrierp/agrierp_laravel/`). Tout est en 
 
 # CONTEXTE
 LogiALVIA = Flutter seul aujourd'hui (`logialvia_app/`, Windows, Drift, 31 écrans, 6 filières : goliaths, pintades,
-lapins, poissons-chats, poulets, pondeuses). Le client crée son web (décision du 07/11/2026). Le web devient
+lapins, poissons-chats, poulets, pondeuses ; +2 à créer : escargots et bovins, DV-16/DV-17). Le client crée son web (décision du 07/11/2026). Le web devient
 l'autorité de référence ; le poste y est fidèle. LogiAgriERP a déjà payé les pièges ci-dessous : ne les repaie pas.
 
 # TÂCHES (une par session ; arrête-toi à la fin de chacune et rapporte)

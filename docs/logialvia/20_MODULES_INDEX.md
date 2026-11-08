@@ -13,9 +13,9 @@
 ## 1. PROMPT — « Mets à jour la carte des modules de LogiALVIA »
 
 > **Rôle.** Architecte produit/logiciel chargé de la cohérence entre le web (Laravel + Livewire), le poste (Flutter) et la documentation.
-> **Contexte.** Le poste compte 37 routes (3 publiques + 34 authentifiées, relevées dans `app_router.dart`) pour « 31 écrans » du prototype : +6 écrans nés pendant le portage (`/elevage/mirages`, `/inventaire`, `/factures-mecef`, `/comptabilite/grand-livre`, `/comptabilite/balance`, `/comptabilite/etats-financiers`). Le web reprend ces routes à l'identique.
+> **Contexte.** Le poste compte 37 routes (3 publiques + 34 authentifiées, relevées dans `app_router.dart`) pour « 31 écrans » du prototype : +6 écrans nés pendant le portage (`/elevage/mirages`, `/inventaire`, `/factures-mecef`, `/comptabilite/grand-livre`, `/comptabilite/balance`, `/comptabilite/etats-financiers`). Le web reprend ces routes à l'identique. **+2 routes à créer (lignes 9b et 9c : escargots et bovins, DV-16/DV-17), soit 39 routes une fois créées** ; les critères « 37 lignes » ci-dessous s'entendent « 37 existantes + 2 à créer ».
 > **Tâches.** (1) Recompte les routes du poste (`grep "'/" logialvia_app/lib/core/router/app_router.dart`) et rapproche-les du tableau §3 ; ajoute toute route nouvelle ; (2) vérifie rôle et droit de chaque ligne contre `permission_service.dart` (le code fait foi, pas I1) ; (3) tiens à jour dépendances et ordre (§6) ; (4) signale les écarts doc/code (§4).
-> **Contraintes.** Une route = une ligne ; libellés de menu = ceux de `navigation_model.dart` ; modules activables par `moduleId` (`pisciculture`, `aviculture_classique`, `cuniculture`, `mecef`…) ; Goliaths et Pintades toujours actifs ; aucune route sans `can:` côté web ET sans masquage côté poste.
+> **Contraintes.** Une route = une ligne ; libellés de menu = ceux de `navigation_model.dart` ; modules activables par `moduleId` (`pisciculture`, `aviculture_classique`, `cuniculture`, `heliciculture`, `bovins`, `mecef`…) ; Goliaths et Pintades toujours actifs ; aucune route sans `can:` côté web ET sans masquage côté poste.
 > **Critères d'acceptation.** (a) 37 lignes de routes ; (b) chaque route a rôle(s), `view-…`, module actif éventuel, fichier de module, dépendances ; (c) chaque écran à onglets liste ses onglets avec leurs libellés exacts ; (d) l'ordre de construction respecte les dépendances (aucun module avant son prérequis) ; (e) tous les chemins cités existent.
 > **Interdits.** Inventer une route ; laisser un écran « à venir » sans l'écrire en `module-pending` ; donner un droit « admin » par défaut à une permission non semée (il n'y a pas de `Gate::before`).
 
@@ -62,6 +62,8 @@ Légende rôles : A admin · K comptable · C caissier · N animalier. « Surf. 
 | 7 | `/elevage/pintades` | Fiche Pintades | `23_` | idem | A N | view-elevage | toujours actif | 11, 14 |
 | 8 | `/elevage/lapins` | Fiche Lapins | `23_` | idem | A N | view-elevage | `cuniculture` | 11, 14 |
 | 9 | `/elevage/poissons-chats` | Fiche Poissons-Chats | `23_` | idem | A N | view-elevage | `pisciculture` | 11, 14 |
+| 9b | `/elevage/escargots` | Fiche Escargots (DV-16, À CRÉER au poste et au web) | `23_` | idem | A N | view-elevage | `heliciculture` | 11, 14 |
+| 9c | `/elevage/bovins` | Fiche Bovins (DV-17, À CRÉER au poste et au web) | `23_` | idem | A N | view-elevage | `bovins` | 11, 14 |
 | 10 | `/elevage/poulets-pondeuses` | Fiche Poulets / Pondeuses | `23_` | onglets « Poulets », « Pondeuses » | A N | view-elevage | `aviculture_classique` | 11, 14 |
 | 11 | `/elevage/couveuse` | Cycle Couveuse | `23_` | machines, lots, historique | A N | view-elevage | — | 6, 7 |
 | 12 | `/elevage/mirages` | Statistiques des Mirages | `23_` | 7 indicateurs | A N | view-elevage | — | 11 |

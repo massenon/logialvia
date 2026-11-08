@@ -6,7 +6,7 @@
 |---|---|
 | **Quand l'utiliser** | (a) Une fois, au socle (« W0 ») : créer `tailwind.config.js`, `app.css`, le layout et les composants partagés AVEC les jetons de LogiALVIA ; (b) à chaque écran web : tenir la charte et passer l'audit final de ce fichier ; (c) à chaque changement de jeton : mettre à jour web ET poste ensemble. |
 | **Ordre** | Après `01_MASTER_PROMPT.md` et `02_ARCHITECTURE_WEB_ET_STACK.md` ; en parallèle de `03_DEVELOPMENT_STANDARDS.md`. Les modules (`20_MODULES_*`) y renvoient pour tout ce qui est visuel. |
-| **Entrées requises** | `logialvia/docs/01_DESIGN_SYSTEM.md`, `06_COMPOSANTS_REUTILISABLES.md`, `E4`–`E9`, `G1`, `G2`, `K2` ; le code du poste `logialvia/logialvia_app/lib/core/{theme,widgets}` ; les composants web modèles d'AgriERP ; si disponible, le prototype HTML de LogiALVIA (hors du dépôt cloné : à demander au client, jamais reconstruit de mémoire). |
+| **Entrées requises** | `logialvia/docs/01_DESIGN_SYSTEM.md`, `06_COMPOSANTS_REUTILISABLES.md`, `E4`–`E9`, `G1`, `G2`, `K2` ; le code du poste `logialvia/logialvia_app/lib/core/{theme,widgets}` ; les composants web modèles d'AgriERP ; le prototype HTML de LogiALVIA quand le client l'a fourni (hors dépôt, sur son poste ; il prime), sinon le code Dart du poste converti (DV-18) ; jamais reconstruit de mémoire. |
 | **Sorties attendues** | `logialvia_web/tailwind.config.js` (15 couleurs de LogiALVIA, espacements, rayons, police), `resources/css/app.css`, composants Blade partagés, garde-fous de conformité (section 11), fiche de recette visuelle signée par écran (section 12), rapport d'audit (PROMPT B). |
 
 ### Réponse courte : quelle conformité de design
@@ -67,7 +67,7 @@ classe Tailwind dynamique ; seconde instance d'Alpine ; animation non listée en
 Règle du client : **« chaque conteneur, ligne, colonne, espacement, alignement, animation et hiérarchie visuelle reste IDENTIQUE au poste. »**
 
 Hiérarchie des sources VISUELLES (la plus forte d'abord) :
-1. Le **prototype HTML/Tailwind** de LogiALVIA (31 pages, version HTML du poste Flutter) : `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt GitHub), non présent dans le dépôt GitHub : à fournir. Il a servi de maître au poste (`logialvia/docs/A1_MASTER_PROMPT.md`).
+1. Le **prototype HTML/Tailwind** de LogiALVIA (31 pages, version HTML du poste Flutter) : `C:\Projects\logialvia-monrepo\prototype_html`, hors dépôt, fourni plus tard (DV-18) ; il PRIME dès qu'il arrive. En son absence, la source est le **code Dart du poste** (`logialvia_app/lib/core/theme`, `core/widgets`, écrans) converti par rôle (`AppColors` → `tailwind.config.js`, `AppSpacing`/`AppRadius`/`AppShadows`/`AppTypography` → échelle Tailwind, widgets → composants Blade/Livewire, `AppBreakpoints` → 4 classes), puis les captures `docs/manuel/captures`.
 2. Le **poste** : `logialvia/logialvia_app/lib/core/theme/` (`app_colors.dart`, `app_spacing.dart`, `app_radius.dart`, `app_shadows.dart`, `app_typography.dart`, `app_breakpoints.dart`) et
    `logialvia/logialvia_app/lib/core/widgets/` (`app_button.dart`, `app_modal.dart`, `app_toast.dart`, `kpi_card.dart`, `carte_kpi_lisere.dart`, `champ_saisie_nombre.dart`, `shell/app_sidebar.dart`, `shell/app_top_bar.dart`, `shell/acces_rapide.dart`).
 3. Les docs : `logialvia/docs/01_DESIGN_SYSTEM.md`, `06_COMPOSANTS_REUTILISABLES.md`, `E4_DataTables_Complet.md`, `E5_Modales_CRUD.md`, `E6_Formulaires.md`, `E7_Dashboards_KPI.md`, `E8_Responsive.md`, `E9_Impression_PDF.md`, `G1`, `G2`, `K2`.
@@ -381,4 +381,4 @@ Corriger le code ; juger « à l'œil » sans mesure ; fermer un défaut sans pr
 - **Q-DS-6 Ombres** : aligner `app_shadows.dart` (`xl` et `xxl` sont des approximations à une couche) sur les valeurs exactes de Tailwind utilisées par le web ?
 - **Q-DS-7 Modales** : largeur de chaque modale (le poste utilise 480 par défaut, valeur hors échelle Tailwind) : à relever sur le prototype.
 - **Q-DS-8 Mode sombre, rail d'icônes droit, hubs de cartes** : existent-ils dans le prototype de LogiALVIA ? (sources du dépôt cloné muettes ; ne pas les créer par imitation d'AgriERP.)
-- **Prototype HTML** (`prototype_html`, sur le poste du client) : fournir sa copie (31 pages) : sans elle, la source visuelle de premier niveau manque et plusieurs valeurs ci-dessus restent « à confirmer ».
+- **Prototype HTML** (`prototype_html`, sur le poste du client) : à fournir plus tard (Q-PROTO-1) ; à sa réception, comparer chaque écran à la conversion et relever les écarts avant correction.

@@ -688,7 +688,9 @@ Existe déjà dans le web (migration `agrierp_laravel/database/migrations/2026_1
 | `lignes`, `rapport` | longText | oui | NULL | | valeurs lues le temps de l'aperçu ; à la fin, seules les lignes REFUSÉES |
 | `termine_le` | timestamp | oui | NULL | | |
 
-## 6. Filières : pisciculture, pintades, goliaths
+## 6. Filières : pisciculture, pintades, goliaths (+ escargots et bovins, DV-16/DV-17)
+
+> Les valeurs `espece` acceptent aussi `escargots` et `bovins` : toute colonne ou énumération de filière doit les prévoir (migration `MODIFY COLUMN … ENUM` côté MariaDB, voir piège ci-dessous), ainsi que la classe de poids en kg pour `bovins`.
 
 ### 6.1 Ce qui est DÉJÀ défini dans les sources de logialvia (à reprendre sans changement)
 
@@ -700,6 +702,8 @@ Source : `logialvia_app/lib/elevage/domain/entities/configuration_espece.dart`.
 | `pintades` | Poussins / Pintadau / Mature | 30 / 60 / 110 | Achats / « Nés (Couveuse) » | volaille, couveuse |
 | `goliaths` | Poussins / Goliathau / Mature | 30 / 60 / 110 | Achats / « Nés (Couveuse) » | seuils de maturité : 2 800 g et 120 jours (≥ 4 mois, ≥ 2,8 kg, éligible à la vente) ; barème = générique réutilisé de l'aviculture, **« aucun barème Goliath spécifique confirmé, à valider avec la Gérante »** |
 | `lapins` | Lapereau / Chair / Reproducteur | 30 / 60 / 110 | Achats / « Nés (Mise bas) » | |
+| `escargots` (DV-16, À CRÉER) | Naissain / Marchand / Reproducteur | 1 / 5 / 8 (repères) | Achats / « Nés (Éclosions) » | vente à la pièce ; maturité 100 g / 180 j ; hygiène sans produit |
+| `bovins` (DV-17, À CRÉER) | Veau / Embouche / Reproducteur | % du poids vif en MS par classe de poids (mécanisme DV-01 ; 30/60/110 ÉCARTÉ) | Achats / « Nés (Vêlage) » | vente à la tête ; maturité 250 kg / 730 j ; prophylaxie vétérinaire sans produit |
 | `poulets` | Poussin / Poulette / Adulte | 30 / 60 / 110 | Achats / « Nés / Transferts » | alimente Pondeuses par transferts |
 | `pondeuses` | Poussin Ponte / Poussin Croissance / Poulette / Pondeuse (4 catégories) | 30 / 60 / 80 / 110 | « Achats / Entrées » / « Nés / Transferts » | colonnes `srh`, `ts`, `stock_final_oeufs`, œufs |
 

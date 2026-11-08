@@ -4,7 +4,7 @@
 
 - **Quand l'utiliser** : avant de toucher à une ration, une vente de poisson, l'incubation des pintades, une alerte d'autonomie, la corbeille, les droits ou les rôles. Ce registre est la SOURCE de ce qui est TRANCHÉ ; les autres fichiers de `docs/logialvia/` portent le texte normatif et renvoient ici par « TRANCHÉ (DV-xx) ».
 - **Ordre** : `10_BRS` → … → `15_REGLES_METIER` → **`16_DECISIONS_VALIDEES`** → modules `20_` à `29_`. En cas de conflit entre ce registre et un autre fichier, ce registre prévaut et l'autre fichier est corrigé.
-- **Date de validation** : 08/11/2026. DV-01 à DV-11 : décisions **validées par le client** (DV-08 à DV-11 : réponses du client du 08/11/2026). DV-12 à DV-14 : **recommandations de l'assistant, adoptées comme valeurs par défaut paramétrables**, statut « **recommandé, à confirmer avec le technicien** ». DV-15 : **décision par défaut** faute de réponse du client (Q-DV-5 et Q-DV-7 restent ouvertes).
+- **Date de validation** : 08/11/2026. DV-01 à DV-11 : décisions **validées par le client** (DV-16 à DV-18 : ajout des filières escargots et bovins et règle du prototype, validés par le client le 08/11/2026 ; leurs valeurs zootechniques sont recommandées par l'assistant) (DV-08 à DV-11 : réponses du client du 08/11/2026). DV-12 à DV-14 : **recommandations de l'assistant, adoptées comme valeurs par défaut paramétrables**, statut « **recommandé, à confirmer avec le technicien** ». DV-15 : **décision par défaut** faute de réponse du client (Q-DV-5 et Q-DV-7 restent ouvertes).
 - **Chemins** : `logialvia/…` = `/home/user/massenon/logialvia/…` (lecture seule) ; sans préfixe = monorepo `/home/user/agrierp`.
 
 > **Avertissement général.** Les repères zootechniques de ce registre (taux de ration, températures, humidités, durées, poids, rations par âge, indices de conversion, âges d'abattage) sont des **ORDRES DE GRANDEUR donnés par l'assistant, à confirmer par le technicien/vétérinaire et les fiches techniques des aliments ; seule la décision d'adopter la règle est validée.** Aucune valeur de ce registre ne s'écrit en dur dans le code comme « vérité ferme » : barèmes, seuils et durées sont des PARAMÈTRES éditables, marqués « repère terrain, à valider » tant que le technicien ne les a pas confirmés.
@@ -32,6 +32,9 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 | DV-13 | 08/11/2026 | Pintadeaux : alertes de mortalité 1 %/2 % du jour, 10 %/20 % cumulés ; repères de poussinière | recommandé, à confirmer avec le technicien | Q-DV-3 (en « recommandé ») | validation technicien |
 | DV-14 | 08/11/2026 | Autonomie de provende : critique = délai fournisseur ; alerte = délai + marge de 4 j | recommandé, à confirmer avec le technicien | Q-DV-4 (en « recommandé ») | délai réel du fournisseur |
 | DV-15 | 08/11/2026 | `/inventaire` réservé à l'administrateur ; comptable calqué sur AgriERP | décision par défaut (aucune réponse du client) | — | Q-DV-5 et Q-DV-7 OUVERTES |
+| DV-16 | 08/11/2026 | Nouvelle filière **escargots** (achatines) : fiche générique du poste, 3 stades, vente à la pièce | ajout validé par le client ; paramètres recommandés, à confirmer avec le technicien | Q-ESC-1 à Q-ESC-7 (en « recommandé ») | repères zootechniques (poids, cycle, ration, mortalité) |
+| DV-17 | 08/11/2026 | Nouvelle filière **bovins** : fiche générique, 3 stades, ration en % du poids vif (mécanisme de DV-01), vente à la tête | ajout validé par le client ; paramètres recommandés, à confirmer avec le technicien et le vétérinaire | Q-BOV-1 à Q-BOV-7 (en « recommandé ») | race, poids de maturité, calendrier vétérinaire, doses |
+| DV-18 | 08/11/2026 | Prototype HTML : si absent, le web est converti depuis le code Dart du poste ; s'il est fourni, il prime | validé par le client | Q-PROTO-1 | fourniture de `prototype_html` |
 
 ---
 
@@ -161,24 +164,41 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 
 ---
 
-## 3. Repère noté, NON ADOPTÉ (pour plus tard) — ruminants
+## 3. Filières ajoutées le 08/11/2026 : escargots et bovins
 
-Aucune filière ruminants n'existe aujourd'hui. **Non adopté, pour plus tard** : la ration d'un ruminant se calcule en **matière sèche de 2,5 à 3,5 % du poids vif par jour**, sur le **poids moyen** du groupe (et non sur le nombre de têtes). Ordre de grandeur non validé ; aucune règle, aucune colonne, aucun test n'en découle tant que le client n'ouvre pas la filière.
+> Le client demande d'ajouter **l'espèce escargot et l'espèce bovins**. Règle donnée : (a) pour les sept questions, **suivre ce que fait le poste Flutter actuel** (`configuration_espece.dart` : fiche générique, 3 catégories dont une jeune qui reçoit achats et naissances et une commercialisée, ration par catégorie, glossaire propre à la filière, calendrier de prophylaxie, numérotation) ; (b) là où le poste ne répond pas, **suivre la recommandation d'un expert en élevage**. Tout chiffre ci-dessous est donc un **repère zootechnique recommandé, à valider par le technicien (escargots) et le vétérinaire (bovins)** : il se saisit comme valeur modifiable par ferme, jamais comme règle figée. Les deux filières sont **désactivées par défaut** (comme pisciculture, aviculture classique et cuniculture) ; Goliaths et Pintades restent toujours actifs.
 
-## 3b. Filière escargots (héliciculture) — voulue par le client, ABSENTE des sources
+### DV-16 — Escargots (héliciculture) [ajout validé ; paramètres recommandés, à confirmer avec le technicien]
 
-- **Constat.** Les filières du poste sont `goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses` (`configuration_espece.dart`). Aucun fichier du poste, du guide ni d'AgriERP ne contient « escargot ». Le client la compte pourtant parmi les particularités de LogiALVIA.
-- **Règle.** Rien n'est inventé : pas de barème, de ration, de durée de cycle ni de catégorie tant que le client n'a pas répondu. Identifiant **proposé** (non adopté) : `escargots`, module `heliciculture`.
-- **Questions à poser au client (précises).**
-  1. Espèce élevée (Achatine, Archachatina…) ?
-  2. Stades à suivre (œufs, naissains, jeunes, adultes, reproducteurs) et libellés exacts ?
-  3. Unité de vente : au kilo, à la pièce, ou les deux (comme le poisson, DV-02) ?
-  4. Cycle : durée ponte → éclosion, âge de maturité, seuil de mortalité d'alerte ?
-  5. Alimentation : aliment, ration par stade, fréquence ?
-  6. Produits de soin ou prophylaxie, s'il y en a ?
-  7. Faut-il un écran de fiche générique comme les autres filières, ou des champs propres (humidité, température, densité par m²) ?
-- **Impact quand elle sera décidée.** Poste Flutter (nouvelle entrée de `configuration_espece.dart`, barème, prophylaxie), web (`23_MODULE_ELEVAGE_PAR_FILIERE.md`, module actif, droits, rapports, tableau de bord, numérotation « ENCLOS/BASSIN/… »), base (`30_`), tests (`31_`).
-- **Statut.** OUVERT — aucune implémentation avant réponse.
+- **Identité (proposée).** `identifiant` `escargots` · libellé « Escargots » · route `/elevage/escargots` · module activable `heliciculture` · icône Material Symbols à choisir (proposé : `eco`).
+- **Q-ESC-1 Espèce.** Achatines géantes d'Afrique de l'Ouest : *Archachatina marginata* et *Achatina achatina* (à confirmer ; la fiche ne distingue pas l'espèce dans cette version).
+- **Q-ESC-2 Stades (modèle : Lapins).** 3 catégories : **Naissain** (jeune ; reçoit achats et naissances) · **Marchand** (commercialisée ; seule déduite des ventes) · **Reproducteur**. Pastilles « Rappel du Cycle » : *Ponte et éclosion · Naissain · Marchand · Reproducteur*. Glossaire : colonne 1 « Achats », colonne 2 « **Nés (Éclosions)** ».
+- **Q-ESC-3 Unité de vente (modèle : toutes les fiches sauf poisson).** À la **pièce** (nombre de sujets) ; le stock du produit vendable est en sujets. Vente au kilo : NON ADOPTÉ (pas de DV-02 pour les escargots).
+- **Q-ESC-4 Cycle et maturité (repères).** Éclosion 3 à 5 semaines après la ponte ; taille marchande vers 6 à 8 mois pour environ 100 g. Seuils de l'alerte de maturité proposés : `poidsMaturiteGrammes` 100 · `ageMaturiteJours` 180. Alertes de mortalité : même mécanisme que DV-13, **seuils cumulés 10 % (alerte) / 20 % (critique)**.
+- **Q-ESC-5 Alimentation (repères, g/tête/jour).** Naissain **1** · Marchand **5** · Reproducteur **8** (aliment composé et complément de calcium ; les végétaux frais ne passent pas en provende). `noteRationnement` : « Barème indicatif d'héliciculture, à valider par le technicien ». Intrant à semer au module Stocks : « Complément calcium (coquilles broyées) » (code à créer, seuil d'alerte à fixer).
+- **Q-ESC-6 Prophylaxie (modèle : calendrier du poste).** Pas de vaccination. Calendrier d'**hygiène** proposé, SANS produit ni dose inventés : nettoyage des bacs/parcs (hebdomadaire), désinfection (mensuelle), quarantaine des sujets achetés (14 jours), contrôle de l'humidité (quotidien). Aucune échéance n'est semée par défaut : l'écran « Calendriers Prophylaxie » offre la pastille « Escargots » vide, avec « Ajouter une Échéance » ; produits et rémanences à saisir par le technicien.
+- **Q-ESC-7 Écran.** **Fiche générique du poste**, aucun champ propre dans cette version. Température et humidité des parcs : note libre de la saisie journalière. Champs d'ambiance dédiés : NON ADOPTÉ, évolution possible. Numérotation (Paramètres Élevage) : groupe « HÉLICICULTURE (ESCARGOTS) », préfixe **BAC** (proposé), préfixe vide refusé comme les autres.
+- **Reste À DÉFINIR.** Poids et âge de maturité réels de l'élevage ; densité par bac ; seuils de mortalité ; calendrier d'hygiène définitif ; vente au kilo si le marché l'exige.
+
+### DV-17 — Bovins [ajout validé ; paramètres recommandés, à confirmer avec le technicien et le vétérinaire]
+
+- **Identité (proposée).** `identifiant` `bovins` · libellé « Bovins » · route `/elevage/bovins` · module activable `bovins` · icône à choisir (proposé : `agriculture`).
+- **Q-BOV-1 Race.** Taurins locaux (Borgou, Somba) et zébus (Peulh) du nord du Bénin ; non distinguées dans la fiche (à confirmer).
+- **Q-BOV-2 Stades (modèle : Lapins).** 3 catégories : **Veau** (jeune, 0 à 6 mois ; reçoit achats et naissances) · **Embouche** (commercialisée, environ 6 à 24 mois) · **Reproducteur**. Pastilles : *Naissance · Veau · Embouche · Reproducteur*. Glossaire : « Achats », « **Nés (Vêlage)** ».
+- **Q-BOV-3 Unité de vente.** À la **tête**. Le poids vif est relevé à la pesée (champ de pesée de la fiche) et sert à la classe de ration et au prix indicatif ; vente au kilo de poids vif : NON ADOPTÉ.
+- **Q-BOV-4 Cycle et maturité (repères).** Gestation environ 283 jours (9 mois) ; sevrage vers 6 mois ; embouche de 3 à 6 mois ; maturité commerciale proposée : `poidsMaturiteGrammes` **250 000** (250 kg) ou `ageMaturiteJours` **730** (24 mois). Mortalité cumulée : **5 % (alerte) / 10 % (critique)**.
+- **Q-BOV-5 Alimentation.** Un ruminant se rationne en **matière sèche (MS) = 2,5 à 3,5 % du poids vif par jour, sur le poids moyen du groupe**, pas en g par tête fixes. On **réutilise le mécanisme de DV-01** : second tableau « Taux de ration par classe de poids » (CLASSE DE POIDS (kg) · TAUX (% DU POIDS VIF PAR JOUR, EN MS) · CONFIRMÉ ? · ACTIONS), avec CRUD complet et archivage. Valeurs d'ouverture, repères à valider : < 150 kg **3,5 %** ; 150 à 300 kg **3,0 %** ; > 300 kg **2,5 %**. Le fourrage (pâturage, foin) n'entre pas en stock dans cette version : le calcul porte sur l'aliment complémentaire ; « Les 30/60/110 g du poste ne s'appliquent pas aux bovins ».
+- **Q-BOV-6 Prophylaxie (modèle : calendrier du poste, 11 échéances semées pour les autres filières).** Échéances proposées, **produits, doses et rémanences laissés au vétérinaire** : vaccination contre la péripneumonie contagieuse bovine (annuelle), contre le charbon bactéridien et symptomatique (annuelle), contre la pasteurellose (selon avis vétérinaire) ; déparasitage interne (2 fois par an) ; lutte contre les tiques par bain ou pulvérisation (périodique, plus fréquente en saison des pluies). Échéances semées SANS produit : à compléter.
+- **Q-BOV-7 Écran.** Fiche générique du poste, plus le champ de poids vif (Q-BOV-3). Numérotation : groupe « ÉLEVAGE BOVIN », préfixe **PARC** (proposé).
+- **Reste À DÉFINIR.** Race, poids de maturité, taux de ration définitifs, calendrier et produits vétérinaires, gestion du fourrage et du pâturage, traçabilité par tête (boucle d'identification) si le client la veut.
+
+### DV-18 — Prototype HTML : convertir depuis le Dart tant qu'il n'est pas fourni
+
+- **Décision.** Le prototype HTML/Tailwind (31 pages, version HTML du poste Flutter) est sur le poste du client, `C:\Projects\logialvia-monrepo\prototype_html`, hors dépôt. Il **sera fourni plus tard**. D'ici là, **le web Laravel + Tailwind est converti depuis le code Dart du poste**, en suivant la documentation de ce dossier (`04_UI_UX_DESIGN_SYSTEM.md`, `02_ARCHITECTURE_WEB_ET_STACK.md`, `GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md`).
+- **Hiérarchie des sources visuelles (en cas de conflit, la plus haute gagne).** 1. `prototype_html`, dès qu'il est fourni ; 2. le code du poste : `logialvia_app/lib/core/theme` (couleurs, espacements, rayons, ombres, typographie, breakpoints), `core/widgets`, et chaque écran de `lib/*/presentation` ; 3. les captures de référence `docs/manuel/captures/*.png` (68 écrans, générées par les tests) ; 4. les documents `docs/01_DESIGN_SYSTEM.md`, `E4` à `E9`, `G2`, `K2`.
+- **Règle de conversion.** Par RÔLE : `AppColors` → `tailwind.config.js` (mêmes valeurs hexadécimales), `AppSpacing`/`AppRadius`/`AppShadows`/`AppTypography` → échelle Tailwind du design system, widgets partagés → composants Blade/Livewire, `AppBreakpoints` → les 4 classes Desktop/Laptop/Tablet/Mobile. Aucune valeur n'est reconstruite de mémoire ni reprise d'AgriERP.
+- **Quand le prototype arrive.** Comparer, écran par écran, la conversion et le prototype ; tout écart est relevé dans un rapport (valeur, fichier, écran) avant correction ; le prototype l'emporte, sauf `ÉCART_DELIBERE` déjà documenté dans le code du poste (arbitrages de la Gérante).
+- **Reste À DÉFINIR.** Mode de fourniture du prototype (copie, dépôt GitHub) : Q-PROTO-1.
 
 ## 4. Nouvelles questions ouvertes nées de ces décisions
 
@@ -191,6 +211,8 @@ Aucune filière ruminants n'existe aujourd'hui. **Non adopté, pour plus tard** 
 | Q-DV-5 | **OUVERTE** (valeur par défaut DV-15 : `/inventaire` administrateur seul, pas de 5ᵉ rôle ; droit dédié plus tard) : un « responsable stock » existe-t-il ? | DV-06, DV-15 |
 | Q-DV-6 | ~~Le caissier garde-t-il l'onglet « Retours et Avoirs » ?~~ **FERMÉE (DV-08)** : oui, retour client ; aucun avoir MeCeF/FA. | DV-06, DV-08 |
 | Q-DV-7 | **OUVERTE** (valeur par défaut DV-15 : calqué sur AgriERP) : périmètre exact du comptable (RH, achats, `close-fiscal-year`) ? | DV-07, DV-15 |
+| Q-DV-9 | Quel technicien valide les repères escargots (poids, cycle, ration, mortalité, hygiène) et quel vétérinaire valide le calendrier, les produits et les doses des bovins ? | DV-16, DV-17 |
+| Q-PROTO-1 | Comment le client fournit-il `prototype_html` (copie, dépôt GitHub) ? | DV-18 |
 | Q-DV-8 | ~~Libellé exact du premier stade des pintades~~ **FERMÉE (DV-09)** : « Poussin(s) » (glossaire) ; catégorie 2 « Pintadau » inchangée. | DV-03, DV-09 |
 
 **Questions restées ouvertes** : Q-DV-1 (technicien du barème en % de biomasse), Q-DV-5 et Q-DV-7 (valeurs par défaut DV-15) ; reste à demander au client le délai réel du fournisseur de provende (DV-14).

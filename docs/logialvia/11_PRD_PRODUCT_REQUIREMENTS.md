@@ -39,7 +39,7 @@
 |---|---|---|---|
 | Authentification & Compte | connexion, verrouillage 5 essais/15 min, mon profil, aide, contact | Web + Poste | `21_` |
 | Pilotage | tableau de bord (8 KPI), dashboard élevage, rappels du jour | Web + Poste | `22_` |
-| Élevage par filière | 6 filières, bandes, sujets, transferts, couvoir, soins, infirmerie, rationnement, paramètres élevage | Web + Poste | `23_` |
+| Élevage par filière | 6 filières + escargots et bovins (DV-16/17), bandes, sujets, transferts, couvoir, soins, infirmerie, rationnement, paramètres élevage | Web + Poste | `23_` |
 | Ventes, Clients, Facturation | caisse, devis, historique, avoirs, créances, relances, facture simple/normalisée | Web + Poste | `24_` |
 | Stocks & Achats | intrants, produits vendables, fabrication de provende, achats, fournisseurs, dépenses | Web + Poste | `25_` |
 | Comptabilité & exercices | journal, grand livre, balance, états, clôture, analytique, plan comptable, immobilisations | Web (poste : demandes) | `26_` |

@@ -279,4 +279,5 @@ Jeu de prompts et de spécifications pour construire le **web** de LogiALVIA ave
 (architecture Laravel 12 + Livewire 3, design system identique au poste, PWA, e-MECeF, synchronisation).
 Point d'entrée : [`logialvia/README.md`](logialvia/README.md) ; guide de portage depuis AgriERP :
 [`logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md`](logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md).
+Filières ajoutées : **escargots** (DV-16) et **bovins** (DV-17), à créer au poste et au web ; le web est converti depuis le code Dart tant que `prototype_html` n'est pas fourni (DV-18).
 Source : dossier `docs/logialvia/` du monorepo `massenon/agrierp` (branche `claude/sleepy-dijkstra-uvt68t`, commit `3cdf9c7`).

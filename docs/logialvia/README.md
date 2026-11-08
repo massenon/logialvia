@@ -43,7 +43,7 @@ Convention de chemins : `logialvia/` = le dépôt public `massenon/logialvia` (c
 | `13_FRS_FUNCTIONAL_REQUIREMENTS.md` | Exigences fonctionnelles | Après 12 | 12 |
 | `14_NFRS_NON_FUNCTIONAL_REQUIREMENTS.md` | Exigences non fonctionnelles (performance, sécurité, disponibilité…) | Après 12-13 | 12, 13 |
 | `15_REGLES_METIER.md` | Règles métier numérotées (BR-XXX-NNN : effectifs, ventes, stocks, comptabilité…) | Avant tout module qui calcule | 10 à 14 |
-| `16_DECISIONS_VALIDEES.md` | Registre des décisions validées par le client le 08/11/2026 (DV-01 à DV-15 : ration des poissons en % de biomasse, vente de poisson kg + sujets, pintades/incubation 28 j, seuils d'autonomie 7 j/3 j, corbeille sans écritures, droits du caissier, 4 rôles ; DV-08 à DV-11 validées par le client : retours du caissier, libellé « Poussins », départ par stade à l'ouverture de la fiche, règles d'incubation modifiables ; DV-12 à DV-14 recommandées, à confirmer avec le technicien ; DV-15 valeurs par défaut) ; ce qui reste À DÉFINIR ; repères zootechniques = ordres de grandeur à valider | Avant tout calcul de ration, de vente de poisson, d'incubation, d'autonomie, et avant toute matrice de droits | 10 à 15 |
+| `16_DECISIONS_VALIDEES.md` | Registre des décisions validées par le client le 08/11/2026 (DV-01 à DV-18 : ration des poissons en % de biomasse, vente de poisson kg + sujets, pintades/incubation 28 j, seuils d'autonomie 7 j/3 j, corbeille sans écritures, droits du caissier, 4 rôles ; DV-08 à DV-11 validées par le client : retours du caissier, libellé « Poussins », départ par stade à l'ouverture de la fiche, règles d'incubation modifiables ; DV-12 à DV-14 recommandées, à confirmer avec le technicien ; DV-15 valeurs par défaut ; DV-16 escargots, DV-17 bovins, DV-18 prototype converti depuis le Dart) ; ce qui reste À DÉFINIR ; repères zootechniques = ordres de grandeur à valider | Avant tout calcul de ration, de vente de poisson, d'incubation, d'autonomie, et avant toute matrice de droits | 10 à 15 |
 | `20_MODULES_*` | Un prompt PAR MODULE (pilotage, élevage, commercial, stocks, achats, comptabilité, rapports, administration, compte) | Un module par session, dans l'ordre du guide de portage | 01 à 04, 15, 30 |
 | `30_DATABASE_ENGINEERING.md` | Schéma partagé UUID, migrations, migration des données existantes du poste, seeders | Avant la première migration métier | 02, 15 |
 | `31_TESTING_QA.md` | Stratégie de tests, jeux de cas, parité web-poste, recette, mutation | Avant de coder un module, puis à chaque ticket | 03, 15, 20 |
@@ -88,7 +88,7 @@ Règles de séquencement :
 7. **Rapport au format du MASTER PROMPT** (ticket, fait, vérifié, non fait, écarts, questions, risques), court et factuel.
 8. **Documentation vivante.** Un doc faux découvert en route se corrige dans le même ensemble de changements (A2 §7 de logialvia) ; ces prompts eux-mêmes se mettent à jour quand une source change.
 9. **Sources en conflit** : on suit la hiérarchie du MASTER PROMPT (web validé -> poste/prototype -> docs de logialvia -> règles d'AgriERP) ; une contradiction se documente et se fait trancher, elle ne se résout pas en silence.
-10. **Particularités LogiALVIA** : pisciculture, pintades (incubation 28 j), goliaths, lapins, **escargots (filière voulue, absente des sources : À DÉFINIR, `16_` §3b)**, poulets, poules pondeuses. Six filières déjà configurées (`goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`) pilotées par UN écran générique ; le barème Goliaths est « non confirmé » dans les sources (question au client avant tout calcul de ration) ; la ration des poissons-chats est TRANCHÉE en % de biomasse (DV-01), ses taux restent des repères à valider.
+10. **Particularités LogiALVIA** : pisciculture, pintades (incubation 28 j), goliaths, lapins, **escargots et bovins (ajoutés, DV-16/DV-17 : à créer au poste et au web)**, poulets, poules pondeuses. Six filières déjà configurées au poste (`goliaths`, `pintades`, `lapins`, `poissons-chats`, `poulets`, `pondeuses`) pilotées par UN écran générique ; le barème Goliaths est « non confirmé » dans les sources (question au client avant tout calcul de ration) ; la ration des poissons-chats est TRANCHÉE en % de biomasse (DV-01) et celle des bovins suit le même mécanisme en % du poids vif (DV-17), leurs taux restent des repères à valider.
 
 ---
 
@@ -101,7 +101,7 @@ Règles de séquencement :
 | **Poste** | Client Flutter Windows hors ligne (Drift/SQLite). |
 | **Web** | Application Laravel + Livewire, serveur de référence une fois un module validé. |
 | **Doctrine de portage** | `docs/DOCTRINE_PORTAGE.md` : fidélité web <-> poste, « la vue web est la référence ». |
-| **Filière** | Famille d'élevage : pisciculture (poissons-chats), pintades, goliaths, lapins, escargots (à définir), poulets, pondeuses. |
+| **Filière** | Famille d'élevage : pisciculture (poissons-chats), pintades, goliaths, lapins, escargots, bovins, poulets, pondeuses. |
 | **Fiche (journalière)** | Écran de saisie d'une filière : achats, nés, mortalité, ventes, effectif par catégorie, rationnement. |
 | **Catégorie** | Tranche d'âge d'une filière (ex. Poussins / Goliathau / Mature), avec sa ration normative en g/j. |
 | **Bande / lot** | Groupe d'animaux suivi ensemble. |
@@ -128,7 +128,7 @@ Règles de séquencement :
 
 ## 6. Constats importants à connaître avant de commencer
 
-- Le prototype HTML/Tailwind de LogiALVIA (31 pages, version HTML du poste Flutter) est sur le poste du client : `C:\Projects\logialvia-monrepo\prototype_html` (poste du client, hors dépôt GitHub). Il n'est PAS dans le dépôt GitHub : le fournir (copie ou dépôt) avant toute mesure visuelle, sinon elle reste « à confirmer ». La conformité de design est celle de LogiALVIA, pas d'AgriERP.
+- Le prototype HTML/Tailwind de LogiALVIA (31 pages, version HTML du poste Flutter) est sur le poste du client : `C:\Projects\logialvia-monrepo\prototype_html`, hors dépôt, **fourni plus tard** (DV-18, Q-PROTO-1). D'ici là, le web est **converti depuis le code Dart du poste** en suivant ce dossier ; le prototype prime dès qu'il arrive. La conformité de design est celle de LogiALVIA, pas d'AgriERP.
 - Les outils `audit_typographie.py` / `apparier_typographie.py` cités par les docs de logialvia sont absents de `logialvia/logialvia_app/outils/`.
 - LogiALVIA est en Roboto (variable, locale), marine/or ; AgriERP en Inter, vert/jaune : ne pas mélanger les chartes.
 - Quatre rôles (TRANCHÉ DV-07, 08/11/2026 : `admin`, `comptable`, `caissier`, `animalier`) ; LogiALVIA n'en avait que trois (comptabilité réservée à `admin`).
