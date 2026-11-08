@@ -72,7 +72,7 @@ part 'app_database.g.dart';
     // Elevage
     FicheJournee, FicheVentesJour, CycleCouveuse, MachinesIncubateur,
     SoinsCalendrier, Infirmerie, Bandes,
-    BaremesRation, CalendrierProphylaxie,
+    BaremesRation, CalendrierProphylaxie, TauxRationPoids,
     // Comptabilite
     ExerciceComptable, PlanComptable, EcritureComptable, NotesAnnexes,
     CloturesPeriodiques,
@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 27;
+  static const int versionSchema = 28;
 
   @override
   int get schemaVersion => versionSchema;
@@ -348,6 +348,14 @@ class AppDatabase extends _$AppDatabase {
         );
         await ModulesActifsSeeder.ajouterModulesManquants(this);
         await ParametresElevageSeeder.ajouterNouvellesFilieres(this);
+      }
+      if (from < 28) {
+        // Taux de ration par classe de poids vif (DV-17) : la ration d'un
+        // bovin se calcule sur son poids, pas en grammes fixes par tete.
+        // Table nouvelle : aucune donnee a reprendre ; les 3 classes
+        // d'ouverture ne sont semees que si la filiere n'en a aucune.
+        await _creerTable(m, tauxRationPoids);
+        await ParametresElevageSeeder.ajouterTauxPoidsParDefaut(this);
       }
     },
     beforeOpen: (details) async {

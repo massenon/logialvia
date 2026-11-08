@@ -208,11 +208,7 @@ class _RappelCycle extends StatelessWidget {
       Color(0x4DB58B2A),
       AppColors.successContainer,
     ];
-    const textes = [
-      Colors.white,
-      AppColors.brandNavy,
-      AppColors.successDeep,
-    ];
+    const textes = [Colors.white, AppColors.brandNavy, AppColors.successDeep];
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -226,7 +222,11 @@ class _RappelCycle extends StatelessWidget {
         runSpacing: AppSpacing.sm,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          const Icon(Symbols.event_repeat, size: 20, color: AppColors.brandNavy),
+          const Icon(
+            Symbols.event_repeat,
+            size: 20,
+            color: AppColors.brandNavy,
+          ),
           const Text(
             'Rappel du Cycle :',
             style: TextStyle(
@@ -358,8 +358,7 @@ class _FormulaireJournalierState extends State<FormulaireJournalier> {
   late int _oeufsCasses;
   late int _sortiesPlateaux;
 
-  bool get _suitLeStockOeufs =>
-      widget.configuration.identifiant == 'pondeuses';
+  bool get _suitLeStockOeufs => widget.configuration.identifiant == 'pondeuses';
 
   SaisieStockOeufs? get _saisieOeufs => _suitLeStockOeufs
       ? SaisieStockOeufs(
@@ -430,7 +429,11 @@ class _FormulaireJournalierState extends State<FormulaireJournalier> {
   @override
   Widget build(BuildContext context) {
     final effectifs = widget.vm.calculerEnDirect(_mouvements);
-    final provendeG = widget.vm.provendeTotaleGrammes(effectifs.parCategorie);
+    final provende = widget.vm.provendeDuJour(
+      effectifs.parCategorie,
+      poidsTotalGrammes: int.tryParse(_poids.text),
+    );
+    final provendeG = provende.grammes;
 
     return CarteSection(
       titre: 'Saisie Journalière — ${Formats.date(widget.vm.jourActif)}',
@@ -502,6 +505,7 @@ class _FormulaireJournalierState extends State<FormulaireJournalier> {
             vm: widget.vm,
             effectifs: effectifs.parCategorie,
             provendeTotaleG: provendeG,
+            provende: provende,
           ),
           // Section unique a l'onglet Pondeuses (Doc H2 §Onglet 2).
           if (_suitLeStockOeufs) ...[
@@ -666,7 +670,8 @@ class _Totaux extends StatelessWidget {
           Expanded(
             child: _Total(
               titre: 'Effectif Final du Jour (calculé)',
-              formule: '= Effectif (J-1) + Achats/Nés − (Morts + Ventes + Dons)',
+              formule:
+                  '= Effectif (J-1) + Achats/Nés − (Morts + Ventes + Dons)',
               valeur: '${effectifs.effectifTotal}',
               couleur: AppColors.brandNavy,
             ),
@@ -754,6 +759,7 @@ class _TableauRationnement extends StatelessWidget {
     required this.vm,
     required this.effectifs,
     required this.provendeTotaleG,
+    required this.provende,
   });
 
   final ConfigurationEspece configuration;
@@ -764,6 +770,9 @@ class _TableauRationnement extends StatelessWidget {
 
   final List<int> effectifs;
   final int provendeTotaleG;
+
+  /// Mode de calcul : sur le poids vif (bovins, avec pesée) ou par tête.
+  final ProvendeJour provende;
 
   @override
   Widget build(BuildContext context) {
@@ -778,7 +787,11 @@ class _TableauRationnement extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Symbols.restaurant, size: 16, color: AppColors.brandGold),
+            const Icon(
+              Symbols.restaurant,
+              size: 16,
+              color: AppColors.brandGold,
+            ),
             const SizedBox(width: AppSpacing.xs),
             Text(
               'RATIONNEMENT & PROVENDE SERVIE (g/j)',
@@ -794,6 +807,38 @@ class _TableauRationnement extends StatelessWidget {
           Text(
             configuration.noteRationnement!,
             style: styleCellule.copyWith(color: AppColors.outline),
+          ),
+        ],
+        // Une filiere rationnee sur le poids vif dit COMMENT la provende du
+        // jour a ete obtenue : sans cette ligne, le total ne serait pas la
+        // somme des lignes du tableau et on le croirait faux.
+        if (configuration.rationEnPourcentagePoidsVif) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Container(
+            key: const ValueKey('mode-provende'),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: provende.surPoidsVif
+                  ? AppColors.successContainer
+                  : AppColors.brandGold.withValues(alpha: 0.15),
+              borderRadius: AppRadius.cardRadius,
+            ),
+            child: Text(
+              provende.surPoidsVif
+                  ? 'Calculée sur le poids vif : poids moyen '
+                        '${Formats.nombre(provende.poidsMoyenGrammes ?? 0)} g, '
+                        'taux ${provende.tauxPourcent.toString().replaceAll('.', ',')} % '
+                        'de matière sèche par jour. Le total ci-dessous '
+                        'remplace la somme des rations par tête.'
+                  : 'Aucune pesée exploitable : ration indicative par tête. '
+                        'Saisissez la pesée totale du lot pour calculer la '
+                        'provende sur le poids vif.',
+              style: styleCellule.copyWith(
+                color: provende.surPoidsVif
+                    ? AppColors.successDeep
+                    : AppColors.brandNavy,
+              ),
+            ),
           ),
         ],
         const SizedBox(height: AppSpacing.xs),
@@ -813,10 +858,34 @@ class _TableauRationnement extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Expanded(flex: 2, child: Text('Catégorie', style: styleCellule.copyWith(color: AppColors.outline))),
-                    Expanded(child: Text('Effectif', textAlign: TextAlign.center, style: styleCellule.copyWith(color: AppColors.outline))),
-                    Expanded(child: Text('Ration', textAlign: TextAlign.center, style: styleCellule.copyWith(color: AppColors.outline))),
-                    Expanded(child: Text('Provende', textAlign: TextAlign.right, style: styleCellule.copyWith(color: AppColors.outline))),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Catégorie',
+                        style: styleCellule.copyWith(color: AppColors.outline),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Effectif',
+                        textAlign: TextAlign.center,
+                        style: styleCellule.copyWith(color: AppColors.outline),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Ration',
+                        textAlign: TextAlign.center,
+                        style: styleCellule.copyWith(color: AppColors.outline),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Provende',
+                        textAlign: TextAlign.right,
+                        style: styleCellule.copyWith(color: AppColors.outline),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -932,7 +1001,7 @@ class _ChampTexte extends StatelessWidget {
           child: TextField(
             controller: controleur,
             keyboardType: clavier,
-        inputFormatters: formatteurs,
+            inputFormatters: formatteurs,
             onChanged: (_) => onChange?.call(),
             style: const TextStyle(
               fontFamily: AppTypography.fontFamily,

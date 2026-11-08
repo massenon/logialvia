@@ -7,6 +7,7 @@ import '../../domain/entities/parametres_elevage.dart';
 abstract class ParametresElevageRepository {
   Future<List<BaremeRation>> chargerBaremes();
   Future<List<EcheanceProphylaxie>> chargerProphylaxie();
+  Future<List<TauxRationPoids>> chargerTauxPoids();
   Future<FormatsNumerotation> chargerFormatsNumerotation();
   Future<List<TypeProvende>> chargerTypesProvende();
 
@@ -20,6 +21,19 @@ abstract class ParametresElevageRepository {
     required int rationGrammesParJour,
   });
   Future<void> supprimerBareme(
+    int id, {
+    String? utilisateurId,
+    String? utilisateurNom,
+  });
+
+  Future<void> enregistrerTauxPoids({
+    int? id,
+    required String espece,
+    required int poidsMinG,
+    required int? poidsMaxG,
+    required double tauxPourcent,
+  });
+  Future<void> supprimerTauxPoids(
     int id, {
     String? utilisateurId,
     String? utilisateurNom,
@@ -66,6 +80,83 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           confirme: b.confirme,
         ),
     ];
+  }
+
+  @override
+  Future<List<TauxRationPoids>> chargerTauxPoids() async {
+    final lignes =
+        await (_db.select(_db.tauxRationPoids)..orderBy([
+              (t) => OrderingTerm.asc(t.espece),
+              (t) => OrderingTerm.asc(t.poidsMinG),
+            ]))
+            .get();
+    return [
+      for (final t in lignes)
+        TauxRationPoids(
+          id: t.id,
+          espece: t.espece,
+          poidsMinG: t.poidsMinG,
+          poidsMaxG: t.poidsMaxG,
+          tauxPourcent: t.tauxPourcent,
+          confirme: t.confirme,
+        ),
+    ];
+  }
+
+  @override
+  Future<void> enregistrerTauxPoids({
+    int? id,
+    required String espece,
+    required int poidsMinG,
+    required int? poidsMaxG,
+    required double tauxPourcent,
+  }) async {
+    if (id != null) {
+      // Modifier un taux le fait redevenir un repere a valider : la Gerante ou
+      // l'animalier l'a touche, plus personne ne l'a confirme.
+      await (_db.update(
+        _db.tauxRationPoids,
+      )..where((t) => t.id.equals(id))).write(
+        TauxRationPoidsCompanion(
+          poidsMinG: Value(poidsMinG),
+          poidsMaxG: Value(poidsMaxG),
+          tauxPourcent: Value(tauxPourcent),
+        ),
+      );
+      return;
+    }
+    await _db
+        .into(_db.tauxRationPoids)
+        .insert(
+          TauxRationPoidsCompanion.insert(
+            espece: espece,
+            poidsMinG: poidsMinG,
+            poidsMaxG: Value(poidsMaxG),
+            tauxPourcent: tauxPourcent,
+          ),
+        );
+  }
+
+  @override
+  Future<void> supprimerTauxPoids(
+    int id, {
+    String? utilisateurId,
+    String? utilisateurNom,
+  }) async {
+    final ligne = await (_db.select(
+      _db.tauxRationPoids,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    await ServiceArchivage(_db).archiver(
+      type: TypeArchivable.tauxPoids,
+      cle: id,
+      designation: ligne == null
+          ? 'Taux de ration #$id'
+          : '${ligne.espece} — classe dès ${ligne.poidsMinG ~/ 1000} kg '
+                '(${ligne.tauxPourcent} %)',
+      utilisateurId: utilisateurId,
+      utilisateurNom: utilisateurNom,
+    );
   }
 
   @override
@@ -164,9 +255,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     required int rationGrammesParJour,
   }) async {
     await (_db.update(_db.baremesRation)..where((b) => b.id.equals(id))).write(
-      BaremesRationCompanion(
-        rationGrammesParJour: Value(rationGrammesParJour),
-      ),
+      BaremesRationCompanion(rationGrammesParJour: Value(rationGrammesParJour)),
     );
   }
 

@@ -131,8 +131,7 @@ class _ParametresElevageScreenState extends State<ParametresElevageScreen> {
               ),
               // Exporte l'onglet affiche, comme le fait `exportPeTab()`.
               BoutonExportPdf(
-                construire: () =>
-                    DocumentsElevage.parametres(_onglet, vm),
+                construire: () => DocumentsElevage.parametres(_onglet, vm),
               ),
             ],
           ),
@@ -334,8 +333,361 @@ class _OngletRationnement extends StatelessWidget {
                   ],
                 ),
         ),
+        if (vm.afficherTauxPoids) ...[
+          const SizedBox(height: AppSpacing.md),
+          _CarteTauxPoids(vm: vm),
+        ],
       ],
     );
+  }
+}
+
+/// « Taux de ration par classe de poids » — DV-17.
+///
+/// Un ruminant se rationne en % de son poids vif : la provende de la fiche
+/// Bovins vaut `pesée du lot × taux de la classe du poids moyen`. Ce tableau
+/// est la configuration de ce calcul.
+class _CarteTauxPoids extends StatelessWidget {
+  const _CarteTauxPoids({required this.vm});
+
+  final ParametresElevageViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    final taux = vm.tauxPoidsFiltres;
+
+    return CarteSection(
+      titre: 'Taux de ration par classe de poids',
+      cibleTour: 'tableau-taux-poids',
+      icone: Symbols.scale,
+      action: AppButton(
+        label: 'Ajouter une classe',
+        icon: Symbols.add_circle,
+        height: 34,
+        onPressed: () => _formulaireTauxPoids(context, vm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Pour les filières rationnées sur le poids vif (bovins) : la '
+            'provende du jour = pesée totale du lot × taux de la classe du '
+            'poids moyen, en matière sèche. Sans pesée, la fiche retombe sur '
+            'la ration par tête du tableau ci-dessus.',
+            style: _texte.copyWith(color: AppColors.outline, height: 1.5),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (taux.isEmpty)
+            const EtatVide(
+              message:
+                  'Aucune classe de poids : la provende des bovins se calcule '
+                  'par tête.',
+            )
+          else ...[
+            const _Entete(
+              colonnes: [
+                ('ESPÈCE', 2, TextAlign.left),
+                ('CLASSE DE POIDS VIF', 5, TextAlign.left),
+                ('TAUX (% DU POIDS VIF / J, EN MS)', 3, TextAlign.right),
+                ('CONFIRMÉ ?', 3, TextAlign.left),
+                ('ACTIONS', 2, TextAlign.right),
+              ],
+            ),
+            for (var i = 0; i < taux.length; i++)
+              _Ligne(
+                zebre: i.isOdd,
+                cellules: [
+                  (
+                    Text(
+                      EspecesParametrables.libelle(taux[i].espece),
+                      style: _gras.copyWith(color: AppColors.brandNavy),
+                    ),
+                    2,
+                  ),
+                  (Text(taux[i].libelleClasse, style: _texte), 5),
+                  (
+                    Text(
+                      taux[i].libelleTaux,
+                      textAlign: TextAlign.right,
+                      style: _mono,
+                    ),
+                    3,
+                  ),
+                  (
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: taux[i].confirme
+                              ? AppColors.successContainer
+                              : AppColors.brandGold.withValues(alpha: 0.2),
+                          borderRadius: AppRadius.pill,
+                        ),
+                        child: Text(
+                          taux[i].confirme ? 'Confirmé' : 'Repère à valider',
+                          style: _texte.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: taux[i].confirme
+                                ? AppColors.successDeep
+                                : AppColors.brandNavy,
+                          ),
+                        ),
+                      ),
+                    ),
+                    3,
+                  ),
+                  (
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Symbols.edit, size: 18),
+                          color: AppColors.brandNavy,
+                          tooltip: 'Modifier la classe',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _formulaireTauxPoids(
+                            context,
+                            vm,
+                            existant: taux[i],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Symbols.delete, size: 18),
+                          color: AppColors.outline,
+                          tooltip: 'Supprimer la classe',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () =>
+                              _confirmerSuppressionTaux(context, vm, taux[i]),
+                        ),
+                      ],
+                    ),
+                    2,
+                  ),
+                ],
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _kgVersTexte(int? grammes) {
+  if (grammes == null) return '';
+  final kg = grammes / 1000;
+  return kg == kg.roundToDouble()
+      ? kg.round().toString()
+      : kg.toString().replaceAll('.', ',');
+}
+
+Future<void> _formulaireTauxPoids(
+  BuildContext context,
+  ParametresElevageViewModel vm, {
+  TauxRationPoids? existant,
+}) async {
+  final especes = ParametresElevageViewModel.especesSurPoidsVif;
+  var espece = existant?.espece ?? vm.especeRation ?? especes.first.id;
+  if (!ParametresElevageViewModel.rationneSurPoidsVif(espece)) {
+    espece = especes.first.id;
+  }
+  final minCtrl = TextEditingController(
+    text: existant == null ? '' : _kgVersTexte(existant.poidsMinG),
+  );
+  final maxCtrl = TextEditingController(
+    text: _kgVersTexte(existant?.poidsMaxG),
+  );
+  final tauxCtrl = TextEditingController(
+    text: existant?.tauxPourcent.toString().replaceAll('.', ',') ?? '',
+  );
+
+  await AppModal.show<void>(
+    context,
+    title: existant == null
+        ? 'Ajouter une Classe de Poids'
+        : 'Modifier — ${existant.libelleClasse}',
+    child: StatefulBuilder(
+      builder: (ctx, setState) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('ESPÈCE', style: AppTypography.label),
+          const SizedBox(height: AppSpacing.xs),
+          DropdownButtonFormField<String>(
+            initialValue: espece,
+            isExpanded: true,
+            style: _texte,
+            decoration: _decoration,
+            items: [
+              for (final e in especes)
+                DropdownMenuItem(
+                  value: e.id,
+                  child: Text(e.libelle, style: _texte),
+                ),
+            ],
+            onChanged: existant != null
+                ? null
+                : (v) {
+                    if (v != null) setState(() => espece = v);
+                  },
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text('POIDS MINIMUM (KG, COMPRIS)', style: AppTypography.label),
+          const SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: minCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: FormatteursSaisie.montant,
+            style: _texte,
+            decoration: _decoration.copyWith(
+              hintText: 'Ex. 150 (0 = sans minimum)',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'POIDS MAXIMUM (KG, EXCLU) — VIDE = SANS LIMITE',
+            style: AppTypography.label,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: maxCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: FormatteursSaisie.montant,
+            style: _texte,
+            decoration: _decoration.copyWith(hintText: 'Ex. 300'),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'TAUX (% DU POIDS VIF PAR JOUR, EN MATIÈRE SÈCHE)',
+            style: AppTypography.label,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: tauxCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: FormatteursSaisie.montant,
+            style: _gras,
+            decoration: _decoration.copyWith(hintText: 'Ex. 3,0'),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceZebra,
+              borderRadius: AppRadius.cardRadius,
+            ),
+            child: Text(
+              'La classe retenue est celle du poids moyen du jour (pesée '
+              'totale ÷ effectif). Deux classes d\'une même espèce ne peuvent '
+              'pas se chevaucher. Un taux modifié reste un repère jusqu\'à '
+              'validation par l\'animalier.',
+              style: _texte.copyWith(
+                fontSize: 11,
+                color: AppColors.outline,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      Builder(
+        builder: (ctx) => AppButton(
+          label: 'Annuler',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+      Builder(
+        builder: (ctx) => AppButton(
+          label: existant == null ? 'Ajouter' : 'Enregistrer',
+          onPressed: () async {
+            final resultat = await vm.enregistrerTauxPoids(
+              existant: existant,
+              espece: espece,
+              poidsMinKg: minCtrl.text,
+              poidsMaxKg: maxCtrl.text,
+              taux: tauxCtrl.text,
+            );
+            if (!ctx.mounted) return;
+            switch (resultat) {
+              case Succes():
+                Navigator.of(ctx).pop();
+                showAppToast(
+                  ctx,
+                  existant == null
+                      ? 'Classe de poids ajoutée.'
+                      : 'Classe de poids mise à jour.',
+                );
+              case Echec(:final message):
+                showAppToast(ctx, message, type: ToastType.error);
+            }
+          },
+        ),
+      ),
+    ],
+  );
+
+  minCtrl.dispose();
+  maxCtrl.dispose();
+  tauxCtrl.dispose();
+}
+
+Future<void> _confirmerSuppressionTaux(
+  BuildContext context,
+  ParametresElevageViewModel vm,
+  TauxRationPoids taux,
+) async {
+  final confirme = await AppModal.show<bool>(
+    context,
+    title: 'Confirmer la Suppression ?',
+    child: Text(
+      'La classe « ${taux.libelleClasse} » '
+      '(${EspecesParametrables.libelle(taux.espece)}, ${taux.libelleTaux}) '
+      'sera supprimée.\n\n'
+      'Un animal de ce poids n\'aura plus de taux : la fiche calculera sa '
+      'provende par tête, avec la ration indicative. La classe reste '
+      'restaurable depuis la corbeille.',
+      style: _texte.copyWith(height: 1.5),
+    ),
+    actions: [
+      Builder(
+        builder: (ctx) => AppButton(
+          label: 'Annuler',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(ctx).pop(false),
+        ),
+      ),
+      Builder(
+        builder: (ctx) => AppButton(
+          label: 'Supprimer',
+          variant: AppButtonVariant.danger,
+          onPressed: () => Navigator.of(ctx).pop(true),
+        ),
+      ),
+    ],
+  );
+
+  if (confirme != true || !context.mounted) return;
+  final resultat = await vm.supprimerTauxPoids(
+    taux,
+    auteur: auteurCourant(context),
+  );
+  if (!context.mounted) return;
+  switch (resultat) {
+    case Succes():
+      showAppToast(
+        context,
+        'Classe de poids supprimée.',
+        type: ToastType.warning,
+      );
+    case Echec(:final message):
+      showAppToast(context, message, type: ToastType.error);
   }
 }
 
@@ -444,7 +796,8 @@ class _LigneRation extends StatelessWidget {
                 color: AppColors.outline,
                 tooltip: 'Supprimer le barème',
                 visualDensity: VisualDensity.compact,
-                onPressed: () => _confirmerSuppressionBareme(context, vm, bareme),
+                onPressed: () =>
+                    _confirmerSuppressionBareme(context, vm, bareme),
               ),
             ],
           ),
@@ -790,9 +1143,7 @@ class _OngletProphylaxie extends StatelessWidget {
                             Text(
                               echeances[i].libelleJour,
                               textAlign: TextAlign.center,
-                              style: _mono.copyWith(
-                                color: AppColors.brandNavy,
-                              ),
+                              style: _mono.copyWith(color: AppColors.brandNavy),
                             ),
                             2,
                           ),
@@ -814,7 +1165,8 @@ class _OngletProphylaxie extends StatelessWidget {
                           ),
                           (
                             Tooltip(
-                              message: echeances[i].dose ?? 'Dose non renseignée',
+                              message:
+                                  echeances[i].dose ?? 'Dose non renseignée',
                               child: Text(
                                 echeances[i].dose ?? '—',
                                 maxLines: 2,
@@ -858,11 +1210,12 @@ class _OngletProphylaxie extends StatelessWidget {
                                   color: AppColors.errorDeep,
                                   tooltip: 'Supprimer',
                                   visualDensity: VisualDensity.compact,
-                                  onPressed: () => _confirmerSuppressionEcheance(
-                                    context,
-                                    vm,
-                                    echeances[i],
-                                  ),
+                                  onPressed: () =>
+                                      _confirmerSuppressionEcheance(
+                                        context,
+                                        vm,
+                                        echeances[i],
+                                      ),
                                 ),
                               ],
                             ),
@@ -1009,7 +1362,8 @@ Future<void> _formulaireEcheance(
           maxLines: 2,
           style: _texte,
           decoration: _decoration.copyWith(
-            hintText: 'Ex. 1 mL pour 50 kg, voie sous-cutanée (la notice prévaut)',
+            hintText:
+                'Ex. 1 mL pour 50 kg, voie sous-cutanée (la notice prévaut)',
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -1402,7 +1756,10 @@ Future<void> formulaireIntrantProvende(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('PRIX INDICATIF (FCFA)', style: AppTypography.label),
+                  const Text(
+                    'PRIX INDICATIF (FCFA)',
+                    style: AppTypography.label,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   TextField(
                     controller: pmpCtrl,
@@ -1527,11 +1884,7 @@ Future<void> confirmerSuppressionIntrantProvende(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Symbols.warning,
-                size: 20,
-                color: AppColors.errorDeep,
-              ),
+              const Icon(Symbols.warning, size: 20, color: AppColors.errorDeep),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(

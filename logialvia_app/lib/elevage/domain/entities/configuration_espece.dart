@@ -40,6 +40,7 @@ class ConfigurationEspece {
     this.ageMaturiteJours,
     this.libelleAchats = 'Achats',
     required this.libelleNaissances,
+    this.rationEnPourcentagePoidsVif = false,
   });
 
   /// Valeur stockee dans `FICHE_JOURNEE.espece`.
@@ -89,6 +90,14 @@ class ConfigurationEspece {
   /// volailles, une mise bas pour les lapins, ni l'une ni l'autre pour les
   /// poissons-chats.
   final String libelleNaissances;
+
+  /// Vrai quand la provende se calcule en **% du poids vif** (matière sèche),
+  /// d'après la pesée du jour et le tableau « Taux de ration par classe de
+  /// poids » de Paramètres Élevage — le cas d'un ruminant (DV-17).
+  ///
+  /// À défaut de pesée, ou de classe pour le poids moyen, la fiche retombe sur
+  /// les rations en g/tête/j de [categories], qui restent indicatives.
+  final bool rationEnPourcentagePoidsVif;
 
   int get nombreCategories => categories.length;
 
@@ -312,11 +321,11 @@ class ConfigurationsEspeces {
 
   /// Bovins — filière ajoutée après le prototype (DV-17).
   ///
-  /// ⚠️ Les rations ci-dessous sont **indicatives** : un ruminant se rationne
-  /// en % de son poids vif (matière sèche), pas en grammes fixes par tête. Le
-  /// tableau par classe de poids de DV-17 n'existe pas encore au poste ; ces
-  /// valeurs (complément seul : 1,5 / 7 / 9 kg de matière sèche) en tiennent
-  /// lieu. Vente à la tête, après embouche.
+  /// ⚠️ Un ruminant se rationne en % de son poids vif (matière sèche), pas en
+  /// grammes fixes par tête : la provende suit le tableau par classe de poids
+  /// ([rationEnPourcentagePoidsVif]). Les rations ci-dessous (complément seul :
+  /// 1,5 / 7 / 9 kg de matière sèche) ne servent que de repli quand aucune
+  /// pesée n'est saisie. Vente à la tête, après embouche.
   static const ConfigurationEspece bovins = ConfigurationEspece(
     identifiant: 'bovins',
     libelle: 'Bovins',
@@ -342,12 +351,14 @@ class ConfigurationsEspeces {
       'Reproducteur',
     ],
     noteRationnement:
-        'Rations indicatives en matière sèche (taux du poids vif × poids moyen '
-        'de référence) — repères à valider par l\'animalier. Le tableau par '
-        'classe de poids n\'est pas encore disponible.',
+        'Provende calculée en % du poids vif (matière sèche) dès qu\'une '
+        'pesée est saisie, d\'après le tableau par classe de poids de '
+        'Paramètres Élevage. Sans pesée : ration indicative par tête. Repères à '
+        'valider par l\'animalier.',
     poidsMaturiteGrammes: 250000,
     ageMaturiteJours: 730,
     libelleNaissances: 'Nés (Vêlage)',
+    rationEnPourcentagePoidsVif: true,
   );
 
   static const Map<String, ConfigurationEspece> parIdentifiant = {

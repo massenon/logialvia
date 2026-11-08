@@ -19,9 +19,61 @@ class BaremeRation {
   /// Gérante une valeur qu'elle doit encore valider.
   final bool confirme;
 
-  String get badge => confirme
-      ? 'Confirmé (Référence Cuniculture)'
-      : 'Générique (Aviculture, à confirmer)';
+  /// Filières ajoutées après le prototype (DV-16, DV-17) : leurs barèmes ne
+  /// sont pas une reprise de l'aviculture, ce sont des repères à valider.
+  static const Set<String> _especesAjoutees = {'escargots', 'bovins'};
+
+  String get badge {
+    if (confirme) return 'Confirmé (Référence Cuniculture)';
+    if (_especesAjoutees.contains(espece)) return 'Repère à valider';
+    return 'Générique (Aviculture, à confirmer)';
+  }
+}
+
+/// Une classe de poids vif et son taux de ration — DV-17.
+///
+/// La classe couvre `[poidsMinG, poidsMaxG[` (borne haute exclue, `null` =
+/// ouverte vers le haut). Les poids sont en grammes, comme la pesée de la
+/// fiche journalière ; [libelleClasse] les affiche en kilos.
+class TauxRationPoids {
+  const TauxRationPoids({
+    required this.id,
+    required this.espece,
+    required this.poidsMinG,
+    required this.poidsMaxG,
+    required this.tauxPourcent,
+    required this.confirme,
+  });
+
+  final int id;
+  final String espece;
+  final int poidsMinG;
+  final int? poidsMaxG;
+
+  /// Pourcentage du poids vif par jour, en matière sèche.
+  final double tauxPourcent;
+  final bool confirme;
+
+  /// Vrai si [poidsMoyenG] tombe dans la classe.
+  bool contient(double poidsMoyenG) =>
+      poidsMoyenG >= poidsMinG &&
+      (poidsMaxG == null || poidsMoyenG < poidsMaxG!);
+
+  static String _kg(int grammes) {
+    final kg = grammes / 1000;
+    return kg == kg.roundToDouble()
+        ? kg.round().toString()
+        : kg.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  String get libelleClasse {
+    final max = poidsMaxG;
+    if (poidsMinG <= 0 && max != null) return 'Moins de ${_kg(max)} kg';
+    if (max == null) return '${_kg(poidsMinG)} kg et plus';
+    return 'De ${_kg(poidsMinG)} à moins de ${_kg(max)} kg';
+  }
+
+  String get libelleTaux => '${tauxPourcent.toString().replaceAll('.', ',')} %';
 }
 
 /// Une échéance du calendrier de prophylaxie — Onglet 2.

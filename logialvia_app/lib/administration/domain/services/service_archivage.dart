@@ -87,6 +87,13 @@ class TypeArchivable {
     libelle: 'Barème de rationnement',
     reserveALAdmin: false,
   );
+  static const tauxPoids = TypeArchivable(
+    nomTable: 'taux_ration_poids',
+    clePrimaire: 'id',
+    module: 'Élevage',
+    libelle: 'Taux de ration par classe de poids',
+    reserveALAdmin: false,
+  );
   static const prophylaxie = TypeArchivable(
     nomTable: 'calendrier_prophylaxie',
     clePrimaire: 'id',
@@ -115,6 +122,7 @@ class TypeArchivable {
     produits,
     intrants,
     baremes,
+    tauxPoids,
     prophylaxie,
     lots,
     messages,

@@ -189,6 +189,23 @@ void main() {
       },
     );
 
+    test(
+      'l\'étiquette d\'un barème ajouté ne parle pas d\'aviculture',
+      () async {
+        final baremes = await repository.chargerBaremes();
+        for (final espece in ['escargots', 'bovins']) {
+          for (final b in baremes.where((b) => b.espece == espece)) {
+            expect(b.badge, 'Repère à valider', reason: '$espece ${b.stade}');
+          }
+        }
+        // Les anciens barèmes gardent la leur.
+        expect(
+          baremes.firstWhere((b) => b.espece == 'goliaths').badge,
+          'Générique (Aviculture, à confirmer)',
+        );
+      },
+    );
+
     test('deux modules de plus, désactivés par défaut', () async {
       await ModulesActifsSeeder(db).executer();
       final modules = await db.select(db.modulesActifs).get();

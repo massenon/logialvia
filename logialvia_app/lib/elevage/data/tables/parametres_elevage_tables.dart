@@ -66,3 +66,36 @@ class CalendrierProphylaxie extends Table {
   /// La notice du produit utilise prevaut toujours sur cette valeur.
   TextColumn get dose => text().nullable()();
 }
+
+/// Taux de ration par classe de poids vif — DV-17 (bovins), DV-01 (poissons).
+///
+/// Un ruminant se rationne en **pourcentage de son poids vif**, pas en grammes
+/// fixes par tête : un veau de 100 kg et un bœuf de 350 kg n'ont pas le même
+/// appétit, et `BAREMES_RATION` n'a qu'une valeur par stade. Cette table donne,
+/// par classe de poids moyen, le taux de matière sèche journalier.
+///
+/// Les poids sont en **grammes**, comme la pesée de la fiche journalière
+/// (`FICHE_JOURNEE.poidsGeneralG`) ; l'écran les affiche en kilos.
+/// Une classe couvre `[poidsMinG, poidsMaxG[` : la borne basse est comprise, la
+/// borne haute exclue, et `poidsMaxG` NULL ouvre la classe vers le haut.
+@DataClassName('TauxRationPoidsRow')
+class TauxRationPoids extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
+  TextColumn get espece => text()();
+
+  IntColumn get poidsMinG => integer()();
+  IntColumn get poidsMaxG => integer().nullable()();
+
+  /// Pourcentage du poids vif par jour, en matière sèche (ex. 3.5).
+  RealColumn get tauxPourcent => real()();
+
+  /// Faux tant que l'animalier n'a pas validé le repère.
+  BoolColumn get confirme => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {espece, poidsMinG},
+  ];
+}

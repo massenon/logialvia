@@ -37,10 +37,12 @@ class FicheEspeceViewModel extends ChangeNotifier {
 
   final ConfigurationEspece configuration;
   final FicheElevageRepository _repository;
+
   /// Source des baremes de rationnement — Parametres Elevage (Doc F3).
   /// Public parce qu'il n'est pas re-passe a un usecase : le rendre prive
   /// declencherait `prefer_initializing_formals` sans rien apporter.
   final ParametresElevageRepository parametresRepository;
+
   /// Depot des bandes — la mise en place qui donne son J1 au cycle. Public
   /// pour la meme raison que [parametresRepository].
   final BandesRepository bandesRepository;
@@ -275,6 +277,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
     _soins = await soinsRepository.chargerSoins();
 
     final baremes = await parametresRepository.chargerBaremes();
+    final taux = await parametresRepository.chargerTauxPoids();
     _calcul = CalculFicheJournaliere(
       configuration,
       rationsConfigurees: {
@@ -282,6 +285,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
           if (b.espece == configuration.identifiant)
             b.stade: b.rationGrammesParJour,
       },
+      tauxParClasse: taux,
     );
   }
 
@@ -299,8 +303,15 @@ class FicheEspeceViewModel extends ChangeNotifier {
     );
   }
 
-  int provendeTotaleGrammes(List<int> effectifs) =>
-      _calcul.provendeTotaleGrammes(effectifs);
+  int provendeTotaleGrammes(List<int> effectifs, {int? poidsTotalGrammes}) =>
+      _calcul.provendeTotaleGrammes(
+        effectifs,
+        poidsTotalGrammes: poidsTotalGrammes,
+      );
+
+  /// Provende du jour avec son mode de calcul (poids vif ou ration par tête).
+  ProvendeJour provendeDuJour(List<int> effectifs, {int? poidsTotalGrammes}) =>
+      _calcul.provendeDuJour(effectifs, poidsTotalGrammes: poidsTotalGrammes);
 
   /// Stock d'œufs de la veille — ouverture (SRH) du jour actif.
   /// **Stock Final de la veille, jamais son Total Stock** (Doc 05 §4).

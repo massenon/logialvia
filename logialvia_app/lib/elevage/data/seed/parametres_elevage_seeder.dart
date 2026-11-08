@@ -21,9 +21,7 @@ class ParametresElevageSeeder {
   final AppDatabase _db;
 
   /// Les 12 barèmes réels — `RATIONS` du prototype, dans l'ordre.
-  static const List<
-    ({String espece, String stade, int ration, bool confirme})
-  >
+  static const List<({String espece, String stade, int ration, bool confirme})>
   baremes = [
     (espece: 'goliaths', stade: 'Poussins', ration: 30, confirme: false),
     (espece: 'goliaths', stade: 'Goliathau', ration: 60, confirme: false),
@@ -145,9 +143,7 @@ class ParametresElevageSeeder {
   // (DV-17) n'existe pas encore au poste.
 
   /// Barèmes des deux filières ajoutées.
-  static const List<
-    ({String espece, String stade, int ration, bool confirme})
-  >
+  static const List<({String espece, String stade, int ration, bool confirme})>
   baremesNouvellesFilieres = [
     (espece: 'escargots', stade: 'Naissain', ration: 1, confirme: false),
     (espece: 'escargots', stade: 'Marchand', ration: 5, confirme: false),
@@ -169,7 +165,10 @@ class ParametresElevageSeeder {
       int remanence,
     })
   >
-  get echeancesNouvellesFilieres => [..._echeancesEscargots, ..._echeancesBovins];
+  get echeancesNouvellesFilieres => [
+    ..._echeancesEscargots,
+    ..._echeancesBovins,
+  ];
 
   static List<
     ({
@@ -329,6 +328,47 @@ class ParametresElevageSeeder {
     ),
   ];
 
+  /// Taux de ration des bovins par classe de poids vif (DV-17), en grammes et
+  /// en % de matière sèche par jour. Repères validés par l'animalier : jamais
+  /// « confirmés » tant qu'il ne les a pas validés dans Paramètres Élevage.
+  ///
+  /// Classes `[min, max[` : un animal de 300 kg pile tombe dans la dernière.
+  static const List<
+    ({String espece, int minG, int? maxG, double taux, bool confirme})
+  >
+  tauxPoidsInitiaux = [
+    (espece: 'bovins', minG: 0, maxG: 150000, taux: 3.5, confirme: false),
+    (espece: 'bovins', minG: 150000, maxG: 300000, taux: 3.0, confirme: false),
+    (espece: 'bovins', minG: 300000, maxG: null, taux: 2.5, confirme: false),
+  ];
+
+  static Iterable<TauxRationPoidsCompanion> _tauxPoids(String? espece) =>
+      tauxPoidsInitiaux
+          .where((t) => espece == null || t.espece == espece)
+          .map(
+            (t) => TauxRationPoidsCompanion.insert(
+              espece: t.espece,
+              poidsMinG: t.minG,
+              poidsMaxG: Value(t.maxG),
+              tauxPourcent: t.taux,
+              confirme: Value(t.confirme),
+            ),
+          );
+
+  /// Migration v28 : sème les classes de poids des bovins si la filière n'en a
+  /// aucune. Réservée à la migration, comme [ajouterNouvellesFilieres].
+  static Future<void> ajouterTauxPoidsParDefaut(AppDatabase db) async {
+    final existant =
+        await (db.select(db.tauxRationPoids)
+              ..where((t) => t.espece.equals('bovins'))
+              ..limit(1))
+            .getSingleOrNull();
+    if (existant != null) return;
+    await db.batch((batch) {
+      batch.insertAll(db.tauxRationPoids, _tauxPoids('bovins').toList());
+    });
+  }
+
   /// Migration v27 : ajoute escargots et bovins à une base **déjà en service**.
   ///
   /// N'écrase rien : une filière qui a déjà au moins une ration (ou une
@@ -337,9 +377,11 @@ class ParametresElevageSeeder {
   /// supprimées volontairement.
   static Future<void> ajouterNouvellesFilieres(AppDatabase db) async {
     for (final espece in const ['escargots', 'bovins']) {
-      final aDesRations = await (db.select(
-        db.baremesRation,
-      )..where((b) => b.espece.equals(espece))..limit(1)).getSingleOrNull();
+      final aDesRations =
+          await (db.select(db.baremesRation)
+                ..where((b) => b.espece.equals(espece))
+                ..limit(1))
+              .getSingleOrNull();
       if (aDesRations == null) {
         await db.batch((batch) {
           batch.insertAll(
@@ -358,9 +400,11 @@ class ParametresElevageSeeder {
         });
       }
 
-      final aDesEcheances = await (db.select(
-        db.calendrierProphylaxie,
-      )..where((c) => c.espece.equals(espece))..limit(1)).getSingleOrNull();
+      final aDesEcheances =
+          await (db.select(db.calendrierProphylaxie)
+                ..where((c) => c.espece.equals(espece))
+                ..limit(1))
+              .getSingleOrNull();
       if (aDesEcheances == null) {
         await db.batch((batch) {
           batch.insertAll(
@@ -416,6 +460,15 @@ class ParametresElevageSeeder {
             ),
           ),
         );
+      });
+    }
+
+    final premierTaux = await (_db.select(
+      _db.tauxRationPoids,
+    )..limit(1)).getSingleOrNull();
+    if (premierTaux == null) {
+      await _db.batch((batch) {
+        batch.insertAll(_db.tauxRationPoids, _tauxPoids(null).toList());
       });
     }
 

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/resultat/resultat.dart';
 import '../../data/repositories/parametres_elevage_repository_drift.dart';
+import '../../domain/entities/configuration_espece.dart';
 import '../../domain/entities/parametres_elevage.dart';
 
 /// Paramètres Élevage — Doc F3, `parametres-elevage.html` (4 onglets).
@@ -18,11 +19,13 @@ class ParametresElevageViewModel extends ChangeNotifier {
   bool get chargement => _chargement;
 
   List<BaremeRation> _baremes = const [];
+  List<TauxRationPoids> _taux = const [];
   List<EcheanceProphylaxie> _echeances = const [];
   List<TypeProvende> _provendes = const [];
   FormatsNumerotation _formats = const FormatsNumerotation();
 
   List<BaremeRation> get baremes => _baremes;
+  List<TauxRationPoids> get tauxPoids => _taux;
   List<TypeProvende> get provendes => _provendes;
   FormatsNumerotation get formats => _formats;
 
@@ -40,6 +43,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
 
   Future<void> _rafraichir() async {
     _baremes = await _repository.chargerBaremes();
+    _taux = await _repository.chargerTauxPoids();
     _echeances = await _repository.chargerProphylaxie();
     _provendes = await _repository.chargerTypesProvende();
     _formats = await _repository.chargerFormatsNumerotation();
@@ -154,6 +158,130 @@ class ParametresElevageViewModel extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) debugPrint('Echec suppression bareme: $e');
       return const Echec('Ce barème n\'a pas pu être supprimé.');
+    }
+  }
+
+  // ------------------------------------- Rationnement : classes de poids vif
+
+  /// Espèces rationnées en % du poids vif (aujourd'hui : les bovins) — les
+  /// seules à qui le tableau « Taux de ration par classe de poids » s'applique.
+  static List<({String id, String libelle})> get especesSurPoidsVif => [
+    for (final e in EspecesParametrables.toutes)
+      if (rationneSurPoidsVif(e.id)) (id: e.id, libelle: e.libelle),
+  ];
+
+  static bool rationneSurPoidsVif(String espece) =>
+      ConfigurationsEspeces
+          .parIdentifiant[espece]
+          ?.rationEnPourcentagePoidsVif ??
+      false;
+
+  /// Le tableau suit le filtre d'espèce du rationnement ; sans filtre, il
+  /// montre toutes les espèces concernées.
+  List<TauxRationPoids> get tauxPoidsFiltres => [
+    for (final t in _taux)
+      if (_especeRation == null || t.espece == _especeRation) t,
+  ];
+
+  /// Le tableau n'a de sens que pour une espèce rationnée sur le poids vif : le
+  /// montrer pour les goliaths laisserait croire qu'ils en dépendent.
+  bool get afficherTauxPoids =>
+      _especeRation == null || rationneSurPoidsVif(_especeRation!);
+
+  /// Taux d'un pourcentage de poids vif au-delà duquel la saisie est une faute
+  /// de frappe : un ruminant mange 2 à 4 % de son poids en matière sèche.
+  static const double tauxPoidsMax = 10;
+
+  static double? _nombre(String texte) =>
+      double.tryParse(texte.trim().replaceAll(',', '.'));
+
+  Future<Resultat<void>> enregistrerTauxPoids({
+    TauxRationPoids? existant,
+    required String espece,
+    required String poidsMinKg,
+    required String poidsMaxKg,
+    required String taux,
+  }) async {
+    if (!rationneSurPoidsVif(espece)) {
+      return const Echec(
+        'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne '
+        's\'applique qu\'aux bovins.',
+      );
+    }
+    final minKg = _nombre(poidsMinKg.isEmpty ? '0' : poidsMinKg);
+    final tauxValeur = _nombre(taux);
+    if (minKg == null || minKg < 0 || tauxValeur == null) {
+      return const Echec('Veuillez renseigner le poids minimum et le taux.');
+    }
+    double? maxKg;
+    if (poidsMaxKg.trim().isNotEmpty) {
+      maxKg = _nombre(poidsMaxKg);
+      if (maxKg == null) {
+        return const Echec('Le poids maximum doit être un nombre de kilos.');
+      }
+      if (maxKg <= minKg) {
+        return const Echec('Le poids maximum doit dépasser le poids minimum.');
+      }
+    }
+    if (tauxValeur <= 0 || tauxValeur > tauxPoidsMax) {
+      return Echec(
+        'Le taux doit être compris entre 0 et '
+        '${tauxPoidsMax.toStringAsFixed(0)} % du poids vif par jour.',
+      );
+    }
+
+    final minG = (minKg * 1000).round();
+    final maxG = maxKg == null ? null : (maxKg * 1000).round();
+
+    // Deux classes qui se chevauchent donneraient deux taux pour un meme
+    // animal : le calcul de provende dependrait de l'ordre d'affichage.
+    for (final autre in _taux) {
+      if (autre.espece != espece || autre.id == existant?.id) continue;
+      final autreMax = autre.poidsMaxG;
+      final seChevauchent =
+          (autreMax == null || minG < autreMax) &&
+          (maxG == null || autre.poidsMinG < maxG);
+      if (seChevauchent) {
+        return Echec(
+          'Cette classe chevauche « ${autre.libelleClasse} » : un animal '
+          'aurait deux taux.',
+        );
+      }
+    }
+
+    try {
+      await _repository.enregistrerTauxPoids(
+        id: existant?.id,
+        espece: existant?.espece ?? espece,
+        poidsMinG: minG,
+        poidsMaxG: maxG,
+        tauxPourcent: tauxValeur,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec taux de ration par poids: $e');
+      return const Echec('Cette classe de poids n\'a pas pu être enregistrée.');
+    }
+  }
+
+  Future<Resultat<void>> supprimerTauxPoids(
+    TauxRationPoids taux, {
+    AuteurArchivage? auteur,
+  }) async {
+    try {
+      await _repository.supprimerTauxPoids(
+        taux.id,
+        utilisateurId: auteur?.id,
+        utilisateurNom: auteur?.nom,
+      );
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec suppression taux de ration: $e');
+      return const Echec('Cette classe de poids n\'a pas pu être supprimée.');
     }
   }
 

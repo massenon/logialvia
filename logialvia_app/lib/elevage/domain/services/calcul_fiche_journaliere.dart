@@ -1,4 +1,5 @@
 import '../entities/configuration_espece.dart';
+import '../entities/parametres_elevage.dart';
 
 /// Mouvements saisis pour une journee.
 class MouvementsJour {
@@ -66,6 +67,7 @@ class CalculFicheJournaliere {
   const CalculFicheJournaliere(
     this.configuration, {
     this.rationsConfigurees = const {},
+    this.tauxParClasse = const [],
   });
 
   final ConfigurationEspece configuration;
@@ -82,6 +84,10 @@ class CalculFicheJournaliere {
   /// La valeur de [ConfigurationEspece] reste la référence par défaut : elle
   /// s'applique tant qu'aucun barème n'a été enregistré pour ce stade.
   final Map<String, int> rationsConfigurees;
+
+  /// Taux de ration par classe de poids vif, de Paramètres Élevage — utilisés
+  /// seulement si [ConfigurationEspece.rationEnPourcentagePoidsVif] (DV-17).
+  final List<TauxRationPoids> tauxParClasse;
 
   /// Ration effective d'une catégorie, en g/tête/jour.
   int rationCategorie(int index) {
@@ -172,13 +178,15 @@ class CalculFicheJournaliere {
     final indexCommercialisee = configuration.indexCategorieCommercialisee;
 
     if (indexJeune >= 0) resultat[indexJeune] = jeune;
-    if (indexCommercialisee >= 0) resultat[indexCommercialisee] = commercialisee;
+    if (indexCommercialisee >= 0) {
+      resultat[indexCommercialisee] = commercialisee;
+    }
 
     // Le reste va a la premiere categorie qui n'est ni jeune ni commercialisee.
-    final indexReste = List.generate(
-      nombre,
-      (i) => i,
-    ).firstWhere((i) => i != indexJeune && i != indexCommercialisee, orElse: () => -1);
+    final indexReste = List.generate(nombre, (i) => i).firstWhere(
+      (i) => i != indexJeune && i != indexCommercialisee,
+      orElse: () => -1,
+    );
     if (indexReste >= 0) resultat[indexReste] = reste;
 
     return resultat;
@@ -188,15 +196,60 @@ class CalculFicheJournaliere {
   ///
   /// Bug historique corrige (Doc 05 §4) : le total ne sommait autrefois que la
   /// categorie commercialisee. Il somme ici **toutes** les categories.
-  int provendeTotaleGrammes(List<int> effectifsParCategorie) {
-    var total = 0;
+  ///
+  /// [poidsTotalGrammes] est la pesee du lot : il n'intervient que pour une
+  /// filiere rationnee en % du poids vif — voir [provendeDuJour].
+  int provendeTotaleGrammes(
+    List<int> effectifsParCategorie, {
+    int? poidsTotalGrammes,
+  }) => provendeDuJour(
+    effectifsParCategorie,
+    poidsTotalGrammes: poidsTotalGrammes,
+  ).grammes;
+
+  /// Provende du jour, et la manière dont elle a été obtenue.
+  ///
+  /// Pour une filière rationnée en % du poids vif (DV-17) : poids moyen =
+  /// pesée ÷ effectif, on retient la classe qui le contient, et la provende
+  /// vaut `pesée × taux`. Un animal de 250 kg à 3 % reçoit donc 7,5 kg de
+  /// matière sèche, quel que soit le stade déclaré.
+  ///
+  /// **Repli** sur les rations par tête dans tous les autres cas : pas de
+  /// pesée, effectif nul, aucune classe pour ce poids moyen. Le repli est
+  /// signalé par [ProvendeJour.surPoidsVif] à `false`, pour que l'écran ne
+  /// présente jamais une ration par tête comme un calcul sur le poids.
+  ProvendeJour provendeDuJour(
+    List<int> effectifsParCategorie, {
+    int? poidsTotalGrammes,
+  }) {
+    var effectifTotal = 0;
+    var parTete = 0;
     for (var i = 0; i < configuration.categories.length; i++) {
       final effectif = i < effectifsParCategorie.length
           ? effectifsParCategorie[i]
           : 0;
-      total += effectif * rationCategorie(i);
+      effectifTotal += effectif;
+      parTete += effectif * rationCategorie(i);
     }
-    return total;
+
+    if (configuration.rationEnPourcentagePoidsVif &&
+        poidsTotalGrammes != null &&
+        poidsTotalGrammes > 0 &&
+        effectifTotal > 0) {
+      final poidsMoyen = poidsTotalGrammes / effectifTotal;
+      for (final classe in tauxParClasse) {
+        if (classe.espece == configuration.identifiant &&
+            classe.contient(poidsMoyen)) {
+          return ProvendeJour(
+            grammes: (poidsTotalGrammes * classe.tauxPourcent / 100).round(),
+            surPoidsVif: true,
+            tauxPourcent: classe.tauxPourcent,
+            poidsMoyenGrammes: poidsMoyen.round(),
+          );
+        }
+      }
+    }
+    return ProvendeJour(grammes: parTete);
   }
 
   /// Poids moyen d'un sujet, en grammes (fiche-goliaths.html l.671-676).
@@ -207,6 +260,24 @@ class CalculFicheJournaliere {
     if (effectif <= 0) return 0;
     return (poidsTotalGrammes / effectif).round();
   }
+}
+
+/// Provende du jour et son mode de calcul — voir
+/// [CalculFicheJournaliere.provendeDuJour].
+class ProvendeJour {
+  const ProvendeJour({
+    required this.grammes,
+    this.surPoidsVif = false,
+    this.tauxPourcent,
+    this.poidsMoyenGrammes,
+  });
+
+  final int grammes;
+
+  /// Vrai si calculée en % du poids vif ; faux si ration par tête (repli).
+  final bool surPoidsVif;
+  final double? tauxPourcent;
+  final int? poidsMoyenGrammes;
 }
 
 /// Suivi du stock d'oeufs des Pondeuses — Doc 05 §4.

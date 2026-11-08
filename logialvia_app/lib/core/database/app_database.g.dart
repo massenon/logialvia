@@ -12674,7 +12674,7 @@ class $FicheJourneeTable extends FicheJournee
 class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
   final int id;
 
-  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats'
+  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
   final String espece;
   final DateTime date;
   final int achat;
@@ -17772,6 +17772,422 @@ class CalendrierProphylaxieCompanion
   }
 }
 
+class $TauxRationPoidsTable extends TauxRationPoids
+    with TableInfo<$TauxRationPoidsTable, TauxRationPoidsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TauxRationPoidsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _especeMeta = const VerificationMeta('espece');
+  @override
+  late final GeneratedColumn<String> espece = GeneratedColumn<String>(
+    'espece',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poidsMinGMeta = const VerificationMeta(
+    'poidsMinG',
+  );
+  @override
+  late final GeneratedColumn<int> poidsMinG = GeneratedColumn<int>(
+    'poids_min_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poidsMaxGMeta = const VerificationMeta(
+    'poidsMaxG',
+  );
+  @override
+  late final GeneratedColumn<int> poidsMaxG = GeneratedColumn<int>(
+    'poids_max_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tauxPourcentMeta = const VerificationMeta(
+    'tauxPourcent',
+  );
+  @override
+  late final GeneratedColumn<double> tauxPourcent = GeneratedColumn<double>(
+    'taux_pourcent',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmeMeta = const VerificationMeta(
+    'confirme',
+  );
+  @override
+  late final GeneratedColumn<bool> confirme = GeneratedColumn<bool>(
+    'confirme',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("confirme" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    espece,
+    poidsMinG,
+    poidsMaxG,
+    tauxPourcent,
+    confirme,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'taux_ration_poids';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TauxRationPoidsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('espece')) {
+      context.handle(
+        _especeMeta,
+        espece.isAcceptableOrUnknown(data['espece']!, _especeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_especeMeta);
+    }
+    if (data.containsKey('poids_min_g')) {
+      context.handle(
+        _poidsMinGMeta,
+        poidsMinG.isAcceptableOrUnknown(data['poids_min_g']!, _poidsMinGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poidsMinGMeta);
+    }
+    if (data.containsKey('poids_max_g')) {
+      context.handle(
+        _poidsMaxGMeta,
+        poidsMaxG.isAcceptableOrUnknown(data['poids_max_g']!, _poidsMaxGMeta),
+      );
+    }
+    if (data.containsKey('taux_pourcent')) {
+      context.handle(
+        _tauxPourcentMeta,
+        tauxPourcent.isAcceptableOrUnknown(
+          data['taux_pourcent']!,
+          _tauxPourcentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tauxPourcentMeta);
+    }
+    if (data.containsKey('confirme')) {
+      context.handle(
+        _confirmeMeta,
+        confirme.isAcceptableOrUnknown(data['confirme']!, _confirmeMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {espece, poidsMinG},
+  ];
+  @override
+  TauxRationPoidsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TauxRationPoidsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      espece: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}espece'],
+      )!,
+      poidsMinG: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poids_min_g'],
+      )!,
+      poidsMaxG: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poids_max_g'],
+      ),
+      tauxPourcent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}taux_pourcent'],
+      )!,
+      confirme: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}confirme'],
+      )!,
+    );
+  }
+
+  @override
+  $TauxRationPoidsTable createAlias(String alias) {
+    return $TauxRationPoidsTable(attachedDatabase, alias);
+  }
+}
+
+class TauxRationPoidsRow extends DataClass
+    implements Insertable<TauxRationPoidsRow> {
+  final int id;
+
+  /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
+  final String espece;
+  final int poidsMinG;
+  final int? poidsMaxG;
+
+  /// Pourcentage du poids vif par jour, en matière sèche (ex. 3.5).
+  final double tauxPourcent;
+
+  /// Faux tant que l'animalier n'a pas validé le repère.
+  final bool confirme;
+  const TauxRationPoidsRow({
+    required this.id,
+    required this.espece,
+    required this.poidsMinG,
+    this.poidsMaxG,
+    required this.tauxPourcent,
+    required this.confirme,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['espece'] = Variable<String>(espece);
+    map['poids_min_g'] = Variable<int>(poidsMinG);
+    if (!nullToAbsent || poidsMaxG != null) {
+      map['poids_max_g'] = Variable<int>(poidsMaxG);
+    }
+    map['taux_pourcent'] = Variable<double>(tauxPourcent);
+    map['confirme'] = Variable<bool>(confirme);
+    return map;
+  }
+
+  TauxRationPoidsCompanion toCompanion(bool nullToAbsent) {
+    return TauxRationPoidsCompanion(
+      id: Value(id),
+      espece: Value(espece),
+      poidsMinG: Value(poidsMinG),
+      poidsMaxG: poidsMaxG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(poidsMaxG),
+      tauxPourcent: Value(tauxPourcent),
+      confirme: Value(confirme),
+    );
+  }
+
+  factory TauxRationPoidsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TauxRationPoidsRow(
+      id: serializer.fromJson<int>(json['id']),
+      espece: serializer.fromJson<String>(json['espece']),
+      poidsMinG: serializer.fromJson<int>(json['poidsMinG']),
+      poidsMaxG: serializer.fromJson<int?>(json['poidsMaxG']),
+      tauxPourcent: serializer.fromJson<double>(json['tauxPourcent']),
+      confirme: serializer.fromJson<bool>(json['confirme']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'espece': serializer.toJson<String>(espece),
+      'poidsMinG': serializer.toJson<int>(poidsMinG),
+      'poidsMaxG': serializer.toJson<int?>(poidsMaxG),
+      'tauxPourcent': serializer.toJson<double>(tauxPourcent),
+      'confirme': serializer.toJson<bool>(confirme),
+    };
+  }
+
+  TauxRationPoidsRow copyWith({
+    int? id,
+    String? espece,
+    int? poidsMinG,
+    Value<int?> poidsMaxG = const Value.absent(),
+    double? tauxPourcent,
+    bool? confirme,
+  }) => TauxRationPoidsRow(
+    id: id ?? this.id,
+    espece: espece ?? this.espece,
+    poidsMinG: poidsMinG ?? this.poidsMinG,
+    poidsMaxG: poidsMaxG.present ? poidsMaxG.value : this.poidsMaxG,
+    tauxPourcent: tauxPourcent ?? this.tauxPourcent,
+    confirme: confirme ?? this.confirme,
+  );
+  TauxRationPoidsRow copyWithCompanion(TauxRationPoidsCompanion data) {
+    return TauxRationPoidsRow(
+      id: data.id.present ? data.id.value : this.id,
+      espece: data.espece.present ? data.espece.value : this.espece,
+      poidsMinG: data.poidsMinG.present ? data.poidsMinG.value : this.poidsMinG,
+      poidsMaxG: data.poidsMaxG.present ? data.poidsMaxG.value : this.poidsMaxG,
+      tauxPourcent: data.tauxPourcent.present
+          ? data.tauxPourcent.value
+          : this.tauxPourcent,
+      confirme: data.confirme.present ? data.confirme.value : this.confirme,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TauxRationPoidsRow(')
+          ..write('id: $id, ')
+          ..write('espece: $espece, ')
+          ..write('poidsMinG: $poidsMinG, ')
+          ..write('poidsMaxG: $poidsMaxG, ')
+          ..write('tauxPourcent: $tauxPourcent, ')
+          ..write('confirme: $confirme')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, espece, poidsMinG, poidsMaxG, tauxPourcent, confirme);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TauxRationPoidsRow &&
+          other.id == this.id &&
+          other.espece == this.espece &&
+          other.poidsMinG == this.poidsMinG &&
+          other.poidsMaxG == this.poidsMaxG &&
+          other.tauxPourcent == this.tauxPourcent &&
+          other.confirme == this.confirme);
+}
+
+class TauxRationPoidsCompanion extends UpdateCompanion<TauxRationPoidsRow> {
+  final Value<int> id;
+  final Value<String> espece;
+  final Value<int> poidsMinG;
+  final Value<int?> poidsMaxG;
+  final Value<double> tauxPourcent;
+  final Value<bool> confirme;
+  const TauxRationPoidsCompanion({
+    this.id = const Value.absent(),
+    this.espece = const Value.absent(),
+    this.poidsMinG = const Value.absent(),
+    this.poidsMaxG = const Value.absent(),
+    this.tauxPourcent = const Value.absent(),
+    this.confirme = const Value.absent(),
+  });
+  TauxRationPoidsCompanion.insert({
+    this.id = const Value.absent(),
+    required String espece,
+    required int poidsMinG,
+    this.poidsMaxG = const Value.absent(),
+    required double tauxPourcent,
+    this.confirme = const Value.absent(),
+  }) : espece = Value(espece),
+       poidsMinG = Value(poidsMinG),
+       tauxPourcent = Value(tauxPourcent);
+  static Insertable<TauxRationPoidsRow> custom({
+    Expression<int>? id,
+    Expression<String>? espece,
+    Expression<int>? poidsMinG,
+    Expression<int>? poidsMaxG,
+    Expression<double>? tauxPourcent,
+    Expression<bool>? confirme,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (espece != null) 'espece': espece,
+      if (poidsMinG != null) 'poids_min_g': poidsMinG,
+      if (poidsMaxG != null) 'poids_max_g': poidsMaxG,
+      if (tauxPourcent != null) 'taux_pourcent': tauxPourcent,
+      if (confirme != null) 'confirme': confirme,
+    });
+  }
+
+  TauxRationPoidsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? espece,
+    Value<int>? poidsMinG,
+    Value<int?>? poidsMaxG,
+    Value<double>? tauxPourcent,
+    Value<bool>? confirme,
+  }) {
+    return TauxRationPoidsCompanion(
+      id: id ?? this.id,
+      espece: espece ?? this.espece,
+      poidsMinG: poidsMinG ?? this.poidsMinG,
+      poidsMaxG: poidsMaxG ?? this.poidsMaxG,
+      tauxPourcent: tauxPourcent ?? this.tauxPourcent,
+      confirme: confirme ?? this.confirme,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (espece.present) {
+      map['espece'] = Variable<String>(espece.value);
+    }
+    if (poidsMinG.present) {
+      map['poids_min_g'] = Variable<int>(poidsMinG.value);
+    }
+    if (poidsMaxG.present) {
+      map['poids_max_g'] = Variable<int>(poidsMaxG.value);
+    }
+    if (tauxPourcent.present) {
+      map['taux_pourcent'] = Variable<double>(tauxPourcent.value);
+    }
+    if (confirme.present) {
+      map['confirme'] = Variable<bool>(confirme.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TauxRationPoidsCompanion(')
+          ..write('id: $id, ')
+          ..write('espece: $espece, ')
+          ..write('poidsMinG: $poidsMinG, ')
+          ..write('poidsMaxG: $poidsMaxG, ')
+          ..write('tauxPourcent: $tauxPourcent, ')
+          ..write('confirme: $confirme')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ExerciceComptableTable extends ExerciceComptable
     with TableInfo<$ExerciceComptableTable, ExerciceRow> {
   @override
@@ -19986,6 +20402,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BaremesRationTable baremesRation = $BaremesRationTable(this);
   late final $CalendrierProphylaxieTable calendrierProphylaxie =
       $CalendrierProphylaxieTable(this);
+  late final $TauxRationPoidsTable tauxRationPoids = $TauxRationPoidsTable(
+    this,
+  );
   late final $ExerciceComptableTable exerciceComptable =
       $ExerciceComptableTable(this);
   late final $PlanComptableTable planComptable = $PlanComptableTable(this);
@@ -20031,6 +20450,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bandes,
     baremesRation,
     calendrierProphylaxie,
+    tauxRationPoids,
     exerciceComptable,
     planComptable,
     ecritureComptable,
@@ -30675,6 +31095,231 @@ typedef $$CalendrierProphylaxieTableProcessedTableManager =
       EcheanceProphylaxieRow,
       PrefetchHooks Function()
     >;
+typedef $$TauxRationPoidsTableCreateCompanionBuilder =
+    TauxRationPoidsCompanion Function({
+      Value<int> id,
+      required String espece,
+      required int poidsMinG,
+      Value<int?> poidsMaxG,
+      required double tauxPourcent,
+      Value<bool> confirme,
+    });
+typedef $$TauxRationPoidsTableUpdateCompanionBuilder =
+    TauxRationPoidsCompanion Function({
+      Value<int> id,
+      Value<String> espece,
+      Value<int> poidsMinG,
+      Value<int?> poidsMaxG,
+      Value<double> tauxPourcent,
+      Value<bool> confirme,
+    });
+
+class $$TauxRationPoidsTableFilterComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get espece => $composableBuilder(
+    column: $table.espece,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poidsMinG => $composableBuilder(
+    column: $table.poidsMinG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poidsMaxG => $composableBuilder(
+    column: $table.poidsMaxG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get confirme => $composableBuilder(
+    column: $table.confirme,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TauxRationPoidsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get espece => $composableBuilder(
+    column: $table.espece,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poidsMinG => $composableBuilder(
+    column: $table.poidsMinG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poidsMaxG => $composableBuilder(
+    column: $table.poidsMaxG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get confirme => $composableBuilder(
+    column: $table.confirme,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TauxRationPoidsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get espece =>
+      $composableBuilder(column: $table.espece, builder: (column) => column);
+
+  GeneratedColumn<int> get poidsMinG =>
+      $composableBuilder(column: $table.poidsMinG, builder: (column) => column);
+
+  GeneratedColumn<int> get poidsMaxG =>
+      $composableBuilder(column: $table.poidsMaxG, builder: (column) => column);
+
+  GeneratedColumn<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get confirme =>
+      $composableBuilder(column: $table.confirme, builder: (column) => column);
+}
+
+class $$TauxRationPoidsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TauxRationPoidsTable,
+          TauxRationPoidsRow,
+          $$TauxRationPoidsTableFilterComposer,
+          $$TauxRationPoidsTableOrderingComposer,
+          $$TauxRationPoidsTableAnnotationComposer,
+          $$TauxRationPoidsTableCreateCompanionBuilder,
+          $$TauxRationPoidsTableUpdateCompanionBuilder,
+          (
+            TauxRationPoidsRow,
+            BaseReferences<
+              _$AppDatabase,
+              $TauxRationPoidsTable,
+              TauxRationPoidsRow
+            >,
+          ),
+          TauxRationPoidsRow,
+          PrefetchHooks Function()
+        > {
+  $$TauxRationPoidsTableTableManager(
+    _$AppDatabase db,
+    $TauxRationPoidsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TauxRationPoidsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TauxRationPoidsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TauxRationPoidsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> espece = const Value.absent(),
+                Value<int> poidsMinG = const Value.absent(),
+                Value<int?> poidsMaxG = const Value.absent(),
+                Value<double> tauxPourcent = const Value.absent(),
+                Value<bool> confirme = const Value.absent(),
+              }) => TauxRationPoidsCompanion(
+                id: id,
+                espece: espece,
+                poidsMinG: poidsMinG,
+                poidsMaxG: poidsMaxG,
+                tauxPourcent: tauxPourcent,
+                confirme: confirme,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String espece,
+                required int poidsMinG,
+                Value<int?> poidsMaxG = const Value.absent(),
+                required double tauxPourcent,
+                Value<bool> confirme = const Value.absent(),
+              }) => TauxRationPoidsCompanion.insert(
+                id: id,
+                espece: espece,
+                poidsMinG: poidsMinG,
+                poidsMaxG: poidsMaxG,
+                tauxPourcent: tauxPourcent,
+                confirme: confirme,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TauxRationPoidsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TauxRationPoidsTable,
+      TauxRationPoidsRow,
+      $$TauxRationPoidsTableFilterComposer,
+      $$TauxRationPoidsTableOrderingComposer,
+      $$TauxRationPoidsTableAnnotationComposer,
+      $$TauxRationPoidsTableCreateCompanionBuilder,
+      $$TauxRationPoidsTableUpdateCompanionBuilder,
+      (
+        TauxRationPoidsRow,
+        BaseReferences<
+          _$AppDatabase,
+          $TauxRationPoidsTable,
+          TauxRationPoidsRow
+        >,
+      ),
+      TauxRationPoidsRow,
+      PrefetchHooks Function()
+    >;
 typedef $$ExerciceComptableTableCreateCompanionBuilder =
     ExerciceComptableCompanion Function({
       Value<int> annee,
@@ -32535,6 +33180,8 @@ class $AppDatabaseManager {
       $$BaremesRationTableTableManager(_db, _db.baremesRation);
   $$CalendrierProphylaxieTableTableManager get calendrierProphylaxie =>
       $$CalendrierProphylaxieTableTableManager(_db, _db.calendrierProphylaxie);
+  $$TauxRationPoidsTableTableManager get tauxRationPoids =>
+      $$TauxRationPoidsTableTableManager(_db, _db.tauxRationPoids);
   $$ExerciceComptableTableTableManager get exerciceComptable =>
       $$ExerciceComptableTableTableManager(_db, _db.exerciceComptable);
   $$PlanComptableTableTableManager get planComptable =>

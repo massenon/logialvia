@@ -304,14 +304,15 @@ void main() {
   });
 
   group('Liste blanche des tables', () {
-    test('les 8 types couvrent les suppressions ouvertes à l\'utilisateur', () {
-      expect(TypeArchivable.tous, hasLength(8));
+    test('les 9 types couvrent les suppressions ouvertes à l\'utilisateur', () {
+      expect(TypeArchivable.tous, hasLength(9));
       expect(TypeArchivable.tous.map((t) => t.nomTable).toSet(), {
         'utilisateurs',
         'ecriture_comptable',
         'produits_vendables',
         'intrants',
         'baremes_ration',
+        'taux_ration_poids',
         'calendrier_prophylaxie',
         'cycle_couveuse',
         'messages_editeur',

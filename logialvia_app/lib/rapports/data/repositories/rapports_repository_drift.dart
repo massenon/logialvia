@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../elevage/domain/entities/configuration_espece.dart';
+import '../../../elevage/domain/entities/parametres_elevage.dart';
 import '../../../elevage/domain/services/calcul_fiche_journaliere.dart';
 import '../../domain/entities/rapports.dart';
 
@@ -383,6 +384,17 @@ class RapportsRepositoryDrift implements RapportsRepository {
 
     // Les baremes de rationnement pilotent la colonne « Provende Servie ».
     final baremes = await _db.select(_db.baremesRation).get();
+    final taux = [
+      for (final t in await _db.select(_db.tauxRationPoids).get())
+        TauxRationPoids(
+          id: t.id,
+          espece: t.espece,
+          poidsMinG: t.poidsMinG,
+          poidsMaxG: t.poidsMaxG,
+          tauxPourcent: t.tauxPourcent,
+          confirme: t.confirme,
+        ),
+    ];
 
     for (final filiere in _filieres) {
       final journees = await _journees(filiere.identifiant, debut, fin);
@@ -421,13 +433,19 @@ class RapportsRepositoryDrift implements RapportsRepository {
             if (b.espece == filiere.identifiant)
               b.stade: b.rationGrammesParJour,
         },
+        tauxParClasse: taux,
       );
-      final provende = calcul.provendeTotaleGrammes([
-        derniere.effCat1Day,
-        derniere.effCat2Day,
-        derniere.effCat3Day,
-        derniere.effCat4Day ?? 0,
-      ]);
+      // Meme calcul que la fiche : une filiere rationnee en % du poids vif doit
+      // afficher le meme chiffre dans le rapport que sur son ecran.
+      final provende = calcul.provendeTotaleGrammes(
+        [
+          derniere.effCat1Day,
+          derniere.effCat2Day,
+          derniere.effCat3Day,
+          derniere.effCat4Day ?? 0,
+        ],
+        poidsTotalGrammes: derniere.poidsGeneralG,
+      );
 
       resultat.add(
         LigneMouvementElevage(

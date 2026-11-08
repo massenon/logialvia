@@ -19,7 +19,7 @@ administration. Interface et code métier **entièrement en français**.
 ```bash
 flutter pub get
 flutter analyze                     # doit rester à "No issues found!"
-flutter test                        # ~1016 tests, ~2 min
+flutter test                        # ~1046 tests, ~2 min
 flutter test test/elevage/          # un dossier / un fichier
 dart run build_runner build --delete-conflicting-outputs   # après toute modif de table Drift
 flutter build windows --release
@@ -57,7 +57,7 @@ Chaque contexte suit `data/` (tables Drift, repositories `*_drift.dart`, seeders
 - **État** : `provider`. Tout ViewModel partagé entre écrans/modales est enregistré
   globalement dans `main.dart` (Doc K4 §5).
 - **Persistance** : Drift/SQLite, une seule `AppDatabase` (`core/database/app_database.dart`,
-  `versionSchema = 27`, migrations idempotentes testées). `app_database.g.dart` est généré
+  `versionSchema = 28`, migrations idempotentes testées). `app_database.g.dart` est généré
   et versionné.
 - **Navigation** : `go_router`, 3 routes publiques (`/`, `/welcome`, `/login`) puis un
   `ShellRoute` (sidebar/topbar) ; accès contrôlé par `PermissionService` (RBAC 3 rôles, Doc I1)
