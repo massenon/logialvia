@@ -3,8 +3,8 @@
   "titres": [],
   "onglets": [],
   "boutons": [
-    "01/08/2026",
-    "25/08/2026",
+    "01/11/2026",
+    "08/11/2026",
     "Créances Clients",
     "Dettes Fournisseurs",
     "Exporter PDF",
@@ -24,8 +24,8 @@
   "infobulles": [],
   "textes": [
     "0",
-    "01/08/2026",
-    "25/08/2026",
+    "01/11/2026",
+    "08/11/2026",
     "Aucune dette fournisseur : tous les achats sont intégralement réglés.",
     "Créances Clients",
     "Dettes Fournisseurs",
@@ -43,6 +43,6 @@
     "au",
     "Échéance dépassée",
     "État de Trésorerie",
-    "États de synthèse, période du 01/08/2026 au 25/08/2026."
+    "États de synthèse, période du 01/11/2026 au 08/11/2026."
   ]
 }

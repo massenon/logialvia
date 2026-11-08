@@ -14,7 +14,7 @@
   ],
   "champs": [],
   "colonnes": [
-    "14 600 FCFA",
+    "0 FCFA",
     "COÛT VÉTÉRINAIRE (MOIS)",
     "DOSES ADMINISTRÉES (MOIS)",
     "EN QUARANTAINE / TRAITEMENT",
@@ -24,7 +24,6 @@
   "textes": [
     "0",
     "09/08/2026",
-    "1",
     "16/08/2026",
     "2",
     "Actions",
