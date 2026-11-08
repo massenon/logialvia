@@ -57,7 +57,7 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Écart de LogiALVIA, vérifié dans le code (08/11/2026, lecture seule).** `logialvia_app/lib/elevage/domain/entities/configuration_espece.dart` porte `rationGrammesParJour` (« Ration normative en g/j ») : l'unité est le **gramme par jour et par sujet**, et la série **30 / 60 / 110 croît avec la taille** (Alevin 30, Juvénile 60, Mature 110). L'hypothèse « 30/60/110 = 3 %/6 %/11 % de la biomasse » **n'est donc PAS confirmée** : elle supposait l'unité « g par kg de biomasse et par jour » et un ordre inverse de la taille, ce qui n'est pas le cas. La série **30/60/110 ET la série 8/25/45** du barème semé (`data/seed/parametres_elevage_seeder.dart`, tous « non confirmé ») sont **à écarter** pour la pisciculture : le barème en % de biomasse les remplace, aucune des deux n'est convertie.
 - **Impact par fichier** : `15_` RM-ELV-09b (nouvelle règle), §7.1, §9 (C-3) ; `23_` §3 (rationnement), §4.5, §8 ; `30_` (colonnes `poids_moyen_g`, `biomasse_g`, barème en %) ; `31_` cas T-DV01-* ; `13_` FR-ELV-31 et FR-ELV-33 ; `12_` SR-054 ; `10_` BR-043 ; `11_` PR-021.
 - **Reste À DÉFINIR.** Taux unique retenu dans chaque fourchette (valeur par ferme, saisie par le technicien) ; bornes exactes des classes (5, 20, 100, 500 g : à confirmer) ; poids moyen initial d'un lot avant la première pesée (poids déclaré à l'achat ?) ; produit d'aliment (granulé flottant, taille du granulé) ; suivi de l'indice de conversion (Q-PIS-5 en partie).
-- **Statut** : validé par le client le 08/11/2026.
+- **Statut** : validé par le client le 08/11/2026. **Implémenté au poste** (schéma v30) : voir §3a.
 
 ### DV-02 — Vente et récolte de poisson : on vend au poids, on compte en sujets
 - **Décision (texte normatif).** À **chaque vente ou récolte de poisson**, saisir **DEUX valeurs : le poids en kg ET le nombre de sujets**. L'effectif de la bande baisse du **nombre de sujets**. Si le nombre est inconnu, il est **estimé** = poids vendu (kg) × 1 000 ÷ poids moyen de la dernière pesée (g), et la ligne est marquée **« estimé »** (indicateur persisté, affiché, jamais présenté comme mesuré). La biomasse reste une grandeur de suivi (calculée, jamais saisie). Le produit « **Poisson-chat vif (kg)** » reste vendu **au kilo** ; le prix se calcule sur le poids.
@@ -200,19 +200,23 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Quand le prototype arrive.** Comparer, écran par écran, la conversion et le prototype ; tout écart est relevé dans un rapport (valeur, fichier, écran) avant correction ; le prototype l'emporte, sauf `ÉCART_DELIBERE` déjà documenté dans le code du poste (arbitrages de la Gérante).
 - **Reste À DÉFINIR.** Mode de fourniture du prototype (copie, dépôt GitHub) : Q-PROTO-1.
 
-## 3a. État d'implémentation au poste Flutter (08/11/2026, schéma v27)
+## 3a. État d'implémentation au poste Flutter (08/11/2026, schéma v30)
 
 **Fait au poste** : fiches `escargots` et `bovins` (`ConfigurationsEspeces`, routes `/elevage/escargots` et `/elevage/bovins`, entrées de menu derrière les modules `heliciculture` et `bovins`, droits administrateur et animalier, bascules dans Paramètres Général, cartes d'aperçu du Dashboard Élevage, recensement, centres analytiques, rapports) ; migration v27 (colonne `dose`, modules, rations, échéances, sans écraser la configuration existante) ; rations (3 par filière) et calendriers complets (21 et 9 échéances avec dose et rémanence) ; colonne et champ « Dose » de l'écran « Calendriers Prophylaxie », export PDF compris ; reprise de la dose sur le soin à l'injection du calendrier ; jour du cycle accepté jusqu'à 365 ; sections du manuel et captures `07b`/`07c` ; tests.
 
 **Fait ensuite au poste (schéma v28)** : le **tableau « Taux de ration par classe de poids »** pour les **bovins** (DV-17). Table `TAUX_RATION_POIDS` (poids en grammes, classes `[min, max[`, taux en % du poids vif en matière sèche), 3 classes semées (moins de 150 kg : 3,5 % ; 150 à moins de 300 kg : 3,0 % ; 300 kg et plus : 2,5 %, « repère à valider »), CRUD complet dans Paramètres Élevage › Rationnement (chevauchement refusé, taux entre 0 et 10 %, suppression archivée en corbeille). La provende de la fiche Bovins vaut **pesée totale du lot × taux de la classe du poids moyen** ; sans pesée exploitable, elle retombe sur la ration par tête, et l'écran le dit. Les rapports utilisent le même calcul. Les autres espèces ne sont pas touchées.
 
-**Pas encore fait au poste (reste à faire)** :
-1. le même mécanisme pour les **poissons-chats** (DV-01) : il suffit d'activer `rationEnPourcentagePoidsVif` et de semer leurs classes, mais cela change le calcul actuel (8 / 25 / 45 g par tête) et attend les taux validés par l'animalier ;
-2. la **numérotation** « HÉLICICULTURE (préfixe BAC) » et « ÉLEVAGE BOVIN (préfixe PARC) » : elles demandent deux colonnes de plus dans `PARAMETRES_ENTREPRISE` ;
-3. les **visites guidées** (`scenarios_tour.dart`) des deux nouvelles fiches : une route sans visite affiche le message prévu ;
-4. les **produits vendables** « escargot » et « bovin » du catalogue (prix à fixer par la Gérante) ;
-5. le **PDF du manuel** (`LogiALVIA-Manuel-Utilisation.pdf`) : à régénérer (`GENERER_MANUEL=1`, puis `dart run outils/generer_manuel.dart`), le contenu et les captures sont prêts ;
-6. l'intrant « Complément calcium » du module Stocks (DV-16, Q-ESC-5).
+**Fait ensuite (schémas v29 et v30)** :
+- **Numérotation** : préfixes **BAC** (escargots) et **PARC** (bovins) dans Paramètres Élevage › Numérotation, colonnes `prefixe_bac` et `prefixe_parc` (v29), aperçus, refus d'un préfixe vide, export PDF.
+- **Visites guidées** des fiches Escargots et Bovins (3 étapes chacune, rédigées).
+- **Catalogue** : le formulaire de produit permet désormais de choisir la **filière d'élevage** (il n'en offrait aucune : un produit neuf n'était relié à aucune fiche) et propose les catégories Héliciculture et Élevage bovin. La vente d'un produit rattaché décrémente la fiche et incrémente son compteur de ventes du jour, comme pour les goliaths. **Aucun prix n'est semé** : c'est à la Gérante de créer ses produits.
+- **Poissons-chats en % de la biomasse (DV-01)** : mécanisme des bovins étendu, classes saisies en **grammes**, 5 classes semées (moins de 5 g : 15 % ; 5 à 20 g : 7 % ; 20 à 100 g : 4 % ; 100 à 500 g : 2,5 % ; 500 g et plus : 1,5 %, une valeur retenue dans chaque fourchette du registre, « repère à valider »), plafond du taux à 25 % pour un poisson (10 % pour un bovin), migration v30. Sans pesée, la fiche garde la ration par tête (8 / 25 / 45 g, inchangée). La pesée de la fiche est celle du lot entier : le poids moyen sert à choisir la classe, pas une pesée par catégorie.
+- **Manuel** : captures, libellés et PDF (78 pages) régénérés.
+
+**Volontairement non fait** :
+1. l'intrant « **Complément calcium** » du module Stocks (DV-16, Q-ESC-5) : le semer exige un seuil d'alerte et un prix que personne n'a fixés, et un stock à zéro déclencherait aussitôt une fausse alerte « stock critique ». À créer dans Gestion Stocks quand la filière démarre ;
+2. les **produits du catalogue** escargot et bovin : prix à fixer par la Gérante (le formulaire est prêt) ;
+3. une **pesée par catégorie** (le poste n'en saisit qu'une par lot) et la **pesée d'échantillon tous les 15 jours** de DV-01 : à décider avec le technicien.
 
 ## 3b. Données à créer pour les escargots et les bovins (rationnement, calendrier de prophylaxie, doses)
 
