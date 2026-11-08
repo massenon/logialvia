@@ -32,8 +32,8 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 | DV-13 | 08/11/2026 | Pintadeaux : alertes de mortalité 1 %/2 % du jour, 10 %/20 % cumulés ; repères de poussinière | recommandé, à confirmer avec le technicien | Q-DV-3 (en « recommandé ») | validation technicien |
 | DV-14 | 08/11/2026 | Autonomie de provende : critique = délai fournisseur ; alerte = délai + marge de 4 j | recommandé, à confirmer avec le technicien | Q-DV-4 (en « recommandé ») | délai réel du fournisseur |
 | DV-15 | 08/11/2026 | `/inventaire` réservé à l'administrateur ; comptable calqué sur AgriERP | décision par défaut (aucune réponse du client) | — | Q-DV-5 et Q-DV-7 OUVERTES |
-| DV-16 | 08/11/2026 | Nouvelle filière **escargots** (achatines) : fiche générique du poste, 3 stades, vente à la pièce | ajout validé par le client ; paramètres recommandés, à confirmer avec le technicien | Q-ESC-1 à Q-ESC-7 (en « recommandé ») | repères zootechniques (poids, cycle, ration, mortalité) |
-| DV-17 | 08/11/2026 | Nouvelle filière **bovins** : fiche générique, 3 stades, ration en % du poids vif (mécanisme de DV-01), vente à la tête | ajout validé par le client ; paramètres recommandés, à confirmer avec le technicien et le vétérinaire | Q-BOV-1 à Q-BOV-7 (en « recommandé ») | race, poids de maturité, calendrier vétérinaire, doses |
+| DV-16 | 08/11/2026 | Nouvelle filière **escargots** (achatines) : fiche générique du poste, 3 stades, vente à la pièce | ajout validé par le client ; repères recommandés, **validés par l'animalier** (Q-DV-9) | Q-ESC-1 à Q-ESC-7 (en « recommandé ») | repères zootechniques (poids, cycle, ration, mortalité) |
+| DV-17 | 08/11/2026 | Nouvelle filière **bovins** : fiche générique, 3 stades, ration en % du poids vif (mécanisme de DV-01), vente à la tête | ajout validé par le client ; repères recommandés, **validés par l'animalier** (Q-DV-9) | Q-BOV-1 à Q-BOV-7 (en « recommandé ») | race, poids de maturité, calendrier vétérinaire, doses |
 | DV-18 | 08/11/2026 | Prototype HTML : si absent, le web est converti depuis le code Dart du poste ; s'il est fourni, il prime | validé par le client | Q-PROTO-1 | fourniture de `prototype_html` |
 
 ---
@@ -166,31 +166,31 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 
 ## 3. Filières ajoutées le 08/11/2026 : escargots et bovins
 
-> Le client demande d'ajouter **l'espèce escargot et l'espèce bovins**. Règle donnée : (a) pour les sept questions, **suivre ce que fait le poste Flutter actuel** (`configuration_espece.dart` : fiche générique, 3 catégories dont une jeune qui reçoit achats et naissances et une commercialisée, ration par catégorie, glossaire propre à la filière, calendrier de prophylaxie, numérotation) ; (b) là où le poste ne répond pas, **suivre la recommandation d'un expert en élevage**. Tout chiffre ci-dessous est donc un **repère zootechnique recommandé, à valider par le technicien (escargots) et le vétérinaire (bovins)** : il se saisit comme valeur modifiable par ferme, jamais comme règle figée. Les deux filières sont **désactivées par défaut** (comme pisciculture, aviculture classique et cuniculture) ; Goliaths et Pintades restent toujours actifs.
+> Le client demande d'ajouter **l'espèce escargot et l'espèce bovins**. Règle donnée : (a) pour les sept questions, **suivre ce que fait le poste Flutter actuel** (`configuration_espece.dart` : fiche générique, 3 catégories dont une jeune qui reçoit achats et naissances et une commercialisée, ration par catégorie, glossaire propre à la filière, calendrier de prophylaxie, numérotation) ; (b) là où le poste ne répond pas, **suivre la recommandation d'un expert en élevage**. Tout chiffre ci-dessous est donc un **repère zootechnique recommandé, validé par l'animalier (Q-DV-9)** : il se saisit comme valeur modifiable par ferme, jamais comme règle figée. Les deux filières sont **désactivées par défaut** (comme pisciculture, aviculture classique et cuniculture) ; Goliaths et Pintades restent toujours actifs.
 
-### DV-16 — Escargots (héliciculture) [ajout validé ; paramètres recommandés, à confirmer avec le technicien]
+### DV-16 — Escargots (héliciculture) [ajout validé ; repères recommandés, validés par l'animalier]
 
 - **Identité (proposée).** `identifiant` `escargots` · libellé « Escargots » · route `/elevage/escargots` · module activable `heliciculture` · icône Material Symbols à choisir (proposé : `eco`).
 - **Q-ESC-1 Espèce.** Achatines géantes d'Afrique de l'Ouest : *Archachatina marginata* et *Achatina achatina* (à confirmer ; la fiche ne distingue pas l'espèce dans cette version).
 - **Q-ESC-2 Stades (modèle : Lapins).** 3 catégories : **Naissain** (jeune ; reçoit achats et naissances) · **Marchand** (commercialisée ; seule déduite des ventes) · **Reproducteur**. Pastilles « Rappel du Cycle » : *Ponte et éclosion · Naissain · Marchand · Reproducteur*. Glossaire : colonne 1 « Achats », colonne 2 « **Nés (Éclosions)** ».
 - **Q-ESC-3 Unité de vente (modèle : toutes les fiches sauf poisson).** À la **pièce** (nombre de sujets) ; le stock du produit vendable est en sujets. Vente au kilo : NON ADOPTÉ (pas de DV-02 pour les escargots).
 - **Q-ESC-4 Cycle et maturité (repères).** Éclosion 3 à 5 semaines après la ponte ; taille marchande vers 6 à 8 mois pour environ 100 g. Seuils de l'alerte de maturité proposés : `poidsMaturiteGrammes` 100 · `ageMaturiteJours` 180. Alertes de mortalité : même mécanisme que DV-13, **seuils cumulés 10 % (alerte) / 20 % (critique)**.
-- **Q-ESC-5 Alimentation (repères, g/tête/jour).** Naissain **1** · Marchand **5** · Reproducteur **8** (aliment composé et complément de calcium ; les végétaux frais ne passent pas en provende). `noteRationnement` : « Barème indicatif d'héliciculture, à valider par le technicien ». Intrant à semer au module Stocks : « Complément calcium (coquilles broyées) » (code à créer, seuil d'alerte à fixer).
-- **Q-ESC-6 Prophylaxie (modèle : calendrier du poste).** Pas de vaccination. Calendrier d'**hygiène** proposé, SANS produit ni dose inventés : nettoyage des bacs/parcs (hebdomadaire), désinfection (mensuelle), quarantaine des sujets achetés (14 jours), contrôle de l'humidité (quotidien). Aucune échéance n'est semée par défaut : l'écran « Calendriers Prophylaxie » offre la pastille « Escargots » vide, avec « Ajouter une Échéance » ; produits et rémanences à saisir par le technicien.
+- **Q-ESC-5 Alimentation (repères, g/tête/jour) — COMPLÉTÉ.** Naissain **1** · Marchand **5** · Reproducteur **8** (aliment composé et complément de calcium ; les végétaux frais ne passent pas en provende), semés dans le tableau « Rationnement » (§3b) avec « Confirmé ? » à Non. `noteRationnement` : « Barème indicatif d'héliciculture, à valider par l'animalier ». Intrant à semer au module Stocks : « Complément calcium (coquilles broyées) » (code à créer, seuil d'alerte à fixer).
+- **Q-ESC-6 Prophylaxie (modèle : calendrier du poste) — COMPLÉTÉ.** Pas de vaccination : calendrier d'**hygiène et de soins** complet, semé à la création de la filière (liste en §3b), avec produit, **dose** et rémanence pour chaque échéance ; l'animalier le modifie dans l'écran « Calendriers Prophylaxie » (pastille « Escargots »).
 - **Q-ESC-7 Écran.** **Fiche générique du poste**, aucun champ propre dans cette version. Température et humidité des parcs : note libre de la saisie journalière. Champs d'ambiance dédiés : NON ADOPTÉ, évolution possible. Numérotation (Paramètres Élevage) : groupe « HÉLICICULTURE (ESCARGOTS) », préfixe **BAC** (proposé), préfixe vide refusé comme les autres.
-- **Reste À DÉFINIR.** Poids et âge de maturité réels de l'élevage ; densité par bac ; seuils de mortalité ; calendrier d'hygiène définitif ; vente au kilo si le marché l'exige.
+- **Reste À DÉFINIR.** Poids et âge de maturité réels de l'élevage ; densité par bac ; seuils de mortalité ; vente au kilo si le marché l'exige (calendrier d'hygiène et rations : COMPLÉTÉS en §3b, à ajuster par l'animalier).
 
-### DV-17 — Bovins [ajout validé ; paramètres recommandés, à confirmer avec le technicien et le vétérinaire]
+### DV-17 — Bovins [ajout validé ; repères recommandés, validés par l'animalier]
 
 - **Identité (proposée).** `identifiant` `bovins` · libellé « Bovins » · route `/elevage/bovins` · module activable `bovins` · icône à choisir (proposé : `agriculture`).
 - **Q-BOV-1 Race.** Taurins locaux (Borgou, Somba) et zébus (Peulh) du nord du Bénin ; non distinguées dans la fiche (à confirmer).
 - **Q-BOV-2 Stades (modèle : Lapins).** 3 catégories : **Veau** (jeune, 0 à 6 mois ; reçoit achats et naissances) · **Embouche** (commercialisée, environ 6 à 24 mois) · **Reproducteur**. Pastilles : *Naissance · Veau · Embouche · Reproducteur*. Glossaire : « Achats », « **Nés (Vêlage)** ».
 - **Q-BOV-3 Unité de vente.** À la **tête**. Le poids vif est relevé à la pesée (champ de pesée de la fiche) et sert à la classe de ration et au prix indicatif ; vente au kilo de poids vif : NON ADOPTÉ.
 - **Q-BOV-4 Cycle et maturité (repères).** Gestation environ 283 jours (9 mois) ; sevrage vers 6 mois ; embouche de 3 à 6 mois ; maturité commerciale proposée : `poidsMaturiteGrammes` **250 000** (250 kg) ou `ageMaturiteJours` **730** (24 mois). Mortalité cumulée : **5 % (alerte) / 10 % (critique)**.
-- **Q-BOV-5 Alimentation.** Un ruminant se rationne en **matière sèche (MS) = 2,5 à 3,5 % du poids vif par jour, sur le poids moyen du groupe**, pas en g par tête fixes. On **réutilise le mécanisme de DV-01** : second tableau « Taux de ration par classe de poids » (CLASSE DE POIDS (kg) · TAUX (% DU POIDS VIF PAR JOUR, EN MS) · CONFIRMÉ ? · ACTIONS), avec CRUD complet et archivage. Valeurs d'ouverture, repères à valider : < 150 kg **3,5 %** ; 150 à 300 kg **3,0 %** ; > 300 kg **2,5 %**. Le fourrage (pâturage, foin) n'entre pas en stock dans cette version : le calcul porte sur l'aliment complémentaire ; « Les 30/60/110 g du poste ne s'appliquent pas aux bovins ».
-- **Q-BOV-6 Prophylaxie (modèle : calendrier du poste, 11 échéances semées pour les autres filières).** Échéances proposées, **produits, doses et rémanences laissés au vétérinaire** : vaccination contre la péripneumonie contagieuse bovine (annuelle), contre le charbon bactéridien et symptomatique (annuelle), contre la pasteurellose (selon avis vétérinaire) ; déparasitage interne (2 fois par an) ; lutte contre les tiques par bain ou pulvérisation (périodique, plus fréquente en saison des pluies). Échéances semées SANS produit : à compléter.
+- **Q-BOV-5 Alimentation.** Un ruminant se rationne en **matière sèche (MS) = 2,5 à 3,5 % du poids vif par jour, sur le poids moyen du groupe**, pas en g par tête fixes. On **réutilise le mécanisme de DV-01** : second tableau « Taux de ration par classe de poids » (CLASSE DE POIDS (kg) · TAUX (% DU POIDS VIF PAR JOUR, EN MS) · CONFIRMÉ ? · ACTIONS), avec CRUD complet et archivage. Valeurs d'ouverture, repères à valider : < 150 kg **3,5 %** ; 150 à 300 kg **3,0 %** ; > 300 kg **2,5 %**. Le fourrage (pâturage, foin) n'entre pas en stock dans cette version : le calcul porte sur l'aliment complémentaire ; « Les 30/60/110 g du poste ne s'appliquent pas aux bovins ». **Lignes « g/tête/j » du premier tableau, INDICATIVES (taux × poids moyen de référence) : Veau 1 500 · Embouche 7 000 · Reproducteur 9 000 g de MS** ; dès qu'un poids moyen est saisi pour la bande, le tableau en % du poids vif prévaut.
+- **Q-BOV-6 Prophylaxie (modèle : calendrier du poste) — COMPLÉTÉ.** Calendrier sanitaire complet semé à la création de la filière (liste en §3b) : vaccins (péripneumonie contagieuse bovine, charbon bactéridien et symptomatique, pasteurellose), déparasitages interne et externe, détiquage, rappels, avec produit, **dose** et rémanence. L'animalier le valide et le modifie dans l'écran « Calendriers Prophylaxie » (pastille « Bovins »).
 - **Q-BOV-7 Écran.** Fiche générique du poste, plus le champ de poids vif (Q-BOV-3). Numérotation : groupe « ÉLEVAGE BOVIN », préfixe **PARC** (proposé).
-- **Reste À DÉFINIR.** Race, poids de maturité, taux de ration définitifs, calendrier et produits vétérinaires, gestion du fourrage et du pâturage, traçabilité par tête (boucle d'identification) si le client la veut.
+- **Reste À DÉFINIR.** Race, gestion du fourrage et du pâturage, traçabilité par tête (boucle d'identification) si le client la veut (rations, calendrier, produits et doses : COMPLÉTÉS en §3b, à ajuster par l'animalier).
 
 ### DV-18 — Prototype HTML : convertir depuis le Dart tant qu'il n'est pas fourni
 
@@ -199,6 +199,69 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Règle de conversion.** Par RÔLE : `AppColors` → `tailwind.config.js` (mêmes valeurs hexadécimales), `AppSpacing`/`AppRadius`/`AppShadows`/`AppTypography` → échelle Tailwind du design system, widgets partagés → composants Blade/Livewire, `AppBreakpoints` → les 4 classes Desktop/Laptop/Tablet/Mobile. Aucune valeur n'est reconstruite de mémoire ni reprise d'AgriERP.
 - **Quand le prototype arrive.** Comparer, écran par écran, la conversion et le prototype ; tout écart est relevé dans un rapport (valeur, fichier, écran) avant correction ; le prototype l'emporte, sauf `ÉCART_DELIBERE` déjà documenté dans le code du poste (arbitrages de la Gérante).
 - **Reste À DÉFINIR.** Mode de fourniture du prototype (copie, dépôt GitHub) : Q-PROTO-1.
+
+## 3b. Données à créer pour les escargots et les bovins (rationnement, calendrier de prophylaxie, doses)
+
+> Demande du client (08/11/2026) : **tout créer et compléter** dans les écrans de **Paramètres Élevage** (« Rationnement », « Calendriers Prophylaxie ») et dans les doses du **Calendrier des soins**. Ces données sont **semées à la création des deux filières** ; tous les chiffres sont des **repères d'élevage usuels, validés par l'animalier** (Q-DV-9) et modifiables. **La notice du produit utilisé prévaut sur toute dose ci-dessous**, et les rémanences retenues sont prudentes (jamais plus courtes que l'usage courant). Aucune dose n'est calculée automatiquement à partir du poids : la dose est un texte lisible par l'animalier.
+
+### 3b.1 Colonne « Dose » du calendrier de prophylaxie (écart à corriger au poste et au web)
+
+Le poste n'a **pas de colonne dose** sur `CALENDRIER_PROPHYLAXIE` (`espece`, `jourCycle`, `traitement`, `produit`, `remanenceJours`) : la dose n'existe que sur le soin (`SOINS_CALENDRIER.dose`, texte libre). Pour que le calendrier porte la dose :
+1. ajouter `dose` (texte, **nullable**) à `CALENDRIER_PROPHYLAXIE` : migration du schéma (poste : v26 → v27, idempotente et testée comme les précédentes ; web : colonne `dose` de `prophylaxis_schedule_standards`/équivalent) ;
+2. écran « Calendriers Prophylaxie » : colonnes JOUR DU CYCLE · TRAITEMENT · PRODUIT · **DOSE** · RÉMANENCE · ACTIONS ; la modale d'échéance reçoit un champ « Dose » (facultatif, texte libre, comme sur « Nouveau Soin ») ;
+3. à l'**injection** du calendrier dans la fiche, le soin créé reprend `dose` de l'échéance, ce qui alimente « Calendrier des Doses » ; les échéances existantes (Goliaths, Pintades, Lapins, Poissons-Chats) gardent une dose vide jusqu'à ce que l'animalier la renseigne.
+
+### 3b.2 Rationnement
+
+| Filière | Stade | Ration g/tête/jour | Confirmé ? |
+|---|---|---|---|
+| `escargots` | Naissain | 1 | Non |
+| `escargots` | Marchand | 5 | Non |
+| `escargots` | Reproducteur | 8 | Non |
+| `bovins` | Veau | 1 500 (indicatif) | Non |
+| `bovins` | Embouche | 7 000 (indicatif) | Non |
+| `bovins` | Reproducteur | 9 000 (indicatif) | Non |
+
+Second tableau « Taux de ration par classe de poids » pour les **bovins** (mécanisme de DV-01, poids vif en kg, matière sèche) : **< 150 kg : 3,5 %** · **150 à 300 kg : 3,0 %** · **> 300 kg : 2,5 %** du poids vif par jour ; « Confirmé ? » à Non ; CRUD complet et archivage ; bornes (150 et 300 kg) modifiables.
+
+### 3b.3 Calendrier de prophylaxie — Escargots (`escargots`)
+
+Calendrier d'hygiène, sans vaccin. Les tâches périodiques sont **semées sur les 90 premiers jours** du cycle ; l'animalier prolonge au besoin.
+
+| Jour | Traitement | Produit | Dose | Rémanence (j) |
+|---|---|---|---|---|
+| J1 | Contrôle sanitaire et mise en quarantaine | Observation (aucun produit) | Bac séparé pendant 14 jours | 0 |
+| J5, J35, J65 | Complément calcium | Coquilles broyées ou chaux alimentaire | À volonté, en bol permanent | 0 |
+| J7, J14, J21, J28, J35, J42, J49, J56, J63, J70, J77, J84 | Nettoyage hebdomadaire du bac | Eau propre (aucun produit) | Bac vidé, rincé, substrat humide renouvelé | 0 |
+| J14 | Fin de quarantaine | Observation (aucun produit) | Contrôle des sujets ; les sujets sains rejoignent le parc | 0 |
+| J30, J60, J90 | Désinfection mensuelle du bac | Eau de Javel diluée | 1 volume pour 10 volumes d'eau ; bac vide, rincé à grande eau, séché 24 h avant remise des sujets | 0 |
+| J60 | Renouvellement du substrat | Terreau propre et humide | Remplacement complet | 0 |
+
+Humidité (80 à 90 %) et température (24 à 30 °C) : contrôle quotidien en note libre de la saisie journalière (DV-16, Q-ESC-7), sans échéance.
+
+### 3b.4 Calendrier de prophylaxie — Bovins (`bovins`)
+
+| Jour | Traitement | Produit | Dose (repère) | Rémanence (j) |
+|---|---|---|---|---|
+| J1 | Déparasitage interne | Albendazole | 7,5 mg par kg de poids vif, voie orale | 14 |
+| J7 | Détiquage (lutte contre les tiques) | Deltaméthrine, bain ou pulvérisation | Dilution selon la notice du fabricant | 7 |
+| J15 | Vaccin péripneumonie contagieuse bovine (PPCB) | Vaccin T1/44 | 1 dose selon la notice, voie sous-cutanée | 0 |
+| J30 | Vaccin charbon bactéridien et symptomatique | Vaccin charbon | 1 à 2 mL selon la notice, voie sous-cutanée | 0 |
+| J45 | Vaccin pasteurellose | Vaccin Pasteurella | 2 mL selon la notice, voie sous-cutanée | 0 |
+| J60 | Déparasitage interne et externe | Ivermectine 1 % | 1 mL pour 50 kg de poids vif (0,2 mg/kg), voie sous-cutanée | 35 |
+| J90 | Détiquage (rappel) | Deltaméthrine, bain ou pulvérisation | Dilution selon la notice du fabricant | 7 |
+| J180 | Déparasitage interne (rappel semestriel) | Albendazole | 7,5 mg par kg de poids vif, voie orale | 14 |
+| J365 | Rappel annuel PPCB et charbon | Vaccin T1/44 et vaccin charbon | 1 dose de chacun selon la notice | 0 |
+
+Détiquage plus fréquent en saison des pluies : l'animalier ajoute des échéances. Volume ou masse à administrer à partir du poids : saisis à la main par l'animalier (calcul automatique NON ADOPTÉ).
+
+### 3b.5 Tests d'acceptation de ces données
+
+- Après la migration, `CALENDRIER_PROPHYLAXIE` accepte une dose vide et une dose renseignée ; les 11 échéances existantes sont inchangées (dose vide) ; relancer la migration ne duplique rien.
+- Activer `escargots` puis `bovins` affiche leurs pastilles avec les échéances ci-dessus (escargots : 1 + 3 + 12 + 1 + 3 + 1 = 21 échéances ; bovins : 9) et leurs rations (3 lignes chacun, plus 3 classes de poids pour les bovins).
+- Injecter le calendrier dans une bande de bovins crée 9 soins, chacun avec sa dose ; relancer l'injection n'en crée pas de doublon.
+- Une dose modifiée dans le calendrier s'applique aux injections suivantes, pas aux soins déjà créés.
+- Un animalier peut tout modifier ; un caissier ne voit pas l'écran (droits de DV-07).
 
 ## 4. Nouvelles questions ouvertes nées de ces décisions
 
@@ -211,7 +274,7 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 | Q-DV-5 | **OUVERTE** (valeur par défaut DV-15 : `/inventaire` administrateur seul, pas de 5ᵉ rôle ; droit dédié plus tard) : un « responsable stock » existe-t-il ? | DV-06, DV-15 |
 | Q-DV-6 | ~~Le caissier garde-t-il l'onglet « Retours et Avoirs » ?~~ **FERMÉE (DV-08)** : oui, retour client ; aucun avoir MeCeF/FA. | DV-06, DV-08 |
 | Q-DV-7 | **OUVERTE** (valeur par défaut DV-15 : calqué sur AgriERP) : périmètre exact du comptable (RH, achats, `close-fiscal-year`) ? | DV-07, DV-15 |
-| Q-DV-9 | Quel technicien valide les repères escargots (poids, cycle, ration, mortalité, hygiène) et quel vétérinaire valide le calendrier, les produits et les doses des bovins ? | DV-16, DV-17 |
+| Q-DV-9 | ~~Quel technicien valide les repères escargots et quel vétérinaire valide le calendrier et les doses des bovins ?~~ **FERMÉE (réponse du client, 08/11/2026)** : **l'animalier** valide les repères des deux filières. Il les modifie dans Paramètres Élevage (droit `manage-elevage`) ; aucun rôle « vétérinaire » n'est créé. Le client demande que **tout soit créé et complété** dans les écrans Calendrier de prophylaxie, Rationnement et doses (§3b). Garde-fou : la notice du produit utilisé prévaut sur toute dose semée. | DV-16, DV-17 |
 | Q-PROTO-1 | Comment le client fournit-il `prototype_html` (copie, dépôt GitHub) ? | DV-18 |
 | Q-DV-8 | ~~Libellé exact du premier stade des pintades~~ **FERMÉE (DV-09)** : « Poussin(s) » (glossaire) ; catégorie 2 « Pintadau » inchangée. | DV-03, DV-09 |
 

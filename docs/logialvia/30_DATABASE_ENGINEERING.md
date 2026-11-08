@@ -600,7 +600,7 @@ Table Drift équivalente `IncubationRules` (`app_database.dart`, puis `dart run 
 
 ### 5.9 `soins` : `infirmerie`, `soins_calendrier`, `calendrier_prophylaxie`, `veterinary_records`
 
-- `calendrier_prophylaxie` (logialvia : `espece`, `jourCycle`, `traitement`, `produit`, `remanenceJours` défaut 0) → `prophylaxis_schedule_standards` (AgriERP, `cycle_day` ajouté par `2026_03_06_000001_...`). UK recommandée (`species_id`,`cycle_day`,`traitement`).
+- `calendrier_prophylaxie` (logialvia : `espece`, `jourCycle`, `traitement`, `produit`, `remanenceJours` défaut 0 ; **+ `dose` texte nullable à ajouter, poste v26 → v27, DV-16/DV-17 : `16_` §3b.1**) → `prophylaxis_schedule_standards` (AgriERP, `cycle_day` ajouté par `2026_03_06_000001_...`). UK recommandée (`species_id`,`cycle_day`,`traitement`).
 - `soins_calendrier` : `espece`, `datePrevue`, `typeSoin`, `statut` IN (`Planifié`,`Effectué`,`En retard`,`Traitement en cours`), `observations`. Les échéances se déduisent du jour de cycle de la bande (`BANDES.dateMiseEnBande` = J1).
 - `infirmerie`, `veterinary_withdrawal_periods` : voir `logialvia_app/lib/elevage/data/tables/infirmerie_table.dart` et `2026_02_13_000002_create_veterinary_withdrawal_periods_table.php` (délai d'attente avant vente d'un animal traité : la vente est bloquée ou signalée, jamais silencieuse).
 
