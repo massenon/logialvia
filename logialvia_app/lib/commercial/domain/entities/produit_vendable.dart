@@ -67,11 +67,15 @@ class ProduitVendable {
   bool get aUneFourchette => prixMax != null && prixMax! > prix;
 
   /// Catégories réellement utilisées par le prototype — 4, et non les 2 que
-  /// contraignait Doc D1 (voir la note du seeder de catalogue).
+  /// contraignait Doc D1 (voir la note du seeder de catalogue) — plus
+  /// Héliciculture et Élevage bovin, ajoutées avec les filières escargots et
+  /// bovins (DV-16, DV-17).
   static const List<String> categories = [
     'Avicole',
     'Commerce Annexe',
     'Cuniculture',
+    'Héliciculture',
+    'Élevage bovin',
     'Pisciculture',
   ];
 }

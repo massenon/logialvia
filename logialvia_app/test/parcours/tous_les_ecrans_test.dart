@@ -217,6 +217,22 @@ void main() {
       ),
     );
     testWidgets(
+      'Fiche Escargots',
+      (t) => verifier(
+        t,
+        const PageFicheEspece(configuration: ConfigurationsEspeces.escargots),
+        'Fiche Escargots',
+      ),
+    );
+    testWidgets(
+      'Fiche Bovins',
+      (t) => verifier(
+        t,
+        const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
+        'Fiche Bovins',
+      ),
+    );
+    testWidgets(
       'Fiche Poulets/Pondeuses',
       (t) =>
           verifier(t, const PagePouletsPondeuses(), 'Fiche Poulets/Pondeuses'),
@@ -233,6 +249,49 @@ void main() {
       'Catalogue',
       (t) => verifier(t, const PageCatalogue(), 'Catalogue'),
     );
+
+    testWidgets('le formulaire du catalogue rattache un nouveau produit à une '
+        'filière d\'élevage', (t) async {
+      await afficher(t, const PageCatalogue());
+      // Les champs de recherche de la page sont sous la modale : le formulaire
+      // commence apres eux.
+      final dejaLa = find.byType(TextField).evaluate().length;
+
+      await t.tap(find.text('Ajouter un Produit'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('champ-filiere')), findsOneWidget);
+
+      // Champs du formulaire, dans l'ordre : designation, tarif, tarif haut,
+      // cout, unite, stock, seuil.
+      final champs = find.byType(TextField);
+      await t.enterText(champs.at(dejaLa), 'Bovin d\'embouche (tête)');
+      await t.enterText(champs.at(dejaLa + 1), '350000');
+      await t.enterText(champs.at(dejaLa + 5), '4');
+
+      await t.tap(find.byType(DropdownButtonFormField<String>).first);
+      await t.pumpAndSettle();
+      expect(find.text('Élevage bovin'), findsWidgets);
+      await t.tap(find.text('Élevage bovin').last);
+      await t.pumpAndSettle();
+
+      await t.ensureVisible(find.byKey(const ValueKey('champ-filiere')));
+      await t.tap(find.byKey(const ValueKey('champ-filiere')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Bovins').last);
+      await t.pumpAndSettle();
+
+      await t.ensureVisible(find.text('Enregistrer'));
+      await t.tap(find.text('Enregistrer'));
+      await t.pumpAndSettle(const Duration(seconds: 2));
+      expect(t.takeException(), isNull);
+
+      final produit = await (db.select(
+        db.produitsVendables,
+      )..where((p) => p.name.equals('Bovin d\'embouche (tête)'))).getSingle();
+      expect(produit.espece, 'bovins');
+      expect(produit.cat, 'Élevage bovin');
+      expect(produit.stock, 4);
+    });
   });
 
   group('Approvisionnement', () {
