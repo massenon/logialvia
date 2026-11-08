@@ -191,6 +191,60 @@ class ScenariosTour {
           'détaillée n\'est pas nécessaire ce mois-ci.',
     ),
   ],
+  // ⚠️ Visites REDIGEES, non transcrites : les fiches Escargots et Bovins ont
+  // ete ajoutees apres le prototype (DV-16, DV-17), aucune page HTML ne les
+  // porte. Elles decrivent ce que l'ecran fait reellement.
+  '/elevage/escargots': [
+    EtapeTour(
+      cible: 'saisie-journaliere',
+      titre: 'Saisie Journalière',
+      texte:
+          'Renseignez les achats, les éclosions et les morts par catégorie '
+          '(Naissain, Marchand, Reproducteur) — l\'effectif final, la provende '
+          'et le taux de mortalité se calculent automatiquement.',
+    ),
+    EtapeTour(
+      cible: 'prophylaxie-du-jour',
+      titre: 'Hygiène et soins du jour',
+      texte:
+          'Les soins d\'hygiène programmés pour ce jour (nettoyage des bacs, '
+          'désinfection, calcium) s\'affichent depuis le calendrier — cochez '
+          'pour valider leur réalisation.',
+    ),
+    EtapeTour(
+      cible: 'bascule-hebdomadaire',
+      titre: 'Bascule Vue Hebdomadaire',
+      texte:
+          'Basculez vers une vue agrégée par semaine si la saisie quotidienne '
+          'détaillée n\'est pas nécessaire ce mois-ci.',
+    ),
+  ],
+  '/elevage/bovins': [
+    EtapeTour(
+      cible: 'saisie-journaliere',
+      titre: 'Saisie Journalière',
+      texte:
+          'Renseignez les achats, les vêlages, les morts par catégorie (Veau, '
+          'Embouche, Reproducteur) et la pesée totale du lot : avec la pesée, '
+          'la provende se calcule en pourcentage du poids vif ; sans pesée, '
+          'elle retombe sur la ration indicative par tête.',
+    ),
+    EtapeTour(
+      cible: 'prophylaxie-du-jour',
+      titre: 'Prophylaxie Automatique',
+      texte:
+          'Les vaccins, déparasitages et détiquages programmés pour ce jour '
+          's\'affichent depuis le calendrier, avec leur dose — la notice du '
+          'produit prévaut. Cochez pour valider leur administration.',
+    ),
+    EtapeTour(
+      cible: 'bascule-hebdomadaire',
+      titre: 'Bascule Vue Hebdomadaire',
+      texte:
+          'Basculez vers une vue agrégée par semaine si la saisie quotidienne '
+          'détaillée n\'est pas nécessaire ce mois-ci.',
+    ),
+  ],
   '/elevage/poulets-pondeuses': [
     EtapeTour(
       cible: 'onglets-poulets-pondeuses',
