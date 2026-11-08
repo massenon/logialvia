@@ -24,7 +24,11 @@ class BaremeRation {
   static const Set<String> _especesAjoutees = {'escargots', 'bovins'};
 
   String get badge {
-    if (confirme) return 'Confirmé (Référence Cuniculture)';
+    // Le libelle du prototype ne vaut que pour les lapins, seuls barèmes qu'il
+    // portait comme confirmés ; un barème validé depuis l'écran est « Validé ».
+    if (confirme) {
+      return espece == 'lapins' ? 'Confirmé (Référence Cuniculture)' : 'Validé';
+    }
     if (_especesAjoutees.contains(espece)) return 'Repère à valider';
     return 'Générique (Aviculture, à confirmer)';
   }

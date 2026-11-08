@@ -1,6 +1,7 @@
 import '../../../administration/domain/services/service_archivage.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/formatage/formats.dart';
 import '../../../core/resultat/resultat.dart';
 import '../../data/repositories/parametres_elevage_repository_drift.dart';
 import '../../domain/entities/configuration_espece.dart';
@@ -82,6 +83,11 @@ class ParametresElevageViewModel extends ChangeNotifier {
     }).toList();
   }
 
+  /// Plafond de ration par tête de l'espèce (5 kg, 20 kg pour un bovin).
+  static int _plafondRation(String espece) =>
+      ConfigurationsEspeces.parIdentifiant[espece]?.rationMaxGrammesParJour ??
+      5000;
+
   Future<Resultat<void>> ajouterBareme({
     required String espece,
     required String stade,
@@ -93,9 +99,11 @@ class ParametresElevageViewModel extends ChangeNotifier {
     }
     // Une ration de plusieurs kilos par tete et par jour est une faute de
     // frappe, pas un bareme : la plus forte du prototype est 120 g.
-    if (valeur > 5000) {
-      return const Echec(
-        'Une ration de plus de 5 000 g par tête et par jour est invraisemblable.',
+    final plafond = _plafondRation(espece);
+    if (valeur > plafond) {
+      return Echec(
+        'Une ration de plus de ${Formats.nombre(plafond)} g par tête et par '
+        'jour est invraisemblable.',
       );
     }
 
@@ -114,17 +122,29 @@ class ParametresElevageViewModel extends ChangeNotifier {
     }
   }
 
+  /// Statut d'un repère après une modification : « Valider » le confirme, une
+  /// valeur changée le ramène à « à valider » (la validation portait sur
+  /// l'ancienne valeur), une valeur inchangée le laisse tel quel.
+  static bool statutApresModification({
+    required bool confirmeAvant,
+    required bool valeurChangee,
+    required bool valider,
+  }) => valider ? true : (valeurChangee ? false : confirmeAvant);
+
   Future<Resultat<void>> modifierRation({
     required BaremeRation bareme,
     required String ration,
+    bool valider = false,
   }) async {
     final valeur = int.tryParse(ration.trim());
     if (valeur == null || valeur <= 0) {
       return const Echec('La ration doit être un nombre de grammes positif.');
     }
-    if (valeur > 5000) {
-      return const Echec(
-        'Une ration de plus de 5 000 g par tête et par jour est invraisemblable.',
+    final plafond = _plafondRation(bareme.espece);
+    if (valeur > plafond) {
+      return Echec(
+        'Une ration de plus de ${Formats.nombre(plafond)} g par tête et par '
+        'jour est invraisemblable.',
       );
     }
 
@@ -132,6 +152,11 @@ class ParametresElevageViewModel extends ChangeNotifier {
       await _repository.modifierRation(
         id: bareme.id,
         rationGrammesParJour: valeur,
+        confirme: statutApresModification(
+          confirmeAvant: bareme.confirme,
+          valeurChangee: valeur != bareme.rationGrammesParJour,
+          valider: valider,
+        ),
       );
       await _rafraichir();
       notifyListeners();
@@ -197,6 +222,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
     required String poidsMin,
     required String poidsMax,
     required String taux,
+    bool valider = false,
   }) async {
     if (!rationneSurPoidsVif(espece)) {
       return const Echec(
@@ -260,6 +286,16 @@ class ParametresElevageViewModel extends ChangeNotifier {
         poidsMinG: minG,
         poidsMaxG: maxG,
         tauxPourcent: tauxValeur,
+        confirme: existant == null
+            ? null
+            : statutApresModification(
+                confirmeAvant: existant.confirme,
+                valeurChangee:
+                    minG != existant.poidsMinG ||
+                    maxG != existant.poidsMaxG ||
+                    tauxValeur != existant.tauxPourcent,
+                valider: valider,
+              ),
       );
       await _rafraichir();
       notifyListeners();

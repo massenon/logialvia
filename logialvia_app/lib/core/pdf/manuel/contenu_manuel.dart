@@ -1024,7 +1024,7 @@ class ContenuManuel {
         onglets: [
           OngletManuel(
             'Rationnement',
-            'Les barèmes de provende par filière et par stade. Ce que vous changez ici change aussitôt la provende calculée sur les fiches journalières. Les bovins se rationnent autrement : un second tableau donne, par classe de poids vif, le pourcentage du poids à distribuer chaque jour, et la fiche Bovins calcule sa provende à partir de la pesée du lot.',
+            'Les barèmes de provende par filière et par stade. Ce que vous changez ici change aussitôt la provende calculée sur les fiches journalières. Les bovins se rationnent autrement : un second tableau donne, par classe de poids vif, le pourcentage du poids à distribuer chaque jour, et la fiche Bovins calcule sa provende à partir de la pesée du lot. Les valeurs proposées sont des repères marqués « à valider » : dans la fenêtre de modification, le bouton Valider les passe à « validé » (changer ensuite la valeur les remet « à valider »).',
           ),
           OngletManuel(
             'Calendriers Prophylaxie',

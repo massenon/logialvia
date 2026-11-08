@@ -485,4 +485,220 @@ void main() {
       expect(formats.cage, 'CAG');
     });
   });
+  group('Valider un repère : « à valider » -> « validé »', () {
+    late AppDatabase db;
+    late ParametresElevageRepositoryDrift repository;
+    late ParametresElevageViewModel vm;
+
+    setUp(() async {
+      db = AppDatabase.enMemoire();
+      await ParametresElevageSeeder(db).executer();
+      repository = ParametresElevageRepositoryDrift(db);
+      vm = ParametresElevageViewModel(repository);
+      await vm.charger();
+    });
+
+    tearDown(() async => db.close());
+
+    BaremeRation ration(String espece, String stade) =>
+        vm.baremes.firstWhere((b) => b.espece == espece && b.stade == stade);
+
+    test('le plafond de ration dépend de l\'espèce : un bovin mange plus de '
+        '5 kg', () async {
+      final embouche = ration('bovins', 'Embouche');
+      expect(embouche.rationGrammesParJour, 7000);
+
+      // Modifier la ration d'un bovin a 8 kg doit etre possible...
+      expect(
+        await vm.modifierRation(bareme: embouche, ration: '8000'),
+        isA<Succes<void>>(),
+      );
+      // ...mais pas a 25 kg, qui est une faute de frappe.
+      expect(
+        await vm.modifierRation(
+          bareme: ration('bovins', 'Embouche'),
+          ration: '25000',
+        ),
+        isA<Echec<void>>(),
+      );
+      // Les autres especes gardent leur plafond de 5 kg.
+      expect(
+        await vm.modifierRation(
+          bareme: ration('goliaths', 'Mature'),
+          ration: '5001',
+        ),
+        isA<Echec<void>>(),
+      );
+      expect(
+        await vm.ajouterBareme(
+          espece: 'bovins',
+          stade: 'Taurillon',
+          ration: '12000',
+        ),
+        isA<Succes<void>>(),
+      );
+      expect(
+        await vm.ajouterBareme(
+          espece: 'escargots',
+          stade: 'Test',
+          ration: '6000',
+        ),
+        isA<Echec<void>>(),
+      );
+    });
+
+    test('table de vérité du statut', () {
+      bool statut(bool avant, bool change, bool valider) =>
+          ParametresElevageViewModel.statutApresModification(
+            confirmeAvant: avant,
+            valeurChangee: change,
+            valider: valider,
+          );
+      // Valider confirme toujours, valeur changee ou non.
+      expect(statut(false, false, true), isTrue);
+      expect(statut(false, true, true), isTrue);
+      expect(statut(true, true, true), isTrue);
+      // Sans Valider : une valeur changee retombe, une valeur inchangee reste.
+      expect(statut(true, true, false), isFalse);
+      expect(statut(true, false, false), isTrue);
+      expect(statut(false, true, false), isFalse);
+      expect(statut(false, false, false), isFalse);
+    });
+
+    test('Valider passe une ration de « à valider » à « validé »', () async {
+      final avant = ration('bovins', 'Embouche');
+      expect(avant.confirme, isFalse);
+      expect(avant.badge, 'Repère à valider');
+
+      expect(
+        await vm.modifierRation(
+          bareme: avant,
+          ration: '${avant.rationGrammesParJour}',
+          valider: true,
+        ),
+        isA<Succes<void>>(),
+      );
+
+      final apres = ration('bovins', 'Embouche');
+      expect(apres.confirme, isTrue);
+      expect(apres.badge, 'Validé');
+      expect(apres.rationGrammesParJour, avant.rationGrammesParJour);
+    });
+
+    test('Valider enregistre aussi la valeur saisie', () async {
+      final avant = ration('escargots', 'Marchand');
+      await vm.modifierRation(bareme: avant, ration: '6', valider: true);
+
+      final apres = ration('escargots', 'Marchand');
+      expect(apres.rationGrammesParJour, 6);
+      expect(apres.confirme, isTrue);
+    });
+
+    test('Enregistrer seul ne valide pas', () async {
+      final avant = ration('escargots', 'Naissain');
+      await vm.modifierRation(bareme: avant, ration: '2');
+      expect(ration('escargots', 'Naissain').confirme, isFalse);
+    });
+
+    test(
+      'changer la valeur d\'un barème validé le ramène à « à valider »',
+      () async {
+        final lapin = ration('lapins', 'Chair / Jeune');
+        expect(lapin.confirme, isTrue, reason: 'Confirmé dans le prototype.');
+        expect(lapin.badge, 'Confirmé (Référence Cuniculture)');
+
+        await vm.modifierRation(bareme: lapin, ration: '65');
+        expect(ration('lapins', 'Chair / Jeune').confirme, isFalse);
+      },
+    );
+
+    test('réenregistrer la même valeur garde le statut validé', () async {
+      final lapin = ration('lapins', 'Chair / Jeune');
+      await vm.modifierRation(
+        bareme: lapin,
+        ration: '${lapin.rationGrammesParJour}',
+      );
+      expect(ration('lapins', 'Chair / Jeune').confirme, isTrue);
+    });
+
+    test('un barème validé depuis l\'écran ne se dit pas « Référence '
+        'Cuniculture »', () async {
+      final avant = ration('goliaths', 'Mature');
+      await vm.modifierRation(
+        bareme: avant,
+        ration: '${avant.rationGrammesParJour}',
+        valider: true,
+      );
+      expect(ration('goliaths', 'Mature').badge, 'Validé');
+    });
+
+    group('classes de poids', () {
+      TauxRationPoids classe(String espece, int minG) => vm.tauxPoids
+          .firstWhere((t) => t.espece == espece && t.poidsMinG == minG);
+
+      Future<Resultat<void>> enregistrer(
+        TauxRationPoids t, {
+        String? taux,
+        bool valider = false,
+      }) => vm.enregistrerTauxPoids(
+        existant: t,
+        espece: t.espece,
+        poidsMin: '${t.poidsMinG / (t.espece == 'bovins' ? 1000 : 1)}',
+        poidsMax: t.poidsMaxG == null
+            ? ''
+            : '${t.poidsMaxG! / (t.espece == 'bovins' ? 1000 : 1)}',
+        taux: taux ?? '${t.tauxPourcent}',
+        valider: valider,
+      );
+
+      test('Valider confirme une classe de bovins', () async {
+        final avant = classe('bovins', 150000);
+        expect(avant.confirme, isFalse);
+
+        expect(await enregistrer(avant, valider: true), isA<Succes<void>>());
+        expect(classe('bovins', 150000).confirme, isTrue);
+      });
+
+      test(
+        'Valider confirme une classe de poissons, valeur modifiée comprise',
+        () async {
+          final avant = classe('poissons-chats', 20);
+          await enregistrer(avant, taux: '4,5', valider: true);
+
+          final apres = classe('poissons-chats', 20);
+          expect(apres.confirme, isTrue);
+          expect(apres.tauxPourcent, 4.5);
+        },
+      );
+
+      test('modifier une classe validée la ramène à « à valider »', () async {
+        await enregistrer(classe('bovins', 0), valider: true);
+        expect(classe('bovins', 0).confirme, isTrue);
+
+        await enregistrer(classe('bovins', 0), taux: '3,2');
+        expect(classe('bovins', 0).confirme, isFalse);
+      });
+
+      test('réenregistrer sans changement garde le statut', () async {
+        await enregistrer(classe('bovins', 0), valider: true);
+        await enregistrer(classe('bovins', 0));
+        expect(classe('bovins', 0).confirme, isTrue);
+      });
+
+      test('une saisie invalide ne valide rien', () async {
+        final avant = classe('bovins', 150000);
+        // Chevauche la classe 300+ : refusee, donc ni valeur ni statut.
+        final resultat = await vm.enregistrerTauxPoids(
+          existant: avant,
+          espece: 'bovins',
+          poidsMin: '150',
+          poidsMax: '400',
+          taux: '3',
+          valider: true,
+        );
+        expect(resultat, isA<Echec<void>>());
+        expect(classe('bovins', 150000).confirme, isFalse);
+      });
+    });
+  });
 }

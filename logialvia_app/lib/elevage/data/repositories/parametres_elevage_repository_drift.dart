@@ -19,6 +19,7 @@ abstract class ParametresElevageRepository {
   Future<void> modifierRation({
     required int id,
     required int rationGrammesParJour,
+    bool? confirme,
   });
   Future<void> supprimerBareme(
     int id, {
@@ -32,6 +33,7 @@ abstract class ParametresElevageRepository {
     required int poidsMinG,
     required int? poidsMaxG,
     required double tauxPourcent,
+    bool? confirme,
   });
   Future<void> supprimerTauxPoids(
     int id, {
@@ -110,10 +112,11 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     required int poidsMinG,
     required int? poidsMaxG,
     required double tauxPourcent,
+    bool? confirme,
   }) async {
     if (id != null) {
-      // Modifier un taux le fait redevenir un repere a valider : la Gerante ou
-      // l'animalier l'a touche, plus personne ne l'a confirme.
+      // [confirme] `null` laisse le statut tel quel ; c'est le ViewModel qui
+      // decide s'il tombe (valeur modifiee) ou passe a « valide ».
       await (_db.update(
         _db.tauxRationPoids,
       )..where((t) => t.id.equals(id))).write(
@@ -121,6 +124,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           poidsMinG: Value(poidsMinG),
           poidsMaxG: Value(poidsMaxG),
           tauxPourcent: Value(tauxPourcent),
+          confirme: confirme == null ? const Value.absent() : Value(confirme),
         ),
       );
       return;
@@ -255,9 +259,13 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
   Future<void> modifierRation({
     required int id,
     required int rationGrammesParJour,
+    bool? confirme,
   }) async {
     await (_db.update(_db.baremesRation)..where((b) => b.id.equals(id))).write(
-      BaremesRationCompanion(rationGrammesParJour: Value(rationGrammesParJour)),
+      BaremesRationCompanion(
+        rationGrammesParJour: Value(rationGrammesParJour),
+        confirme: confirme == null ? const Value.absent() : Value(confirme),
+      ),
     );
   }
 

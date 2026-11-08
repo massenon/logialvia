@@ -294,6 +294,64 @@ void main() {
     });
   });
 
+  group('Paramètres Élevage : valider un repère', () {
+    testWidgets('le bouton Valider de la modale fait passer un barème de '
+        '« à valider » à « validé »', (t) async {
+      await afficher(t, const PageParametresElevage());
+
+      // Premiere ligne : les barèmes sont tries par espece, donc les bovins.
+      final avant = (await db.select(db.baremesRation).get()).singleWhere(
+        (b) => b.espece == 'bovins' && b.stade == 'Veau',
+      );
+      expect(avant.confirme, isFalse);
+
+      await t.tap(find.byTooltip('Modifier la ration').first);
+      await t.pumpAndSettle();
+      expect(find.text('Valider'), findsOneWidget);
+
+      await t.tap(find.text('Valider'));
+      await t.pumpAndSettle(const Duration(seconds: 2));
+      expect(t.takeException(), isNull);
+
+      final apres = (await db.select(db.baremesRation).get()).singleWhere(
+        (b) => b.espece == 'bovins' && b.stade == 'Veau',
+      );
+      expect(apres.confirme, isTrue);
+      expect(apres.rationGrammesParJour, avant.rationGrammesParJour);
+
+      // Une fois validé, la modale ne propose plus Valider.
+      await t.tap(find.byTooltip('Modifier la ration').first);
+      await t.pumpAndSettle();
+      expect(find.text('Valider'), findsNothing);
+      expect(find.text('Enregistrer'), findsOneWidget);
+    });
+
+    testWidgets('la modale d\'une classe de poids propose Valider, une fois', (
+      t,
+    ) async {
+      await afficher(t, const PageParametresElevage());
+
+      await t.ensureVisible(find.byTooltip('Modifier la classe').first);
+      await t.tap(find.byTooltip('Modifier la classe').first);
+      await t.pumpAndSettle();
+      expect(find.text('Valider'), findsOneWidget);
+
+      await t.tap(find.text('Valider'));
+      await t.pumpAndSettle(const Duration(seconds: 2));
+      expect(t.takeException(), isNull);
+
+      final validees = await (db.select(
+        db.tauxRationPoids,
+      )..where((x) => x.confirme.equals(true))).get();
+      expect(validees, hasLength(1));
+
+      await t.ensureVisible(find.byTooltip('Modifier la classe').first);
+      await t.tap(find.byTooltip('Modifier la classe').first);
+      await t.pumpAndSettle();
+      expect(find.text('Valider'), findsNothing);
+    });
+  });
+
   group('Approvisionnement', () {
     testWidgets(
       'Achats & Commandes',

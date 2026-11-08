@@ -428,7 +428,7 @@ class _CarteTauxPoids extends StatelessWidget {
                           borderRadius: AppRadius.pill,
                         ),
                         child: Text(
-                          taux[i].confirme ? 'Confirmé' : 'Repère à valider',
+                          taux[i].confirme ? 'Validé' : 'Repère à valider',
                           style: _texte.copyWith(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -621,6 +621,32 @@ Future<void> _formulaireTauxPoids(
           onPressed: () => Navigator.of(ctx).pop(),
         ),
       ),
+      if (existant != null && !existant.confirme)
+        Builder(
+          builder: (ctx) => AppButton(
+            label: 'Valider',
+            icon: Symbols.verified,
+            variant: AppButtonVariant.outline,
+            onPressed: () async {
+              final resultat = await vm.enregistrerTauxPoids(
+                existant: existant,
+                espece: espece,
+                poidsMin: minCtrl.text,
+                poidsMax: maxCtrl.text,
+                taux: tauxCtrl.text,
+                valider: true,
+              );
+              if (!ctx.mounted) return;
+              switch (resultat) {
+                case Succes():
+                  Navigator.of(ctx).pop();
+                  showAppToast(ctx, 'Classe de poids validée.');
+                case Echec(:final message):
+                  showAppToast(ctx, message, type: ToastType.error);
+              }
+            },
+          ),
+        ),
       Builder(
         builder: (ctx) => AppButton(
           label: existant == null ? 'Ajouter' : 'Enregistrer',
@@ -985,6 +1011,34 @@ Future<void> _formulaireEditionRation(
           onPressed: () => Navigator.of(ctx).pop(),
         ),
       ),
+      // « Valider » : enregistre ET passe le barème de « à valider » à
+      // « validé ». Absent quand il l'est déjà.
+      if (!bareme.confirme)
+        Builder(
+          builder: (ctx) => AppButton(
+            label: 'Valider',
+            icon: Symbols.verified,
+            variant: AppButtonVariant.outline,
+            onPressed: () async {
+              final resultat = await vm.modifierRation(
+                bareme: bareme,
+                ration: rationCtrl.text,
+                valider: true,
+              );
+              if (!ctx.mounted) return;
+              switch (resultat) {
+                case Succes():
+                  Navigator.of(ctx).pop();
+                  showAppToast(
+                    ctx,
+                    'Ration validée : ${rationCtrl.text.trim()} g/j.',
+                  );
+                case Echec(:final message):
+                  showAppToast(ctx, message, type: ToastType.error);
+              }
+            },
+          ),
+        ),
       Builder(
         builder: (ctx) => AppButton(
           label: 'Enregistrer',

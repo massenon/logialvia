@@ -213,6 +213,10 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Poissons-chats en % de la biomasse (DV-01)** : mécanisme des bovins étendu, classes saisies en **grammes**, 5 classes semées (moins de 5 g : 15 % ; 5 à 20 g : 7 % ; 20 à 100 g : 4 % ; 100 à 500 g : 2,5 % ; 500 g et plus : 1,5 %, une valeur retenue dans chaque fourchette du registre, « repère à valider »), plafond du taux à 25 % pour un poisson (10 % pour un bovin), migration v30. Sans pesée, la fiche garde la ration par tête (8 / 25 / 45 g, inchangée). La pesée de la fiche est celle du lot entier : le poids moyen sert à choisir la classe, pas une pesée par catégorie.
 - **Manuel** : captures, libellés et PDF (78 pages) régénérés.
 
+**Statut « à valider » -> « validé » (demande du 08/11/2026)** : dans Paramètres Élevage › Rationnement, la fenêtre de modification d'une ration par tête et celle d'une classe de poids portent un bouton **Valider** (absent quand le repère est déjà validé) qui enregistre la valeur ET passe le statut de « à valider » à « validé ». Règle : **changer ensuite la valeur ramène le repère à « à valider »** (la validation portait sur l'ancienne valeur) ; réenregistrer sans rien changer garde le statut. L'étiquette d'un barème validé est « Validé » (« Confirmé (Référence Cuniculture) » reste propre aux 3 barèmes lapins du prototype). Le droit est celui de l'écran (`manage-elevage` : administrateur et animalier).
+
+**Plafonds de saisie par espèce** : ration par tête 5 kg (20 kg pour un bovin) ; taux de ration 10 % (25 % pour un poisson).
+
 **Volontairement non fait** :
 1. l'intrant « **Complément calcium** » du module Stocks (DV-16, Q-ESC-5) : le semer exige un seuil d'alerte et un prix que personne n'a fixés, et un stock à zéro déclencherait aussitôt une fausse alerte « stock critique ». À créer dans Gestion Stocks quand la filière démarre ;
 2. les **produits du catalogue** escargot et bovin : prix à fixer par la Gérante (le formulaire est prêt) ;

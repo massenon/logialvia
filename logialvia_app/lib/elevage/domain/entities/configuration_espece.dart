@@ -43,6 +43,7 @@ class ConfigurationEspece {
     this.rationEnPourcentagePoidsVif = false,
     this.uniteClassePoids = 'kg',
     this.tauxPoidsMaxPourcent = 10,
+    this.rationMaxGrammesParJour = 5000,
   });
 
   /// Valeur stockee dans `FICHE_JOURNEE.espece`.
@@ -105,6 +106,12 @@ class ConfigurationEspece {
   /// pour un bovin, `'g'` pour un poisson (classes de 5, 20, 100 g). Les poids
   /// sont toujours **stockés en grammes**.
   final String uniteClassePoids;
+
+  /// Ration par tête au-delà de laquelle la saisie est une faute de frappe :
+  /// 5 kg par jour pour une volaille, un lapin, un poisson ou un escargot, mais
+  /// un bovin adulte mange près de 10 kg de matière sèche par jour (plafond
+  /// 20 kg).
+  final int rationMaxGrammesParJour;
 
   /// Taux de ration au-delà duquel la saisie est une faute de frappe : un
   /// ruminant mange 2 à 4 % de son poids en matière sèche (plafond 10 %), mais
@@ -379,6 +386,7 @@ class ConfigurationsEspeces {
     ageMaturiteJours: 730,
     libelleNaissances: 'Nés (Vêlage)',
     rationEnPourcentagePoidsVif: true,
+    rationMaxGrammesParJour: 20000,
   );
 
   static const Map<String, ConfigurationEspece> parIdentifiant = {
