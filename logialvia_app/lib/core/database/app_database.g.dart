@@ -2237,6 +2237,32 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
     requiredDuringInsert: false,
     defaultValue: const Constant('B'),
   );
+  static const VerificationMeta _prefixeBacMeta = const VerificationMeta(
+    'prefixeBac',
+  );
+  @override
+  late final GeneratedColumn<String> prefixeBac = GeneratedColumn<String>(
+    'prefixe_bac',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 4),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('BAC'),
+  );
+  static const VerificationMeta _prefixeParcMeta = const VerificationMeta(
+    'prefixeParc',
+  );
+  @override
+  late final GeneratedColumn<String> prefixeParc = GeneratedColumn<String>(
+    'prefixe_parc',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 4),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PARC'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2261,6 +2287,8 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
     prefixeCage,
     prefixeBande,
     prefixeBassin,
+    prefixeBac,
+    prefixeParc,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2439,6 +2467,21 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
         ),
       );
     }
+    if (data.containsKey('prefixe_bac')) {
+      context.handle(
+        _prefixeBacMeta,
+        prefixeBac.isAcceptableOrUnknown(data['prefixe_bac']!, _prefixeBacMeta),
+      );
+    }
+    if (data.containsKey('prefixe_parc')) {
+      context.handle(
+        _prefixeParcMeta,
+        prefixeParc.isAcceptableOrUnknown(
+          data['prefixe_parc']!,
+          _prefixeParcMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2539,6 +2582,14 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
         DriftSqlType.string,
         data['${effectivePrefix}prefixe_bassin'],
       )!,
+      prefixeBac: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prefixe_bac'],
+      )!,
+      prefixeParc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prefixe_parc'],
+      )!,
     );
   }
 
@@ -2616,6 +2667,14 @@ class ParametresEntrepriseRow extends DataClass
 
   /// Prefixe des bassins — Pisciculture (Poissons-Chats). Apercu « B1, B2, B3 ».
   final String prefixeBassin;
+
+  /// Prefixe des bacs — Heliciculture (Escargots), DV-16. Apercu « BAC1, BAC2 ».
+  /// Ajoute en v29 : la filiere n'existait pas dans le prototype.
+  final String prefixeBac;
+
+  /// Prefixe des parcs — Elevage bovin (Bovins), DV-17. Apercu « PARC1, PARC2 ».
+  /// Ajoute en v29.
+  final String prefixeParc;
   const ParametresEntrepriseRow({
     required this.id,
     required this.raisonSociale,
@@ -2639,6 +2698,8 @@ class ParametresEntrepriseRow extends DataClass
     required this.prefixeCage,
     required this.prefixeBande,
     required this.prefixeBassin,
+    required this.prefixeBac,
+    required this.prefixeParc,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2693,6 +2754,8 @@ class ParametresEntrepriseRow extends DataClass
     map['prefixe_cage'] = Variable<String>(prefixeCage);
     map['prefixe_bande'] = Variable<String>(prefixeBande);
     map['prefixe_bassin'] = Variable<String>(prefixeBassin);
+    map['prefixe_bac'] = Variable<String>(prefixeBac);
+    map['prefixe_parc'] = Variable<String>(prefixeParc);
     return map;
   }
 
@@ -2744,6 +2807,8 @@ class ParametresEntrepriseRow extends DataClass
       prefixeCage: Value(prefixeCage),
       prefixeBande: Value(prefixeBande),
       prefixeBassin: Value(prefixeBassin),
+      prefixeBac: Value(prefixeBac),
+      prefixeParc: Value(prefixeParc),
     );
   }
 
@@ -2775,6 +2840,8 @@ class ParametresEntrepriseRow extends DataClass
       prefixeCage: serializer.fromJson<String>(json['prefixeCage']),
       prefixeBande: serializer.fromJson<String>(json['prefixeBande']),
       prefixeBassin: serializer.fromJson<String>(json['prefixeBassin']),
+      prefixeBac: serializer.fromJson<String>(json['prefixeBac']),
+      prefixeParc: serializer.fromJson<String>(json['prefixeParc']),
     );
   }
   @override
@@ -2803,6 +2870,8 @@ class ParametresEntrepriseRow extends DataClass
       'prefixeCage': serializer.toJson<String>(prefixeCage),
       'prefixeBande': serializer.toJson<String>(prefixeBande),
       'prefixeBassin': serializer.toJson<String>(prefixeBassin),
+      'prefixeBac': serializer.toJson<String>(prefixeBac),
+      'prefixeParc': serializer.toJson<String>(prefixeParc),
     };
   }
 
@@ -2829,6 +2898,8 @@ class ParametresEntrepriseRow extends DataClass
     String? prefixeCage,
     String? prefixeBande,
     String? prefixeBassin,
+    String? prefixeBac,
+    String? prefixeParc,
   }) => ParametresEntrepriseRow(
     id: id ?? this.id,
     raisonSociale: raisonSociale ?? this.raisonSociale,
@@ -2856,6 +2927,8 @@ class ParametresEntrepriseRow extends DataClass
     prefixeCage: prefixeCage ?? this.prefixeCage,
     prefixeBande: prefixeBande ?? this.prefixeBande,
     prefixeBassin: prefixeBassin ?? this.prefixeBassin,
+    prefixeBac: prefixeBac ?? this.prefixeBac,
+    prefixeParc: prefixeParc ?? this.prefixeParc,
   );
   ParametresEntrepriseRow copyWithCompanion(
     ParametresEntrepriseCompanion data,
@@ -2911,6 +2984,12 @@ class ParametresEntrepriseRow extends DataClass
       prefixeBassin: data.prefixeBassin.present
           ? data.prefixeBassin.value
           : this.prefixeBassin,
+      prefixeBac: data.prefixeBac.present
+          ? data.prefixeBac.value
+          : this.prefixeBac,
+      prefixeParc: data.prefixeParc.present
+          ? data.prefixeParc.value
+          : this.prefixeParc,
     );
   }
 
@@ -2938,7 +3017,9 @@ class ParametresEntrepriseRow extends DataClass
           ..write('prefixeEnclos: $prefixeEnclos, ')
           ..write('prefixeCage: $prefixeCage, ')
           ..write('prefixeBande: $prefixeBande, ')
-          ..write('prefixeBassin: $prefixeBassin')
+          ..write('prefixeBassin: $prefixeBassin, ')
+          ..write('prefixeBac: $prefixeBac, ')
+          ..write('prefixeParc: $prefixeParc')
           ..write(')'))
         .toString();
   }
@@ -2967,6 +3048,8 @@ class ParametresEntrepriseRow extends DataClass
     prefixeCage,
     prefixeBande,
     prefixeBassin,
+    prefixeBac,
+    prefixeParc,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2993,7 +3076,9 @@ class ParametresEntrepriseRow extends DataClass
           other.prefixeEnclos == this.prefixeEnclos &&
           other.prefixeCage == this.prefixeCage &&
           other.prefixeBande == this.prefixeBande &&
-          other.prefixeBassin == this.prefixeBassin);
+          other.prefixeBassin == this.prefixeBassin &&
+          other.prefixeBac == this.prefixeBac &&
+          other.prefixeParc == this.prefixeParc);
 }
 
 class ParametresEntrepriseCompanion
@@ -3020,6 +3105,8 @@ class ParametresEntrepriseCompanion
   final Value<String> prefixeCage;
   final Value<String> prefixeBande;
   final Value<String> prefixeBassin;
+  final Value<String> prefixeBac;
+  final Value<String> prefixeParc;
   const ParametresEntrepriseCompanion({
     this.id = const Value.absent(),
     this.raisonSociale = const Value.absent(),
@@ -3043,6 +3130,8 @@ class ParametresEntrepriseCompanion
     this.prefixeCage = const Value.absent(),
     this.prefixeBande = const Value.absent(),
     this.prefixeBassin = const Value.absent(),
+    this.prefixeBac = const Value.absent(),
+    this.prefixeParc = const Value.absent(),
   });
   ParametresEntrepriseCompanion.insert({
     this.id = const Value.absent(),
@@ -3067,6 +3156,8 @@ class ParametresEntrepriseCompanion
     this.prefixeCage = const Value.absent(),
     this.prefixeBande = const Value.absent(),
     this.prefixeBassin = const Value.absent(),
+    this.prefixeBac = const Value.absent(),
+    this.prefixeParc = const Value.absent(),
   });
   static Insertable<ParametresEntrepriseRow> custom({
     Expression<int>? id,
@@ -3091,6 +3182,8 @@ class ParametresEntrepriseCompanion
     Expression<String>? prefixeCage,
     Expression<String>? prefixeBande,
     Expression<String>? prefixeBassin,
+    Expression<String>? prefixeBac,
+    Expression<String>? prefixeParc,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3116,6 +3209,8 @@ class ParametresEntrepriseCompanion
       if (prefixeCage != null) 'prefixe_cage': prefixeCage,
       if (prefixeBande != null) 'prefixe_bande': prefixeBande,
       if (prefixeBassin != null) 'prefixe_bassin': prefixeBassin,
+      if (prefixeBac != null) 'prefixe_bac': prefixeBac,
+      if (prefixeParc != null) 'prefixe_parc': prefixeParc,
     });
   }
 
@@ -3142,6 +3237,8 @@ class ParametresEntrepriseCompanion
     Value<String>? prefixeCage,
     Value<String>? prefixeBande,
     Value<String>? prefixeBassin,
+    Value<String>? prefixeBac,
+    Value<String>? prefixeParc,
   }) {
     return ParametresEntrepriseCompanion(
       id: id ?? this.id,
@@ -3166,6 +3263,8 @@ class ParametresEntrepriseCompanion
       prefixeCage: prefixeCage ?? this.prefixeCage,
       prefixeBande: prefixeBande ?? this.prefixeBande,
       prefixeBassin: prefixeBassin ?? this.prefixeBassin,
+      prefixeBac: prefixeBac ?? this.prefixeBac,
+      prefixeParc: prefixeParc ?? this.prefixeParc,
     );
   }
 
@@ -3238,6 +3337,12 @@ class ParametresEntrepriseCompanion
     if (prefixeBassin.present) {
       map['prefixe_bassin'] = Variable<String>(prefixeBassin.value);
     }
+    if (prefixeBac.present) {
+      map['prefixe_bac'] = Variable<String>(prefixeBac.value);
+    }
+    if (prefixeParc.present) {
+      map['prefixe_parc'] = Variable<String>(prefixeParc.value);
+    }
     return map;
   }
 
@@ -3265,7 +3370,9 @@ class ParametresEntrepriseCompanion
           ..write('prefixeEnclos: $prefixeEnclos, ')
           ..write('prefixeCage: $prefixeCage, ')
           ..write('prefixeBande: $prefixeBande, ')
-          ..write('prefixeBassin: $prefixeBassin')
+          ..write('prefixeBassin: $prefixeBassin, ')
+          ..write('prefixeBac: $prefixeBac, ')
+          ..write('prefixeParc: $prefixeParc')
           ..write(')'))
         .toString();
   }
@@ -22054,6 +22161,8 @@ typedef $$ParametresEntrepriseTableCreateCompanionBuilder =
       Value<String> prefixeCage,
       Value<String> prefixeBande,
       Value<String> prefixeBassin,
+      Value<String> prefixeBac,
+      Value<String> prefixeParc,
     });
 typedef $$ParametresEntrepriseTableUpdateCompanionBuilder =
     ParametresEntrepriseCompanion Function({
@@ -22079,6 +22188,8 @@ typedef $$ParametresEntrepriseTableUpdateCompanionBuilder =
       Value<String> prefixeCage,
       Value<String> prefixeBande,
       Value<String> prefixeBassin,
+      Value<String> prefixeBac,
+      Value<String> prefixeParc,
     });
 
 class $$ParametresEntrepriseTableFilterComposer
@@ -22197,6 +22308,16 @@ class $$ParametresEntrepriseTableFilterComposer
 
   ColumnFilters<String> get prefixeBassin => $composableBuilder(
     column: $table.prefixeBassin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -22319,6 +22440,16 @@ class $$ParametresEntrepriseTableOrderingComposer
     column: $table.prefixeBassin,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ParametresEntrepriseTableAnnotationComposer
@@ -22423,6 +22554,16 @@ class $$ParametresEntrepriseTableAnnotationComposer
     column: $table.prefixeBassin,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
+    builder: (column) => column,
+  );
 }
 
 class $$ParametresEntrepriseTableTableManager
@@ -22490,6 +22631,8 @@ class $$ParametresEntrepriseTableTableManager
                 Value<String> prefixeCage = const Value.absent(),
                 Value<String> prefixeBande = const Value.absent(),
                 Value<String> prefixeBassin = const Value.absent(),
+                Value<String> prefixeBac = const Value.absent(),
+                Value<String> prefixeParc = const Value.absent(),
               }) => ParametresEntrepriseCompanion(
                 id: id,
                 raisonSociale: raisonSociale,
@@ -22513,6 +22656,8 @@ class $$ParametresEntrepriseTableTableManager
                 prefixeCage: prefixeCage,
                 prefixeBande: prefixeBande,
                 prefixeBassin: prefixeBassin,
+                prefixeBac: prefixeBac,
+                prefixeParc: prefixeParc,
               ),
           createCompanionCallback:
               ({
@@ -22538,6 +22683,8 @@ class $$ParametresEntrepriseTableTableManager
                 Value<String> prefixeCage = const Value.absent(),
                 Value<String> prefixeBande = const Value.absent(),
                 Value<String> prefixeBassin = const Value.absent(),
+                Value<String> prefixeBac = const Value.absent(),
+                Value<String> prefixeParc = const Value.absent(),
               }) => ParametresEntrepriseCompanion.insert(
                 id: id,
                 raisonSociale: raisonSociale,
@@ -22561,6 +22708,8 @@ class $$ParametresEntrepriseTableTableManager
                 prefixeCage: prefixeCage,
                 prefixeBande: prefixeBande,
                 prefixeBassin: prefixeBassin,
+                prefixeBac: prefixeBac,
+                prefixeParc: prefixeParc,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

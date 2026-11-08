@@ -338,6 +338,30 @@ void main() {
       expect(vm.formats.apercuEnclos, 'E1, E2, E3');
     });
 
+    test('bacs des escargots et parcs des bovins : BAC et PARC par défaut', () {
+      expect(vm.formats.bac, 'BAC');
+      expect(vm.formats.parc, 'PARC');
+      expect(vm.formats.apercuBac, 'BAC1, BAC2, BAC3');
+      expect(vm.formats.apercuParc, 'PARC1, PARC2, PARC3');
+    });
+
+    test('les préfixes bac et parc se modifient, se persistent, et un préfixe '
+        'vide est refusé', () async {
+      vm.modifierBrouillon(bac: ' ');
+      expect(await vm.enregistrerNumerotation(), isA<Echec<void>>());
+      expect(vm.formats.bac, 'BAC');
+
+      vm.modifierBrouillon(bac: 'ESC', parc: 'BOV');
+      expect(vm.numerotationModifiee, isTrue);
+      expect(await vm.enregistrerNumerotation(), isA<Succes<void>>());
+
+      final relu = ParametresElevageViewModel(repository);
+      await relu.charger();
+      expect(relu.formats.bac, 'ESC');
+      expect(relu.formats.parc, 'BOV');
+      expect(relu.formats.bassin, 'B', reason: 'Les autres sont intacts.');
+    });
+
     test('l\'aperçu suit la frappe avant même l\'enregistrement', () {
       vm.modifierBrouillon(enclos: 'ENC');
       expect(vm.brouillon.apercuEnclos, 'ENC1, ENC2, ENC3');

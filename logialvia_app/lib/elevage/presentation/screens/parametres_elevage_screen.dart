@@ -2041,6 +2041,32 @@ class _OngletNumerotation extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.md),
+                _GroupeNumerotation(
+                  titre: 'Héliciculture (Escargots)',
+                  icone: Symbols.eco,
+                  champs: [
+                    _ChampPrefixe(
+                      libelle: 'Préfixe Bac',
+                      valeur: brouillon.bac,
+                      apercu: brouillon.apercuBac,
+                      onChange: (v) => vm.modifierBrouillon(bac: v),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _GroupeNumerotation(
+                  titre: 'Élevage bovin (Bovins)',
+                  icone: Symbols.agriculture,
+                  champs: [
+                    _ChampPrefixe(
+                      libelle: 'Préfixe Parc',
+                      valeur: brouillon.parc,
+                      apercu: brouillon.apercuParc,
+                      onChange: (v) => vm.modifierBrouillon(parc: v),
+                    ),
+                  ],
+                ),
                 const Divider(height: AppSpacing.lg),
                 Row(
                   children: [
@@ -2214,7 +2240,8 @@ Future<void> _enregistrerNumerotation(
       showAppToast(
         context,
         'Formats de numérotation enregistrés : Enclos « ${f.enclos}1 », '
-        'Cage « ${f.cage}1 », Bassin « ${f.bassin}1 ».',
+        'Cage « ${f.cage}1 », Bassin « ${f.bassin}1 », Bac « ${f.bac}1 », '
+        'Parc « ${f.parc}1 ».',
       );
     case Echec(:final message):
       showAppToast(context, message, type: ToastType.error);

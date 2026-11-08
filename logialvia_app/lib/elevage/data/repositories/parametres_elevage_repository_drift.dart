@@ -192,6 +192,8 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
       cage: ligne.prefixeCage,
       bande: ligne.prefixeBande,
       bassin: ligne.prefixeBassin,
+      bac: ligne.prefixeBac,
+      parc: ligne.prefixeParc,
     );
   }
 
@@ -356,6 +358,8 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
             prefixeCage: Value(formats.cage),
             prefixeBande: Value(formats.bande),
             prefixeBassin: Value(formats.bassin),
+            prefixeBac: Value(formats.bac),
+            prefixeParc: Value(formats.parc),
           ),
         );
   }

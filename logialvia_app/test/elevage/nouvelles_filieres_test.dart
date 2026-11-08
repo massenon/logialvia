@@ -444,4 +444,45 @@ void main() {
       expect(await db.select(db.modulesActifs).get(), hasLength(5));
     });
   });
+  group('Migration v29 : numérotation BAC et PARC', () {
+    late Directory dossier;
+
+    setUp(() {
+      dossier = Directory.systemTemp.createTempSync('logialvia_v29');
+    });
+
+    tearDown(() {
+      if (dossier.existsSync()) dossier.deleteSync(recursive: true);
+    });
+
+    test('ajoute BAC et PARC sans toucher aux préfixes déjà choisis', () async {
+      final fichier = File('${dossier.path}/logialvia.db');
+      final prepa = AppDatabase.pourFichier(fichier);
+      await ParametresElevageRepositoryDrift(
+        prepa,
+      ).enregistrerFormatsNumerotation(
+        const FormatsNumerotation(enclos: 'ENC', cage: 'CAG'),
+      );
+      // Une base telle qu'elle etait en v28 : sans les deux colonnes.
+      await prepa.customStatement(
+        'ALTER TABLE parametres_entreprise DROP COLUMN prefixe_bac',
+      );
+      await prepa.customStatement(
+        'ALTER TABLE parametres_entreprise DROP COLUMN prefixe_parc',
+      );
+      await prepa.customStatement('PRAGMA user_version = 28');
+      await prepa.close();
+
+      final db = AppDatabase.pourFichier(fichier);
+      addTearDown(db.close);
+      final formats = await ParametresElevageRepositoryDrift(
+        db,
+      ).chargerFormatsNumerotation();
+
+      expect(formats.bac, 'BAC');
+      expect(formats.parc, 'PARC');
+      expect(formats.enclos, 'ENC', reason: 'Choix de la Gérante conservé.');
+      expect(formats.cage, 'CAG');
+    });
+  });
 }

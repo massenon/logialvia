@@ -108,6 +108,8 @@ class FormatsNumerotation {
     this.cage = 'C',
     this.bande = 'B',
     this.bassin = 'B',
+    this.bac = 'BAC',
+    this.parc = 'PARC',
   });
 
   final String enclos;
@@ -115,22 +117,32 @@ class FormatsNumerotation {
   final String bande;
   final String bassin;
 
+  /// Bacs des escargots (DV-16) et parcs des bovins (DV-17).
+  final String bac;
+  final String parc;
+
   /// Aperçus en temps réel, repris tels quels de `updateNumerotationPreviews()`.
   String get apercuEnclos => '${enclos}1, ${enclos}2, ${enclos}3';
   String get apercuCage => '${cage}1, ${cage}2, ${cage}5, ${cage}12';
   String get apercuBande => '${bande}1, ${bande}2';
   String get apercuBassin => '${bassin}1, ${bassin}2, ${bassin}3';
+  String get apercuBac => '${bac}1, ${bac}2, ${bac}3';
+  String get apercuParc => '${parc}1, ${parc}2, ${parc}3';
 
   FormatsNumerotation copyWith({
     String? enclos,
     String? cage,
     String? bande,
     String? bassin,
+    String? bac,
+    String? parc,
   }) => FormatsNumerotation(
     enclos: enclos ?? this.enclos,
     cage: cage ?? this.cage,
     bande: bande ?? this.bande,
     bassin: bassin ?? this.bassin,
+    bac: bac ?? this.bac,
+    parc: parc ?? this.parc,
   );
 }
 

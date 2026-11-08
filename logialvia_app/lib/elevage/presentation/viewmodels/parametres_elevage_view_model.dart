@@ -411,7 +411,9 @@ class ParametresElevageViewModel extends ChangeNotifier {
       _brouillon.enclos != _formats.enclos ||
       _brouillon.cage != _formats.cage ||
       _brouillon.bande != _formats.bande ||
-      _brouillon.bassin != _formats.bassin;
+      _brouillon.bassin != _formats.bassin ||
+      _brouillon.bac != _formats.bac ||
+      _brouillon.parc != _formats.parc;
 
   /// Aligne le brouillon sur l'état persisté — appelé à l'ouverture de l'onglet.
   void reinitialiserBrouillon() {
@@ -424,12 +426,16 @@ class ParametresElevageViewModel extends ChangeNotifier {
     String? cage,
     String? bande,
     String? bassin,
+    String? bac,
+    String? parc,
   }) {
     _brouillon = _brouillon.copyWith(
       enclos: enclos,
       cage: cage,
       bande: bande,
       bassin: bassin,
+      bac: bac,
+      parc: parc,
     );
     notifyListeners();
   }
@@ -443,6 +449,8 @@ class ParametresElevageViewModel extends ChangeNotifier {
       if (_brouillon.cage.trim().isEmpty) 'Cage',
       if (_brouillon.bande.trim().isEmpty) 'Bande',
       if (_brouillon.bassin.trim().isEmpty) 'Bassin',
+      if (_brouillon.bac.trim().isEmpty) 'Bac',
+      if (_brouillon.parc.trim().isEmpty) 'Parc',
     ];
     if (vides.isNotEmpty) {
       return Echec(
@@ -457,6 +465,8 @@ class ParametresElevageViewModel extends ChangeNotifier {
         cage: _brouillon.cage.trim(),
         bande: _brouillon.bande.trim(),
         bassin: _brouillon.bassin.trim(),
+        bac: _brouillon.bac.trim(),
+        parc: _brouillon.parc.trim(),
       );
       await _repository.enregistrerFormatsNumerotation(nettoye);
       await _rafraichir();

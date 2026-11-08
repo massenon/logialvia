@@ -386,6 +386,18 @@ class DocumentsElevage {
               CellulePdf(formats.bassin, gras: true),
               CellulePdf(formats.apercuBassin),
             ],
+            [
+              const CellulePdf('Héliciculture (Escargots)'),
+              const CellulePdf('Bac'),
+              CellulePdf(formats.bac, gras: true),
+              CellulePdf(formats.apercuBac),
+            ],
+            [
+              const CellulePdf('Élevage bovin (Bovins)'),
+              const CellulePdf('Parc'),
+              CellulePdf(formats.parc, gras: true),
+              CellulePdf(formats.apercuParc),
+            ],
           ],
         ),
       ],

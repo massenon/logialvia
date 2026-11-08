@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 28;
+  static const int versionSchema = 29;
 
   @override
   int get schemaVersion => versionSchema;
@@ -356,6 +356,21 @@ class AppDatabase extends _$AppDatabase {
         // d'ouverture ne sont semees que si la filiere n'en a aucune.
         await _creerTable(m, tauxRationPoids);
         await ParametresElevageSeeder.ajouterTauxPoidsParDefaut(this);
+      }
+      if (from < 29) {
+        // Numerotation des bacs (escargots) et des parcs (bovins). Les valeurs
+        // par defaut (BAC, PARC) s'appliquent a la ligne de parametres
+        // existante : aucun prefixe deja choisi n'est touche.
+        await _ajouterColonne(
+          m,
+          parametresEntreprise,
+          parametresEntreprise.prefixeBac,
+        );
+        await _ajouterColonne(
+          m,
+          parametresEntreprise,
+          parametresEntreprise.prefixeParc,
+        );
       }
     },
     beforeOpen: (details) async {
