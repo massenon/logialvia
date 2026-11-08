@@ -41,6 +41,8 @@ class ConfigurationEspece {
     this.libelleAchats = 'Achats',
     required this.libelleNaissances,
     this.rationEnPourcentagePoidsVif = false,
+    this.uniteClassePoids = 'kg',
+    this.tauxPoidsMaxPourcent = 10,
   });
 
   /// Valeur stockee dans `FICHE_JOURNEE.espece`.
@@ -98,6 +100,19 @@ class ConfigurationEspece {
   /// À défaut de pesée, ou de classe pour le poids moyen, la fiche retombe sur
   /// les rations en g/tête/j de [categories], qui restent indicatives.
   final bool rationEnPourcentagePoidsVif;
+
+  /// Unité dans laquelle on saisit les bornes des classes de poids : `'kg'`
+  /// pour un bovin, `'g'` pour un poisson (classes de 5, 20, 100 g). Les poids
+  /// sont toujours **stockés en grammes**.
+  final String uniteClassePoids;
+
+  /// Taux de ration au-delà duquel la saisie est une faute de frappe : un
+  /// ruminant mange 2 à 4 % de son poids en matière sèche (plafond 10 %), mais
+  /// un alevin de poisson-chat jusqu'à 20 % de sa biomasse (plafond 25 %).
+  final double tauxPoidsMaxPourcent;
+
+  /// Grammes dans une unité de [uniteClassePoids].
+  int get grammesParUniteClassePoids => uniteClassePoids == 'g' ? 1 : 1000;
 
   int get nombreCategories => categories.length;
 
@@ -215,8 +230,10 @@ class ConfigurationsEspeces {
     ],
     etapesCycle: ['Alevin', 'Juvénile', 'Mature'],
     noteRationnement:
-        'Seuils non confirmés pour cette filière — barème à valider avant '
-        'usage réel (signalé sur le Dashboard Élevage du prototype).',
+        'Provende calculée en % de la biomasse dès qu\'une pesée est saisie '
+        '(DV-01), d\'après le tableau par classe de poids de Paramètres '
+        'Élevage. Sans pesée : ration indicative par tête. Taux à valider par '
+        'le technicien.',
     // ÉCART_DELIBERE — arbitrage de la Gérante.
     // `fiche-poissons-chats.html` l.161 intitule cette colonne « Alevins
     // (Naissance/Empoissonnement) ». La Gérante demande « Nés » tout court :
@@ -225,6 +242,9 @@ class ConfigurationsEspeces {
     // dans la colonne Achats, pas ici. Le libellé du prototype mélangeait donc
     // les deux entrées que la ligne sépare.
     libelleNaissances: 'Nés',
+    rationEnPourcentagePoidsVif: true,
+    uniteClassePoids: 'g',
+    tauxPoidsMaxPourcent: 25,
   );
 
   static const ConfigurationEspece poulets = ConfigurationEspece(

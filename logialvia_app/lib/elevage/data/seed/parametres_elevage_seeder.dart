@@ -328,8 +328,8 @@ class ParametresElevageSeeder {
     ),
   ];
 
-  /// Taux de ration des bovins par classe de poids vif (DV-17), en grammes et
-  /// en % de matière sèche par jour. Repères validés par l'animalier : jamais
+  /// Taux de ration par classe de poids vif, en grammes et en % par jour :
+  /// bovins (DV-17, matière sèche) et poissons-chats (DV-01, biomasse). Repères validés par l'animalier : jamais
   /// « confirmés » tant qu'il ne les a pas validés dans Paramètres Élevage.
   ///
   /// Classes `[min, max[` : un animal de 300 kg pile tombe dans la dernière.
@@ -340,6 +340,25 @@ class ParametresElevageSeeder {
     (espece: 'bovins', minG: 0, maxG: 150000, taux: 3.5, confirme: false),
     (espece: 'bovins', minG: 150000, maxG: 300000, taux: 3.0, confirme: false),
     (espece: 'bovins', minG: 300000, maxG: null, taux: 2.5, confirme: false),
+    // Poissons-chats (DV-01) : une valeur retenue dans chaque fourchette du
+    // registre (10-20 %, 6-8 %, 3-5 %, 2-3 %, 1-2 %). Le choix est un repere.
+    (espece: 'poissons-chats', minG: 0, maxG: 5, taux: 15.0, confirme: false),
+    (espece: 'poissons-chats', minG: 5, maxG: 20, taux: 7.0, confirme: false),
+    (espece: 'poissons-chats', minG: 20, maxG: 100, taux: 4.0, confirme: false),
+    (
+      espece: 'poissons-chats',
+      minG: 100,
+      maxG: 500,
+      taux: 2.5,
+      confirme: false,
+    ),
+    (
+      espece: 'poissons-chats',
+      minG: 500,
+      maxG: null,
+      taux: 1.5,
+      confirme: false,
+    ),
   ];
 
   static Iterable<TauxRationPoidsCompanion> _tauxPoids(String? espece) =>
@@ -355,18 +374,22 @@ class ParametresElevageSeeder {
             ),
           );
 
-  /// Migration v28 : sème les classes de poids des bovins si la filière n'en a
-  /// aucune. Réservée à la migration, comme [ajouterNouvellesFilieres].
+  /// Migrations v28 et v30 : sème les classes de poids des filières qui n'en
+  /// ont aucune (bovins, puis poissons-chats). Réservée à la migration, comme
+  /// [ajouterNouvellesFilieres] : une filière qui a déjà au moins une classe est
+  /// laissée telle quelle.
   static Future<void> ajouterTauxPoidsParDefaut(AppDatabase db) async {
-    final existant =
-        await (db.select(db.tauxRationPoids)
-              ..where((t) => t.espece.equals('bovins'))
-              ..limit(1))
-            .getSingleOrNull();
-    if (existant != null) return;
-    await db.batch((batch) {
-      batch.insertAll(db.tauxRationPoids, _tauxPoids('bovins').toList());
-    });
+    for (final espece in tauxPoidsInitiaux.map((t) => t.espece).toSet()) {
+      final existant =
+          await (db.select(db.tauxRationPoids)
+                ..where((t) => t.espece.equals(espece))
+                ..limit(1))
+              .getSingleOrNull();
+      if (existant != null) continue;
+      await db.batch((batch) {
+        batch.insertAll(db.tauxRationPoids, _tauxPoids(espece).toList());
+      });
+    }
   }
 
   /// Migration v27 : ajoute escargots et bovins à une base **déjà en service**.

@@ -188,50 +188,54 @@ class ParametresElevageViewModel extends ChangeNotifier {
   bool get afficherTauxPoids =>
       _especeRation == null || rationneSurPoidsVif(_especeRation!);
 
-  /// Taux d'un pourcentage de poids vif au-delà duquel la saisie est une faute
-  /// de frappe : un ruminant mange 2 à 4 % de son poids en matière sèche.
-  static const double tauxPoidsMax = 10;
-
   static double? _nombre(String texte) =>
       double.tryParse(texte.trim().replaceAll(',', '.'));
 
   Future<Resultat<void>> enregistrerTauxPoids({
     TauxRationPoids? existant,
     required String espece,
-    required String poidsMinKg,
-    required String poidsMaxKg,
+    required String poidsMin,
+    required String poidsMax,
     required String taux,
   }) async {
     if (!rationneSurPoidsVif(espece)) {
       return const Echec(
         'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne '
-        's\'applique qu\'aux bovins.',
+        's\'applique qu\'aux bovins et aux poissons-chats.',
       );
     }
-    final minKg = _nombre(poidsMinKg.isEmpty ? '0' : poidsMinKg);
+    // Bornes saisies dans l'unite de la filiere (kg pour un bovin, g pour un
+    // poisson) ; la base les garde en grammes.
+    final unite = ConfigurationsEspeces.parIdentifiant[espece]!;
+    final facteur = unite.grammesParUniteClassePoids;
+    final minKg = _nombre(poidsMin.isEmpty ? '0' : poidsMin);
     final tauxValeur = _nombre(taux);
     if (minKg == null || minKg < 0 || tauxValeur == null) {
       return const Echec('Veuillez renseigner le poids minimum et le taux.');
     }
     double? maxKg;
-    if (poidsMaxKg.trim().isNotEmpty) {
-      maxKg = _nombre(poidsMaxKg);
+    if (poidsMax.trim().isNotEmpty) {
+      maxKg = _nombre(poidsMax);
       if (maxKg == null) {
-        return const Echec('Le poids maximum doit être un nombre de kilos.');
+        return Echec(
+          'Le poids maximum doit être un nombre de '
+          '${unite.uniteClassePoids == 'g' ? 'grammes' : 'kilos'}.',
+        );
       }
       if (maxKg <= minKg) {
         return const Echec('Le poids maximum doit dépasser le poids minimum.');
       }
     }
-    if (tauxValeur <= 0 || tauxValeur > tauxPoidsMax) {
+    final tauxMax = unite.tauxPoidsMaxPourcent;
+    if (tauxValeur <= 0 || tauxValeur > tauxMax) {
       return Echec(
-        'Le taux doit être compris entre 0 et '
-        '${tauxPoidsMax.toStringAsFixed(0)} % du poids vif par jour.',
+        'Le taux doit être compris entre 0 et ${tauxMax.toStringAsFixed(0)} % '
+        'du poids vif (ou de la biomasse) par jour.',
       );
     }
 
-    final minG = (minKg * 1000).round();
-    final maxG = maxKg == null ? null : (maxKg * 1000).round();
+    final minG = (minKg * facteur).round();
+    final maxG = maxKg == null ? null : (maxKg * facteur).round();
 
     // Deux classes qui se chevauchent donneraient deux taux pour un meme
     // animal : le calcul de provende dependrait de l'ordre d'affichage.

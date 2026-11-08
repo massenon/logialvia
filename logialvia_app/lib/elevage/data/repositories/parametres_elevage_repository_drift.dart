@@ -152,7 +152,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
       cle: id,
       designation: ligne == null
           ? 'Taux de ration #$id'
-          : '${ligne.espece} — classe dès ${ligne.poidsMinG ~/ 1000} kg '
+          : '${ligne.espece} — ${TauxRationPoids(id: ligne.id, espece: ligne.espece, poidsMinG: ligne.poidsMinG, poidsMaxG: ligne.poidsMaxG, tauxPourcent: ligne.tauxPourcent, confirme: ligne.confirme).libelleClasse} '
                 '(${ligne.tauxPourcent} %)',
       utilisateurId: utilisateurId,
       utilisateurNom: utilisateurNom,

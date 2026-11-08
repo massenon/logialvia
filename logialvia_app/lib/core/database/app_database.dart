@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 29;
+  static const int versionSchema = 30;
 
   @override
   int get schemaVersion => versionSchema;
@@ -371,6 +371,12 @@ class AppDatabase extends _$AppDatabase {
           parametresEntreprise,
           parametresEntreprise.prefixeParc,
         );
+      }
+      if (from < 30) {
+        // Poissons-chats rationnes en % de la biomasse (DV-01) : leurs classes
+        // de poids rejoignent la table creee en v28. Une base qui a deja des
+        // classes pour cette filiere n'est pas touchee.
+        await ParametresElevageSeeder.ajouterTauxPoidsParDefaut(this);
       }
     },
     beforeOpen: (details) async {

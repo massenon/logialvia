@@ -59,18 +59,30 @@ class TauxRationPoids {
       poidsMoyenG >= poidsMinG &&
       (poidsMaxG == null || poidsMoyenG < poidsMaxG!);
 
-  static String _kg(int grammes) {
-    final kg = grammes / 1000;
-    return kg == kg.roundToDouble()
-        ? kg.round().toString()
-        : kg.toStringAsFixed(1).replaceAll('.', ',');
-  }
+  /// « 150 » ou « 0,5 » — nombre sans unité, virgule décimale.
+  static String _nombre(double valeur) => valeur == valeur.roundToDouble()
+      ? valeur.round().toString()
+      : valeur.toStringAsFixed(1).replaceAll('.', ',');
 
+  /// Un poids avec son unité : en grammes sous 1 kg, en kilos au-delà.
+  static ({String nombre, String unite}) _poids(int grammes) => grammes < 1000
+      ? (nombre: grammes.toString(), unite: 'g')
+      : (nombre: _nombre(grammes / 1000), unite: 'kg');
+
+  /// « Moins de 150 kg », « De 5 à moins de 20 g », « 500 g et plus » : l'unité
+  /// n'est répétée que si les deux bornes n'ont pas la même.
   String get libelleClasse {
     final max = poidsMaxG;
-    if (poidsMinG <= 0 && max != null) return 'Moins de ${_kg(max)} kg';
-    if (max == null) return '${_kg(poidsMinG)} kg et plus';
-    return 'De ${_kg(poidsMinG)} à moins de ${_kg(max)} kg';
+    final bas = _poids(poidsMinG);
+    if (poidsMinG <= 0 && max != null) {
+      final haut = _poids(max);
+      return 'Moins de ${haut.nombre} ${haut.unite}';
+    }
+    if (max == null) return '${bas.nombre} ${bas.unite} et plus';
+    final haut = _poids(max);
+    return bas.unite == haut.unite
+        ? 'De ${bas.nombre} à moins de ${haut.nombre} ${haut.unite}'
+        : 'De ${bas.nombre} ${bas.unite} à moins de ${haut.nombre} ${haut.unite}';
   }
 
   String get libelleTaux => '${tauxPourcent.toString().replaceAll('.', ',')} %';

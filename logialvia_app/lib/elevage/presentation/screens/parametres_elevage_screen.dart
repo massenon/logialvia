@@ -370,18 +370,18 @@ class _CarteTauxPoids extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Pour les filières rationnées sur le poids vif (bovins) : la '
-            'provende du jour = pesée totale du lot × taux de la classe du '
-            'poids moyen, en matière sèche. Sans pesée, la fiche retombe sur '
-            'la ration par tête du tableau ci-dessus.',
+            'Pour les filières rationnées sur le poids vif (bovins, en matière '
+            'sèche ; poissons-chats, en biomasse) : la provende du jour = '
+            'pesée totale du lot × taux de la classe du poids moyen. Sans '
+            'pesée, la fiche retombe sur la ration par tête du tableau '
+            'ci-dessus.',
             style: _texte.copyWith(color: AppColors.outline, height: 1.5),
           ),
           const SizedBox(height: AppSpacing.md),
           if (taux.isEmpty)
             const EtatVide(
               message:
-                  'Aucune classe de poids : la provende des bovins se calcule '
-                  'par tête.',
+                  'Aucune classe de poids : la provende se calcule par tête.',
             )
           else ...[
             const _Entete(
@@ -477,13 +477,21 @@ class _CarteTauxPoids extends StatelessWidget {
   }
 }
 
-String _kgVersTexte(int? grammes) {
+/// Un poids stocké en grammes, dans l'unité de saisie de la filière.
+String _poidsVersTexte(int? grammes, int grammesParUnite) {
   if (grammes == null) return '';
-  final kg = grammes / 1000;
-  return kg == kg.roundToDouble()
-      ? kg.round().toString()
-      : kg.toString().replaceAll('.', ',');
+  final valeur = grammes / grammesParUnite;
+  return valeur == valeur.roundToDouble()
+      ? valeur.round().toString()
+      : valeur.toString().replaceAll('.', ',');
 }
+
+/// Unité de saisie des bornes (`kg` bovins, `g` poissons) et son facteur.
+String _uniteClasse(String espece) =>
+    ConfigurationsEspeces.parIdentifiant[espece]?.uniteClassePoids ?? 'kg';
+int _facteurClasse(String espece) =>
+    ConfigurationsEspeces.parIdentifiant[espece]?.grammesParUniteClassePoids ??
+    1000;
 
 Future<void> _formulaireTauxPoids(
   BuildContext context,
@@ -496,10 +504,12 @@ Future<void> _formulaireTauxPoids(
     espece = especes.first.id;
   }
   final minCtrl = TextEditingController(
-    text: existant == null ? '' : _kgVersTexte(existant.poidsMinG),
+    text: existant == null
+        ? ''
+        : _poidsVersTexte(existant.poidsMinG, _facteurClasse(espece)),
   );
   final maxCtrl = TextEditingController(
-    text: _kgVersTexte(existant?.poidsMaxG),
+    text: _poidsVersTexte(existant?.poidsMaxG, _facteurClasse(espece)),
   );
   final tauxCtrl = TextEditingController(
     text: existant?.tauxPourcent.toString().replaceAll('.', ',') ?? '',
@@ -536,7 +546,10 @@ Future<void> _formulaireTauxPoids(
                   },
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text('POIDS MINIMUM (KG, COMPRIS)', style: AppTypography.label),
+          Text(
+            'POIDS MINIMUM (${_uniteClasse(espece).toUpperCase()}, COMPRIS)',
+            style: AppTypography.label,
+          ),
           const SizedBox(height: AppSpacing.xs),
           TextField(
             controller: minCtrl,
@@ -544,12 +557,15 @@ Future<void> _formulaireTauxPoids(
             inputFormatters: FormatteursSaisie.montant,
             style: _texte,
             decoration: _decoration.copyWith(
-              hintText: 'Ex. 150 (0 = sans minimum)',
+              hintText: _uniteClasse(espece) == 'g'
+                  ? 'Ex. 20 (0 = sans minimum)'
+                  : 'Ex. 150 (0 = sans minimum)',
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text(
-            'POIDS MAXIMUM (KG, EXCLU) — VIDE = SANS LIMITE',
+          Text(
+            'POIDS MAXIMUM (${_uniteClasse(espece).toUpperCase()}, EXCLU) — '
+            'VIDE = SANS LIMITE',
             style: AppTypography.label,
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -558,11 +574,13 @@ Future<void> _formulaireTauxPoids(
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: FormatteursSaisie.montant,
             style: _texte,
-            decoration: _decoration.copyWith(hintText: 'Ex. 300'),
+            decoration: _decoration.copyWith(
+              hintText: _uniteClasse(espece) == 'g' ? 'Ex. 100' : 'Ex. 300',
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           const Text(
-            'TAUX (% DU POIDS VIF PAR JOUR, EN MATIÈRE SÈCHE)',
+            'TAUX (% DU POIDS VIF OU DE LA BIOMASSE PAR JOUR)',
             style: AppTypography.label,
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -610,8 +628,8 @@ Future<void> _formulaireTauxPoids(
             final resultat = await vm.enregistrerTauxPoids(
               existant: existant,
               espece: espece,
-              poidsMinKg: minCtrl.text,
-              poidsMaxKg: maxCtrl.text,
+              poidsMin: minCtrl.text,
+              poidsMax: maxCtrl.text,
               taux: tauxCtrl.text,
             );
             if (!ctx.mounted) return;
