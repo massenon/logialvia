@@ -99,7 +99,7 @@ class ConfigurationEspece {
       categories.indexWhere((c) => c.deduiteDesVentes);
 }
 
-/// Referentiel des 5 fiches — Doc 05 §3 (table de correspondance des
+/// Referentiel des fiches (6 d'origine, plus escargots et bovins) — Doc 05 §3 (table de correspondance des
 /// categories) et Doc F3.
 ///
 /// Les rations proviennent du tableau de rationnement reel de chaque fiche
@@ -273,6 +273,83 @@ class ConfigurationsEspeces {
     libelleNaissances: 'Nés / Transferts',
   );
 
+  /// Escargots (achatines) — filière ajoutée après le prototype (DV-16,
+  /// `docs/logialvia/16_DECISIONS_VALIDEES.md`). Sur le modèle des lapins :
+  /// 3 catégories, la plus jeune reçoit achats et éclosions, la deuxième est
+  /// commercialisée, à la pièce. Rations en g/tête/j : repères validés par
+  /// l'animalier, modifiables dans Paramètres Élevage.
+  static const ConfigurationEspece escargots = ConfigurationEspece(
+    identifiant: 'escargots',
+    libelle: 'Escargots',
+    icone: 'eco',
+    route: '/elevage/escargots',
+    categories: [
+      CategorieEspece(
+        libelle: 'Naissain',
+        rationGrammesParJour: 1,
+        recoitAchatEtNaissances: true,
+      ),
+      CategorieEspece(
+        libelle: 'Marchand',
+        rationGrammesParJour: 5,
+        deduiteDesVentes: true,
+      ),
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 8),
+    ],
+    etapesCycle: [
+      'Ponte et éclosion',
+      'Naissain',
+      'Marchand (≈ 6 à 8 mois, ≈ 100 g) — Éligible à la Vente',
+      'Reproducteur',
+    ],
+    noteRationnement:
+        'Barème indicatif d\'héliciculture — repères à valider par '
+        'l\'animalier. La notice de l\'aliment utilisé prévaut.',
+    poidsMaturiteGrammes: 100,
+    ageMaturiteJours: 180,
+    libelleNaissances: 'Nés (Éclosions)',
+  );
+
+  /// Bovins — filière ajoutée après le prototype (DV-17).
+  ///
+  /// ⚠️ Les rations ci-dessous sont **indicatives** : un ruminant se rationne
+  /// en % de son poids vif (matière sèche), pas en grammes fixes par tête. Le
+  /// tableau par classe de poids de DV-17 n'existe pas encore au poste ; ces
+  /// valeurs (complément seul : 1,5 / 7 / 9 kg de matière sèche) en tiennent
+  /// lieu. Vente à la tête, après embouche.
+  static const ConfigurationEspece bovins = ConfigurationEspece(
+    identifiant: 'bovins',
+    libelle: 'Bovins',
+    icone: 'agriculture',
+    route: '/elevage/bovins',
+    categories: [
+      CategorieEspece(
+        libelle: 'Veau',
+        rationGrammesParJour: 1500,
+        recoitAchatEtNaissances: true,
+      ),
+      CategorieEspece(
+        libelle: 'Embouche',
+        rationGrammesParJour: 7000,
+        deduiteDesVentes: true,
+      ),
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 9000),
+    ],
+    etapesCycle: [
+      'Naissance (vêlage)',
+      'Veau (0 → 6 mois)',
+      'Embouche (≥ 250 kg ou 24 mois) — Éligible à la Vente',
+      'Reproducteur',
+    ],
+    noteRationnement:
+        'Rations indicatives en matière sèche (taux du poids vif × poids moyen '
+        'de référence) — repères à valider par l\'animalier. Le tableau par '
+        'classe de poids n\'est pas encore disponible.',
+    poidsMaturiteGrammes: 250000,
+    ageMaturiteJours: 730,
+    libelleNaissances: 'Nés (Vêlage)',
+  );
+
   static const Map<String, ConfigurationEspece> parIdentifiant = {
     'goliaths': goliaths,
     'pintades': pintades,
@@ -280,5 +357,7 @@ class ConfigurationsEspeces {
     'poissons-chats': poissonsChats,
     'poulets': poulets,
     'pondeuses': pondeuses,
+    'escargots': escargots,
+    'bovins': bovins,
   };
 }

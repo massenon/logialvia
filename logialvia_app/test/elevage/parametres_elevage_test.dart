@@ -32,8 +32,15 @@ void main() {
   tearDown(() async => db.close());
 
   group('Socle — les valeurs viennent du prototype, pas d\'une invention', () {
-    test('les 12 barèmes de `RATIONS` sont présents', () async {
-      expect(vm.baremes, hasLength(12));
+    test('les 12 barèmes de `RATIONS` sont présents, plus 6 pour les filières '
+        'ajoutées (escargots, bovins)', () async {
+      expect(vm.baremes, hasLength(18));
+      expect(
+        vm.baremes.where(
+          (b) => b.espece != 'escargots' && b.espece != 'bovins',
+        ),
+        hasLength(12),
+      );
 
       final goliathau = vm.baremes.firstWhere(
         (b) => b.espece == 'goliaths' && b.stade == 'Goliathau',
@@ -54,9 +61,14 @@ void main() {
       expect(confirmes.every((b) => b.espece == 'lapins'), isTrue);
     });
 
-    test('les 11 échéances de `PROPHYLAXIE_STORE` sont présentes', () async {
+    test('les 11 échéances de `PROPHYLAXIE_STORE` sont présentes, plus 21 '
+        '(escargots) et 9 (bovins)', () async {
       final toutes = await repository.chargerProphylaxie();
-      expect(toutes, hasLength(11));
+      expect(toutes, hasLength(41));
+      expect(
+        toutes.where((e) => e.espece != 'escargots' && e.espece != 'bovins'),
+        hasLength(11),
+      );
 
       vm.changerEspeceProphylaxie('pintades');
       expect(vm.echeancesFiltrees, hasLength(4));
@@ -88,7 +100,7 @@ void main() {
             .rationGrammesParJour,
         130,
       );
-      expect(vm.baremes, hasLength(12), reason: 'Aucun doublon inséré.');
+      expect(vm.baremes, hasLength(18), reason: 'Aucun doublon inséré.');
     });
   });
 
@@ -213,11 +225,11 @@ void main() {
         await vm.ajouterBareme(espece: 'lapins', stade: '', ration: '50'),
         isA<Echec<void>>(),
       );
-      expect(vm.baremes, hasLength(12));
+      expect(vm.baremes, hasLength(18));
     });
 
     test(
-      'le jour du cycle reste dans les bornes du formulaire (1 à 31)',
+      'le jour du cycle reste dans les bornes du formulaire (1 à 365)',
       () async {
         expect(
           await vm.enregistrerEcheance(
@@ -230,12 +242,22 @@ void main() {
         );
         expect(
           await vm.enregistrerEcheance(
-            jour: '32',
+            jour: '366',
             traitement: 'Test',
             produit: 'Test',
             remanence: '0',
           ),
           isA<Echec<void>>(),
+        );
+        // Un rappel annuel (bovins : J365) doit pouvoir etre saisi.
+        expect(
+          await vm.enregistrerEcheance(
+            jour: '365',
+            traitement: 'Rappel annuel',
+            produit: 'Vaccin',
+            remanence: '0',
+          ),
+          isA<Succes<void>>(),
         );
         expect(
           await vm.enregistrerEcheance(
@@ -248,7 +270,7 @@ void main() {
         );
 
         vm.changerEspeceProphylaxie('goliaths');
-        expect(vm.echeancesFiltrees, hasLength(4));
+        expect(vm.echeancesFiltrees, hasLength(5));
       },
     );
 
@@ -374,7 +396,7 @@ void main() {
       expect(vm.baremesFiltres, hasLength(1));
 
       vm.reinitialiserFiltresRation();
-      expect(vm.baremesFiltres, hasLength(12));
+      expect(vm.baremesFiltres, hasLength(18));
     });
 
     test('la recherche porte aussi sur le libellé d\'espèce', () {

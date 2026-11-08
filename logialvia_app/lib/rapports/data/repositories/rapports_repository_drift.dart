@@ -296,6 +296,8 @@ class RapportsRepositoryDrift implements RapportsRepository {
     ConfigurationsEspeces.goliaths,
     ConfigurationsEspeces.pintades,
     ConfigurationsEspeces.lapins,
+    ConfigurationsEspeces.escargots,
+    ConfigurationsEspeces.bovins,
     ConfigurationsEspeces.poissonsChats,
     ConfigurationsEspeces.poulets,
     ConfigurationsEspeces.pondeuses,

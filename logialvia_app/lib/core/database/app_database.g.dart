@@ -17375,6 +17375,15 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _doseMeta = const VerificationMeta('dose');
+  @override
+  late final GeneratedColumn<String> dose = GeneratedColumn<String>(
+    'dose',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -17383,6 +17392,7 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
     traitement,
     produit,
     remanenceJours,
+    dose,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -17440,6 +17450,12 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
         ),
       );
     }
+    if (data.containsKey('dose')) {
+      context.handle(
+        _doseMeta,
+        dose.isAcceptableOrUnknown(data['dose']!, _doseMeta),
+      );
+    }
     return context;
   }
 
@@ -17473,6 +17489,10 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
         DriftSqlType.int,
         data['${effectivePrefix}remanence_jours'],
       )!,
+      dose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dose'],
+      ),
     );
   }
 
@@ -17495,6 +17515,14 @@ class EcheanceProphylaxieRow extends DataClass
   /// Rémanence en jours — délai avant lequel les produits (œufs, viande) ne
   /// doivent pas être commercialisés. 0 = aucune.
   final int remanenceJours;
+
+  /// Dose du produit, texte libre (ex. « 7,5 mg par kg de poids vif, voie
+  /// orale »). Reprise telle quelle sur le soin lors de l'injection du
+  /// calendrier. NULL sur les echeances saisies avant la v27 : leur dose n'a
+  /// jamais ete renseignee, et en inventer une serait pire que l'absence.
+  ///
+  /// La notice du produit utilise prevaut toujours sur cette valeur.
+  final String? dose;
   const EcheanceProphylaxieRow({
     required this.id,
     required this.espece,
@@ -17502,6 +17530,7 @@ class EcheanceProphylaxieRow extends DataClass
     required this.traitement,
     required this.produit,
     required this.remanenceJours,
+    this.dose,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -17512,6 +17541,9 @@ class EcheanceProphylaxieRow extends DataClass
     map['traitement'] = Variable<String>(traitement);
     map['produit'] = Variable<String>(produit);
     map['remanence_jours'] = Variable<int>(remanenceJours);
+    if (!nullToAbsent || dose != null) {
+      map['dose'] = Variable<String>(dose);
+    }
     return map;
   }
 
@@ -17523,6 +17555,7 @@ class EcheanceProphylaxieRow extends DataClass
       traitement: Value(traitement),
       produit: Value(produit),
       remanenceJours: Value(remanenceJours),
+      dose: dose == null && nullToAbsent ? const Value.absent() : Value(dose),
     );
   }
 
@@ -17538,6 +17571,7 @@ class EcheanceProphylaxieRow extends DataClass
       traitement: serializer.fromJson<String>(json['traitement']),
       produit: serializer.fromJson<String>(json['produit']),
       remanenceJours: serializer.fromJson<int>(json['remanenceJours']),
+      dose: serializer.fromJson<String?>(json['dose']),
     );
   }
   @override
@@ -17550,6 +17584,7 @@ class EcheanceProphylaxieRow extends DataClass
       'traitement': serializer.toJson<String>(traitement),
       'produit': serializer.toJson<String>(produit),
       'remanenceJours': serializer.toJson<int>(remanenceJours),
+      'dose': serializer.toJson<String?>(dose),
     };
   }
 
@@ -17560,6 +17595,7 @@ class EcheanceProphylaxieRow extends DataClass
     String? traitement,
     String? produit,
     int? remanenceJours,
+    Value<String?> dose = const Value.absent(),
   }) => EcheanceProphylaxieRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -17567,6 +17603,7 @@ class EcheanceProphylaxieRow extends DataClass
     traitement: traitement ?? this.traitement,
     produit: produit ?? this.produit,
     remanenceJours: remanenceJours ?? this.remanenceJours,
+    dose: dose.present ? dose.value : this.dose,
   );
   EcheanceProphylaxieRow copyWithCompanion(
     CalendrierProphylaxieCompanion data,
@@ -17582,6 +17619,7 @@ class EcheanceProphylaxieRow extends DataClass
       remanenceJours: data.remanenceJours.present
           ? data.remanenceJours.value
           : this.remanenceJours,
+      dose: data.dose.present ? data.dose.value : this.dose,
     );
   }
 
@@ -17593,14 +17631,22 @@ class EcheanceProphylaxieRow extends DataClass
           ..write('jourCycle: $jourCycle, ')
           ..write('traitement: $traitement, ')
           ..write('produit: $produit, ')
-          ..write('remanenceJours: $remanenceJours')
+          ..write('remanenceJours: $remanenceJours, ')
+          ..write('dose: $dose')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, espece, jourCycle, traitement, produit, remanenceJours);
+  int get hashCode => Object.hash(
+    id,
+    espece,
+    jourCycle,
+    traitement,
+    produit,
+    remanenceJours,
+    dose,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -17610,7 +17656,8 @@ class EcheanceProphylaxieRow extends DataClass
           other.jourCycle == this.jourCycle &&
           other.traitement == this.traitement &&
           other.produit == this.produit &&
-          other.remanenceJours == this.remanenceJours);
+          other.remanenceJours == this.remanenceJours &&
+          other.dose == this.dose);
 }
 
 class CalendrierProphylaxieCompanion
@@ -17621,6 +17668,7 @@ class CalendrierProphylaxieCompanion
   final Value<String> traitement;
   final Value<String> produit;
   final Value<int> remanenceJours;
+  final Value<String?> dose;
   const CalendrierProphylaxieCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -17628,6 +17676,7 @@ class CalendrierProphylaxieCompanion
     this.traitement = const Value.absent(),
     this.produit = const Value.absent(),
     this.remanenceJours = const Value.absent(),
+    this.dose = const Value.absent(),
   });
   CalendrierProphylaxieCompanion.insert({
     this.id = const Value.absent(),
@@ -17636,6 +17685,7 @@ class CalendrierProphylaxieCompanion
     required String traitement,
     required String produit,
     this.remanenceJours = const Value.absent(),
+    this.dose = const Value.absent(),
   }) : espece = Value(espece),
        jourCycle = Value(jourCycle),
        traitement = Value(traitement),
@@ -17647,6 +17697,7 @@ class CalendrierProphylaxieCompanion
     Expression<String>? traitement,
     Expression<String>? produit,
     Expression<int>? remanenceJours,
+    Expression<String>? dose,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -17655,6 +17706,7 @@ class CalendrierProphylaxieCompanion
       if (traitement != null) 'traitement': traitement,
       if (produit != null) 'produit': produit,
       if (remanenceJours != null) 'remanence_jours': remanenceJours,
+      if (dose != null) 'dose': dose,
     });
   }
 
@@ -17665,6 +17717,7 @@ class CalendrierProphylaxieCompanion
     Value<String>? traitement,
     Value<String>? produit,
     Value<int>? remanenceJours,
+    Value<String?>? dose,
   }) {
     return CalendrierProphylaxieCompanion(
       id: id ?? this.id,
@@ -17673,6 +17726,7 @@ class CalendrierProphylaxieCompanion
       traitement: traitement ?? this.traitement,
       produit: produit ?? this.produit,
       remanenceJours: remanenceJours ?? this.remanenceJours,
+      dose: dose ?? this.dose,
     );
   }
 
@@ -17697,6 +17751,9 @@ class CalendrierProphylaxieCompanion
     if (remanenceJours.present) {
       map['remanence_jours'] = Variable<int>(remanenceJours.value);
     }
+    if (dose.present) {
+      map['dose'] = Variable<String>(dose.value);
+    }
     return map;
   }
 
@@ -17708,7 +17765,8 @@ class CalendrierProphylaxieCompanion
           ..write('jourCycle: $jourCycle, ')
           ..write('traitement: $traitement, ')
           ..write('produit: $produit, ')
-          ..write('remanenceJours: $remanenceJours')
+          ..write('remanenceJours: $remanenceJours, ')
+          ..write('dose: $dose')
           ..write(')'))
         .toString();
   }
@@ -30370,6 +30428,7 @@ typedef $$CalendrierProphylaxieTableCreateCompanionBuilder =
       required String traitement,
       required String produit,
       Value<int> remanenceJours,
+      Value<String?> dose,
     });
 typedef $$CalendrierProphylaxieTableUpdateCompanionBuilder =
     CalendrierProphylaxieCompanion Function({
@@ -30379,6 +30438,7 @@ typedef $$CalendrierProphylaxieTableUpdateCompanionBuilder =
       Value<String> traitement,
       Value<String> produit,
       Value<int> remanenceJours,
+      Value<String?> dose,
     });
 
 class $$CalendrierProphylaxieTableFilterComposer
@@ -30417,6 +30477,11 @@ class $$CalendrierProphylaxieTableFilterComposer
 
   ColumnFilters<int> get remanenceJours => $composableBuilder(
     column: $table.remanenceJours,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dose => $composableBuilder(
+    column: $table.dose,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -30459,6 +30524,11 @@ class $$CalendrierProphylaxieTableOrderingComposer
     column: $table.remanenceJours,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get dose => $composableBuilder(
+    column: $table.dose,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CalendrierProphylaxieTableAnnotationComposer
@@ -30491,6 +30561,9 @@ class $$CalendrierProphylaxieTableAnnotationComposer
     column: $table.remanenceJours,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get dose =>
+      $composableBuilder(column: $table.dose, builder: (column) => column);
 }
 
 class $$CalendrierProphylaxieTableTableManager
@@ -30545,6 +30618,7 @@ class $$CalendrierProphylaxieTableTableManager
                 Value<String> traitement = const Value.absent(),
                 Value<String> produit = const Value.absent(),
                 Value<int> remanenceJours = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
               }) => CalendrierProphylaxieCompanion(
                 id: id,
                 espece: espece,
@@ -30552,6 +30626,7 @@ class $$CalendrierProphylaxieTableTableManager
                 traitement: traitement,
                 produit: produit,
                 remanenceJours: remanenceJours,
+                dose: dose,
               ),
           createCompanionCallback:
               ({
@@ -30561,6 +30636,7 @@ class $$CalendrierProphylaxieTableTableManager
                 required String traitement,
                 required String produit,
                 Value<int> remanenceJours = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
               }) => CalendrierProphylaxieCompanion.insert(
                 id: id,
                 espece: espece,
@@ -30568,6 +30644,7 @@ class $$CalendrierProphylaxieTableTableManager
                 traitement: traitement,
                 produit: produit,
                 remanenceJours: remanenceJours,
+                dose: dose,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -220,6 +220,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
         typeSoin: typeSoin,
         statut: StatutSoin.planifie,
         produit: projetee.echeance.produit,
+        dose: projetee.echeance.dose,
         remanenceJours: projetee.echeance.remanenceJours,
         symptomes: null,
         bandeId: bande.id,

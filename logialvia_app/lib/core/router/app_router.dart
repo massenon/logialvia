@@ -57,6 +57,10 @@ class AppRouter {
     '/elevage/poissons-chats': () => const PageFicheEspece(
       configuration: ConfigurationsEspeces.poissonsChats,
     ),
+    '/elevage/escargots': () =>
+        const PageFicheEspece(configuration: ConfigurationsEspeces.escargots),
+    '/elevage/bovins': () =>
+        const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
     '/elevage/couveuse': () => const PageCycleCouveuse(),
     '/elevage/mirages': () => const PageStatistiquesMirages(),
     '/elevage/soins': () => const PageSoinsCalendrier(),
@@ -110,6 +114,8 @@ class AppRouter {
     '/elevage/pintades': 'Doc F3 — Production Élevage',
     '/elevage/poissons-chats': 'Doc F3 — Production Élevage',
     '/elevage/lapins': 'Doc F3 — Production Élevage',
+    '/elevage/escargots': 'Doc F3 — Production Élevage (DV-16)',
+    '/elevage/bovins': 'Doc F3 — Production Élevage (DV-17)',
     '/elevage/poulets-pondeuses': 'Doc F3 / Doc H2 — Poulets & Pondeuses',
     '/elevage/soins': 'Doc F3 — Calendrier de Soins',
     '/parametres/elevage': 'Doc F3 — Paramètres Élevage',

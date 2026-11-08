@@ -184,12 +184,16 @@ class ParametresElevageViewModel extends ChangeNotifier {
     }).toList();
   }
 
+  /// Dernier jour du cycle accepte par le calendrier de prophylaxie.
+  static const int joursCycleMax = 365;
+
   Future<Resultat<void>> enregistrerEcheance({
     EcheanceProphylaxie? existante,
     required String jour,
     required String traitement,
     required String produit,
     required String remanence,
+    String dose = '',
   }) async {
     final jourCycle = int.tryParse(jour.trim());
     if (jourCycle == null ||
@@ -199,9 +203,13 @@ class ParametresElevageViewModel extends ChangeNotifier {
         'Veuillez renseigner le jour, le traitement et le produit.',
       );
     }
-    // `min="1" max="31"` dans le formulaire du prototype.
-    if (jourCycle < 1 || jourCycle > 31) {
-      return const Echec('Le jour du cycle doit être compris entre 1 et 31.');
+    // Le prototype bornait le formulaire a 31 jours, ce qui convient a une
+    // volaille mais pas a un bovin : vaccins de rappel a J180 et J365. La
+    // borne est portee a une annee.
+    if (jourCycle < 1 || jourCycle > joursCycleMax) {
+      return const Echec(
+        'Le jour du cycle doit être compris entre 1 et $joursCycleMax.',
+      );
     }
     final remanenceJours = int.tryParse(remanence.trim()) ?? 0;
     if (remanenceJours < 0) {
@@ -216,6 +224,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
         traitement: traitement.trim(),
         produit: produit.trim(),
         remanenceJours: remanenceJours,
+        dose: dose.trim().isEmpty ? null : dose.trim(),
       );
       await _rafraichir();
       notifyListeners();

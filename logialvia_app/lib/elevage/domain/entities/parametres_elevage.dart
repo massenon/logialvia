@@ -33,6 +33,7 @@ class EcheanceProphylaxie {
     required this.traitement,
     required this.produit,
     required this.remanenceJours,
+    this.dose,
   });
 
   final int id;
@@ -41,6 +42,9 @@ class EcheanceProphylaxie {
   final String traitement;
   final String produit;
   final int remanenceJours;
+
+  /// Dose, texte libre ; `null` tant que l'animalier ne l'a pas renseignee.
+  final String? dose;
 
   String get libelleJour => 'J$jourCycle';
 }
@@ -123,7 +127,8 @@ class TypeProvende {
   bool get critique => stock <= seuil;
 }
 
-/// Les 4 espèces proposées par les filtres et le sélecteur de prophylaxie.
+/// Les 6 espèces proposées par les filtres et le sélecteur de prophylaxie
+/// (les 4 d'origine, plus escargots et bovins).
 class EspecesParametrables {
   EspecesParametrables._();
 
@@ -134,6 +139,8 @@ class EspecesParametrables {
     (id: 'pintades', libelle: 'Pintades', emoji: '🦃'),
     (id: 'lapins', libelle: 'Lapins', emoji: '🐰'),
     (id: 'poissons-chats', libelle: 'Poissons-Chats', emoji: '🐟'),
+    (id: 'escargots', libelle: 'Escargots', emoji: '🐌'),
+    (id: 'bovins', libelle: 'Bovins', emoji: '🐄'),
   ];
 
   static String libelle(String identifiant) {

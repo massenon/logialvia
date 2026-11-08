@@ -197,7 +197,7 @@ class _Onglet extends StatelessWidget {
 class _OngletModulesActifs extends StatelessWidget {
   const _OngletModulesActifs();
 
-  /// Les 5 lignes réelles, dans l'ordre du prototype.
+  /// Les 5 lignes du prototype, puis escargots et bovins (DV-16, DV-17).
   static const List<({String? moduleId, String libelle, String note})> _lignes =
       [
         (
@@ -224,6 +224,16 @@ class _OngletModulesActifs extends StatelessWidget {
           moduleId: 'cuniculture',
           libelle: 'Lapins (Cuniculture)',
           note: 'Copie fidèle — désactivée par défaut',
+        ),
+        (
+          moduleId: 'heliciculture',
+          libelle: 'Escargots (Héliciculture)',
+          note: 'Filière ajoutée — désactivée par défaut',
+        ),
+        (
+          moduleId: 'bovins',
+          libelle: 'Bovins',
+          note: 'Filière ajoutée — désactivée par défaut',
         ),
       ];
 

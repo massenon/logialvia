@@ -9,7 +9,7 @@ import 'package:drift/drift.dart';
 class FicheJournee extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats'
+  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
   TextColumn get espece => text()();
 
   DateTimeColumn get date => dateTime()();

@@ -427,6 +427,24 @@ void main() {
     timeout: _large,
   );
   testWidgets(
+    '07b fiche escargots',
+    (t) => capturer(
+      t,
+      const PageFicheEspece(configuration: ConfigurationsEspeces.escargots),
+      '07b-fiche-escargots',
+    ),
+    timeout: _large,
+  );
+  testWidgets(
+    '07c fiche bovins',
+    (t) => capturer(
+      t,
+      const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
+      '07c-fiche-bovins',
+    ),
+    timeout: _large,
+  );
+  testWidgets(
     '08 fiche poissons-chats',
     (t) => capturer(
       t,

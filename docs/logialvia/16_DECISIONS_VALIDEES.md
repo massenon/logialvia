@@ -200,6 +200,18 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Quand le prototype arrive.** Comparer, écran par écran, la conversion et le prototype ; tout écart est relevé dans un rapport (valeur, fichier, écran) avant correction ; le prototype l'emporte, sauf `ÉCART_DELIBERE` déjà documenté dans le code du poste (arbitrages de la Gérante).
 - **Reste À DÉFINIR.** Mode de fourniture du prototype (copie, dépôt GitHub) : Q-PROTO-1.
 
+## 3a. État d'implémentation au poste Flutter (08/11/2026, schéma v27)
+
+**Fait au poste** : fiches `escargots` et `bovins` (`ConfigurationsEspeces`, routes `/elevage/escargots` et `/elevage/bovins`, entrées de menu derrière les modules `heliciculture` et `bovins`, droits administrateur et animalier, bascules dans Paramètres Général, cartes d'aperçu du Dashboard Élevage, recensement, centres analytiques, rapports) ; migration v27 (colonne `dose`, modules, rations, échéances, sans écraser la configuration existante) ; rations (3 par filière) et calendriers complets (21 et 9 échéances avec dose et rémanence) ; colonne et champ « Dose » de l'écran « Calendriers Prophylaxie », export PDF compris ; reprise de la dose sur le soin à l'injection du calendrier ; jour du cycle accepté jusqu'à 365 ; sections du manuel et captures `07b`/`07c` ; tests.
+
+**Pas encore fait au poste (reste à faire)** :
+1. le **tableau « Taux de ration par classe de poids »** (DV-01 pour les poissons-chats, DV-17 pour les bovins) : le poste ne l'a pas, les bovins n'ont donc que les rations indicatives en g/tête/j ;
+2. la **numérotation** « HÉLICICULTURE (préfixe BAC) » et « ÉLEVAGE BOVIN (préfixe PARC) » : elles demandent deux colonnes de plus dans `PARAMETRES_ENTREPRISE` ;
+3. les **visites guidées** (`scenarios_tour.dart`) des deux nouvelles fiches : une route sans visite affiche le message prévu ;
+4. les **produits vendables** « escargot » et « bovin » du catalogue (prix à fixer par la Gérante) ;
+5. le **PDF du manuel** (`LogiALVIA-Manuel-Utilisation.pdf`) : à régénérer (`GENERER_MANUEL=1`, puis `dart run outils/generer_manuel.dart`), le contenu et les captures sont prêts ;
+6. l'intrant « Complément calcium » du module Stocks (DV-16, Q-ESC-5).
+
 ## 3b. Données à créer pour les escargots et les bovins (rationnement, calendrier de prophylaxie, doses)
 
 > Demande du client (08/11/2026) : **tout créer et compléter** dans les écrans de **Paramètres Élevage** (« Rationnement », « Calendriers Prophylaxie ») et dans les doses du **Calendrier des soins**. Ces données sont **semées à la création des deux filières** ; tous les chiffres sont des **repères d'élevage usuels, validés par l'animalier** (Q-DV-9) et modifiables. **La notice du produit utilisé prévaut sur toute dose ci-dessous**, et les rémanences retenues sont prudentes (jamais plus courtes que l'usage courant). Aucune dose n'est calculée automatiquement à partir du poids : la dose est un texte lisible par l'animalier.

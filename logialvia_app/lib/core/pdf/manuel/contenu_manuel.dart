@@ -37,7 +37,7 @@ class ContenuManuel {
     destinataire: 'ALLMANY ET COMPAGNIE',
     avantPropos: [
       'LogiALVIA gère l\'exploitation d\'ALLMANY ET COMPAGNIE : l\'élevage '
-          '(goliaths, pintades, lapins, poissons-chats, poulets et pondeuses), '
+          '(goliaths, pintades, lapins, escargots, bovins, poissons-chats, poulets et pondeuses), '
           'la couveuse, les ventes, les achats, les stocks et la comptabilité.',
       'Le logiciel fonctionne **hors ligne**. Toutes vos données vivent dans un '
           'seul fichier, sur cet ordinateur. Aucune connexion n\'est nécessaire '
@@ -815,6 +815,42 @@ class ContenuManuel {
           EncadreManuel.information(
             'La fiche n\'apparaît que si le module Cuniculture est activé dans '
             'Paramètres Général.',
+          ),
+        ],
+      ),
+      SectionManuel(
+        titre: 'Fiche Escargots',
+        chemin: 'ÉLEVAGE & COUVEUSE › Fiche Escargots',
+        role: 'Administratrice, Agent d\'Élevage',
+        capture: '07b-fiche-escargots',
+        aQuoiCaSert:
+            'Même principe, avec trois catégories : Naissain, Marchand '
+            '(vendu à la pièce) et Reproducteur. Les naissances s\'appellent '
+            'ici « Nés (Éclosions) ».',
+        encadres: [
+          EncadreManuel.information(
+            'La fiche n\'apparaît que si le module Héliciculture est activé '
+            'dans Paramètres Général. Le calendrier de soins est un '
+            'calendrier d\'hygiène : l\'Agent d\'Élevage peut le compléter '
+            'dans Paramètres Élevage.',
+          ),
+        ],
+      ),
+      SectionManuel(
+        titre: 'Fiche Bovins',
+        chemin: 'ÉLEVAGE & COUVEUSE › Fiche Bovins',
+        role: 'Administratrice, Agent d\'Élevage',
+        capture: '07c-fiche-bovins',
+        aQuoiCaSert:
+            'Même principe, avec trois catégories : Veau, Embouche (vendue à '
+            'la tête) et Reproducteur. Les naissances s\'appellent ici « Nés '
+            '(Vêlage) ».',
+        encadres: [
+          EncadreManuel.information(
+            'La fiche n\'apparaît que si le module Bovins est activé dans '
+            'Paramètres Général. Les rations affichées sont indicatives, et '
+            'les doses du calendrier de prophylaxie sont des repères : la '
+            'notice du produit utilisé prévaut toujours.',
           ),
         ],
       ),

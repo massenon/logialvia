@@ -16,6 +16,7 @@ class IconeSymbole {
   static const Map<String, IconData> _table = {
     'account_balance': Symbols.account_balance,
     'account_balance_wallet': Symbols.account_balance_wallet,
+    'agriculture': Symbols.agriculture,
     'backpack': Symbols.backpack,
     'bar_chart': Symbols.bar_chart,
     'cake': Symbols.cake,
@@ -24,6 +25,7 @@ class IconeSymbole {
     'child_care': Symbols.child_care,
     'coronavirus': Symbols.coronavirus,
     'cruelty_free': Symbols.cruelty_free,
+    'eco': Symbols.eco,
     'egg': Symbols.egg,
     'egg_alt': Symbols.egg_alt,
     'event_repeat': Symbols.event_repeat,

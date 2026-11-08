@@ -32,6 +32,7 @@ abstract class ParametresElevageRepository {
     required String traitement,
     required String produit,
     required int remanenceJours,
+    String? dose,
   });
   Future<void> supprimerEcheance(
     int id, {
@@ -84,6 +85,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           traitement: c.traitement,
           produit: c.produit,
           remanenceJours: c.remanenceJours,
+          dose: c.dose,
         ),
     ];
   }
@@ -199,6 +201,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     required String traitement,
     required String produit,
     required int remanenceJours,
+    String? dose,
   }) async {
     if (id != null) {
       await (_db.update(
@@ -209,6 +212,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           traitement: Value(traitement),
           produit: Value(produit),
           remanenceJours: Value(remanenceJours),
+          dose: Value(dose),
         ),
       );
       return;
@@ -223,6 +227,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
             traitement: traitement,
             produit: produit,
             remanenceJours: Value(remanenceJours),
+            dose: Value(dose),
           ),
         );
   }

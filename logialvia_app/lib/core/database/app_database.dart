@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../administration/data/seed/modules_actifs_seeder.dart';
+import '../../elevage/data/seed/parametres_elevage_seeder.dart';
 import '../../administration/data/tables/audit_logs_table.dart';
 import '../../administration/data/tables/messages_editeur_table.dart';
 import '../../administration/data/tables/corbeille_table.dart';
@@ -93,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 26;
+  static const int versionSchema = 27;
 
   @override
   int get schemaVersion => versionSchema;
@@ -329,6 +331,23 @@ class AppDatabase extends _$AppDatabase {
         await _ajouterColonne(m, produitsVendables, produitsVendables.groupeTaxe);
         await _ajouterColonne(m, parametresEntreprise, parametresEntreprise.mecefUrl);
         await _ajouterColonne(m, parametresEntreprise, parametresEntreprise.mecefNim);
+      }
+      if (from < 27) {
+        // Filieres escargots et bovins (DV-16, DV-17) et dose du calendrier de
+        // prophylaxie.
+        //
+        // La colonne `dose` est NULL sur les echeances existantes : leur dose
+        // n'a jamais ete saisie. Les modules, rations et echeances des deux
+        // nouvelles filieres sont ajoutes SANS toucher a ce que l'animalier a
+        // deja configure (chaque fonction ignore une filiere deja presente),
+        // donc la migration converge meme rejouee.
+        await _ajouterColonne(
+          m,
+          calendrierProphylaxie,
+          calendrierProphylaxie.dose,
+        );
+        await ModulesActifsSeeder.ajouterModulesManquants(this);
+        await ParametresElevageSeeder.ajouterNouvellesFilieres(this);
       }
     },
     beforeOpen: (details) async {

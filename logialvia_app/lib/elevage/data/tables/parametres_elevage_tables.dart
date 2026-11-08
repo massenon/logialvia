@@ -57,4 +57,12 @@ class CalendrierProphylaxie extends Table {
   /// Rémanence en jours — délai avant lequel les produits (œufs, viande) ne
   /// doivent pas être commercialisés. 0 = aucune.
   IntColumn get remanenceJours => integer().withDefault(const Constant(0))();
+
+  /// Dose du produit, texte libre (ex. « 7,5 mg par kg de poids vif, voie
+  /// orale »). Reprise telle quelle sur le soin lors de l'injection du
+  /// calendrier. NULL sur les echeances saisies avant la v27 : leur dose n'a
+  /// jamais ete renseignee, et en inventer une serait pire que l'absence.
+  ///
+  /// La notice du produit utilise prevaut toujours sur cette valeur.
+  TextColumn get dose => text().nullable()();
 }

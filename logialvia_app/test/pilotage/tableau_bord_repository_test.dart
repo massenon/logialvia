@@ -59,15 +59,17 @@ void main() {
       expect(mais.threshold, 25);
     });
 
-    test('seuls les 3 modules basculables existent, tous désactivés', () async {
+    test('seuls les 5 modules basculables existent, tous désactivés', () async {
       final modules = await db.select(db.modulesActifs).get();
 
-      expect(modules, hasLength(3));
+      expect(modules, hasLength(5));
       expect(modules.every((m) => m.isActif == false), isTrue);
       expect(modules.map((m) => m.moduleId).toSet(), {
         'pisciculture',
         'cuniculture',
         'aviculture_classique',
+        'heliciculture',
+        'bovins',
       });
       // Goliaths et Pintades n'ont volontairement aucune ligne (Doc I2 §2).
       expect(
@@ -82,7 +84,7 @@ void main() {
 
       expect(await db.select(db.produitsVendables).get(), hasLength(14));
       expect(await db.select(db.intrants).get(), hasLength(6));
-      expect(await db.select(db.modulesActifs).get(), hasLength(3));
+      expect(await db.select(db.modulesActifs).get(), hasLength(5));
     });
 
     test('un catalogue déjà modifié n\'est jamais réécrasé', () async {

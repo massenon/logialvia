@@ -775,8 +775,9 @@ class _OngletProphylaxie extends StatelessWidget {
                     const _Entete(
                       colonnes: [
                         ('JOUR DU CYCLE', 2, TextAlign.center),
-                        ('TRAITEMENT', 5, TextAlign.left),
-                        ('PRODUIT', 4, TextAlign.left),
+                        ('TRAITEMENT', 4, TextAlign.left),
+                        ('PRODUIT', 3, TextAlign.left),
+                        ('DOSE', 4, TextAlign.left),
                         ('RÉMANENCE', 2, TextAlign.center),
                         ('ACTIONS', 2, TextAlign.right),
                       ],
@@ -801,13 +802,27 @@ class _OngletProphylaxie extends StatelessWidget {
                               style: _gras,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            5,
+                            4,
                           ),
                           (
                             Text(
                               echeances[i].produit,
                               style: _texte,
                               overflow: TextOverflow.ellipsis,
+                            ),
+                            3,
+                          ),
+                          (
+                            Tooltip(
+                              message: echeances[i].dose ?? 'Dose non renseignée',
+                              child: Text(
+                                echeances[i].dose ?? '—',
+                                maxLines: 2,
+                                style: echeances[i].dose == null
+                                    ? _texte.copyWith(color: AppColors.outline)
+                                    : _texte,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             4,
                           ),
@@ -942,6 +957,7 @@ Future<void> _formulaireEcheance(
     text: existante?.traitement ?? '',
   );
   final produitCtrl = TextEditingController(text: existante?.produit ?? '');
+  final doseCtrl = TextEditingController(text: existante?.dose ?? '');
   final remanenceCtrl = TextEditingController(
     text: '${existante?.remanenceJours ?? 0}',
   );
@@ -986,6 +1002,17 @@ Future<void> _formulaireEcheance(
           decoration: _decoration.copyWith(hintText: 'Ex. Amprolium'),
         ),
         const SizedBox(height: AppSpacing.md),
+        const Text('DOSE', style: AppTypography.label),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: doseCtrl,
+          maxLines: 2,
+          style: _texte,
+          decoration: _decoration.copyWith(
+            hintText: 'Ex. 1 mL pour 50 kg, voie sous-cutanée (la notice prévaut)',
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
         Text(
           'RÉMANENCE (JOURS)',
           style: AppTypography.label.copyWith(color: AppColors.errorDeep),
@@ -1018,6 +1045,7 @@ Future<void> _formulaireEcheance(
               traitement: traitementCtrl.text,
               produit: produitCtrl.text,
               remanence: remanenceCtrl.text,
+              dose: doseCtrl.text,
             );
             if (!ctx.mounted) return;
             switch (resultat) {
@@ -1041,6 +1069,7 @@ Future<void> _formulaireEcheance(
   jourCtrl.dispose();
   traitementCtrl.dispose();
   produitCtrl.dispose();
+  doseCtrl.dispose();
   remanenceCtrl.dispose();
 }
 

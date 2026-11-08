@@ -60,6 +60,18 @@ class _DashboardElevageScreenState extends State<DashboardElevageScreen> {
       icone: Symbols.set_meal,
       texte: 'Filière Pisciculture disponible — non activée pour le moment.',
     ),
+    (
+      moduleId: 'heliciculture',
+      titre: 'Escargots',
+      icone: Symbols.eco,
+      texte: 'Filière Héliciculture disponible — non activée pour le moment.',
+    ),
+    (
+      moduleId: 'bovins',
+      titre: 'Bovins',
+      icone: Symbols.agriculture,
+      texte: 'Filière Bovins disponible — non activée pour le moment.',
+    ),
   ];
 
   @override
