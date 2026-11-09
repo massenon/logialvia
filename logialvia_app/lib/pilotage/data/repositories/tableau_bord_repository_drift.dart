@@ -493,6 +493,37 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
         .getSingleOrNull();
   }
 
+  @override
+  Future<Map<String, ResultatGmq>> gmqParFiliere(
+    Set<String> especes, {
+    int jours = 28,
+  }) async {
+    final maintenant = DateTime.now();
+    final debut = DateTime(
+      maintenant.year,
+      maintenant.month,
+      maintenant.day,
+    ).subtract(Duration(days: jours));
+    final resultat = <String, ResultatGmq>{};
+    for (final espece in especes) {
+      final lignes =
+          await (_db.select(_db.ficheJournee)..where(
+                (f) =>
+                    f.espece.equals(espece) &
+                    f.isRecorded.equals(true) &
+                    f.poidsGeneralG.isNotNull() &
+                    f.date.isBiggerOrEqualValue(debut),
+              ))
+              .get();
+      final gmq = ReperesZootechniques.gmqSurPesees([
+        for (final l in lignes)
+          (date: l.date, poidsTotalG: l.poidsGeneralG!, effectif: l.effectif),
+      ]);
+      if (gmq != null) resultat[espece] = gmq;
+    }
+    return resultat;
+  }
+
   /// (mortalite du mois / effectif de debut de mois) x 100 — Doc F3 §1.
   Future<double> _tauxMortaliteDuMois(String espece) async {
     final maintenant = DateTime.now();

@@ -136,9 +136,9 @@ class _DashboardElevageScreenState extends State<DashboardElevageScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           _LigneMoitie(
-            gauche: const CibleTour(
+            gauche: CibleTour(
               nom: 'comparaison-croissance',
-              child: _PanneauGmq(),
+              child: _PanneauGmq(vm: vm),
             ),
             droite: _PanneauRappelsVeterinaires(soins: vm.prochainsSoins),
           ),
@@ -344,27 +344,47 @@ class _CarteApercuModule extends StatelessWidget {
 }
 
 class _PanneauGmq extends StatelessWidget {
-  const _PanneauGmq();
+  const _PanneauGmq({required this.vm});
+
+  final DashboardElevageViewModel vm;
 
   @override
   Widget build(BuildContext context) {
-    // Le GMQ (Gain Moyen Quotidien) suppose un suivi de poids. Doc F3 §2 liste
-    // bien un champ « Poids Général » dans le formulaire de saisie journaliere,
-    // mais **Doc D1 ne prevoit aucune colonne de poids** dans `FICHE_JOURNEE` :
-    // la donnee n'a nulle part ou etre stockee. Le graphique du prototype est
-    // un `<svg>` a points ecrits en dur (elevage-dashboard.html l.201-209), il
-    // ne prouve donc pas l'existence de la donnee. Section conservee avec un
-    // etat explicite plutot que remplie d'une courbe inventee.
-    return const CarteSection(
+    // Le GMQ vient des pesees de la fiche (`FICHE_JOURNEE.poids_general_g`) : poids moyen =
+    // pesee ÷ effectif, entre la premiere et la derniere pesee des 28 derniers jours. Une
+    // filiere sans deux pesees n'a pas de GMQ : jamais une courbe inventee (`47e_`).
+    final lignes = [
+      for (final f in vm.filieres)
+        if (vm.gmq[f.espece] != null) (f, vm.gmq[f.espece]!),
+    ];
+    return CarteSection(
       titre: 'Gain Moyen Quotidien (GMQ) par Espèce — 4 Dernières Semaines',
-      child: EtatVide(
-        message:
-            'Le GMQ nécessite un suivi de poids par journée. Le modèle de '
-            'données (Doc D1, FICHE_JOURNEE) ne comporte aujourd\'hui aucune '
-            'colonne de poids, alors que le formulaire de saisie de Doc F3 en '
-            'prévoit un champ — écart signalé, à trancher avant l\'implémentation '
-            'du module Élevage.',
-      ),
+      child: lignes.isEmpty
+          ? const EtatVide(
+              message:
+                  'Le GMQ se calcule à partir de deux pesées de la fiche sur les '
+                  '4 dernières semaines (« Pesée totale du lot »). Aucune filière '
+                  'n\'en a encore deux.',
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (f, g) in lignes)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    child: Text(
+                      '${f.libelle} : ${g.gmqGrammesParJour.toStringAsFixed(1).replaceAll('.', ',')} g/j '
+                      '(${g.poidsMoyenInitialG.round()} g → ${g.poidsMoyenFinalG.round()} g '
+                      'en ${g.jours} j)',
+                      style: const TextStyle(
+                        fontFamily: AppTypography.fontFamily,
+                        fontSize: AppTypography.textXs,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }

@@ -78,6 +78,39 @@ class ReperesZootechniques {
     return alimentConsomme / gainPoidsTotal;
   }
 
+  /// GMQ d'une filière sur ses pesées : entre la première et la dernière pesée (poids total
+  /// ÷ effectif = poids moyen), sur au moins deux jours distincts. `null` sinon : jamais une
+  /// courbe inventée.
+  static ResultatGmq? gmqSurPesees(
+    List<({DateTime date, int poidsTotalG, int effectif})> pesees,
+  ) {
+    final valides =
+        pesees.where((p) => p.poidsTotalG > 0 && p.effectif > 0).toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+    if (valides.length < 2) return null;
+    final premiere = valides.first;
+    final derniere = valides.last;
+    final jours = DateTime(derniere.date.year, derniere.date.month, derniere.date.day)
+        .difference(
+          DateTime(premiere.date.year, premiere.date.month, premiere.date.day),
+        )
+        .inDays;
+    final debut = premiere.poidsTotalG / premiere.effectif;
+    final fin = derniere.poidsTotalG / derniere.effectif;
+    final gmq = gmqGrammesParJour(
+      poidsMoyenInitialG: debut,
+      poidsMoyenFinalG: fin,
+      jours: jours,
+    );
+    if (gmq == null) return null;
+    return ResultatGmq(
+      gmqGrammesParJour: gmq,
+      poidsMoyenInitialG: debut,
+      poidsMoyenFinalG: fin,
+      jours: jours,
+    );
+  }
+
   // ------------------------------------------------------ poids vraisemblable
 
   /// Fourchette du poids **moyen** d'un sujet de la filière, en grammes, toutes
@@ -133,4 +166,19 @@ class ReperesZootechniques {
 
   /// Une éclosion plus de 4 jours avant le terme de l'espèce est impossible.
   static const int eclosionAvanceMaximaleJours = 4;
+}
+
+/// GMQ calculé sur deux pesées d'une filière.
+class ResultatGmq {
+  const ResultatGmq({
+    required this.gmqGrammesParJour,
+    required this.poidsMoyenInitialG,
+    required this.poidsMoyenFinalG,
+    required this.jours,
+  });
+
+  final double gmqGrammesParJour;
+  final double poidsMoyenInitialG;
+  final double poidsMoyenFinalG;
+  final int jours;
 }

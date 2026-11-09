@@ -714,4 +714,50 @@ void main() {
       );
     },
   );
+
+  group('GMQ d\'une filière sur ses pesées', () {
+    test(
+      '(1 850 g - 500 g) / 27 j = 50 g/j, poids moyens = pesée / effectif',
+      () {
+        final r = ReperesZootechniques.gmqSurPesees([
+          (date: DateTime(2026, 10, 12), poidsTotalG: 50000, effectif: 100),
+          (date: DateTime(2026, 11, 8), poidsTotalG: 180000, effectif: 97),
+        ]);
+        expect(r, isNotNull);
+        expect(r!.jours, 27);
+        expect(r.poidsMoyenInitialG, 500);
+        expect(r.poidsMoyenFinalG, closeTo(1855.67, 0.01));
+        expect(r.gmqGrammesParJour, closeTo(50.2, 0.1));
+      },
+    );
+
+    test('moins de deux pesées, ou le même jour : pas de GMQ', () {
+      expect(
+        ReperesZootechniques.gmqSurPesees([
+          (date: DateTime(2026, 11, 8), poidsTotalG: 50000, effectif: 100),
+        ]),
+        isNull,
+      );
+      expect(
+        ReperesZootechniques.gmqSurPesees([
+          (date: DateTime(2026, 11, 8), poidsTotalG: 50000, effectif: 100),
+          (date: DateTime(2026, 11, 8), poidsTotalG: 60000, effectif: 100),
+        ]),
+        isNull,
+      );
+    });
+
+    test(
+      'une pesée sans effectif est ignorée (jamais de division par zéro)',
+      () {
+        expect(
+          ReperesZootechniques.gmqSurPesees([
+            (date: DateTime(2026, 10, 1), poidsTotalG: 50000, effectif: 0),
+            (date: DateTime(2026, 11, 8), poidsTotalG: 60000, effectif: 100),
+          ]),
+          isNull,
+        );
+      },
+    );
+  });
 }

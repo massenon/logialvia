@@ -1,4 +1,5 @@
 import '../../../elevage/domain/services/rappels_prophylaxie.dart';
+import '../../../elevage/domain/services/reperes_zootechniques.dart';
 import '../entities/tableau_bord_principal.dart';
 
 /// Article dont le stock est passe sous son seuil d'alerte.
@@ -97,6 +98,14 @@ abstract class TableauBordRepository {
 
   /// `null` si aucune journee n'a encore ete saisie pour cette espece.
   Future<RecensementFiliere?> recensementFiliere(String espece);
+
+  /// Gain moyen quotidien (g/j/sujet) de chaque filiere sur les [jours] derniers jours,
+  /// d'apres les pesees de la fiche (`poids_general_g`). Une filiere sans deux pesees n'a
+  /// pas de GMQ (`47e_`).
+  Future<Map<String, ResultatGmq>> gmqParFiliere(
+    Set<String> especes, {
+    int jours = 28,
+  });
 
   Future<List<MeilleureVente>> meilleuresVentes({
     required DateTime debut,
