@@ -41,6 +41,7 @@ import 'elevage/data/sync/table_soins_poste.dart';
 import 'commercial/data/sync/table_clients_poste.dart';
 import 'commercial/data/sync/table_produits_poste.dart';
 import 'commercial/data/sync/table_factures_poste.dart';
+import 'commercial/data/sync/table_devis_poste.dart';
 import 'commercial/data/sync/table_groupes_taxe_poste.dart';
 import 'commercial/data/sync/table_ventes_poste.dart';
 import 'elevage/data/sync/table_bandes_poste.dart';
@@ -209,6 +210,8 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableVentesPoste(widget.database),
       TableGroupesTaxePoste(widget.database),
       TableFacturesPoste(widget.database),
+      // `47a2_` : devis de prestations (faits, dernier écrivain gagne).
+      TableDevisPoste(widget.database),
       TableAchatsPoste(widget.database),
       TableMouvementsIntrantPoste(widget.database),
       TableMouvementsProduitPoste(widget.database),

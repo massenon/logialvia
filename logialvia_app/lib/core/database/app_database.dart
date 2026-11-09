@@ -456,7 +456,12 @@ class AppDatabase extends _$AppDatabase {
         // JAMAIS (DV-21) ; les factures d'hier sont a envoyer, normalisees ou non.
         await _facturesEnUuid(m);
       }
-      // v43 : reserve a une autre tranche de la synchronisation.
+      if (from < 43) {
+        // `47a2_` : les devis de prestations passent en UUID avec leur statut, leur
+        // pierre tombale et les colonnes de synchronisation. Les references (`DV-2026-001`)
+        // ne changent JAMAIS ; les devis d'hier sont a envoyer, au statut « emis ».
+        await _devisEnUuid(m);
+      }
       if (from < 44) {
         // Report à nouveau (`47c_`) : la décision d'affectation du résultat est gardée avec
         // la clôture de l'exercice.
@@ -1047,6 +1052,43 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     }
+  }
+
+  /// `devis` en UUID, avec statut, pierre tombale et colonnes de synchronisation
+  /// (`47a2_`). Idempotent : une table deja convertie n'est pas retouchee, et une
+  /// colonne manquante (migration interrompue, base restauree) est ajoutee seule.
+  /// L'instant de saisie d'un devis d'hier est sa DATE D'EMISSION, jamais celui de
+  /// la migration (il ferait gagner un vieux devis contre une correction faite ailleurs).
+  Future<void> _devisEnUuid(Migrator m) async {
+    if (!await _tableExiste('devis')) {
+      await m.createTable(devis);
+      return;
+    }
+    if (await _idEstEntier('devis')) {
+      await m.alterTable(
+        TableMigration(
+          devis,
+          columnTransformer: {
+            devis.id: const CustomExpression<String>(_uuidSql),
+            devis.updatedAt: const CustomExpression<String>(
+              "strftime('%Y-%m-%dT%H:%M:%fZ', date_emission, 'unixepoch')",
+            ),
+          },
+          newColumns: [
+            devis.statut,
+            devis.supprimeLe,
+            devis.syncStatus,
+            devis.syncMotif,
+            devis.updatedAt,
+          ],
+        ),
+      );
+    }
+    await _ajouterColonne(m, devis, devis.statut);
+    await _ajouterColonne(m, devis, devis.supprimeLe);
+    await _ajouterColonne(m, devis, devis.syncStatus);
+    await _ajouterColonne(m, devis, devis.syncMotif);
+    await _ajouterColonne(m, devis, devis.updatedAt);
   }
 
   /// Reconstruit `clients` en UUID. Idempotent : une base dont `clients.id` est

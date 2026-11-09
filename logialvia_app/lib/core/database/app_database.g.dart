@@ -8919,16 +8919,13 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
   $DevisTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _referenceMeta = const VerificationMeta(
     'reference',
@@ -8994,6 +8991,62 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _statutMeta = const VerificationMeta('statut');
+  @override
+  late final GeneratedColumn<String> statut = GeneratedColumn<String>(
+    'statut',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('emis'),
+  );
+  static const VerificationMeta _supprimeLeMeta = const VerificationMeta(
+    'supprimeLe',
+  );
+  @override
+  late final GeneratedColumn<String> supprimeLe = GeneratedColumn<String>(
+    'supprime_le',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9003,6 +9056,11 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     montantEstime,
     validiteJours,
     dateEmission,
+    statut,
+    supprimeLe,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9074,6 +9132,36 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     } else if (isInserting) {
       context.missing(_dateEmissionMeta);
     }
+    if (data.containsKey('statut')) {
+      context.handle(
+        _statutMeta,
+        statut.isAcceptableOrUnknown(data['statut']!, _statutMeta),
+      );
+    }
+    if (data.containsKey('supprime_le')) {
+      context.handle(
+        _supprimeLeMeta,
+        supprimeLe.isAcceptableOrUnknown(data['supprime_le']!, _supprimeLeMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -9084,7 +9172,7 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DevisRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       reference: attachedDatabase.typeMapping.read(
@@ -9111,6 +9199,26 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_emission'],
       )!,
+      statut: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}statut'],
+      )!,
+      supprimeLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supprime_le'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -9121,9 +9229,12 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
 }
 
 class DevisRow extends DataClass implements Insertable<DevisRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, v43) : l'identite SYNCHRONISEE du devis. Les
+  /// anciens devis (entier auto-incremente) recoivent le leur a la migration.
+  final String id;
 
-  /// Format 'DV-AAAA-NNN'.
+  /// Numero OFFICIEL, jamais renumerote : `DV-P2-2026-001` (poste appaire),
+  /// `DV-2026-001` (poste jamais appaire), `DV-WEB-2026-001` (emis au web).
   final String reference;
   final String client;
 
@@ -9134,6 +9245,24 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
   /// Durée de validité en jours — 15 par défaut (Doc H1).
   final int validiteJours;
   final DateTime dateEmission;
+
+  /// Cycle de vie : `emis` (a la signature du client) puis `accepte` ou `refuse`.
+  /// « Expire » n'est PAS stocke : il se deduit de la date d'expiration.
+  /// Un devis `accepte` ne se modifie plus et ne se supprime pas (v43).
+  final String statut;
+
+  /// Pierre tombale (instant de suppression, ISO UTC) : la ligne reste, cachee,
+  /// pour que la suppression se propage et que le numero ne soit jamais reutilise.
+  final String? supprimeLe;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const DevisRow({
     required this.id,
     required this.reference,
@@ -9142,17 +9271,31 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     required this.montantEstime,
     required this.validiteJours,
     required this.dateEmission,
+    required this.statut,
+    this.supprimeLe,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['reference'] = Variable<String>(reference);
     map['client'] = Variable<String>(client);
     map['objet'] = Variable<String>(objet);
     map['montant_estime'] = Variable<double>(montantEstime);
     map['validite_jours'] = Variable<int>(validiteJours);
     map['date_emission'] = Variable<DateTime>(dateEmission);
+    map['statut'] = Variable<String>(statut);
+    if (!nullToAbsent || supprimeLe != null) {
+      map['supprime_le'] = Variable<String>(supprimeLe);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -9165,6 +9308,15 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
       montantEstime: Value(montantEstime),
       validiteJours: Value(validiteJours),
       dateEmission: Value(dateEmission),
+      statut: Value(statut),
+      supprimeLe: supprimeLe == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supprimeLe),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -9174,37 +9326,52 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DevisRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       reference: serializer.fromJson<String>(json['reference']),
       client: serializer.fromJson<String>(json['client']),
       objet: serializer.fromJson<String>(json['objet']),
       montantEstime: serializer.fromJson<double>(json['montantEstime']),
       validiteJours: serializer.fromJson<int>(json['validiteJours']),
       dateEmission: serializer.fromJson<DateTime>(json['dateEmission']),
+      statut: serializer.fromJson<String>(json['statut']),
+      supprimeLe: serializer.fromJson<String?>(json['supprimeLe']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'reference': serializer.toJson<String>(reference),
       'client': serializer.toJson<String>(client),
       'objet': serializer.toJson<String>(objet),
       'montantEstime': serializer.toJson<double>(montantEstime),
       'validiteJours': serializer.toJson<int>(validiteJours),
       'dateEmission': serializer.toJson<DateTime>(dateEmission),
+      'statut': serializer.toJson<String>(statut),
+      'supprimeLe': serializer.toJson<String?>(supprimeLe),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   DevisRow copyWith({
-    int? id,
+    String? id,
     String? reference,
     String? client,
     String? objet,
     double? montantEstime,
     int? validiteJours,
     DateTime? dateEmission,
+    String? statut,
+    Value<String?> supprimeLe = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => DevisRow(
     id: id ?? this.id,
     reference: reference ?? this.reference,
@@ -9213,6 +9380,11 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     montantEstime: montantEstime ?? this.montantEstime,
     validiteJours: validiteJours ?? this.validiteJours,
     dateEmission: dateEmission ?? this.dateEmission,
+    statut: statut ?? this.statut,
+    supprimeLe: supprimeLe.present ? supprimeLe.value : this.supprimeLe,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   DevisRow copyWithCompanion(DevisCompanion data) {
     return DevisRow(
@@ -9229,6 +9401,15 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
       dateEmission: data.dateEmission.present
           ? data.dateEmission.value
           : this.dateEmission,
+      statut: data.statut.present ? data.statut.value : this.statut,
+      supprimeLe: data.supprimeLe.present
+          ? data.supprimeLe.value
+          : this.supprimeLe,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -9241,7 +9422,12 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
           ..write('objet: $objet, ')
           ..write('montantEstime: $montantEstime, ')
           ..write('validiteJours: $validiteJours, ')
-          ..write('dateEmission: $dateEmission')
+          ..write('dateEmission: $dateEmission, ')
+          ..write('statut: $statut, ')
+          ..write('supprimeLe: $supprimeLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -9255,6 +9441,11 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     montantEstime,
     validiteJours,
     dateEmission,
+    statut,
+    supprimeLe,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -9266,17 +9457,28 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
           other.objet == this.objet &&
           other.montantEstime == this.montantEstime &&
           other.validiteJours == this.validiteJours &&
-          other.dateEmission == this.dateEmission);
+          other.dateEmission == this.dateEmission &&
+          other.statut == this.statut &&
+          other.supprimeLe == this.supprimeLe &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class DevisCompanion extends UpdateCompanion<DevisRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> reference;
   final Value<String> client;
   final Value<String> objet;
   final Value<double> montantEstime;
   final Value<int> validiteJours;
   final Value<DateTime> dateEmission;
+  final Value<String> statut;
+  final Value<String?> supprimeLe;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const DevisCompanion({
     this.id = const Value.absent(),
     this.reference = const Value.absent(),
@@ -9285,6 +9487,12 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     this.montantEstime = const Value.absent(),
     this.validiteJours = const Value.absent(),
     this.dateEmission = const Value.absent(),
+    this.statut = const Value.absent(),
+    this.supprimeLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   DevisCompanion.insert({
     this.id = const Value.absent(),
@@ -9294,19 +9502,31 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     required double montantEstime,
     this.validiteJours = const Value.absent(),
     required DateTime dateEmission,
+    this.statut = const Value.absent(),
+    this.supprimeLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : reference = Value(reference),
        client = Value(client),
        objet = Value(objet),
        montantEstime = Value(montantEstime),
        dateEmission = Value(dateEmission);
   static Insertable<DevisRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? reference,
     Expression<String>? client,
     Expression<String>? objet,
     Expression<double>? montantEstime,
     Expression<int>? validiteJours,
     Expression<DateTime>? dateEmission,
+    Expression<String>? statut,
+    Expression<String>? supprimeLe,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -9316,17 +9536,29 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
       if (montantEstime != null) 'montant_estime': montantEstime,
       if (validiteJours != null) 'validite_jours': validiteJours,
       if (dateEmission != null) 'date_emission': dateEmission,
+      if (statut != null) 'statut': statut,
+      if (supprimeLe != null) 'supprime_le': supprimeLe,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   DevisCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? reference,
     Value<String>? client,
     Value<String>? objet,
     Value<double>? montantEstime,
     Value<int>? validiteJours,
     Value<DateTime>? dateEmission,
+    Value<String>? statut,
+    Value<String?>? supprimeLe,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return DevisCompanion(
       id: id ?? this.id,
@@ -9336,6 +9568,12 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
       montantEstime: montantEstime ?? this.montantEstime,
       validiteJours: validiteJours ?? this.validiteJours,
       dateEmission: dateEmission ?? this.dateEmission,
+      statut: statut ?? this.statut,
+      supprimeLe: supprimeLe ?? this.supprimeLe,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -9343,7 +9581,7 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (reference.present) {
       map['reference'] = Variable<String>(reference.value);
@@ -9363,6 +9601,24 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     if (dateEmission.present) {
       map['date_emission'] = Variable<DateTime>(dateEmission.value);
     }
+    if (statut.present) {
+      map['statut'] = Variable<String>(statut.value);
+    }
+    if (supprimeLe.present) {
+      map['supprime_le'] = Variable<String>(supprimeLe.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -9375,7 +9631,13 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
           ..write('objet: $objet, ')
           ..write('montantEstime: $montantEstime, ')
           ..write('validiteJours: $validiteJours, ')
-          ..write('dateEmission: $dateEmission')
+          ..write('dateEmission: $dateEmission, ')
+          ..write('statut: $statut, ')
+          ..write('supprimeLe: $supprimeLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -30565,23 +30827,35 @@ typedef $$LignesVenteTableProcessedTableManager =
     >;
 typedef $$DevisTableCreateCompanionBuilder =
     DevisCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String reference,
       required String client,
       required String objet,
       required double montantEstime,
       Value<int> validiteJours,
       required DateTime dateEmission,
+      Value<String> statut,
+      Value<String?> supprimeLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$DevisTableUpdateCompanionBuilder =
     DevisCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> reference,
       Value<String> client,
       Value<String> objet,
       Value<double> montantEstime,
       Value<int> validiteJours,
       Value<DateTime> dateEmission,
+      Value<String> statut,
+      Value<String?> supprimeLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
@@ -30592,7 +30866,7 @@ class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -30626,6 +30900,31 @@ class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
     column: $table.dateEmission,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get statut => $composableBuilder(
+    column: $table.statut,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$DevisTableOrderingComposer
@@ -30637,7 +30936,7 @@ class $$DevisTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -30671,6 +30970,31 @@ class $$DevisTableOrderingComposer
     column: $table.dateEmission,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get statut => $composableBuilder(
+    column: $table.statut,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DevisTableAnnotationComposer
@@ -30682,7 +31006,7 @@ class $$DevisTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get reference =>
@@ -30708,6 +31032,25 @@ class $$DevisTableAnnotationComposer
     column: $table.dateEmission,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get statut =>
+      $composableBuilder(column: $table.statut, builder: (column) => column);
+
+  GeneratedColumn<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$DevisTableTableManager
@@ -30738,13 +31081,19 @@ class $$DevisTableTableManager
               $$DevisTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> reference = const Value.absent(),
                 Value<String> client = const Value.absent(),
                 Value<String> objet = const Value.absent(),
                 Value<double> montantEstime = const Value.absent(),
                 Value<int> validiteJours = const Value.absent(),
                 Value<DateTime> dateEmission = const Value.absent(),
+                Value<String> statut = const Value.absent(),
+                Value<String?> supprimeLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DevisCompanion(
                 id: id,
                 reference: reference,
@@ -30753,16 +31102,28 @@ class $$DevisTableTableManager
                 montantEstime: montantEstime,
                 validiteJours: validiteJours,
                 dateEmission: dateEmission,
+                statut: statut,
+                supprimeLe: supprimeLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String reference,
                 required String client,
                 required String objet,
                 required double montantEstime,
                 Value<int> validiteJours = const Value.absent(),
                 required DateTime dateEmission,
+                Value<String> statut = const Value.absent(),
+                Value<String?> supprimeLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DevisCompanion.insert(
                 id: id,
                 reference: reference,
@@ -30771,6 +31132,12 @@ class $$DevisTableTableManager
                 montantEstime: montantEstime,
                 validiteJours: validiteJours,
                 dateEmission: dateEmission,
+                statut: statut,
+                supprimeLe: supprimeLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

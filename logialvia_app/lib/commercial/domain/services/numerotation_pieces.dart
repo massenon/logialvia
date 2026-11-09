@@ -29,6 +29,13 @@ class NumerotationPieces {
       ? 'C-$annee-'
       : 'C-$codePoste-$annee-';
 
+  /// `DV-P2-2026-` ou, sans code de poste, `DV-2026-` : devis de prestations
+  /// (`47a2_` ; `DV-WEB-2026-` au web, jamais renumeroté).
+  static String prefixeDevis(int annee, String? codePoste) =>
+      codePoste == null || codePoste.isEmpty
+      ? 'DV-$annee-'
+      : 'DV-$codePoste-$annee-';
+
   /// Le numéro d'ordre d'une référence qui porte ce [prefixe], ou `null`.
   static int? sequence(String reference, String prefixe) {
     if (!reference.startsWith(prefixe)) return null;

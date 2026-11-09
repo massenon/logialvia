@@ -85,6 +85,10 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> factures = {};
   final Map<String, Map<String, dynamic>> groupesTaxe = {};
 
+  /// Devis de prestations (`47a2_`) : faits plats, dernier écrivain gagne (rejoue
+  /// `DevisTable` du vrai serveur).
+  final Map<String, Map<String, dynamic>> devis = {};
+
   /// Elevage (palier 7a) : fiches journalieres, compteurs de ventes du jour (une
   /// ligne par poste) et bandes.
   final Map<String, Map<String, dynamic>> fichesJournee = {};
@@ -176,6 +180,7 @@ class FauxServeurSync {
     voir(cycles.values);
     voir(messagesEditeur.values);
     voir(factures.values);
+    voir(devis.values);
     voir(groupesTaxe.values);
     voir(fichesJournee.values);
     voir(ventesJour.values);
@@ -194,6 +199,7 @@ class FauxServeurSync {
         .clear(); // les barèmes, taux et échéances (référentiels) sont préservés
     infirmerie.clear();
     factures.clear(); // la grille de taxation (référentiel) est préservée
+    devis.clear();
     fichesJournee.clear();
     ventesJour.clear();
     bandes.clear();
@@ -435,6 +441,10 @@ class FauxServeurSync {
           for (final f in factures.values)
             if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
         ],
+        'devis': [
+          for (final d in devis.values)
+            if (_dans(d['serveur_modifie_le'] as String, since, jusqua)) d,
+        ],
         'fiche_journee': [
           for (final f in fichesJournee.values)
             if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
@@ -626,6 +636,12 @@ class FauxServeurSync {
     if (tables.containsKey('cycle_couveuse')) {
       reponse['cycle_couveuse'] = _cycles(
         (tables['cycle_couveuse'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('devis')) {
+      reponse['devis'] = _devis(
+        (tables['devis'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -2058,6 +2074,117 @@ class FauxServeurSync {
   }
 
   static const _rang = {'a_transmettre': 0, 'rejetee': 1, 'normalisee': 2};
+
+  /// Un devis déjà reçu par le serveur, émis par un autre poste (ou le web).
+  void ajouterDevis(
+    String id,
+    String reference, {
+    String client = 'Client',
+    String objet = 'Prestation',
+    double montant = 10000,
+    int validiteJours = 15,
+    String? dateEmission,
+    String statut = 'emis',
+    String? supprimeLe,
+    String? updatedAt,
+    String device = 'autre-poste',
+  }) {
+    devis[id] = {
+      'id': id,
+      'device_id': device,
+      'reference': reference,
+      'client': client,
+      'objet': objet,
+      'montant_estime': montant,
+      'validite_jours': validiteJours,
+      'date_emission': dateEmission ?? '2026-11-09T08:00:00.000000Z',
+      'statut': statut,
+      'supprime_le': supprimeLe,
+      'updated_at': updatedAt ?? _instant(),
+      'serveur_modifie_le': _instant(),
+    };
+  }
+
+  /// Rejoue `DevisTable` : référence unique (globale si elle porte un code, sinon par
+  /// poste), référence immuable, devis accepté figé, jamais supprimé une fois accepté.
+  Map<String, dynamic> _devis(List<Map<String, dynamic>> lot, String deviceId) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    bool codee(String ref) =>
+        RegExp(r'^DV-(P\d+|WEB)-\d{4}-\d{3,}$').hasMatch(ref);
+
+    for (final d in lot) {
+      final id = d['id'] as String;
+      final ref = d['reference'] as String;
+      final existant = devis[id];
+      final saisie = DateTime.parse(d['updated_at'] as String);
+      final doublon = devis.values.any(
+        (x) =>
+            x['id'] != id &&
+            x['reference'] == ref &&
+            (codee(ref) || x['device_id'] == deviceId),
+      );
+      if (doublon) {
+        refusees.add({
+          'id': id,
+          'motif': 'Cette référence est déjà utilisée par un autre devis.',
+        });
+        continue;
+      }
+      if (existant == null) {
+        devis[id] = {
+          ...d,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+        acceptees.add(id);
+        continue;
+      }
+      if (existant['reference'] != ref) {
+        refusees.add({
+          'id': id,
+          'motif': 'La référence d\'un devis ne change jamais.',
+        });
+        continue;
+      }
+      if (existant['statut'] == 'accepte') {
+        final change =
+            existant['client'] != d['client'] ||
+            existant['objet'] != d['objet'] ||
+            existant['montant_estime'] != d['montant_estime'] ||
+            existant['validite_jours'] != d['validite_jours'] ||
+            d['supprime_le'] != null;
+        if (change) {
+          refusees.add({
+            'id': id,
+            'motif':
+                'Un devis accepté ne se modifie plus et ne se supprime pas.',
+          });
+          continue;
+        }
+      }
+      if (saisie.isAfter(DateTime.parse(existant['updated_at'] as String))) {
+        existant
+          ..addAll({
+            for (final c in const [
+              'client',
+              'objet',
+              'montant_estime',
+              'validite_jours',
+              'date_emission',
+              'statut',
+              'supprime_le',
+            ])
+              c: d[c],
+          })
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
 
   /// Rejoue les règles du vrai serveur (`FacturesTable`) : lot facture + lignes,
   /// référence unique, avoir sur une facture connue, UNE facture de vente par

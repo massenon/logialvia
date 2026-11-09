@@ -1,36 +1,18 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 
 import '../../../administration/data/repositories/parametres_repository_drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/resultat/resultat.dart';
+import '../../data/repositories/devis_repository_drift.dart';
 import '../../domain/entities/client.dart';
+import '../../domain/entities/devis_emis.dart';
 import '../../domain/entities/produit_vendable.dart';
 import '../../domain/entities/livraison.dart';
 import '../../domain/entities/vente.dart';
 import '../../domain/repositories/ventes_repository.dart';
 
-/// Un devis émis.
-class DevisEmis {
-  const DevisEmis({
-    required this.reference,
-    required this.client,
-    required this.objet,
-    required this.montant,
-    required this.validiteJours,
-    required this.dateEmission,
-  });
-
-  final String reference;
-  final String client;
-  final String objet;
-  final double montant;
-  final int validiteJours;
-  final DateTime dateEmission;
-
-  DateTime get dateExpiration =>
-      dateEmission.add(Duration(days: validiteJours));
-}
+// Le devis vit dans le domaine (`47a2_`) ; ré-exporté pour les écrans existants.
+export '../../domain/entities/devis_emis.dart';
 
 /// Écran Ventes — Doc F4 Écran 1 et Doc H1 (4 onglets).
 class VentesViewModel extends ChangeNotifier {
@@ -517,83 +499,65 @@ class VentesViewModel extends ChangeNotifier {
 
   // ------------------------------------------------------------------- devis
 
-  Future<List<DevisEmis>> _chargerDevis() async {
-    final lignes = await _db.select(_db.devis).get();
-    lignes.sort((a, b) => b.dateEmission.compareTo(a.dateEmission));
-    return [
-      for (final d in lignes)
-        DevisEmis(
-          reference: d.reference,
-          client: d.client,
-          objet: d.objet,
-          montant: d.montantEstime,
-          validiteJours: d.validiteJours,
-          dateEmission: d.dateEmission,
-        ),
-    ];
-  }
+  late final DevisRepositoryDrift _devisRepository = DevisRepositoryDrift(_db);
+
+  Future<List<DevisEmis>> _chargerDevis() => _devisRepository.tous();
 
   Future<Resultat<DevisEmis>> genererDevis({
     required String client,
     required String objet,
     required double? montant,
     required int? validiteJours,
-  }) async {
-    if (client.trim().isEmpty) return const Echec('Le client est obligatoire.');
-    if (objet.trim().isEmpty) return const Echec('L\'objet est obligatoire.');
-    if (montant == null || montant <= 0) {
-      return const Echec('Le montant doit être supérieur à 0.');
-    }
-    final validite = validiteJours ?? 15;
-    if (validite < 1) {
-      return const Echec('La validité doit être d\'au moins 1 jour.');
-    }
+  }) => _apresDevis(
+    _devisRepository.creer(
+      client: client,
+      objet: objet,
+      montant: montant,
+      validiteJours: validiteJours,
+    ),
+  );
 
-    try {
-      final maintenant = DateTime.now();
-      final reference = await _prochaineReferenceDevis(maintenant.year);
+  /// Modifie un devis ÉMIS (un devis accepté ou refusé ne se modifie plus).
+  Future<Resultat<DevisEmis>> modifierDevis({
+    required String id,
+    required String client,
+    required String objet,
+    required double? montant,
+    required int? validiteJours,
+  }) => _apresDevis(
+    _devisRepository.modifier(
+      id: id,
+      client: client,
+      objet: objet,
+      montant: montant,
+      validiteJours: validiteJours,
+    ),
+  );
 
-      await _db
-          .into(_db.devis)
-          .insert(
-            DevisCompanion.insert(
-              reference: reference,
-              client: client.trim(),
-              objet: objet.trim(),
-              montantEstime: montant,
-              validiteJours: Value(validite),
-              dateEmission: maintenant,
-            ),
-          );
+  Future<Resultat<DevisEmis>> changerStatutDevis(
+    String id,
+    StatutDevis statut,
+  ) => _apresDevis(_devisRepository.changerStatut(id, statut));
 
-      _devis = await _chargerDevis();
-      notifyListeners();
-      return Succes(
-        DevisEmis(
-          reference: reference,
-          client: client.trim(),
-          objet: objet.trim(),
-          montant: montant,
-          validiteJours: validite,
-          dateEmission: maintenant,
-        ),
-      );
-    } catch (e) {
-      if (kDebugMode) debugPrint('Echec generation devis: $e');
-      return const Echec('Le devis n\'a pas pu être généré.');
-    }
+  /// Un nouveau devis (nouveau numéro) au contenu de celui-ci.
+  Future<Resultat<DevisEmis>> dupliquerDevis(String id) =>
+      _apresDevis(_devisRepository.dupliquer(id));
+
+  /// Pierre tombale ; un devis accepté ne se supprime pas.
+  Future<Resultat<void>> supprimerDevis(String id) async {
+    final resultat = await _devisRepository.supprimer(id);
+    _devis = await _chargerDevis();
+    notifyListeners();
+    return resultat;
   }
 
-  Future<String> _prochaineReferenceDevis(int annee) async {
-    final prefixe = 'DV-$annee-';
-    final existants = await _db.select(_db.devis).get();
-    var maximum = 0;
-    for (final d in existants) {
-      if (!d.reference.startsWith(prefixe)) continue;
-      final numero = int.tryParse(d.reference.substring(prefixe.length));
-      if (numero != null && numero > maximum) maximum = numero;
-    }
-    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+  Future<Resultat<DevisEmis>> _apresDevis(
+    Future<Resultat<DevisEmis>> operation,
+  ) async {
+    final resultat = await operation;
+    _devis = await _chargerDevis();
+    notifyListeners();
+    return resultat;
   }
 
   // -------------------------------------------------------------- historique
