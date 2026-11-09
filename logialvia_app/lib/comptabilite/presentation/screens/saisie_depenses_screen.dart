@@ -521,14 +521,25 @@ Future<void> _confirmerSuppression(
   ComptabiliteViewModel vm,
   Depense depense,
 ) async {
+  // Une dépense déjà transmise au serveur est un fait partagé : elle ne s'efface
+  // pas, elle est annulée par l'écriture inverse (le Journal garde les deux traces).
+  final transmise = vm.pieceEstTransmise(depense.numeroPiece);
   final confirme = await AppModal.show<bool>(
     context,
-    title: 'Supprimer la dépense ${depense.numeroPiece} ?',
+    title: transmise
+        ? 'Annuler la dépense ${depense.numeroPiece} ?'
+        : 'Supprimer la dépense ${depense.numeroPiece} ?',
     child: Text(
-      '« ${depense.libelle} » — ${Formats.montant(depense.montant)}.\n\n'
-      'Les deux lignes d\'écriture de cette pièce seront supprimées : la '
-      'charge disparaîtra du Compte de Résultat et la trésorerie sera '
-      'reconstituée d\'autant.',
+      transmise
+          ? '« ${depense.libelle} » — ${Formats.montant(depense.montant)}.\n\n'
+                'Cette dépense a déjà été transmise au serveur : elle ne peut '
+                'plus être effacée. Une écriture inverse (ANN-…) sera passée '
+                'au Journal : la charge disparaîtra du Compte de Résultat et '
+                'la trésorerie sera reconstituée d\'autant.'
+          : '« ${depense.libelle} » — ${Formats.montant(depense.montant)}.\n\n'
+                'Les deux lignes d\'écriture de cette pièce seront supprimées : la '
+                'charge disparaîtra du Compte de Résultat et la trésorerie sera '
+                'reconstituée d\'autant.',
       style: texteCompta.copyWith(height: 1.5),
     ),
     actions: [
@@ -541,7 +552,7 @@ Future<void> _confirmerSuppression(
       ),
       Builder(
         builder: (ctx) => AppButton(
-          label: 'Supprimer',
+          label: transmise ? 'Annuler la dépense' : 'Supprimer',
           variant: AppButtonVariant.danger,
           onPressed: () => Navigator.of(ctx).pop(true),
         ),
@@ -556,7 +567,12 @@ Future<void> _confirmerSuppression(
 
   switch (resultat) {
     case Succes():
-      showAppToast(context, 'Dépense ${depense.numeroPiece} supprimée.');
+      showAppToast(
+        context,
+        transmise
+            ? 'Dépense ${depense.numeroPiece} annulée (écriture inverse passée).'
+            : 'Dépense ${depense.numeroPiece} supprimée.',
+      );
     case Echec(:final message):
       showAppToast(context, message, type: ToastType.error);
   }

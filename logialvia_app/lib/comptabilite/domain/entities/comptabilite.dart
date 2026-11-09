@@ -94,9 +94,15 @@ class Ecriture {
     this.achatRef,
     this.isLocked = false,
     this.axeAnalytique,
+    this.pieceId = '',
+    this.origine,
+    this.syncStatus = 'pending',
+    this.syncMotif,
+    this.contrepasseDe,
   });
 
-  final int id;
+  /// UUID de la ligne (DV-19).
+  final String id;
   final int exerciceAnnee;
   final String numeroCompte;
   final DateTime date;
@@ -111,6 +117,26 @@ class Ecriture {
 
   /// Centre analytique d'imputation, `null` si la ligne n'est pas imputée.
   final String? axeAnalytique;
+
+  /// UUID de la pièce (toutes les lignes d'une partie double le partagent).
+  final String pieceId;
+
+  /// `null` : saisie sur CE poste ; sinon le poste d'origine (ligne reçue du serveur).
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict` — voir `46d_` §2.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// `piece_id` de la pièce que celle-ci annule (contrepassation), sinon `null`.
+  final String? contrepasseDe;
+
+  /// Écrite sur un autre poste : visible au grand livre, jamais modifiable ici.
+  bool get vientDUnAutrePoste => origine != null;
+
+  /// Le serveur connaît cette écriture : elle est désormais un fait partagé, qui
+  /// ne se modifie ni ne se supprime (elle s'annule par contrepassation).
+  bool get estTransmise => syncStatus == 'synced';
 
   /// Origine automatique — une écriture générée par une vente ou un achat ne
   /// doit pas être modifiable à la main (elle serait désynchronisée de sa

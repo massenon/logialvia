@@ -244,7 +244,11 @@ class DepotDemandesReferentiel {
       _db.tauxRationPoids,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (ligne == null) return;
-    await proposer(type: typeTauxPoids, cle: id, donnees: champsTauxPoids(ligne));
+    await proposer(
+      type: typeTauxPoids,
+      cle: id,
+      donnees: champsTauxPoids(ligne),
+    );
   }
 
   Future<void> proposerArchivageTauxPoids(TauxRationPoidsRow ligne) => proposer(
@@ -280,12 +284,65 @@ class DepotDemandesReferentiel {
       await proposer(type: typeBareme, cle: b.id, donnees: champsBareme(b));
     }
     for (final t in await _db.select(_db.tauxRationPoids).get()) {
-      await proposer(type: typeTauxPoids, cle: t.id, donnees: champsTauxPoids(t));
+      await proposer(
+        type: typeTauxPoids,
+        cle: t.id,
+        donnees: champsTauxPoids(t),
+      );
     }
     for (final e in await _db.select(_db.calendrierProphylaxie).get()) {
       await proposer(type: typeEcheance, cle: e.id, donnees: champsEcheance(e));
     }
     await preferences.definirParametresElevageAdoptes();
+  }
+
+  // ------------------------------------------------- Plan comptable (P8)
+
+  static const String typeCompte = 'compte_comptable';
+
+  /// Champs d'un compte proposés au serveur : la clé est le NUMÉRO (clé naturelle
+  /// partagée par tous les postes, plan semé à l'identique).
+  static Map<String, Object?> champsCompte(CompteRow c) => {
+    'numero_compte': c.numeroCompte,
+    'libelle': c.libelle,
+    'classe': c.classe,
+    'archive': c.archive,
+  };
+
+  /// Propose l'état ACTUEL d'un compte (relu en base).
+  Future<void> proposerCompte(String numero) async {
+    final ligne = await (_db.select(
+      _db.planComptable,
+    )..where((c) => c.numeroCompte.equals(numero))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(type: typeCompte, cle: numero, donnees: champsCompte(ligne));
+  }
+
+  /// Une seule fois : propose les comptes que ce poste a créés ou modifiés seul
+  /// (hors du socle semé à l'identique sur tous les postes), pour qu'ils soient connus
+  /// du serveur AVANT que les écritures qui les portent n'arrivent.
+  Future<void> adopterPlanSiBesoin(
+    PreferencesPosteRepository preferences, {
+    required Map<String, ({String libelle, String classe})> socle,
+  }) async {
+    // Sans socle connu, on ne peut pas distinguer le semis de la saisie : on ne
+    // propose rien (le moteur sans plan comptable ne change pas de comportement).
+    if (socle.isEmpty || await preferences.planAdopte()) return;
+    for (final c in await _db.select(_db.planComptable).get()) {
+      final seme = socle[c.numeroCompte];
+      final identiqueAuSocle =
+          seme != null &&
+          seme.libelle == c.libelle &&
+          seme.classe == c.classe &&
+          !c.archive;
+      if (identiqueAuSocle) continue;
+      await proposer(
+        type: typeCompte,
+        cle: c.numeroCompte,
+        donnees: champsCompte(c),
+      );
+    }
+    await preferences.definirPlanAdopte();
   }
 
   /// La demande **en attente** de cette clé, s'il y en a une.

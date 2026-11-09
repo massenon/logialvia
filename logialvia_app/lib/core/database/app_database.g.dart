@@ -21785,8 +21785,50 @@ class $ExerciceComptableTable extends ExerciceComptable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
   @override
-  List<GeneratedColumn> get $columns => [annee, isCloture, dateCloture];
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    annee,
+    isCloture,
+    dateCloture,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -21820,6 +21862,24 @@ class $ExerciceComptableTable extends ExerciceComptable
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -21841,6 +21901,18 @@ class $ExerciceComptableTable extends ExerciceComptable
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_cloture'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -21857,10 +21929,16 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
   /// BR-CPT-001 — verrouillage **définitif**, aucun mécanisme de déclôture.
   final bool isCloture;
   final DateTime? dateCloture;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const ExerciceRow({
     required this.annee,
     required this.isCloture,
     this.dateCloture,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -21870,6 +21948,11 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     if (!nullToAbsent || dateCloture != null) {
       map['date_cloture'] = Variable<DateTime>(dateCloture);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -21880,6 +21963,11 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: dateCloture == null && nullToAbsent
           ? const Value.absent()
           : Value(dateCloture),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -21892,6 +21980,9 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       annee: serializer.fromJson<int>(json['annee']),
       isCloture: serializer.fromJson<bool>(json['isCloture']),
       dateCloture: serializer.fromJson<DateTime?>(json['dateCloture']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -21901,6 +21992,9 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       'annee': serializer.toJson<int>(annee),
       'isCloture': serializer.toJson<bool>(isCloture),
       'dateCloture': serializer.toJson<DateTime?>(dateCloture),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -21908,10 +22002,16 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     int? annee,
     bool? isCloture,
     Value<DateTime?> dateCloture = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => ExerciceRow(
     annee: annee ?? this.annee,
     isCloture: isCloture ?? this.isCloture,
     dateCloture: dateCloture.present ? dateCloture.value : this.dateCloture,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   ExerciceRow copyWithCompanion(ExerciceComptableCompanion data) {
     return ExerciceRow(
@@ -21920,6 +22020,11 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: data.dateCloture.present
           ? data.dateCloture.value
           : this.dateCloture,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -21928,45 +22033,73 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     return (StringBuffer('ExerciceRow(')
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
-          ..write('dateCloture: $dateCloture')
+          ..write('dateCloture: $dateCloture, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(annee, isCloture, dateCloture);
+  int get hashCode => Object.hash(
+    annee,
+    isCloture,
+    dateCloture,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ExerciceRow &&
           other.annee == this.annee &&
           other.isCloture == this.isCloture &&
-          other.dateCloture == this.dateCloture);
+          other.dateCloture == this.dateCloture &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
   final Value<int> annee;
   final Value<bool> isCloture;
   final Value<DateTime?> dateCloture;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   const ExerciceComptableCompanion({
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ExerciceComptableCompanion.insert({
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   static Insertable<ExerciceRow> custom({
     Expression<int>? annee,
     Expression<bool>? isCloture,
     Expression<DateTime>? dateCloture,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (annee != null) 'annee': annee,
       if (isCloture != null) 'is_cloture': isCloture,
       if (dateCloture != null) 'date_cloture': dateCloture,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -21974,11 +22107,17 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     Value<int>? annee,
     Value<bool>? isCloture,
     Value<DateTime?>? dateCloture,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
   }) {
     return ExerciceComptableCompanion(
       annee: annee ?? this.annee,
       isCloture: isCloture ?? this.isCloture,
       dateCloture: dateCloture ?? this.dateCloture,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -21994,6 +22133,15 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     if (dateCloture.present) {
       map['date_cloture'] = Variable<DateTime>(dateCloture.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     return map;
   }
 
@@ -22002,7 +22150,10 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     return (StringBuffer('ExerciceComptableCompanion(')
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
-          ..write('dateCloture: $dateCloture')
+          ..write('dateCloture: $dateCloture, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -22347,16 +22498,25 @@ class $EcritureComptableTable extends EcritureComptable
   $EcritureComptableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _pieceIdMeta = const VerificationMeta(
+    'pieceId',
+  );
+  @override
+  late final GeneratedColumn<String> pieceId = GeneratedColumn<String>(
+    'piece_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _exerciceAnneeMeta = const VerificationMeta(
     'exerciceAnnee',
@@ -22499,9 +22659,67 @@ class $EcritureComptableTable extends EcritureComptable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _contrepasseDeMeta = const VerificationMeta(
+    'contrepasseDe',
+  );
+  @override
+  late final GeneratedColumn<String> contrepasseDe = GeneratedColumn<String>(
+    'contrepasse_de',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    pieceId,
     exerciceAnnee,
     numeroCompte,
     dateEcriture,
@@ -22514,6 +22732,11 @@ class $EcritureComptableTable extends EcritureComptable
     achatRef,
     axeAnalytique,
     isLocked,
+    contrepasseDe,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -22529,6 +22752,12 @@ class $EcritureComptableTable extends EcritureComptable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('piece_id')) {
+      context.handle(
+        _pieceIdMeta,
+        pieceId.isAcceptableOrUnknown(data['piece_id']!, _pieceIdMeta),
+      );
     }
     if (data.containsKey('exercice_annee')) {
       context.handle(
@@ -22628,6 +22857,39 @@ class $EcritureComptableTable extends EcritureComptable
         isLocked.isAcceptableOrUnknown(data['is_locked']!, _isLockedMeta),
       );
     }
+    if (data.containsKey('contrepasse_de')) {
+      context.handle(
+        _contrepasseDeMeta,
+        contrepasseDe.isAcceptableOrUnknown(
+          data['contrepasse_de']!,
+          _contrepasseDeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -22638,8 +22900,12 @@ class $EcritureComptableTable extends EcritureComptable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return EcritureRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
+      )!,
+      pieceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_id'],
       )!,
       exerciceAnnee: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -22689,6 +22955,26 @@ class $EcritureComptableTable extends EcritureComptable
         DriftSqlType.bool,
         data['${effectivePrefix}is_locked'],
       )!,
+      contrepasseDe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contrepasse_de'],
+      ),
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -22699,7 +22985,15 @@ class $EcritureComptableTable extends EcritureComptable
 }
 
 class EcritureRow extends DataClass implements Insertable<EcritureRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne d'écriture est un FAIT synchronisé, immuable une fois
+  /// transmis.
+  final String id;
+
+  /// UUID commun à toutes les lignes d'une **pièce** (partie double). La pièce est
+  /// l'unité de synchronisation : elle voyage entière, équilibrée ou refusée.
+  /// Le numéro de pièce, lui, n'est PAS unique (`REG-V-…` revient à chaque
+  /// règlement partiel d'une même vente).
+  final String pieceId;
   final int exerciceAnnee;
   final String numeroCompte;
   final DateTime dateEcriture;
@@ -22739,8 +23033,27 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
 
   /// Vrai si l'exercice parent est clôturé.
   final bool isLocked;
+
+  /// `piece_id` de la pièce que celle-ci **contrepasse** (annulation d'une pièce
+  /// déjà transmise : un fait synchronisé ne se modifie ni ne se supprime, il
+  /// s'annule par l'écriture inverse). `null` pour une pièce ordinaire.
+  final String? contrepasseDe;
+
+  /// D'où vient cette ligne : `null` = CE poste ; sinon l'identifiant du poste
+  /// qui l'a saisie. La ligne d'un autre poste compte au grand livre (le grand
+  /// livre de chaque poste est la somme de TOUS les faits) mais ne se modifie
+  /// jamais ici, et son arrivée n'a engendré AUCUNE écriture locale.
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict` (refusée par le serveur, voir `syncMotif`).
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE de la pièce (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const EcritureRow({
     required this.id,
+    required this.pieceId,
     required this.exerciceAnnee,
     required this.numeroCompte,
     required this.dateEcriture,
@@ -22753,11 +23066,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     this.achatRef,
     this.axeAnalytique,
     required this.isLocked,
+    this.contrepasseDe,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
+    map['piece_id'] = Variable<String>(pieceId);
     map['exercice_annee'] = Variable<int>(exerciceAnnee);
     map['numero_compte'] = Variable<String>(numeroCompte);
     map['date_ecriture'] = Variable<DateTime>(dateEcriture);
@@ -22778,12 +23097,24 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       map['axe_analytique'] = Variable<String>(axeAnalytique);
     }
     map['is_locked'] = Variable<bool>(isLocked);
+    if (!nullToAbsent || contrepasseDe != null) {
+      map['contrepasse_de'] = Variable<String>(contrepasseDe);
+    }
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
   EcritureComptableCompanion toCompanion(bool nullToAbsent) {
     return EcritureComptableCompanion(
       id: Value(id),
+      pieceId: Value(pieceId),
       exerciceAnnee: Value(exerciceAnnee),
       numeroCompte: Value(numeroCompte),
       dateEcriture: Value(dateEcriture),
@@ -22804,6 +23135,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ? const Value.absent()
           : Value(axeAnalytique),
       isLocked: Value(isLocked),
+      contrepasseDe: contrepasseDe == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contrepasseDe),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -22813,7 +23155,8 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return EcritureRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
+      pieceId: serializer.fromJson<String>(json['pieceId']),
       exerciceAnnee: serializer.fromJson<int>(json['exerciceAnnee']),
       numeroCompte: serializer.fromJson<String>(json['numeroCompte']),
       dateEcriture: serializer.fromJson<DateTime>(json['dateEcriture']),
@@ -22826,13 +23169,19 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       achatRef: serializer.fromJson<String?>(json['achatRef']),
       axeAnalytique: serializer.fromJson<String?>(json['axeAnalytique']),
       isLocked: serializer.fromJson<bool>(json['isLocked']),
+      contrepasseDe: serializer.fromJson<String?>(json['contrepasseDe']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
+      'pieceId': serializer.toJson<String>(pieceId),
       'exerciceAnnee': serializer.toJson<int>(exerciceAnnee),
       'numeroCompte': serializer.toJson<String>(numeroCompte),
       'dateEcriture': serializer.toJson<DateTime>(dateEcriture),
@@ -22845,11 +23194,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       'achatRef': serializer.toJson<String?>(achatRef),
       'axeAnalytique': serializer.toJson<String?>(axeAnalytique),
       'isLocked': serializer.toJson<bool>(isLocked),
+      'contrepasseDe': serializer.toJson<String?>(contrepasseDe),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   EcritureRow copyWith({
-    int? id,
+    String? id,
+    String? pieceId,
     int? exerciceAnnee,
     String? numeroCompte,
     DateTime? dateEcriture,
@@ -22862,8 +23217,14 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     Value<String?> achatRef = const Value.absent(),
     Value<String?> axeAnalytique = const Value.absent(),
     bool? isLocked,
+    Value<String?> contrepasseDe = const Value.absent(),
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => EcritureRow(
     id: id ?? this.id,
+    pieceId: pieceId ?? this.pieceId,
     exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
     numeroCompte: numeroCompte ?? this.numeroCompte,
     dateEcriture: dateEcriture ?? this.dateEcriture,
@@ -22878,10 +23239,18 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
         ? axeAnalytique.value
         : this.axeAnalytique,
     isLocked: isLocked ?? this.isLocked,
+    contrepasseDe: contrepasseDe.present
+        ? contrepasseDe.value
+        : this.contrepasseDe,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   EcritureRow copyWithCompanion(EcritureComptableCompanion data) {
     return EcritureRow(
       id: data.id.present ? data.id.value : this.id,
+      pieceId: data.pieceId.present ? data.pieceId.value : this.pieceId,
       exerciceAnnee: data.exerciceAnnee.present
           ? data.exerciceAnnee.value
           : this.exerciceAnnee,
@@ -22906,6 +23275,15 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ? data.axeAnalytique.value
           : this.axeAnalytique,
       isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
+      contrepasseDe: data.contrepasseDe.present
+          ? data.contrepasseDe.value
+          : this.contrepasseDe,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -22913,6 +23291,7 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   String toString() {
     return (StringBuffer('EcritureRow(')
           ..write('id: $id, ')
+          ..write('pieceId: $pieceId, ')
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroCompte: $numeroCompte, ')
           ..write('dateEcriture: $dateEcriture, ')
@@ -22924,7 +23303,12 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ..write('venteRef: $venteRef, ')
           ..write('achatRef: $achatRef, ')
           ..write('axeAnalytique: $axeAnalytique, ')
-          ..write('isLocked: $isLocked')
+          ..write('isLocked: $isLocked, ')
+          ..write('contrepasseDe: $contrepasseDe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -22932,6 +23316,7 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   @override
   int get hashCode => Object.hash(
     id,
+    pieceId,
     exerciceAnnee,
     numeroCompte,
     dateEcriture,
@@ -22944,12 +23329,18 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     achatRef,
     axeAnalytique,
     isLocked,
+    contrepasseDe,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is EcritureRow &&
           other.id == this.id &&
+          other.pieceId == this.pieceId &&
           other.exerciceAnnee == this.exerciceAnnee &&
           other.numeroCompte == this.numeroCompte &&
           other.dateEcriture == this.dateEcriture &&
@@ -22961,11 +23352,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           other.venteRef == this.venteRef &&
           other.achatRef == this.achatRef &&
           other.axeAnalytique == this.axeAnalytique &&
-          other.isLocked == this.isLocked);
+          other.isLocked == this.isLocked &&
+          other.contrepasseDe == this.contrepasseDe &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
-  final Value<int> id;
+  final Value<String> id;
+  final Value<String> pieceId;
   final Value<int> exerciceAnnee;
   final Value<String> numeroCompte;
   final Value<DateTime> dateEcriture;
@@ -22978,8 +23375,15 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   final Value<String?> achatRef;
   final Value<String?> axeAnalytique;
   final Value<bool> isLocked;
+  final Value<String?> contrepasseDe;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const EcritureComptableCompanion({
     this.id = const Value.absent(),
+    this.pieceId = const Value.absent(),
     this.exerciceAnnee = const Value.absent(),
     this.numeroCompte = const Value.absent(),
     this.dateEcriture = const Value.absent(),
@@ -22992,9 +23396,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     this.achatRef = const Value.absent(),
     this.axeAnalytique = const Value.absent(),
     this.isLocked = const Value.absent(),
+    this.contrepasseDe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   EcritureComptableCompanion.insert({
     this.id = const Value.absent(),
+    this.pieceId = const Value.absent(),
     required int exerciceAnnee,
     required String numeroCompte,
     required DateTime dateEcriture,
@@ -23007,12 +23418,19 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     this.achatRef = const Value.absent(),
     this.axeAnalytique = const Value.absent(),
     this.isLocked = const Value.absent(),
+    this.contrepasseDe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : exerciceAnnee = Value(exerciceAnnee),
        numeroCompte = Value(numeroCompte),
        dateEcriture = Value(dateEcriture),
        libelle = Value(libelle);
   static Insertable<EcritureRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
+    Expression<String>? pieceId,
     Expression<int>? exerciceAnnee,
     Expression<String>? numeroCompte,
     Expression<DateTime>? dateEcriture,
@@ -23025,9 +23443,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     Expression<String>? achatRef,
     Expression<String>? axeAnalytique,
     Expression<bool>? isLocked,
+    Expression<String>? contrepasseDe,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (pieceId != null) 'piece_id': pieceId,
       if (exerciceAnnee != null) 'exercice_annee': exerciceAnnee,
       if (numeroCompte != null) 'numero_compte': numeroCompte,
       if (dateEcriture != null) 'date_ecriture': dateEcriture,
@@ -23040,11 +23465,18 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
       if (achatRef != null) 'achat_ref': achatRef,
       if (axeAnalytique != null) 'axe_analytique': axeAnalytique,
       if (isLocked != null) 'is_locked': isLocked,
+      if (contrepasseDe != null) 'contrepasse_de': contrepasseDe,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   EcritureComptableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
+    Value<String>? pieceId,
     Value<int>? exerciceAnnee,
     Value<String>? numeroCompte,
     Value<DateTime>? dateEcriture,
@@ -23057,9 +23489,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     Value<String?>? achatRef,
     Value<String?>? axeAnalytique,
     Value<bool>? isLocked,
+    Value<String?>? contrepasseDe,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return EcritureComptableCompanion(
       id: id ?? this.id,
+      pieceId: pieceId ?? this.pieceId,
       exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
       numeroCompte: numeroCompte ?? this.numeroCompte,
       dateEcriture: dateEcriture ?? this.dateEcriture,
@@ -23072,6 +23511,12 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
       achatRef: achatRef ?? this.achatRef,
       axeAnalytique: axeAnalytique ?? this.axeAnalytique,
       isLocked: isLocked ?? this.isLocked,
+      contrepasseDe: contrepasseDe ?? this.contrepasseDe,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -23079,7 +23524,10 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
+    }
+    if (pieceId.present) {
+      map['piece_id'] = Variable<String>(pieceId.value);
     }
     if (exerciceAnnee.present) {
       map['exercice_annee'] = Variable<int>(exerciceAnnee.value);
@@ -23117,6 +23565,24 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     if (isLocked.present) {
       map['is_locked'] = Variable<bool>(isLocked.value);
     }
+    if (contrepasseDe.present) {
+      map['contrepasse_de'] = Variable<String>(contrepasseDe.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -23124,6 +23590,7 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   String toString() {
     return (StringBuffer('EcritureComptableCompanion(')
           ..write('id: $id, ')
+          ..write('pieceId: $pieceId, ')
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroCompte: $numeroCompte, ')
           ..write('dateEcriture: $dateEcriture, ')
@@ -23135,7 +23602,13 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
           ..write('venteRef: $venteRef, ')
           ..write('achatRef: $achatRef, ')
           ..write('axeAnalytique: $axeAnalytique, ')
-          ..write('isLocked: $isLocked')
+          ..write('isLocked: $isLocked, ')
+          ..write('contrepasseDe: $contrepasseDe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -23149,16 +23622,13 @@ class $NotesAnnexesTable extends NotesAnnexes
   $NotesAnnexesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _exerciceAnneeMeta = const VerificationMeta(
     'exerciceAnnee',
@@ -23205,6 +23675,41 @@ class $NotesAnnexesTable extends NotesAnnexes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -23212,6 +23717,9 @@ class $NotesAnnexesTable extends NotesAnnexes
     numeroNote,
     titre,
     contenu,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -23263,6 +23771,24 @@ class $NotesAnnexesTable extends NotesAnnexes
     } else if (isInserting) {
       context.missing(_contenuMeta);
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -23277,7 +23803,7 @@ class $NotesAnnexesTable extends NotesAnnexes
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return NoteAnnexeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       exerciceAnnee: attachedDatabase.typeMapping.read(
@@ -23296,6 +23822,18 @@ class $NotesAnnexesTable extends NotesAnnexes
         DriftSqlType.string,
         data['${effectivePrefix}contenu'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -23306,28 +23844,42 @@ class $NotesAnnexesTable extends NotesAnnexes
 }
 
 class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
-  final int id;
+  /// UUID **déterministe** de (exercice, numéro) : deux postes qui rédigent la
+  /// note 1 de 2026 la désignent par le même identifiant (« dernier écrivain
+  /// gagne »), sans doublon.
+  final String id;
   final int exerciceAnnee;
 
   /// 1 à 5 — voir Doc F6 §4 Onglet 4 pour le contenu attendu de chacune.
   final int numeroNote;
   final String titre;
   final String contenu;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const NoteAnnexeRow({
     required this.id,
     required this.exerciceAnnee,
     required this.numeroNote,
     required this.titre,
     required this.contenu,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['exercice_annee'] = Variable<int>(exerciceAnnee);
     map['numero_note'] = Variable<int>(numeroNote);
     map['titre'] = Variable<String>(titre);
     map['contenu'] = Variable<String>(contenu);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -23338,6 +23890,11 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
       numeroNote: Value(numeroNote),
       titre: Value(titre),
       contenu: Value(contenu),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -23347,37 +23904,49 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return NoteAnnexeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       exerciceAnnee: serializer.fromJson<int>(json['exerciceAnnee']),
       numeroNote: serializer.fromJson<int>(json['numeroNote']),
       titre: serializer.fromJson<String>(json['titre']),
       contenu: serializer.fromJson<String>(json['contenu']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'exerciceAnnee': serializer.toJson<int>(exerciceAnnee),
       'numeroNote': serializer.toJson<int>(numeroNote),
       'titre': serializer.toJson<String>(titre),
       'contenu': serializer.toJson<String>(contenu),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   NoteAnnexeRow copyWith({
-    int? id,
+    String? id,
     int? exerciceAnnee,
     int? numeroNote,
     String? titre,
     String? contenu,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => NoteAnnexeRow(
     id: id ?? this.id,
     exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
     numeroNote: numeroNote ?? this.numeroNote,
     titre: titre ?? this.titre,
     contenu: contenu ?? this.contenu,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   NoteAnnexeRow copyWithCompanion(NotesAnnexesCompanion data) {
     return NoteAnnexeRow(
@@ -23390,6 +23959,11 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           : this.numeroNote,
       titre: data.titre.present ? data.titre.value : this.titre,
       contenu: data.contenu.present ? data.contenu.value : this.contenu,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -23400,14 +23974,25 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroNote: $numeroNote, ')
           ..write('titre: $titre, ')
-          ..write('contenu: $contenu')
+          ..write('contenu: $contenu, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, exerciceAnnee, numeroNote, titre, contenu);
+  int get hashCode => Object.hash(
+    id,
+    exerciceAnnee,
+    numeroNote,
+    titre,
+    contenu,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -23416,21 +24001,32 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           other.exerciceAnnee == this.exerciceAnnee &&
           other.numeroNote == this.numeroNote &&
           other.titre == this.titre &&
-          other.contenu == this.contenu);
+          other.contenu == this.contenu &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<int> exerciceAnnee;
   final Value<int> numeroNote;
   final Value<String> titre;
   final Value<String> contenu;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const NotesAnnexesCompanion({
     this.id = const Value.absent(),
     this.exerciceAnnee = const Value.absent(),
     this.numeroNote = const Value.absent(),
     this.titre = const Value.absent(),
     this.contenu = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   NotesAnnexesCompanion.insert({
     this.id = const Value.absent(),
@@ -23438,16 +24034,24 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
     required int numeroNote,
     required String titre,
     required String contenu,
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : exerciceAnnee = Value(exerciceAnnee),
        numeroNote = Value(numeroNote),
        titre = Value(titre),
        contenu = Value(contenu);
   static Insertable<NoteAnnexeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<int>? exerciceAnnee,
     Expression<int>? numeroNote,
     Expression<String>? titre,
     Expression<String>? contenu,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -23455,15 +24059,23 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
       if (numeroNote != null) 'numero_note': numeroNote,
       if (titre != null) 'titre': titre,
       if (contenu != null) 'contenu': contenu,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   NotesAnnexesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<int>? exerciceAnnee,
     Value<int>? numeroNote,
     Value<String>? titre,
     Value<String>? contenu,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return NotesAnnexesCompanion(
       id: id ?? this.id,
@@ -23471,6 +24083,10 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
       numeroNote: numeroNote ?? this.numeroNote,
       titre: titre ?? this.titre,
       contenu: contenu ?? this.contenu,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -23478,7 +24094,7 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (exerciceAnnee.present) {
       map['exercice_annee'] = Variable<int>(exerciceAnnee.value);
@@ -23492,6 +24108,18 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
     if (contenu.present) {
       map['contenu'] = Variable<String>(contenu.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -23502,7 +24130,11 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroNote: $numeroNote, ')
           ..write('titre: $titre, ')
-          ..write('contenu: $contenu')
+          ..write('contenu: $contenu, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -23569,6 +24201,41 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     annee,
@@ -23576,6 +24243,9 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
     isCloture,
     dateCloture,
     declotureParUtilisateurId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -23629,6 +24299,24 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -23658,6 +24346,18 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         DriftSqlType.string,
         data['${effectivePrefix}decloture_par_utilisateur_id'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -23677,12 +24377,18 @@ class CloturePeriodiqueRow extends DataClass
   /// Traçabilité du déblocage exceptionnel (BR-ADM-003), rôle `admin`
   /// uniquement.
   final String? declotureParUtilisateurId;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const CloturePeriodiqueRow({
     required this.annee,
     required this.mois,
     required this.isCloture,
     this.dateCloture,
     this.declotureParUtilisateurId,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -23698,6 +24404,11 @@ class CloturePeriodiqueRow extends DataClass
         declotureParUtilisateurId,
       );
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -23713,6 +24424,11 @@ class CloturePeriodiqueRow extends DataClass
           declotureParUtilisateurId == null && nullToAbsent
           ? const Value.absent()
           : Value(declotureParUtilisateurId),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -23729,6 +24445,9 @@ class CloturePeriodiqueRow extends DataClass
       declotureParUtilisateurId: serializer.fromJson<String?>(
         json['declotureParUtilisateurId'],
       ),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -23742,6 +24461,9 @@ class CloturePeriodiqueRow extends DataClass
       'declotureParUtilisateurId': serializer.toJson<String?>(
         declotureParUtilisateurId,
       ),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -23751,6 +24473,9 @@ class CloturePeriodiqueRow extends DataClass
     bool? isCloture,
     Value<DateTime?> dateCloture = const Value.absent(),
     Value<String?> declotureParUtilisateurId = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => CloturePeriodiqueRow(
     annee: annee ?? this.annee,
     mois: mois ?? this.mois,
@@ -23759,6 +24484,9 @@ class CloturePeriodiqueRow extends DataClass
     declotureParUtilisateurId: declotureParUtilisateurId.present
         ? declotureParUtilisateurId.value
         : this.declotureParUtilisateurId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   CloturePeriodiqueRow copyWithCompanion(CloturesPeriodiquesCompanion data) {
     return CloturePeriodiqueRow(
@@ -23771,6 +24499,11 @@ class CloturePeriodiqueRow extends DataClass
       declotureParUtilisateurId: data.declotureParUtilisateurId.present
           ? data.declotureParUtilisateurId.value
           : this.declotureParUtilisateurId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -23781,7 +24514,10 @@ class CloturePeriodiqueRow extends DataClass
           ..write('mois: $mois, ')
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('declotureParUtilisateurId: $declotureParUtilisateurId')
+          ..write('declotureParUtilisateurId: $declotureParUtilisateurId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -23793,6 +24529,9 @@ class CloturePeriodiqueRow extends DataClass
     isCloture,
     dateCloture,
     declotureParUtilisateurId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -23802,7 +24541,10 @@ class CloturePeriodiqueRow extends DataClass
           other.mois == this.mois &&
           other.isCloture == this.isCloture &&
           other.dateCloture == this.dateCloture &&
-          other.declotureParUtilisateurId == this.declotureParUtilisateurId);
+          other.declotureParUtilisateurId == this.declotureParUtilisateurId &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CloturesPeriodiquesCompanion
@@ -23812,6 +24554,9 @@ class CloturesPeriodiquesCompanion
   final Value<bool> isCloture;
   final Value<DateTime?> dateCloture;
   final Value<String?> declotureParUtilisateurId;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<int> rowid;
   const CloturesPeriodiquesCompanion({
     this.annee = const Value.absent(),
@@ -23819,6 +24564,9 @@ class CloturesPeriodiquesCompanion
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.declotureParUtilisateurId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CloturesPeriodiquesCompanion.insert({
@@ -23827,6 +24575,9 @@ class CloturesPeriodiquesCompanion
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.declotureParUtilisateurId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : annee = Value(annee),
        mois = Value(mois);
@@ -23836,6 +24587,9 @@ class CloturesPeriodiquesCompanion
     Expression<bool>? isCloture,
     Expression<DateTime>? dateCloture,
     Expression<String>? declotureParUtilisateurId,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -23845,6 +24599,9 @@ class CloturesPeriodiquesCompanion
       if (dateCloture != null) 'date_cloture': dateCloture,
       if (declotureParUtilisateurId != null)
         'decloture_par_utilisateur_id': declotureParUtilisateurId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -23855,6 +24612,9 @@ class CloturesPeriodiquesCompanion
     Value<bool>? isCloture,
     Value<DateTime?>? dateCloture,
     Value<String?>? declotureParUtilisateurId,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
     return CloturesPeriodiquesCompanion(
@@ -23864,6 +24624,9 @@ class CloturesPeriodiquesCompanion
       dateCloture: dateCloture ?? this.dateCloture,
       declotureParUtilisateurId:
           declotureParUtilisateurId ?? this.declotureParUtilisateurId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -23888,6 +24651,15 @@ class CloturesPeriodiquesCompanion
         declotureParUtilisateurId.value,
       );
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -23902,6 +24674,9 @@ class CloturesPeriodiquesCompanion
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
           ..write('declotureParUtilisateurId: $declotureParUtilisateurId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -36685,12 +37460,18 @@ typedef $$ExerciceComptableTableCreateCompanionBuilder =
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
     });
 typedef $$ExerciceComptableTableUpdateCompanionBuilder =
     ExerciceComptableCompanion Function({
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
     });
 
 final class $$ExerciceComptableTableReferences
@@ -36770,6 +37551,21 @@ class $$ExerciceComptableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> ecritureComptableRefs(
     Expression<bool> Function($$EcritureComptableTableFilterComposer f) f,
   ) {
@@ -36844,6 +37640,21 @@ class $$ExerciceComptableTableOrderingComposer
     column: $table.dateCloture,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExerciceComptableTableAnnotationComposer
@@ -36865,6 +37676,17 @@ class $$ExerciceComptableTableAnnotationComposer
     column: $table.dateCloture,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> ecritureComptableRefs<T extends Object>(
     Expression<T> Function($$EcritureComptableTableAnnotationComposer a) f,
@@ -36957,20 +37779,32 @@ class $$ExerciceComptableTableTableManager
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => ExerciceComptableCompanion(
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => ExerciceComptableCompanion.insert(
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -37362,7 +38196,8 @@ typedef $$PlanComptableTableProcessedTableManager =
     >;
 typedef $$EcritureComptableTableCreateCompanionBuilder =
     EcritureComptableCompanion Function({
-      Value<int> id,
+      Value<String> id,
+      Value<String> pieceId,
       required int exerciceAnnee,
       required String numeroCompte,
       required DateTime dateEcriture,
@@ -37375,10 +38210,17 @@ typedef $$EcritureComptableTableCreateCompanionBuilder =
       Value<String?> achatRef,
       Value<String?> axeAnalytique,
       Value<bool> isLocked,
+      Value<String?> contrepasseDe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$EcritureComptableTableUpdateCompanionBuilder =
     EcritureComptableCompanion Function({
-      Value<int> id,
+      Value<String> id,
+      Value<String> pieceId,
       Value<int> exerciceAnnee,
       Value<String> numeroCompte,
       Value<DateTime> dateEcriture,
@@ -37391,6 +38233,12 @@ typedef $$EcritureComptableTableUpdateCompanionBuilder =
       Value<String?> achatRef,
       Value<String?> axeAnalytique,
       Value<bool> isLocked,
+      Value<String?> contrepasseDe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$EcritureComptableTableReferences
@@ -37450,8 +38298,13 @@ class $$EcritureComptableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -37502,6 +38355,31 @@ class $$EcritureComptableTableFilterComposer
 
   ColumnFilters<bool> get isLocked => $composableBuilder(
     column: $table.isLocked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -37561,8 +38439,13 @@ class $$EcritureComptableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -37613,6 +38496,31 @@ class $$EcritureComptableTableOrderingComposer
 
   ColumnOrderings<bool> get isLocked => $composableBuilder(
     column: $table.isLocked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -37672,8 +38580,11 @@ class $$EcritureComptableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceId =>
+      $composableBuilder(column: $table.pieceId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get dateEcriture => $composableBuilder(
     column: $table.dateEcriture,
@@ -37712,6 +38623,25 @@ class $$EcritureComptableTableAnnotationComposer
 
   GeneratedColumn<bool> get isLocked =>
       $composableBuilder(column: $table.isLocked, builder: (column) => column);
+
+  GeneratedColumn<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$ExerciceComptableTableAnnotationComposer get exerciceAnnee {
     final $$ExerciceComptableTableAnnotationComposer composer =
@@ -37794,7 +38724,8 @@ class $$EcritureComptableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> pieceId = const Value.absent(),
                 Value<int> exerciceAnnee = const Value.absent(),
                 Value<String> numeroCompte = const Value.absent(),
                 Value<DateTime> dateEcriture = const Value.absent(),
@@ -37807,8 +38738,15 @@ class $$EcritureComptableTableTableManager
                 Value<String?> achatRef = const Value.absent(),
                 Value<String?> axeAnalytique = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
+                Value<String?> contrepasseDe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => EcritureComptableCompanion(
                 id: id,
+                pieceId: pieceId,
                 exerciceAnnee: exerciceAnnee,
                 numeroCompte: numeroCompte,
                 dateEcriture: dateEcriture,
@@ -37821,10 +38759,17 @@ class $$EcritureComptableTableTableManager
                 achatRef: achatRef,
                 axeAnalytique: axeAnalytique,
                 isLocked: isLocked,
+                contrepasseDe: contrepasseDe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> pieceId = const Value.absent(),
                 required int exerciceAnnee,
                 required String numeroCompte,
                 required DateTime dateEcriture,
@@ -37837,8 +38782,15 @@ class $$EcritureComptableTableTableManager
                 Value<String?> achatRef = const Value.absent(),
                 Value<String?> axeAnalytique = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
+                Value<String?> contrepasseDe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => EcritureComptableCompanion.insert(
                 id: id,
+                pieceId: pieceId,
                 exerciceAnnee: exerciceAnnee,
                 numeroCompte: numeroCompte,
                 dateEcriture: dateEcriture,
@@ -37851,6 +38803,12 @@ class $$EcritureComptableTableTableManager
                 achatRef: achatRef,
                 axeAnalytique: axeAnalytique,
                 isLocked: isLocked,
+                contrepasseDe: contrepasseDe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -37939,19 +38897,27 @@ typedef $$EcritureComptableTableProcessedTableManager =
     >;
 typedef $$NotesAnnexesTableCreateCompanionBuilder =
     NotesAnnexesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required int exerciceAnnee,
       required int numeroNote,
       required String titre,
       required String contenu,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$NotesAnnexesTableUpdateCompanionBuilder =
     NotesAnnexesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<int> exerciceAnnee,
       Value<int> numeroNote,
       Value<String> titre,
       Value<String> contenu,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$NotesAnnexesTableReferences
@@ -37986,7 +38952,7 @@ class $$NotesAnnexesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -38003,6 +38969,21 @@ class $$NotesAnnexesTableFilterComposer
 
   ColumnFilters<String> get contenu => $composableBuilder(
     column: $table.contenu,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38039,7 +39020,7 @@ class $$NotesAnnexesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -38056,6 +39037,21 @@ class $$NotesAnnexesTableOrderingComposer
 
   ColumnOrderings<String> get contenu => $composableBuilder(
     column: $table.contenu,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -38092,7 +39088,7 @@ class $$NotesAnnexesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<int> get numeroNote => $composableBuilder(
@@ -38105,6 +39101,17 @@ class $$NotesAnnexesTableAnnotationComposer
 
   GeneratedColumn<String> get contenu =>
       $composableBuilder(column: $table.contenu, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$ExerciceComptableTableAnnotationComposer get exerciceAnnee {
     final $$ExerciceComptableTableAnnotationComposer composer =
@@ -38159,31 +39166,47 @@ class $$NotesAnnexesTableTableManager
               $$NotesAnnexesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<int> exerciceAnnee = const Value.absent(),
                 Value<int> numeroNote = const Value.absent(),
                 Value<String> titre = const Value.absent(),
                 Value<String> contenu = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => NotesAnnexesCompanion(
                 id: id,
                 exerciceAnnee: exerciceAnnee,
                 numeroNote: numeroNote,
                 titre: titre,
                 contenu: contenu,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required int exerciceAnnee,
                 required int numeroNote,
                 required String titre,
                 required String contenu,
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => NotesAnnexesCompanion.insert(
                 id: id,
                 exerciceAnnee: exerciceAnnee,
                 numeroNote: numeroNote,
                 titre: titre,
                 contenu: contenu,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -38259,6 +39282,9 @@ typedef $$CloturesPeriodiquesTableCreateCompanionBuilder =
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
       Value<String?> declotureParUtilisateurId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 typedef $$CloturesPeriodiquesTableUpdateCompanionBuilder =
@@ -38268,6 +39294,9 @@ typedef $$CloturesPeriodiquesTableUpdateCompanionBuilder =
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
       Value<String?> declotureParUtilisateurId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 
@@ -38302,6 +39331,21 @@ class $$CloturesPeriodiquesTableFilterComposer
 
   ColumnFilters<String> get declotureParUtilisateurId => $composableBuilder(
     column: $table.declotureParUtilisateurId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -38339,6 +39383,21 @@ class $$CloturesPeriodiquesTableOrderingComposer
     column: $table.declotureParUtilisateurId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CloturesPeriodiquesTableAnnotationComposer
@@ -38368,6 +39427,17 @@ class $$CloturesPeriodiquesTableAnnotationComposer
     column: $table.declotureParUtilisateurId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$CloturesPeriodiquesTableTableManager
@@ -38418,6 +39488,9 @@ class $$CloturesPeriodiquesTableTableManager
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> declotureParUtilisateurId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloturesPeriodiquesCompanion(
                 annee: annee,
@@ -38425,6 +39498,9 @@ class $$CloturesPeriodiquesTableTableManager
                 isCloture: isCloture,
                 dateCloture: dateCloture,
                 declotureParUtilisateurId: declotureParUtilisateurId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -38434,6 +39510,9 @@ class $$CloturesPeriodiquesTableTableManager
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> declotureParUtilisateurId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloturesPeriodiquesCompanion.insert(
                 annee: annee,
@@ -38441,6 +39520,9 @@ class $$CloturesPeriodiquesTableTableManager
                 isCloture: isCloture,
                 dateCloture: dateCloture,
                 declotureParUtilisateurId: declotureParUtilisateurId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -453,6 +453,22 @@ class _AssistantCloture extends StatelessWidget {
                         : null,
                   ),
           ),
+          if (vm.motifRefusCloture != null && !vm.exerciceEstCloture) ...[
+            // La clôture est un fait lourd : le serveur a le dernier mot. Refusée,
+            // l'exercice est resté (ou redevenu) ouvert ici, et le dit.
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.errorContainer,
+                borderRadius: AppRadius.cardRadius,
+              ),
+              child: Text(
+                'Le serveur a refusé la clôture : ${vm.motifRefusCloture}',
+                style: grasCompta.copyWith(color: AppColors.errorDeep),
+              ),
+            ),
+          ],
           if (!vm.balanceEstEquilibree && !vm.exerciceEstCloture) ...[
             const SizedBox(height: AppSpacing.md),
             BandeauEquilibre(
@@ -642,7 +658,9 @@ Future<void> _confirmerCloture(
 
   if (confirme != true || !context.mounted) return;
 
-  final resultat = await vm.cloturerExercice();
+  final resultat = await vm.cloturerExercice(
+    roleId: context.read<AuthViewModel>().session?.role.id ?? '',
+  );
   if (!context.mounted) return;
 
   switch (resultat) {

@@ -48,6 +48,12 @@ import 'elevage/data/sync/table_fiches_journee_poste.dart';
 import 'elevage/data/sync/table_ventes_jour_poste.dart';
 import 'elevage/data/sync/table_cycles_couveuse_poste.dart';
 import 'elevage/data/sync/table_machines_incubateur_poste.dart';
+import 'comptabilite/data/seed/plan_comptable_seeder.dart';
+import 'comptabilite/data/sync/table_clotures_poste.dart';
+import 'comptabilite/data/sync/table_ecritures_poste.dart';
+import 'comptabilite/data/sync/table_exercices_poste.dart';
+import 'comptabilite/data/sync/table_notes_annexes_poste.dart';
+import 'comptabilite/data/sync/table_plan_comptable_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
@@ -216,7 +222,21 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       // Soins et infirmerie (P7c) : faits saisis au poste.
       TableSoinsPoste(widget.database),
       TableInfirmeriePoste(widget.database),
+      // P8 — comptabilite : plan et exercices D'ABORD (references des ecritures),
+      // puis les pieces, les notes, les clotures mensuelles ; la cloture ANNUELLE
+      // (fait lourd) en DERNIER : le serveur doit connaitre toutes les pieces avant de
+      // verrouiller l'exercice.
+      TablePlanComptablePoste(widget.database),
+      TableExercicesPoste(widget.database),
+      TableEcrituresPoste(widget.database),
+      TableNotesAnnexesPoste(widget.database),
+      TableCloturesPeriodiquesPoste(widget.database),
+      TableCloturesExercicePoste(widget.database),
     ],
+    socleDuPlan: {
+      for (final c in PlanComptableSeeder.tous)
+        c.numero: (libelle: c.libelle, classe: c.classe),
+    },
   );
   late final PlanificateurSynchronisation
   _planificateur = PlanificateurSynchronisation(

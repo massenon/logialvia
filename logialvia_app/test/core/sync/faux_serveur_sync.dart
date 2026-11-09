@@ -44,6 +44,26 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> mouvements = {};
   final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
+  // --- P8 : comptabilité (rejoue `EcrituresTable` & co du vrai serveur) ---
+
+  /// Plan comptable (référentiel, clé : le numéro de compte).
+  final Map<String, Map<String, dynamic>> comptes = {};
+
+  /// Exercices (clé : l'année).
+  final Map<int, Map<String, dynamic>> exercices = {};
+
+  /// Pièces comptables avec leurs lignes imbriquées (clé : `piece_id`).
+  final Map<String, Map<String, dynamic>> pieces = {};
+
+  /// Notes annexes (clé : « exercice-numéro »).
+  final Map<String, Map<String, dynamic>> notes = {};
+
+  /// Clôtures mensuelles (clé : l'identifiant déterministe du mois).
+  final Map<String, Map<String, dynamic>> cloturesMois = {};
+
+  /// Faux : le compte du poste n'a pas `close-fiscal-year` (le serveur refuse).
+  bool clotureExerciceAutorisee = true;
+
   /// Paramètres d'élevage (P7c) : trois référentiels (barèmes, taux par classe de
   /// poids, calendrier de prophylaxie) et deux faits (soins, infirmerie).
   final Map<String, Map<String, dynamic>> baremes = {};
@@ -138,6 +158,11 @@ class FauxServeurSync {
     voir(intrants.values);
     voir(mouvements.values);
     voir(mouvementsProduit.values);
+    voir(comptes.values);
+    voir(exercices.values);
+    voir(pieces.values);
+    voir(notes.values);
+    voir(cloturesMois.values);
     voir(baremes.values);
     voir(taux.values);
     voir(echeances.values);
@@ -168,6 +193,15 @@ class FauxServeurSync {
     ventesJour.clear();
     bandes.clear();
     mouvements.clear(); // les intrants (référentiel) sont préservés
+    pieces.clear(); // le plan est préservé, les exercices sont ROUVERTS
+    notes.clear();
+    cloturesMois.clear();
+    for (final e in exercices.values) {
+      e
+        ..['is_cloture'] = false
+        ..['date_cloture'] = null
+        ..['updated_at'] = _instant();
+    }
     cycles.clear();
     machines.clear();
     marque = 'rz-${++_horloge}';
@@ -331,6 +365,26 @@ class FauxServeurSync {
           for (final m in mouvements.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
         ],
+        'plan_comptable': [
+          for (final c in comptes.values)
+            if (_dans(c['updated_at'] as String, since, jusqua)) c,
+        ],
+        'exercice_comptable': [
+          for (final e in exercices.values)
+            if (_dans(e['updated_at'] as String, since, jusqua)) e,
+        ],
+        'ecriture_comptable': [
+          for (final p in pieces.values)
+            if (_dans(p['serveur_modifie_le'] as String, since, jusqua)) p,
+        ],
+        'notes_annexes': [
+          for (final n in notes.values)
+            if (_dans(n['serveur_modifie_le'] as String, since, jusqua)) n,
+        ],
+        'clotures_periodiques': [
+          for (final c in cloturesMois.values)
+            if (_dans(c['serveur_modifie_le'] as String, since, jusqua)) c,
+        ],
         'baremes_ration': [
           for (final b in baremes.values)
             if (_dans(b['updated_at'] as String, since, jusqua)) b,
@@ -416,6 +470,14 @@ class FauxServeurSync {
           continue;
         }
         _intrant(d);
+        continue;
+      }
+      if (d['type'] == 'compte_comptable') {
+        final motif = _compte(d);
+        if (motif != null) {
+          acceptees.remove(d['id']);
+          refusees.add({'id': d['id'] as String, 'motif': motif});
+        }
         continue;
       }
       if (d['type'] == 'produit_vendable') {
@@ -561,6 +623,29 @@ class FauxServeurSync {
       reponse['mouvements_produit'] = _mouvementsProduit(
         (tables['mouvements_produit'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('ecriture_comptable')) {
+      reponse['ecriture_comptable'] = _pieces(
+        (tables['ecriture_comptable'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('notes_annexes')) {
+      reponse['notes_annexes'] = _notes(
+        (tables['notes_annexes'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('clotures_periodiques')) {
+      reponse['clotures_periodiques'] = _cloturesMois(
+        (tables['clotures_periodiques'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('clotures_exercice')) {
+      reponse['clotures_exercice'] = _cloturesExercice(
+        (tables['clotures_exercice'] as List).cast<Map<String, dynamic>>(),
       );
     }
     if (tables.containsKey('soins_calendrier')) {
@@ -726,6 +811,312 @@ class FauxServeurSync {
         existante
           ..['updated_at'] = saisie.toUtc().toIso8601String()
           ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  // ===================================================================== P8
+  // Comptabilité : rejoue les règles du vrai serveur (`EcrituresTable`,
+  // `ClotureExerciceTable`, …).
+
+  /// Semis du plan : tous les postes installés du même programme l'ont à l'identique.
+  /// `decide: false` = valeur de semis (`updated_at == created_at`).
+  void ajouterCompte(
+    String numero,
+    String libelle,
+    String classe, {
+    bool archive = false,
+    bool decide = false,
+    String? saisiLe,
+  }) {
+    final cree = _instant();
+    comptes[numero] = {
+      'numero_compte': numero,
+      'libelle': libelle,
+      'classe': classe,
+      'archive': archive,
+      'saisi_le': saisiLe,
+      'created_at': cree,
+      'updated_at': decide ? _instant() : cree,
+    };
+  }
+
+  void ajouterExercice(int annee, {bool clos = false}) {
+    exercices[annee] = {
+      'annee': annee,
+      'is_cloture': clos,
+      'date_cloture': clos
+          ? DateTime.utc(annee + 1, 1, 5).toIso8601String()
+          : null,
+      'updated_at': _instant(),
+    };
+  }
+
+  /// Une pièce saisie par un autre poste, déjà acceptée par le serveur.
+  void ajouterPiece(
+    String id, {
+    required int annee,
+    required DateTime date,
+    required String numeroPiece,
+    required List<Map<String, dynamic>> lignes,
+    String deviceId = 'autre-poste',
+    String journal = 'OD',
+    String? venteRef,
+    String? achatRef,
+    String? contrepasseDe,
+  }) {
+    pieces[id] = {
+      'id': id,
+      'device_id': deviceId,
+      'numero_piece': numeroPiece,
+      'date_ecriture': date.toUtc().toIso8601String(),
+      'exercice_annee': annee,
+      'journal_code': journal,
+      'vente_ref': venteRef,
+      'achat_ref': achatRef,
+      'contrepasse_de': contrepasseDe,
+      'updated_at': _instant(),
+      'serveur_modifie_le': _instant(),
+      'lignes': lignes,
+    };
+  }
+
+  String? _compte(Map<String, dynamic> demande) {
+    final d = demande['donnees'] as Map<String, dynamic>;
+    final numero = d['numero_compte'] as String;
+    final saisie = demande['saisi_le'] as String;
+    final existant = comptes[numero];
+    if (existant == null) {
+      ajouterCompte(
+        numero,
+        d['libelle'] as String,
+        d['classe'] as String,
+        archive: d['archive'] == true,
+        decide: true,
+        saisiLe: saisie,
+      );
+      return null;
+    }
+    final identique =
+        existant['libelle'] == d['libelle'] &&
+        existant['classe'] == d['classe'] &&
+        existant['archive'] == (d['archive'] == true);
+    if (identique) return null;
+    final dernier = existant['saisi_le'] as String?;
+    if (dernier != null &&
+        !DateTime.parse(saisie).isAfter(DateTime.parse(dernier))) {
+      return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+    }
+    existant
+      ..['libelle'] = d['libelle']
+      ..['classe'] = d['classe']
+      ..['archive'] = d['archive'] == true
+      ..['saisi_le'] = saisie
+      ..['updated_at'] = _instant();
+    return null;
+  }
+
+  /// Mois comptable d'un instant, dans le fuseau du serveur (Africa/Porto-Novo, UTC+1).
+  (int, int) _anneeMois(String iso) {
+    final t = DateTime.parse(iso).toUtc().add(const Duration(hours: 1));
+    return (t.year, t.month);
+  }
+
+  Map<String, dynamic> _pieces(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final p in lot) {
+      final id = p['id'] as String;
+      final lignes = (p['lignes'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      if (pieces.containsKey(id)) {
+        acceptees.add(id); // fait immuable : rejeu accepté sans rien changer
+        continue;
+      }
+      if (lignes.length < 2) {
+        refusees.add({
+          'id': id,
+          'motif': 'Une pièce comptable doit avoir au moins deux lignes.',
+        });
+        continue;
+      }
+      var debit = 0.0;
+      var credit = 0.0;
+      String? erreur;
+      for (final l in lignes) {
+        final d = (l['debit'] as num).toDouble();
+        final c = (l['credit'] as num).toDouble();
+        if (d < 0 || c < 0 || (d > 0) == (c > 0)) {
+          erreur =
+              'Une ligne porte un débit OU un crédit, jamais les deux ni aucun.';
+        }
+        if (!comptes.containsKey(l['numero_compte'])) {
+          erreur = 'Compte inconnu du serveur : « ${l['numero_compte']} ».';
+        }
+        debit += d;
+        credit += c;
+      }
+      if (erreur == null && (debit - credit).abs() > 0.01) {
+        erreur =
+            'Pièce déséquilibrée : débit ${debit.toStringAsFixed(0)} ≠ crédit ${credit.toStringAsFixed(0)}.';
+      }
+      final (annee, mois) = _anneeMois(p['date_ecriture'] as String);
+      if (erreur == null && annee != p['exercice_annee']) {
+        erreur = 'L\'exercice de la pièce ne correspond pas à sa date.';
+      }
+      if (erreur == null) {
+        final e = exercices[annee];
+        if (e != null && e['is_cloture'] == true) {
+          erreur =
+              'L\'exercice $annee est clôturé : aucune écriture ne peut y être ajoutée (BR-CPT-001).';
+        }
+      }
+      if (erreur == null) {
+        final m = cloturesMois.values.where(
+          (c) =>
+              c['annee'] == annee &&
+              c['mois'] == mois &&
+              c['is_cloture'] == true,
+        );
+        if (m.isNotEmpty) {
+          erreur = 'Le mois $mois/$annee est clôturé (BR-CPT-006).';
+        }
+      }
+      if (erreur != null) {
+        refusees.add({'id': id, 'motif': erreur});
+        continue;
+      }
+      exercices.putIfAbsent(
+        annee,
+        () => {
+          'annee': annee,
+          'is_cloture': false,
+          'date_cloture': null,
+          'updated_at': _instant(),
+        },
+      );
+      pieces[id] = {
+        ...p,
+        'device_id': deviceId,
+        'serveur_modifie_le': _instant(),
+      };
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  Map<String, dynamic> _notes(List<Map<String, dynamic>> lot, String deviceId) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final n in lot) {
+      final cle = '${n['exercice_annee']}-${n['numero_note']}';
+      final saisie = DateTime.parse(n['updated_at'] as String);
+      final existante = notes[cle];
+      if (existante == null) {
+        notes[cle] = {
+          ...n,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existante['updated_at'] as String),
+      )) {
+        existante
+          ..['titre'] = n['titre']
+          ..['contenu'] = n['contenu']
+          ..['device_id'] = deviceId
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(n['id'] as String);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  Map<String, dynamic> _cloturesMois(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    for (final c in lot) {
+      final id = c['id'] as String;
+      final saisie = DateTime.parse(c['updated_at'] as String);
+      final existante = cloturesMois[id];
+      if (existante == null ||
+          saisie.isAfter(DateTime.parse(existante['updated_at'] as String))) {
+        cloturesMois[id] = {
+          ...c,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': <Object>[], 'ignored': []};
+  }
+
+  Map<String, dynamic> _cloturesExercice(List<Map<String, dynamic>> lot) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final c in lot) {
+      final id = c['id'] as String;
+      final annee = c['annee'] as int;
+      if (!clotureExerciceAutorisee) {
+        refusees.add({
+          'id': id,
+          'motif':
+              'Droit insuffisant pour clôturer un exercice (close-fiscal-year).',
+        });
+        continue;
+      }
+      var debit = 0.0;
+      var credit = 0.0;
+      for (final p in pieces.values.where(
+        (p) => p['exercice_annee'] == annee,
+      )) {
+        for (final l in (p['lignes'] as List).cast<Map<String, dynamic>>()) {
+          debit += (l['debit'] as num).toDouble();
+          credit += (l['credit'] as num).toDouble();
+        }
+      }
+      if ((debit - credit).abs() > 0.01) {
+        refusees.add({
+          'id': id,
+          'motif':
+              'Balance déséquilibrée : une clôture annuelle est définitive (BR-CPT-004).',
+        });
+        continue;
+      }
+      final e = exercices.putIfAbsent(
+        annee,
+        () => {
+          'annee': annee,
+          'is_cloture': false,
+          'date_cloture': null,
+          'updated_at': _instant(),
+        },
+      );
+      if (e['is_cloture'] != true) {
+        e
+          ..['is_cloture'] = true
+          ..['date_cloture'] = c['date_cloture']
+          ..['updated_at'] = _instant();
+        exercices.putIfAbsent(
+          annee + 1,
+          () => {
+            'annee': annee + 1,
+            'is_cloture': false,
+            'date_cloture': null,
+            'updated_at': _instant(),
+          },
+        );
       }
       acceptees.add(id);
     }

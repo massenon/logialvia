@@ -66,7 +66,28 @@ class ComptabiliteViewModel extends ChangeNotifier {
     _cloturesMois = await _repository.chargerCloturesPeriodiques(_exercice);
     _notes = await _repository.chargerNotes(_exercice);
     _exerciceCloture = await _repository.exerciceEstCloture(_exercice);
+    _codePoste = await _repository.codePoste();
+    _motifRefusCloture = await _repository.motifRefusCloture(_exercice);
   }
+
+  /// Code du poste (`P2`) ou `null` : préfixe des numéros de pièces (DV-21).
+  String? _codePoste;
+
+  /// Motif du refus de la clôture de l'exercice par le serveur (l'exercice a été
+  /// rouvert ici), `null` s'il n'y en a pas.
+  String? _motifRefusCloture;
+  String? get motifRefusCloture => _motifRefusCloture;
+
+  /// Pièces de l'exercice que le serveur a refusées : elles restent visibles ici,
+  /// avec leur motif, jusqu'à correction.
+  List<Ecriture> get ecrituresRefusees =>
+      ecritures.where((e) => e.syncStatus == 'conflict').toList();
+
+  /// La pièce est-elle déjà un fait partagé (acceptée par le serveur) ? Elle
+  /// s'annule alors par contrepassation au lieu d'être supprimée ou modifiée.
+  bool pieceEstTransmise(String numeroPiece) => ecritures.any(
+    (e) => e.numeroPiece == numeroPiece && e.syncStatus == 'synced',
+  );
 
   Future<void> changerExercice(int annee) async {
     _exercice = annee;
@@ -382,7 +403,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// deux pièces ne peuvent pas porter le même numéro, et la numérotation
   /// repart proprement à 1 sur un nouvel exercice.
   String prochainNumeroPiece(String prefixe) {
-    final debut = '$prefixe-$_exercice-';
+    // DV-21 : le code du poste fait l'unicité entre postes sans passer par le
+    // serveur (`OD-P2-2026-0003`) ; un poste jamais appairé garde `OD-2026-0003`.
+    final code = _codePoste;
+    final debut = code == null || code.isEmpty
+        ? '$prefixe-$_exercice-'
+        : '$prefixe-$code-$_exercice-';
     var maximum = 0;
     for (final ecriture in ecritures) {
       final numero = ecriture.numeroPiece;
@@ -630,7 +656,15 @@ class ComptabiliteViewModel extends ChangeNotifier {
     }
   }
 
-  Future<Resultat<void>> cloturerExercice() async {
+  /// Clôture annuelle : un fait **lourd** (`46d_` §4). Réservée à l'administratrice
+  /// (DV-15, droit `close-fiscal-year` au serveur) ; sur un poste appairé, toutes
+  /// les pièces doivent d'abord être acceptées par le serveur.
+  Future<Resultat<void>> cloturerExercice({required String roleId}) async {
+    if (roleId != 'admin') {
+      return const Echec(
+        'Seule une administratrice peut clôturer un exercice (DV-15).',
+      );
+    }
     if (!balanceEstEquilibree) {
       return Echec(
         'Balance déséquilibrée de ${balanceEcart.abs().toStringAsFixed(0)} FCFA. '
@@ -647,6 +681,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       await _rafraichir();
       notifyListeners();
       return const Succes(null);
+    } on StateError catch (e) {
+      return Echec(e.message);
     } catch (e) {
       if (kDebugMode) debugPrint('Echec cloture exercice: $e');
       return const Echec('La clôture annuelle a échoué.');
@@ -684,8 +720,15 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// débit d'un compte de classe 6, sans `achatRef`.
   List<Depense> get depenses {
     final chargesParPiece = <String, List<Ecriture>>{};
+    // Une dépense déjà transmise s'annule par contrepassation : l'originale ne
+    // compte plus (l'écriture inverse figure au Journal).
+    final annulees = {
+      for (final e in ecritures)
+        if (e.contrepasseDe != null) e.contrepasseDe!,
+    };
     for (final e in ecritures) {
       if (e.achatRef != null || e.venteRef != null) continue;
+      if (e.contrepasseDe != null || annulees.contains(e.pieceId)) continue;
       final piece = e.numeroPiece;
       if (piece == null) continue;
       final compte = _compte(e.numeroCompte);

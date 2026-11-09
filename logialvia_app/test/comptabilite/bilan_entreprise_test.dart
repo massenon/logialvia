@@ -5,7 +5,7 @@ import 'package:logialvia_app/comptabilite/domain/services/moteur_comptable.dart
 
 Ecriture ligne({required String compte, double debit = 0, double credit = 0}) =>
     Ecriture(
-      id: 0,
+      id: '0',
       exerciceAnnee: 2026,
       numeroCompte: compte,
       date: DateTime(2026, 6, 15),

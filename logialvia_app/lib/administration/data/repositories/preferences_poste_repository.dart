@@ -148,6 +148,11 @@ class PreferencesPosteRepository {
 
   Future<void> definirParametresElevageAdoptes() =>
       _ecrire(_cleParametresElevageAdoptes, '1');
+  /// Les comptes que ce poste a créés ou modifiés seul ont-ils déjà été proposés au
+  /// serveur (une seule fois, P8) ?
+  Future<bool> planAdopte() async => await _lire('sync.plan_adopte') == '1';
+
+  Future<void> definirPlanAdopte() => _ecrire('sync.plan_adopte', '1');
 
   /// Compte WEB utilisé pour l'appairage — jamais son mot de passe.
   Future<String?> compteAppaire() => _lire(_cleCompteAppaire);

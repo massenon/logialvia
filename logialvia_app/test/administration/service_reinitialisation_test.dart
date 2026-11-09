@@ -36,9 +36,13 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO ecriture_comptable (exercice_annee, numero_compte, '
-      'date_ecriture, debit, credit, libelle) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ecriture_comptable (id, piece_id, updated_at, exercice_annee, '
+      'numero_compte, date_ecriture, debit, credit, libelle) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
+        'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+        'ffffffff-ffff-4fff-8fff-ffffffffffff',
+        '2026-08-01T00:00:00.000Z',
         2026,
         '531',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,

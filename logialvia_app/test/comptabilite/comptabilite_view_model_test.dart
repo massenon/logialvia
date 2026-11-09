@@ -644,7 +644,10 @@ void main() {
           montant: 1000,
         );
 
-        expect(await vm.cloturerExercice(), isA<Succes<void>>());
+        expect(
+          await vm.cloturerExercice(roleId: 'admin'),
+          isA<Succes<void>>(),
+        );
         expect(vm.exerciceEstCloture, isTrue);
         expect(vm.exercices, contains(annee + 1));
         expect(vm.ecritures.every((e) => e.isLocked), isTrue);

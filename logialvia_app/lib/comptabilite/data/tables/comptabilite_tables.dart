@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `EXERCICE_COMPTABLE` — Doc D1 §2.
 @DataClassName('ExerciceRow')
 class ExerciceComptable extends Table {
@@ -10,6 +12,18 @@ class ExerciceComptable extends Table {
   BoolColumn get isCloture => boolean().withDefault(const Constant(false))();
 
   DateTimeColumn get dateCloture => dateTime().nullable()();
+
+  // --- Synchronisation (`46d_` §2) ---
+  //
+  // La clé reste l'**année** (clé naturelle, partagée par tous les postes : deux
+  // postes qui ouvrent 2026 ouvrent le MÊME exercice). `sync_status` ne parle que
+  // de la **clôture** : `pending` = clôture faite ici, pas encore acceptée par le
+  // serveur ; `synced` = rien à envoyer (exercice ouvert, ou clôture acceptée) ;
+  // `conflict` = clôture refusée par le serveur (l'exercice est alors rouvert ici,
+  // le motif est gardé).
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+  TextColumn get syncMotif => text().nullable()();
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
 
   @override
   Set<Column> get primaryKey => {annee};
@@ -42,12 +56,21 @@ class PlanComptable extends Table {
 /// domaine (`EcritureValidator`), pas seulement par convention.
 @DataClassName('EcritureRow')
 class EcritureComptable extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19) : une ligne d'écriture est un FAIT synchronisé, immuable une fois
+  /// transmis.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
+
+  /// UUID commun à toutes les lignes d'une **pièce** (partie double). La pièce est
+  /// l'unité de synchronisation : elle voyage entière, équilibrée ou refusée.
+  /// Le numéro de pièce, lui, n'est PAS unique (`REG-V-…` revient à chaque
+  /// règlement partiel d'une même vente).
+  TextColumn get pieceId => text().clientDefault(nouvelUuid)();
 
   IntColumn get exerciceAnnee =>
       integer().references(ExerciceComptable, #annee)();
 
-  TextColumn get numeroCompte => text().references(PlanComptable, #numeroCompte)();
+  TextColumn get numeroCompte =>
+      text().references(PlanComptable, #numeroCompte)();
 
   DateTimeColumn get dateEcriture => dateTime()();
 
@@ -88,12 +111,38 @@ class EcritureComptable extends Table {
 
   /// Vrai si l'exercice parent est clôturé.
   BoolColumn get isLocked => boolean().withDefault(const Constant(false))();
+
+  /// `piece_id` de la pièce que celle-ci **contrepasse** (annulation d'une pièce
+  /// déjà transmise : un fait synchronisé ne se modifie ni ne se supprime, il
+  /// s'annule par l'écriture inverse). `null` pour une pièce ordinaire.
+  TextColumn get contrepasseDe => text().nullable()();
+
+  /// D'où vient cette ligne : `null` = CE poste ; sinon l'identifiant du poste
+  /// qui l'a saisie. La ligne d'un autre poste compte au grand livre (le grand
+  /// livre de chaque poste est la somme de TOUS les faits) mais ne se modifie
+  /// jamais ici, et son arrivée n'a engendré AUCUNE écriture locale.
+  TextColumn get origine => text().nullable()();
+
+  // --- Synchronisation (`46d_` §2) ---
+
+  /// `pending` · `synced` · `conflict` (refusée par le serveur, voir `syncMotif`).
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE de la pièce (UTC, ISO 8601, microsecondes).
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// Table `NOTES_ANNEXES` — Doc D1 §2, obligatoire en SYSCOHADA (Doc F6 §4).
 @DataClassName('NoteAnnexeRow')
 class NotesAnnexes extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID **déterministe** de (exercice, numéro) : deux postes qui rédigent la
+  /// note 1 de 2026 la désignent par le même identifiant (« dernier écrivain
+  /// gagne »), sans doublon.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   IntColumn get exerciceAnnee =>
       integer().references(ExerciceComptable, #annee)();
@@ -103,6 +152,14 @@ class NotesAnnexes extends Table {
 
   TextColumn get titre => text()();
   TextColumn get contenu => text()();
+
+  // --- Synchronisation (`46d_` §2) ---
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -122,6 +179,13 @@ class CloturesPeriodiques extends Table {
   /// Traçabilité du déblocage exceptionnel (BR-ADM-003), rôle `admin`
   /// uniquement.
   TextColumn get declotureParUtilisateurId => text().nullable()();
+
+  // --- Synchronisation (`46d_` §2) ---
+  // Clé naturelle (année, mois) : l'identifiant du fil est dérivé
+  // (`uuidDeterministe('cloture-periodique:AAAA-M')`), jamais stocké.
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
 
   @override
   Set<Column> get primaryKey => {annee, mois};

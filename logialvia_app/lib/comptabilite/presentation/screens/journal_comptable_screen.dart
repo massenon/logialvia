@@ -400,6 +400,32 @@ class _LigneJournal extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (premiereDeLaPiece && ecriture.syncStatus == 'conflict') ...[
+                  // Refusée par le serveur : elle reste dans les livres de ce poste,
+                  // marquée, jusqu'à correction (elle n'a jamais été acceptée).
+                  const SizedBox(width: AppSpacing.xs),
+                  Tooltip(
+                    message:
+                        'Refusée par le serveur : '
+                        '${ecriture.syncMotif ?? 'motif inconnu'}',
+                    child: const Icon(
+                      Symbols.error,
+                      size: 14,
+                      color: AppColors.errorDeep,
+                    ),
+                  ),
+                ],
+                if (premiereDeLaPiece && ecriture.vientDUnAutrePoste) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Tooltip(
+                    message: 'Saisie sur un autre poste (${ecriture.origine})',
+                    child: const Icon(
+                      Symbols.devices,
+                      size: 14,
+                      color: AppColors.outline,
+                    ),
+                  ),
+                ],
               ],
             ),
             2,
@@ -470,7 +496,11 @@ class _LigneJournal extends StatelessWidget {
             2,
           ),
           (
-            premiereDeLaPiece && !ecriture.estAutomatique && !ecriture.isLocked
+            premiereDeLaPiece &&
+                    !ecriture.estAutomatique &&
+                    !ecriture.isLocked &&
+                    !ecriture.vientDUnAutrePoste &&
+                    ecriture.contrepasseDe == null
                 ? Align(
                     alignment: Alignment.centerRight,
                     child: IconButton(
@@ -501,13 +531,18 @@ Future<void> _confirmerSuppression(
   final piece = ecriture.numeroPiece;
   if (piece == null) return;
 
+  final transmise = vm.pieceEstTransmise(piece);
   final confirme = await AppModal.show<bool>(
     context,
-    title: 'Supprimer la pièce $piece ?',
+    title: transmise ? 'Annuler la pièce $piece ?' : 'Supprimer la pièce $piece ?',
     child: Text(
-      'Toutes les lignes de cette pièce seront supprimées, pas seulement '
-      'celle-ci : une pièce ne peut pas rester à moitié saisie sans '
-      'déséquilibrer la balance.\n\nCette action est irréversible.',
+      transmise
+          ? 'Cette pièce a déjà été transmise au serveur : c\'est un fait '
+                'partagé, elle ne peut plus être effacée. Une pièce inverse '
+                '(ANN-$piece) sera passée au Journal, à la date du jour.'
+          : 'Toutes les lignes de cette pièce seront supprimées, pas seulement '
+                'celle-ci : une pièce ne peut pas rester à moitié saisie sans '
+                'déséquilibrer la balance.\n\nCette action est irréversible.',
       style: texteCompta.copyWith(height: 1.5),
     ),
     actions: [
@@ -520,7 +555,7 @@ Future<void> _confirmerSuppression(
       ),
       Builder(
         builder: (ctx) => AppButton(
-          label: 'Supprimer',
+          label: transmise ? 'Annuler la pièce' : 'Supprimer',
           variant: AppButtonVariant.danger,
           onPressed: () => Navigator.of(ctx).pop(true),
         ),
@@ -535,7 +570,12 @@ Future<void> _confirmerSuppression(
 
   switch (resultat) {
     case Succes():
-      showAppToast(context, 'Pièce $piece supprimée.');
+      showAppToast(
+        context,
+        transmise
+            ? 'Pièce $piece annulée (écriture inverse passée).'
+            : 'Pièce $piece supprimée.',
+      );
     case Echec(:final message):
       showAppToast(context, message, type: ToastType.error);
   }

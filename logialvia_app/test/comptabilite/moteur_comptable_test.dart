@@ -9,7 +9,7 @@ Ecriture ecriture({
   DateTime? date,
   String libelle = 'Test',
 }) => Ecriture(
-  id: 0,
+  id: '0',
   exerciceAnnee: 2026,
   numeroCompte: compte,
   date: date ?? DateTime(2026, 6, 15),

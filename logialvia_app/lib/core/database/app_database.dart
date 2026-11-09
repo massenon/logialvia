@@ -444,6 +444,12 @@ class AppDatabase extends _$AppDatabase {
         // DETERMINISTE), avec les colonnes de synchronisation des faits.
         await _soinsEtParametresElevageEnUuid(m);
       }
+      if (from < 41) {
+        // P8 : la comptabilite SYSCOHADA entre dans la synchronisation (ecritures
+        // en UUID groupees par piece, notes annexes, clotures). Les versions 38 a 40
+        // appartiennent a d'autres paliers.
+        await _comptabiliteEnUuid(m);
+      }
       if (from < 42) {
         // DV-19, palier P9 : factures et lignes de facture en UUID, avec leurs
         // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
@@ -1306,6 +1312,143 @@ class AppDatabase extends _$AppDatabase {
     final colonnes = await customSelect('PRAGMA table_info("$table")').get();
     final id = colonnes.where((l) => l.read<String>('name') == 'id');
     return id.isNotEmpty && id.first.read<String>('type').toUpperCase() != 'TEXT';
+  }
+
+  /// P8 — la comptabilite en UUID et prete a la synchronisation. Idempotent.
+  ///
+  /// - `ecriture_comptable` : `id` en UUID ; `piece_id` regroupe les lignes d'une meme
+  ///   piece (exercice + numero) — une ligne sans numero forme sa propre piece ; les
+  ///   ecritures d'hier sont LOCALES (`origine` vide) et a envoyer ; leur instant de
+  ///   saisie est leur date. Aucune ligne n'est perdue ni renumerotee.
+  /// - `notes_annexes` : `id` en UUID DETERMINISTE de (exercice, numero).
+  /// - `exercice_comptable` et `clotures_periodiques` : colonnes de synchronisation ; une
+  ///   cloture d'hier est « a envoyer » (le serveur la verifiera), un exercice ouvert non.
+  /// - `plan_comptable` : inchange (cle naturelle = numero de compte, semis identique).
+  Future<void> _comptabiliteEnUuid(Migrator m) async {
+    const instantSql = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
+    const instantOuNow =
+        "COALESCE(strftime('%Y-%m-%dT%H:%M:%fZ', date_cloture, 'unixepoch'), $instantSql)";
+
+    if (!await _colonneExiste('exercice_comptable', 'sync_status')) {
+      await m.alterTable(
+        TableMigration(
+          exerciceComptable,
+          columnTransformer: {
+            exerciceComptable.syncStatus: const CustomExpression<String>(
+              "CASE WHEN is_cloture = 1 THEN 'pending' ELSE 'synced' END",
+            ),
+            exerciceComptable.updatedAt: const CustomExpression<String>(
+              instantOuNow,
+            ),
+          },
+          newColumns: [
+            exerciceComptable.syncStatus,
+            exerciceComptable.syncMotif,
+            exerciceComptable.updatedAt,
+          ],
+        ),
+      );
+    }
+
+    if (!await _colonneExiste('clotures_periodiques', 'sync_status')) {
+      await m.alterTable(
+        TableMigration(
+          cloturesPeriodiques,
+          columnTransformer: {
+            cloturesPeriodiques.updatedAt: const CustomExpression<String>(
+              instantOuNow,
+            ),
+          },
+          newColumns: [
+            cloturesPeriodiques.syncStatus,
+            cloturesPeriodiques.syncMotif,
+            cloturesPeriodiques.updatedAt,
+          ],
+        ),
+      );
+    }
+
+    final notes = await customSelect(
+      'PRAGMA table_info("notes_annexes")',
+    ).get();
+    final noteId = notes.where((l) => l.read<String>('name') == 'id');
+    if (noteId.isEmpty ||
+        noteId.first.read<String>('type').toUpperCase() != 'TEXT') {
+      await customStatement('DROP TABLE IF EXISTS _map_notes');
+      await customStatement(
+        'CREATE TABLE _map_notes (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+      );
+      for (final n in await customSelect(
+        'SELECT id, exercice_annee, numero_note FROM notes_annexes',
+      ).get()) {
+        await customStatement(
+          'INSERT INTO _map_notes (ancien, nouveau) VALUES (?, ?)',
+          [
+            n.read<int>('id'),
+            uuidDeterministe(
+              'note:${n.read<int>('exercice_annee')}-${n.read<int>('numero_note')}',
+            ),
+          ],
+        );
+      }
+      await m.alterTable(
+        TableMigration(
+          notesAnnexes,
+          columnTransformer: {
+            notesAnnexes.id: const CustomExpression<String>(
+              '(SELECT nouveau FROM _map_notes WHERE ancien = id)',
+            ),
+            notesAnnexes.updatedAt: const CustomExpression<String>(instantSql),
+          },
+          newColumns: [
+            notesAnnexes.syncStatus,
+            notesAnnexes.syncMotif,
+            notesAnnexes.updatedAt,
+          ],
+        ),
+      );
+      await customStatement('DROP TABLE IF EXISTS _map_notes');
+    }
+
+    final ecritures = await customSelect(
+      'PRAGMA table_info("ecriture_comptable")',
+    ).get();
+    final ecritureId = ecritures.where((l) => l.read<String>('name') == 'id');
+    if (ecritureId.isEmpty ||
+        ecritureId.first.read<String>('type').toUpperCase() != 'TEXT') {
+      await customStatement('DROP TABLE IF EXISTS _map_pieces');
+      await customStatement(
+        'CREATE TABLE _map_pieces AS '
+        'SELECT exercice_annee AS exercice, numero_piece AS numero, $_uuidSql AS nouveau '
+        'FROM (SELECT DISTINCT exercice_annee, numero_piece FROM ecriture_comptable '
+        'WHERE numero_piece IS NOT NULL)',
+      );
+      await m.alterTable(
+        TableMigration(
+          ecritureComptable,
+          columnTransformer: {
+            ecritureComptable.id: const CustomExpression<String>(_uuidSql),
+            ecritureComptable.pieceId: const CustomExpression<String>(
+              '(COALESCE((SELECT nouveau FROM _map_pieces '
+              'WHERE exercice = exercice_annee AND numero = numero_piece), $_uuidSql))',
+            ),
+            // Une ecriture d'hier a ete saisie le jour de son ecriture.
+            ecritureComptable.updatedAt: const CustomExpression<String>(
+              "strftime('%Y-%m-%dT%H:%M:%fZ', date_ecriture, 'unixepoch')",
+            ),
+          },
+          newColumns: [
+            ecritureComptable.pieceId,
+            ecritureComptable.contrepasseDe,
+            ecritureComptable.origine,
+            ecritureComptable.syncStatus,
+            ecritureComptable.syncMotif,
+            ecritureComptable.updatedAt,
+          ],
+        ),
+      );
+      await customStatement('DROP TABLE IF EXISTS _map_pieces');
+    }
   }
 
   Future<bool> _colonneExiste(String table, String colonne) async {

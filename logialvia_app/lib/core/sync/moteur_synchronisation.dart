@@ -131,7 +131,12 @@ class MoteurSynchronisationPoste {
     this.client,
     this.delai = const Duration(seconds: 30),
     this.tailleLot = 100,
+    this.socleDuPlan = const {},
   });
+
+  /// Comptes semés à l'identique sur tous les postes (plan comptable, P8) : ce que le
+  /// poste ajoute ou renomme au-delà est proposé une fois au serveur.
+  final Map<String, ({String libelle, String classe})> socleDuPlan;
 
   final PreferencesPosteRepository preferences;
   final DepotJetonSync depot;
@@ -188,6 +193,7 @@ class MoteurSynchronisationPoste {
     await demandes?.adopterCatalogueSiBesoin(preferences);
     await demandes?.adopterIntrantsSiBesoin(preferences);
     await demandes?.adopterParametresElevageSiBesoin(preferences);
+    await demandes?.adopterPlanSiBesoin(preferences, socle: socleDuPlan);
 
     var rapport = const RapportSynchronisation(
       IssueSynchronisation.terminee,
