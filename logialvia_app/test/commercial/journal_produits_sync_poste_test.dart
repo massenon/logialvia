@@ -49,6 +49,7 @@ class _Poste {
   Future<void> demarrer() async {
     await SeedInitial(db).executer();
     await preferences.definirIntrantsAdoptes();
+    await preferences.definirParametresElevageAdoptes();
     await preferences.definirAdresseServeur('http://serveur.test');
     await preferences.memoriserAppairage(
       codePoste: 'P1',

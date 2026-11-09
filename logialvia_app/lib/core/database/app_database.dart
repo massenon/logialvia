@@ -40,6 +40,7 @@ import '../../elevage/data/tables/fiche_ventes_jour_table.dart';
 import '../../elevage/data/tables/infirmerie_table.dart';
 import '../../elevage/data/tables/parametres_elevage_tables.dart';
 import '../../elevage/data/tables/soins_calendrier_table.dart';
+import '../../elevage/data/sync/identifiants_parametres_elevage.dart';
 import '../sync/identifiant_poste.dart';
 import '../../administration/data/tables/demandes_referentiel_table.dart';
 
@@ -437,6 +438,12 @@ class AppDatabase extends _$AppDatabase {
         // d'origine ; aucun lot n'est perdu.
         await _couveuseEnUuid(m);
       }
+      if (from < 40) {
+        // DV-19, palier P7c : soins, infirmerie, baremes de ration, taux par classe de
+        // poids et calendrier de prophylaxie passent en UUID (les lignes semees en UUID
+        // DETERMINISTE), avec les colonnes de synchronisation des faits.
+        await _soinsEtParametresElevageEnUuid(m);
+      }
       if (from < 42) {
         // DV-19, palier P9 : factures et lignes de facture en UUID, avec leurs
         // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
@@ -698,6 +705,10 @@ class AppDatabase extends _$AppDatabase {
       ),
     );
     if (await _colonneExiste('soins_calendrier', 'bande_id')) {
+      // La table courante porte aussi les colonnes de synchronisation des soins (v40) :
+      // sur une base d'avant la v40, la reconstruction doit les creer, sinon la copie
+      // cherche des colonnes qui n'existent pas encore.
+      final sansSync = !await _colonneExiste('soins_calendrier', 'sync_status');
       await m.alterTable(
         TableMigration(
           soinsCalendrier,
@@ -705,7 +716,18 @@ class AppDatabase extends _$AppDatabase {
             soinsCalendrier.bandeId: const CustomExpression<String>(
               '(SELECT nouveau FROM _map_bandes WHERE ancien = bande_id)',
             ),
+            if (sansSync)
+              soinsCalendrier.updatedAt: const CustomExpression<String>(
+                "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+              ),
           },
+          newColumns: [
+            if (sansSync) ...[
+              soinsCalendrier.syncStatus,
+              soinsCalendrier.syncMotif,
+              soinsCalendrier.updatedAt,
+            ],
+          ],
         ),
       );
     }
@@ -1039,6 +1061,251 @@ class AppDatabase extends _$AppDatabase {
         newColumns: [clients.syncStatus, clients.syncMotif, clients.updatedAt],
       ),
     );
+  }
+
+  /// Soins, infirmerie, barèmes, taux et calendrier de prophylaxie en UUID
+  /// (DV-19, P7c). Idempotent et **rejouable** : chaque table est testée
+  /// séparément, et l'ordre (correspondance des échéances, soins, infirmerie,
+  /// barèmes, taux, échéances) garantit qu'une reprise après interruption retrouve
+  /// les MÊMES identifiants (déterministes) — aucun lien soin -> échéance ne se perd.
+  ///
+  /// Aucune ligne n'est perdue : `soins_calendrier` ne référence rien par clé
+  /// étrangère, et `bande_id` reste un entier LOCAL (les bandes ne sont pas encore
+  /// synchronisées). Les lignes de référentiel reçoivent leur UUID DÉTERMINISTE (clé
+  /// naturelle) : deux postes migrés donnent le même identifiant à la même ration.
+  Future<void> _soinsEtParametresElevageEnUuid(Migrator m) async {
+    // 1. Correspondance ancien entier -> UUID des échéances (vivantes et en
+    //    corbeille), consultée par les soins qui les citent.
+    await customStatement('DROP TABLE IF EXISTS _map_echeances');
+    await customStatement(
+      'CREATE TABLE _map_echeances (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+    );
+    final vus = <String>{};
+    if (await _idEstEntier('calendrier_prophylaxie')) {
+      final lignes = await customSelect(
+        'SELECT id, espece, jour_cycle, traitement, produit '
+        'FROM calendrier_prophylaxie ORDER BY id',
+      ).get();
+      for (final l in lignes) {
+        final ancien = l.read<int>('id');
+        final uuid = _uuidEcheanceUnique(
+          vus,
+          l.read<String>('espece'),
+          l.read<int>('jour_cycle'),
+          l.read<String>('traitement'),
+          l.read<String>('produit'),
+          ancien,
+        );
+        await customStatement(
+          'INSERT INTO _map_echeances (ancien, nouveau) VALUES (?, ?)',
+          [ancien, uuid],
+        );
+      }
+    }
+
+    // 2. Corbeille : les instantanés archivés avant la v40 portent un entier. Remis
+    //    en UUID déterministe, ils se restaurent avec le bon identifiant ; une
+    //    échéance archivée garde le lien avec les soins qui la citent.
+    final archives = await customSelect(
+      "SELECT id, nom_table, donnees_json FROM corbeille WHERE nom_table IN "
+      "('baremes_ration', 'taux_ration_poids', 'calendrier_prophylaxie')",
+    ).get();
+    for (final a in archives) {
+      final donnees =
+          jsonDecode(a.read<String>('donnees_json')) as Map<String, Object?>;
+      final ancien = donnees['id'];
+      if (ancien is! int) continue;
+      final table = a.read<String>('nom_table');
+      final String nouveau;
+      if (table == 'baremes_ration') {
+        nouveau = IdentifiantsParametresElevage.bareme(
+          '${donnees['espece']}',
+          '${donnees['stade']}',
+        );
+      } else if (table == 'taux_ration_poids') {
+        nouveau = IdentifiantsParametresElevage.taux(
+          '${donnees['espece']}',
+          (donnees['poids_min_g'] as num).toInt(),
+        );
+      } else {
+        nouveau = _uuidEcheanceUnique(
+          vus,
+          '${donnees['espece']}',
+          (donnees['jour_cycle'] as num).toInt(),
+          '${donnees['traitement']}',
+          '${donnees['produit']}',
+          ancien,
+        );
+        await customStatement(
+          'INSERT INTO _map_echeances (ancien, nouveau) VALUES (?, ?)',
+          [ancien, nouveau],
+        );
+      }
+      donnees['id'] = nouveau;
+      await customStatement(
+        'UPDATE corbeille SET donnees_json = ? WHERE id = ?',
+        [jsonEncode(donnees), a.read<int>('id')],
+      );
+    }
+
+    // 3. Les soins : UUID aléatoires (saisis par l'utilisatrice), échéance suivie.
+    //    Un soin d'hier est « à envoyer » ; son instant de saisie est celui de la
+    //    migration : aucun autre poste ne le connaît encore, il ne peut battre personne.
+    if (await _idEstEntier('soins_calendrier')) {
+      await m.alterTable(
+        TableMigration(
+          soinsCalendrier,
+          columnTransformer: {
+            soinsCalendrier.id: const CustomExpression<String>(_uuidSql),
+            soinsCalendrier.echeanceProphylaxieId:
+                const CustomExpression<String>(
+                  '(SELECT nouveau FROM _map_echeances '
+                  'WHERE ancien = echeance_prophylaxie_id)',
+                ),
+            soinsCalendrier.updatedAt: const CustomExpression<String>(
+              "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+            ),
+          },
+          newColumns: [
+            soinsCalendrier.syncStatus,
+            soinsCalendrier.syncMotif,
+            soinsCalendrier.updatedAt,
+          ],
+        ),
+      );
+    }
+
+    // 4. L'infirmerie.
+    if (await _idEstEntier('infirmerie')) {
+      await m.alterTable(
+        TableMigration(
+          infirmerie,
+          columnTransformer: {
+            infirmerie.id: const CustomExpression<String>(_uuidSql),
+            infirmerie.updatedAt: const CustomExpression<String>(
+              "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+            ),
+          },
+          newColumns: [
+            infirmerie.syncStatus,
+            infirmerie.syncMotif,
+            infirmerie.updatedAt,
+          ],
+        ),
+      );
+    }
+
+    // 5. Barèmes et taux : UUID déterministe depuis la clé unique.
+    if (await _idEstEntier('baremes_ration')) {
+      await customStatement('DROP TABLE IF EXISTS _map_baremes');
+      await customStatement(
+        'CREATE TABLE _map_baremes (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+      );
+      for (final l in await customSelect(
+        'SELECT id, espece, stade FROM baremes_ration ORDER BY id',
+      ).get()) {
+        await customStatement(
+          'INSERT INTO _map_baremes (ancien, nouveau) VALUES (?, ?)',
+          [
+            l.read<int>('id'),
+            IdentifiantsParametresElevage.bareme(
+              l.read<String>('espece'),
+              l.read<String>('stade'),
+            ),
+          ],
+        );
+      }
+      await m.alterTable(
+        TableMigration(
+          baremesRation,
+          columnTransformer: {
+            baremesRation.id: const CustomExpression<String>(
+              '(SELECT nouveau FROM _map_baremes WHERE ancien = id)',
+            ),
+          },
+        ),
+      );
+      await customStatement('DROP TABLE IF EXISTS _map_baremes');
+    }
+    if (await _idEstEntier('taux_ration_poids')) {
+      await customStatement('DROP TABLE IF EXISTS _map_taux');
+      await customStatement(
+        'CREATE TABLE _map_taux (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+      );
+      for (final l in await customSelect(
+        'SELECT id, espece, poids_min_g FROM taux_ration_poids ORDER BY id',
+      ).get()) {
+        await customStatement(
+          'INSERT INTO _map_taux (ancien, nouveau) VALUES (?, ?)',
+          [
+            l.read<int>('id'),
+            IdentifiantsParametresElevage.taux(
+              l.read<String>('espece'),
+              l.read<int>('poids_min_g'),
+            ),
+          ],
+        );
+      }
+      await m.alterTable(
+        TableMigration(
+          tauxRationPoids,
+          columnTransformer: {
+            tauxRationPoids.id: const CustomExpression<String>(
+              '(SELECT nouveau FROM _map_taux WHERE ancien = id)',
+            ),
+          },
+        ),
+      );
+      await customStatement('DROP TABLE IF EXISTS _map_taux');
+    }
+
+    // 6. Le calendrier de prophylaxie : la correspondance a déjà été calculée.
+    if (await _idEstEntier('calendrier_prophylaxie')) {
+      await m.alterTable(
+        TableMigration(
+          calendrierProphylaxie,
+          columnTransformer: {
+            calendrierProphylaxie.id: const CustomExpression<String>(
+              '(SELECT nouveau FROM _map_echeances WHERE ancien = id)',
+            ),
+          },
+        ),
+      );
+    }
+    await customStatement('DROP TABLE IF EXISTS _map_echeances');
+  }
+
+  /// UUID déterministe d'une échéance ; un doublon exact sur CE poste se départage
+  /// par son ancien entier (la clé primaire l'exige).
+  String _uuidEcheanceUnique(
+    Set<String> vus,
+    String espece,
+    int jour,
+    String traitement,
+    String produit,
+    int ancien,
+  ) {
+    var uuid = IdentifiantsParametresElevage.echeance(
+      espece,
+      jour,
+      traitement,
+      produit,
+    );
+    if (!vus.add(uuid)) {
+      uuid = uuidDeterministe(
+        'echeance_prophylaxie:$espece|$jour|$traitement|$produit#$ancien',
+      );
+      vus.add(uuid);
+    }
+    return uuid;
+  }
+
+  /// Vrai si la table existe et que sa colonne `id` n'est PAS encore du texte.
+  Future<bool> _idEstEntier(String table) async {
+    if (!await _tableExiste(table)) return false;
+    final colonnes = await customSelect('PRAGMA table_info("$table")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    return id.isNotEmpty && id.first.read<String>('type').toUpperCase() != 'TEXT';
   }
 
   Future<bool> _colonneExiste(String table, String colonne) async {

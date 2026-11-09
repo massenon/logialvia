@@ -173,7 +173,7 @@ void main() {
     /// Une échéance projetée, échue depuis trois jours et jamais planifiée.
     RappelProphylaxie unRappel() {
       const echeance = EcheanceProphylaxie(
-        id: 7,
+        id: '7',
         espece: 'goliaths',
         jourCycle: 5,
         traitement: 'Anti-coccidien (Jour 1/4)',

@@ -316,7 +316,8 @@ void main() {
 
         expect(soins, hasLength(4));
         expect(soins[0]['code'], 'B2');
-        expect(soins[0]['echeance_prophylaxie_id'], 3);
+        // La v40 (P7c) a depuis converti l'echeance en UUID : le lien reste pose.
+        expect(soins[0]['echeance_prophylaxie_id'], isA<String>());
         expect(soins[1]['code'], 'B1');
         expect(soins[2]['bande_id'], isNull);
         expect(

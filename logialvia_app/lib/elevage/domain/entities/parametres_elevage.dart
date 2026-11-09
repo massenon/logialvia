@@ -8,7 +8,7 @@ class BaremeRation {
     required this.confirme,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final String stade;
   final int rationGrammesParJour;
@@ -49,7 +49,7 @@ class TauxRationPoids {
     required this.confirme,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final int poidsMinG;
   final int? poidsMaxG;
@@ -104,7 +104,7 @@ class EcheanceProphylaxie {
     this.dose,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final int jourCycle;
   final String traitement;

@@ -164,7 +164,7 @@ class _CorpsProphylaxie extends StatefulWidget {
 }
 
 class _CorpsProphylaxieState extends State<_CorpsProphylaxie> {
-  int? _enCours;
+  String? _enCours;
 
   @override
   Widget build(BuildContext context) {

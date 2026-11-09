@@ -2,8 +2,10 @@ import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../domain/entities/parametres_elevage.dart';
+import '../sync/identifiants_parametres_elevage.dart';
 
 abstract class ParametresElevageRepository {
   Future<List<BaremeRation>> chargerBaremes();
@@ -18,18 +20,18 @@ abstract class ParametresElevageRepository {
     required int rationGrammesParJour,
   });
   Future<void> modifierRation({
-    required int id,
+    required String id,
     required int rationGrammesParJour,
     bool? confirme,
   });
   Future<void> supprimerBareme(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   });
 
   Future<void> enregistrerTauxPoids({
-    int? id,
+    String? id,
     required String espece,
     required int poidsMinG,
     required int? poidsMaxG,
@@ -37,13 +39,13 @@ abstract class ParametresElevageRepository {
     bool? confirme,
   });
   Future<void> supprimerTauxPoids(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   });
 
   Future<void> enregistrerEcheance({
-    int? id,
+    String? id,
     required String espece,
     required int jourCycle,
     required String traitement,
@@ -52,7 +54,7 @@ abstract class ParametresElevageRepository {
     String? dose,
   });
   Future<void> supprimerEcheance(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   });
@@ -70,7 +72,8 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     final lignes =
         await (_db.select(_db.baremesRation)..orderBy([
               (b) => OrderingTerm.asc(b.espece),
-              (b) => OrderingTerm.asc(b.id),
+              // Ordre d'insertion : l'identifiant est un UUID, il ne classe plus.
+              (b) => OrderingTerm.asc(const CustomExpression<int>('rowid')),
             ]))
             .get();
     return [
@@ -108,13 +111,14 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
 
   @override
   Future<void> enregistrerTauxPoids({
-    int? id,
+    String? id,
     required String espece,
     required int poidsMinG,
     required int? poidsMaxG,
     required double tauxPourcent,
     bool? confirme,
   }) async {
+    final depot = DepotDemandesReferentiel(_db);
     if (id != null) {
       // [confirme] `null` laisse le statut tel quel ; c'est le ViewModel qui
       // decide s'il tombe (valeur modifiee) ou passe a « valide ».
@@ -128,29 +132,38 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           confirme: confirme == null ? const Value.absent() : Value(confirme),
         ),
       );
+      await depot.proposerTauxPoids(id);
       return;
     }
+    // Identifiant DETERMINISTE depuis la cle unique (espece, poids min) : deux postes
+    // qui creent la meme classe lui donnent le meme UUID (pas de doublon au serveur).
+    final nouveau = IdentifiantsParametresElevage.taux(espece, poidsMinG);
     await _db
         .into(_db.tauxRationPoids)
         .insert(
           TauxRationPoidsCompanion.insert(
+            id: Value(nouveau),
             espece: espece,
             poidsMinG: poidsMinG,
             poidsMaxG: Value(poidsMaxG),
             tauxPourcent: tauxPourcent,
           ),
         );
+    await depot.proposerTauxPoids(nouveau);
   }
 
   @override
   Future<void> supprimerTauxPoids(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
     final ligne = await (_db.select(
       _db.tauxRationPoids,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageTauxPoids(ligne);
+    }
 
     await ServiceArchivage(_db).archiver(
       type: TypeArchivable.tauxPoids,
@@ -170,6 +183,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
         await (_db.select(_db.calendrierProphylaxie)..orderBy([
               (c) => OrderingTerm.asc(c.espece),
               (c) => OrderingTerm.asc(c.jourCycle),
+              (c) => OrderingTerm.asc(const CustomExpression<int>('rowid')),
             ]))
             .get();
     return [
@@ -235,6 +249,8 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     required int rationGrammesParJour,
   }) async {
     final companion = BaremesRationCompanion.insert(
+      // Identifiant DETERMINISTE depuis la cle unique (espece, stade).
+      id: Value(IdentifiantsParametresElevage.bareme(espece, stade)),
       espece: espece,
       stade: stade,
       rationGrammesParJour: rationGrammesParJour,
@@ -254,11 +270,19 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
             target: [_db.baremesRation.espece, _db.baremesRation.stade],
           ),
         );
+    // La ligne gardee est celle qui existait peut-etre deja : on propose SON etat.
+    final ligne =
+        await (_db.select(_db.baremesRation)
+              ..where((b) => b.espece.equals(espece) & b.stade.equals(stade)))
+            .getSingleOrNull();
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerBareme(ligne.id);
+    }
   }
 
   @override
   Future<void> modifierRation({
-    required int id,
+    required String id,
     required int rationGrammesParJour,
     bool? confirme,
   }) async {
@@ -268,11 +292,12 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
         confirme: confirme == null ? const Value.absent() : Value(confirme),
       ),
     );
+    await DepotDemandesReferentiel(_db).proposerBareme(id);
   }
 
   @override
   Future<void> supprimerBareme(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
@@ -281,6 +306,9 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     final ligne = await (_db.select(
       _db.baremesRation,
     )..where((b) => b.id.equals(id))).getSingleOrNull();
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageBareme(ligne);
+    }
 
     await ServiceArchivage(_db).archiver(
       type: TypeArchivable.baremes,
@@ -295,7 +323,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
 
   @override
   Future<void> enregistrerEcheance({
-    int? id,
+    String? id,
     required String espece,
     required int jourCycle,
     required String traitement,
@@ -303,6 +331,7 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
     required int remanenceJours,
     String? dose,
   }) async {
+    final depot = DepotDemandesReferentiel(_db);
     if (id != null) {
       await (_db.update(
         _db.calendrierProphylaxie,
@@ -315,13 +344,17 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
           dose: Value(dose),
         ),
       );
+      await depot.proposerEcheance(id);
       return;
     }
 
+    // Echeance saisie par l'utilisatrice : UUID aleatoire (pas de cle unique naturelle).
+    final nouveau = nouvelUuid();
     await _db
         .into(_db.calendrierProphylaxie)
         .insert(
           CalendrierProphylaxieCompanion.insert(
+            id: Value(nouveau),
             espece: espece,
             jourCycle: jourCycle,
             traitement: traitement,
@@ -330,17 +363,21 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
             dose: Value(dose),
           ),
         );
+    await depot.proposerEcheance(nouveau);
   }
 
   @override
   Future<void> supprimerEcheance(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
     final ligne = await (_db.select(
       _db.calendrierProphylaxie,
     )..where((c) => c.id.equals(id))).getSingleOrNull();
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageEcheance(ligne);
+    }
 
     await ServiceArchivage(_db).archiver(
       type: TypeArchivable.prophylaxie,

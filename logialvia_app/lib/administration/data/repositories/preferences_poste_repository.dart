@@ -21,6 +21,8 @@ class PreferencesPosteRepository {
   static const String _cleCodeAttribue = 'poste.code_attribue';
   static const String _cleCatalogueAdopte = 'sync.catalogue_adopte';
   static const String _cleIntrantsAdoptes = 'sync.intrants_adoptes';
+  static const String _cleParametresElevageAdoptes =
+      'sync.parametres_elevage_adoptes';
   static const String _cleCompteAppaire = 'sync.compte';
   static const String _cleAppaireLe = 'sync.appaire_le';
   static const String _cleCurseurTirage = 'sync.curseur';
@@ -138,6 +140,14 @@ class PreferencesPosteRepository {
       await _lire(_cleIntrantsAdoptes) == '1';
 
   Future<void> definirIntrantsAdoptes() => _ecrire(_cleIntrantsAdoptes, '1');
+
+  /// Les barèmes, taux et échéances de prophylaxie locaux ont-ils déjà été proposés
+  /// au serveur (une seule fois) ?
+  Future<bool> parametresElevageAdoptes() async =>
+      await _lire(_cleParametresElevageAdoptes) == '1';
+
+  Future<void> definirParametresElevageAdoptes() =>
+      _ecrire(_cleParametresElevageAdoptes, '1');
 
   /// Compte WEB utilisé pour l'appairage — jamais son mot de passe.
   Future<String?> compteAppaire() => _lire(_cleCompteAppaire);

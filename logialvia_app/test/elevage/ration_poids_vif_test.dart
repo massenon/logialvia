@@ -35,7 +35,7 @@ void main() {
   // Les 3 classes d'ouverture, telles qu'elles sont semées.
   const classes = [
     TauxRationPoids(
-      id: 1,
+      id: '1',
       espece: 'bovins',
       poidsMinG: 0,
       poidsMaxG: 150000,
@@ -43,7 +43,7 @@ void main() {
       confirme: false,
     ),
     TauxRationPoids(
-      id: 2,
+      id: '2',
       espece: 'bovins',
       poidsMinG: 150000,
       poidsMaxG: 300000,
@@ -51,7 +51,7 @@ void main() {
       confirme: false,
     ),
     TauxRationPoids(
-      id: 3,
+      id: '3',
       espece: 'bovins',
       poidsMinG: 300000,
       poidsMaxG: null,
@@ -170,7 +170,7 @@ void main() {
           ConfigurationsEspeces.bovins,
           tauxParClasse: [
             TauxRationPoids(
-              id: 1,
+              id: '1',
               espece: 'bovins',
               poidsMinG: 100000,
               poidsMaxG: 200000,
@@ -238,7 +238,7 @@ void main() {
         ConfigurationsEspeces.bovins,
         tauxParClasse: [
           TauxRationPoids(
-            id: 9,
+            id: '9',
             espece: 'escargots',
             poidsMinG: 0,
             poidsMaxG: null,
@@ -584,7 +584,7 @@ void main() {
   group('Poissons-chats : pourcentage de la biomasse (DV-01)', () {
     const classesPoissons = [
       TauxRationPoids(
-        id: 11,
+        id: '11',
         espece: 'poissons-chats',
         poidsMinG: 0,
         poidsMaxG: 5,
@@ -592,7 +592,7 @@ void main() {
         confirme: false,
       ),
       TauxRationPoids(
-        id: 12,
+        id: '12',
         espece: 'poissons-chats',
         poidsMinG: 5,
         poidsMaxG: 20,
@@ -600,7 +600,7 @@ void main() {
         confirme: false,
       ),
       TauxRationPoids(
-        id: 13,
+        id: '13',
         espece: 'poissons-chats',
         poidsMinG: 20,
         poidsMaxG: 100,
@@ -608,7 +608,7 @@ void main() {
         confirme: false,
       ),
       TauxRationPoids(
-        id: 14,
+        id: '14',
         espece: 'poissons-chats',
         poidsMinG: 100,
         poidsMaxG: 500,
@@ -616,7 +616,7 @@ void main() {
         confirme: false,
       ),
       TauxRationPoids(
-        id: 15,
+        id: '15',
         espece: 'poissons-chats',
         poidsMinG: 500,
         poidsMaxG: null,
@@ -681,7 +681,7 @@ void main() {
       expect(classesPoissons[3].libelleClasse, 'De 100 à moins de 500 g');
       expect(classesPoissons[4].libelleClasse, '500 g et plus');
       const mixte = TauxRationPoids(
-        id: 99,
+        id: '99',
         espece: 'poissons-chats',
         poidsMinG: 500,
         poidsMaxG: 2000,

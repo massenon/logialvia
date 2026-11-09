@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Barème de rationnement — `parametres-elevage.html` Onglet 1.
 ///
 /// ⚠️ **Table absente de Doc D1.** L'écran Paramètres Élevage annonce pourtant
@@ -14,7 +16,9 @@ import 'package:drift/drift.dart';
 /// ration modifiée à la catégorie qu'elle rationne.
 @DataClassName('BaremeRationRow')
 class BaremesRation extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
   TextColumn get espece => text()();
@@ -32,6 +36,9 @@ class BaremesRation extends Table {
   BoolColumn get confirme => boolean().withDefault(const Constant(false))();
 
   @override
+  Set<Column> get primaryKey => {id};
+
+  @override
   List<Set<Column>> get uniqueKeys => [
     {espece, stade},
   ];
@@ -44,7 +51,9 @@ class BaremesRation extends Table {
 /// de page : ajouter une échéance n'y survit pas à un F5.
 @DataClassName('EcheanceProphylaxieRow')
 class CalendrierProphylaxie extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   TextColumn get espece => text()();
 
@@ -65,6 +74,9 @@ class CalendrierProphylaxie extends Table {
   ///
   /// La notice du produit utilise prevaut toujours sur cette valeur.
   TextColumn get dose => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// Taux de ration par classe de poids vif — DV-17 (bovins), DV-01 (poissons).
@@ -80,7 +92,9 @@ class CalendrierProphylaxie extends Table {
 /// borne haute exclue, et `poidsMaxG` NULL ouvre la classe vers le haut.
 @DataClassName('TauxRationPoidsRow')
 class TauxRationPoids extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
   TextColumn get espece => text()();
@@ -93,6 +107,9 @@ class TauxRationPoids extends Table {
 
   /// Faux tant que l'animalier n'a pas validé le repère.
   BoolColumn get confirme => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
 
   @override
   List<Set<Column>> get uniqueKeys => [

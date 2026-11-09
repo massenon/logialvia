@@ -47,7 +47,7 @@ class Soin {
     this.echeanceProphylaxieId,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final DateTime datePrevue;
   final String typeSoin;
@@ -68,7 +68,7 @@ class Soin {
   ///
   /// Avec [bandeId], c'est ce qui permet a la fiche d'afficher « deja
   /// planifie » au lieu de proposer une seconde fois le meme rappel.
-  final int? echeanceProphylaxieId;
+  final String? echeanceProphylaxieId;
 
   bool get vientDuCalendrier =>
       bandeId != null && echeanceProphylaxieId != null;
@@ -129,7 +129,7 @@ class EntreeInfirmerie {
     this.categorieMortalite,
   });
 
-  final int id;
+  final String id;
   final DateTime dateEntree;
   final String sujet;
   final String motif;

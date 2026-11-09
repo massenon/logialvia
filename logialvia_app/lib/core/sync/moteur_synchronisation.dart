@@ -187,6 +187,7 @@ class MoteurSynchronisationPoste {
     // Une seule fois : le catalogue local est propose au serveur.
     await demandes?.adopterCatalogueSiBesoin(preferences);
     await demandes?.adopterIntrantsSiBesoin(preferences);
+    await demandes?.adopterParametresElevageSiBesoin(preferences);
 
     var rapport = const RapportSynchronisation(
       IssueSynchronisation.terminee,

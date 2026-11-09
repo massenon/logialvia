@@ -49,6 +49,7 @@ class _Poste {
     await SeedInitial(db).executer();
     // Le catalogue a son propre test : on isole ici les intrants et le journal.
     await preferences.definirCatalogueAdopte();
+    await preferences.definirParametresElevageAdoptes();
     await preferences.definirAdresseServeur('http://serveur.test');
     await preferences.memoriserAppairage(
       codePoste: 'P1',

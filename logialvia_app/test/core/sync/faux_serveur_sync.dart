@@ -44,6 +44,14 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> mouvements = {};
   final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
+  /// Paramètres d'élevage (P7c) : trois référentiels (barèmes, taux par classe de
+  /// poids, calendrier de prophylaxie) et deux faits (soins, infirmerie).
+  final Map<String, Map<String, dynamic>> baremes = {};
+  final Map<String, Map<String, dynamic>> taux = {};
+  final Map<String, Map<String, dynamic>> echeances = {};
+  final Map<String, Map<String, dynamic>> soins = {};
+  final Map<String, Map<String, dynamic>> infirmerie = {};
+
   /// Incubateurs et lots de couveuse (faits plats, dernier écrivain gagne).
   final Map<String, Map<String, dynamic>> machines = {};
   final Map<String, Map<String, dynamic>> cycles = {};
@@ -130,6 +138,11 @@ class FauxServeurSync {
     voir(intrants.values);
     voir(mouvements.values);
     voir(mouvementsProduit.values);
+    voir(baremes.values);
+    voir(taux.values);
+    voir(echeances.values);
+    voir(soins.values);
+    voir(infirmerie.values);
     voir(machines.values);
     voir(cycles.values);
     voir(factures.values);
@@ -147,6 +160,9 @@ class FauxServeurSync {
     achats.clear();
     fournisseurs.clear();
     mouvementsProduit.clear();
+    soins
+        .clear(); // les barèmes, taux et échéances (référentiels) sont préservés
+    infirmerie.clear();
     factures.clear(); // la grille de taxation (référentiel) est préservée
     fichesJournee.clear();
     ventesJour.clear();
@@ -315,6 +331,26 @@ class FauxServeurSync {
           for (final m in mouvements.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
         ],
+        'baremes_ration': [
+          for (final b in baremes.values)
+            if (_dans(b['updated_at'] as String, since, jusqua)) b,
+        ],
+        'taux_ration_poids': [
+          for (final t in taux.values)
+            if (_dans(t['updated_at'] as String, since, jusqua)) t,
+        ],
+        'calendrier_prophylaxie': [
+          for (final e in echeances.values)
+            if (_dans(e['updated_at'] as String, since, jusqua)) e,
+        ],
+        'soins_calendrier': [
+          for (final x in soins.values)
+            if (_dans(x['serveur_modifie_le'] as String, since, jusqua)) x,
+        ],
+        'infirmerie': [
+          for (final x in infirmerie.values)
+            if (_dans(x['serveur_modifie_le'] as String, since, jusqua)) x,
+        ],
         'machines_incubateur': [
           for (final m in machines.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
@@ -394,6 +430,18 @@ class FauxServeurSync {
           continue;
         }
         _produit(d);
+        continue;
+      }
+      if (const [
+        'bareme_ration',
+        'taux_ration_poids',
+        'echeance_prophylaxie',
+      ].contains(d['type'])) {
+        final motif = _parametreElevage(d);
+        if (motif != null) {
+          acceptees.remove(d['id']);
+          refusees.add({'id': d['id'] as String, 'motif': motif});
+        }
         continue;
       }
       if (d['type'] == 'module_actif') {
@@ -512,6 +560,18 @@ class FauxServeurSync {
     if (tables.containsKey('mouvements_produit')) {
       reponse['mouvements_produit'] = _mouvementsProduit(
         (tables['mouvements_produit'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('soins_calendrier')) {
+      reponse['soins_calendrier'] = _soins(
+        (tables['soins_calendrier'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('infirmerie')) {
+      reponse['infirmerie'] = _infirmerie(
+        (tables['infirmerie'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -668,6 +728,351 @@ class FauxServeurSync {
           ..['serveur_modifie_le'] = _instant();
       }
       acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  // ------------------------------------------------ Paramètres d'élevage (P7c)
+
+  static final RegExp _uuidRe = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static const List<String> _statutsSoin = [
+    'Planifié',
+    'Effectué',
+    'En retard',
+    'Traitement en cours',
+  ];
+  static const List<String> _niveaux = [
+    'Simple surveillance',
+    'Infirmerie',
+    'Quarantaine stricte',
+  ];
+  static const List<String> _statutsInfirmerie = [
+    'En cours',
+    'Réintégré',
+    'Décédé',
+  ];
+
+  /// Un barème tel que le serveur le garde (référentiel : `saisi_le`, `archive_le`).
+  void ajouterBareme(Map<String, dynamic> b, {String? saisiLe}) {
+    baremes[b['id'] as String] = {
+      'archive_le': null,
+      ...b,
+      'saisi_le': saisiLe ?? _instant(),
+      'created_at': _instant(),
+      'updated_at': _instant(),
+    };
+  }
+
+  void ajouterTaux(Map<String, dynamic> t, {String? saisiLe}) {
+    taux[t['id'] as String] = {
+      'archive_le': null,
+      ...t,
+      'saisi_le': saisiLe ?? _instant(),
+      'created_at': _instant(),
+      'updated_at': _instant(),
+    };
+  }
+
+  void ajouterEcheance(Map<String, dynamic> e, {String? saisiLe}) {
+    echeances[e['id'] as String] = {
+      'archive_le': null,
+      ...e,
+      'saisi_le': saisiLe ?? _instant(),
+      'created_at': _instant(),
+      'updated_at': _instant(),
+    };
+  }
+
+  /// Rejoue `DemandesReferentiel::bareme/tauxPoids/echeance` : validation, clé
+  /// naturelle, identique accepté sans rien changer, plus ancien refusé, pierre
+  /// tombale. Renvoie le motif du refus, ou `null`.
+  String? _parametreElevage(Map<String, dynamic> demande) {
+    final type = demande['type'] as String;
+    final saisie = demande['saisi_le'] as String;
+    var d = demande['donnees'] as Map<String, dynamic>;
+    final archive = d['archive'] == true;
+    d = {...d}..remove('archive');
+
+    String? texte(String c) =>
+        d[c] is String && (d[c] as String).trim().isNotEmpty
+        ? d[c] as String
+        : null;
+    if (d['id'] is! String || !_uuidRe.hasMatch(d['id'] as String)) {
+      return "L'identifiant de la ligne doit être un UUID.";
+    }
+    final id = d['id'] as String;
+    if (texte('espece') == null) return "L'espèce est obligatoire.";
+
+    final Map<String, Map<String, dynamic>> magasin;
+    final List<String> champs;
+    if (type == 'bareme_ration') {
+      magasin = baremes;
+      champs = const ['espece', 'stade', 'ration_grammes_par_jour', 'confirme'];
+      final ration = d['ration_grammes_par_jour'];
+      if (texte('stade') == null) return 'Le stade du barème est obligatoire.';
+      if (ration is! int || ration < 1 || ration > 20000) {
+        return 'La ration doit être comprise entre 1 et 20 000 g par jour.';
+      }
+      if (d['confirme'] is! bool) return 'Le statut du barème est invalide.';
+    } else if (type == 'taux_ration_poids') {
+      magasin = taux;
+      champs = const [
+        'espece',
+        'poids_min_g',
+        'poids_max_g',
+        'taux_pourcent',
+        'confirme',
+      ];
+      final min = d['poids_min_g'];
+      final max = d['poids_max_g'];
+      if (min is! int || min < 0) return 'Le poids minimal est invalide.';
+      if (max != null && (max is! int || max <= min)) {
+        return 'Le poids maximal doit dépasser le poids minimal.';
+      }
+      final t = d['taux_pourcent'];
+      if (t is! num || t <= 0 || t > 25) {
+        return 'Le taux doit être compris entre 0 et 25 % du poids vif par jour.';
+      }
+      if (d['confirme'] is! bool) return 'Le statut du taux est invalide.';
+    } else {
+      magasin = echeances;
+      champs = const [
+        'espece',
+        'jour_cycle',
+        'traitement',
+        'produit',
+        'remanence_jours',
+        'dose',
+      ];
+      final jour = d['jour_cycle'];
+      if (jour is! int || jour < 1 || jour > 365) {
+        return 'Le jour du cycle doit être compris entre 1 et 365.';
+      }
+      if (texte('traitement') == null || texte('produit') == null) {
+        return 'Le traitement et le produit sont obligatoires.';
+      }
+      final r = d['remanence_jours'];
+      if (r is! int || r < 0) return 'La rémanence ne peut pas être négative.';
+    }
+
+    // Clé naturelle : une autre ligne (autre UUID) ne peut pas la porter.
+    final conflit = magasin.values.any((x) {
+      if (x['id'] == id) return false;
+      if (type == 'bareme_ration') {
+        return x['espece'] == d['espece'] && x['stade'] == d['stade'];
+      }
+      if (type == 'taux_ration_poids') {
+        return x['espece'] == d['espece'] &&
+            x['poids_min_g'] == d['poids_min_g'];
+      }
+      return false;
+    });
+    if (conflit) {
+      return type == 'bareme_ration'
+          ? 'Un barème existe déjà pour ce stade.'
+          : 'Une classe de poids existe déjà avec ce poids minimal.';
+    }
+
+    final existant = magasin[id];
+    final nouveau = {for (final c in champs) c: d[c]};
+    if (existant == null) {
+      magasin[id] = {
+        'id': id,
+        ...nouveau,
+        'archive_le': archive ? saisie : null,
+        'saisi_le': saisie,
+        'created_at': _instant(),
+        'updated_at': _instant(),
+      };
+      return null;
+    }
+    final identique =
+        champs.every((c) => existant[c] == nouveau[c]) &&
+        (existant['archive_le'] != null) == archive;
+    if (identique) return null;
+    if (!DateTime.parse(
+      saisie,
+    ).isAfter(DateTime.parse(existant['saisi_le'] as String))) {
+      return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+    }
+    existant
+      ..addAll(nouveau)
+      ..['archive_le'] = archive ? saisie : null
+      ..['saisi_le'] = saisie
+      ..['updated_at'] = _instant();
+    return null;
+  }
+
+  bool _jourValide(Object? v) =>
+      v is String &&
+      v.length >= 10 &&
+      DateTime.tryParse(v.substring(0, 10)) != null;
+
+  /// Rejoue `SoinsCalendrierTable::absorber` : validation stricte, échéance connue,
+  /// dernier écrivain gagne (strictement).
+  Map<String, dynamic> _soins(List<Map<String, dynamic>> lot, String deviceId) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final l in lot) {
+      final id = l['id'];
+      String? motif;
+      if (id is! String || !_uuidRe.hasMatch(id)) {
+        motif = "L'identifiant de la ligne doit être un UUID.";
+      } else if (l['updated_at'] is! String ||
+          DateTime.tryParse(l['updated_at'] as String) == null) {
+        motif = 'La date de saisie de la ligne est invalide.';
+      } else if (l['espece'] is! String ||
+          (l['espece'] as String).trim().isEmpty) {
+        motif = "L'espèce du soin est obligatoire.";
+      } else if (!_jourValide(l['date_prevue'])) {
+        motif = 'La date prévue du soin est invalide.';
+      } else if (l['type_soin'] is! String ||
+          (l['type_soin'] as String).trim().isEmpty) {
+        motif = "Le type d'action est obligatoire.";
+      } else if (!_statutsSoin.contains(l['statut'])) {
+        motif = 'Le statut du soin est invalide.';
+      } else if (l['remanence_jours'] is! int ||
+          (l['remanence_jours'] as int) < 0) {
+        motif = 'La rémanence ne peut pas être négative.';
+      } else if (l['cout_fcfa'] is! int || (l['cout_fcfa'] as int) < 0) {
+        motif = 'Le coût ne peut pas être négatif.';
+      } else if (l['echeance_prophylaxie_id'] != null &&
+          !echeances.containsKey(l['echeance_prophylaxie_id'])) {
+        motif = 'Échéance de prophylaxie inconnue du serveur.';
+      }
+      if (motif != null) {
+        refusees.add({'id': '$id', 'motif': motif});
+        continue;
+      }
+      final cle = id! as String;
+      final saisie = DateTime.parse(l['updated_at'] as String);
+      final existant = soins[cle];
+      final ligne = {
+        for (final c in const [
+          'espece',
+          'date_prevue',
+          'type_soin',
+          'statut',
+          'observations',
+          'produit',
+          'dose',
+          'remanence_jours',
+          'veterinaire',
+          'symptomes',
+          'cout_fcfa',
+          'echeance_prophylaxie_id',
+        ])
+          c: l[c],
+      };
+      if (existant == null) {
+        soins[cle] = {
+          'id': cle,
+          ...ligne,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        existant
+          ..addAll(ligne)
+          ..['device_id'] = deviceId
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      } // sinon : rejeu ou saisie plus ancienne — acceptée sans rien changer
+      acceptees.add(cle);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Rejoue `InfirmerieTable::absorber`.
+  Map<String, dynamic> _infirmerie(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final l in lot) {
+      final id = l['id'];
+      String? motif;
+      final statut = l['statut'];
+      if (id is! String || !_uuidRe.hasMatch(id)) {
+        motif = "L'identifiant de la ligne doit être un UUID.";
+      } else if (l['updated_at'] is! String ||
+          DateTime.tryParse(l['updated_at'] as String) == null) {
+        motif = 'La date de saisie de la ligne est invalide.';
+      } else if (!_jourValide(l['date_entree'])) {
+        motif = "La date d'entrée est invalide.";
+      } else if (l['date_sortie'] != null && !_jourValide(l['date_sortie'])) {
+        motif = 'La date de sortie est invalide.';
+      } else if (l['sujet'] is! String ||
+          (l['sujet'] as String).trim().isEmpty) {
+        motif = 'Le sujet est obligatoire.';
+      } else if (l['motif'] is! String ||
+          (l['motif'] as String).trim().isEmpty) {
+        motif = 'Le motif est obligatoire.';
+      } else if (!_niveaux.contains(l['niveau_isolement'])) {
+        motif = "Ce niveau d'isolement n'existe pas.";
+      } else if (!_statutsInfirmerie.contains(statut)) {
+        motif = "Le statut de l'entrée est invalide.";
+      } else if (l['date_sortie'] != null &&
+          (l['date_sortie'] as String)
+                  .substring(0, 10)
+                  .compareTo((l['date_entree'] as String).substring(0, 10)) <
+              0) {
+        motif = "La sortie ne peut précéder l'entrée.";
+      } else if (statut != 'En cours' && l['date_sortie'] == null) {
+        motif = 'Une entrée clôturée doit avoir une date de sortie.';
+      } else if (statut == 'En cours' && l['date_sortie'] != null) {
+        motif = "Une entrée en cours n'a pas de date de sortie.";
+      } else if (l['categorie_mortalite'] != null &&
+          (l['categorie_mortalite'] is! int ||
+              (l['categorie_mortalite'] as int) < 0 ||
+              statut != 'Décédé')) {
+        motif = 'La marque de mortalité ne vaut que pour un sujet décédé.';
+      }
+      if (motif != null) {
+        refusees.add({'id': '$id', 'motif': motif});
+        continue;
+      }
+      final cle = id! as String;
+      final saisie = DateTime.parse(l['updated_at'] as String);
+      final existant = infirmerie[cle];
+      final ligne = {
+        for (final c in const [
+          'date_entree',
+          'sujet',
+          'motif',
+          'niveau_isolement',
+          'statut',
+          'date_sortie',
+          'espece',
+          'categorie_mortalite',
+        ])
+          c: l[c],
+      };
+      if (existant == null) {
+        infirmerie[cle] = {
+          'id': cle,
+          ...ligne,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        existant
+          ..addAll(ligne)
+          ..['device_id'] = deviceId
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(cle);
     }
     return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
   }

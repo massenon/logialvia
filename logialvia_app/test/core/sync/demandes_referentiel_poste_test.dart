@@ -49,6 +49,7 @@ void main() {
     // Le catalogue a sa propre adoption (testée à part) : ici on isole modules et paramètres.
     await preferences.definirCatalogueAdopte();
     await preferences.definirIntrantsAdoptes();
+    await preferences.definirParametresElevageAdoptes();
     await preferences.definirAdresseServeur('http://serveur.test');
     await preferences.memoriserAppairage(
       codePoste: 'P1',

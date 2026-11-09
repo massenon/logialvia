@@ -24,6 +24,9 @@ class DepotDemandesReferentiel {
   static const String cleParametres = 'parametres';
   static const String typeProduit = 'produit_vendable';
   static const String typeIntrant = 'intrant';
+  static const String typeBareme = 'bareme_ration';
+  static const String typeTauxPoids = 'taux_ration_poids';
+  static const String typeEcheance = 'echeance_prophylaxie';
 
   /// Champs d'un intrant proposes au serveur. JAMAIS le stock ni le PMP : propres a
   /// chaque poste (« stock propre a chaque poste + journal partage »).
@@ -185,6 +188,104 @@ class DepotDemandesReferentiel {
       await proposer(type: typeIntrant, cle: i.code, donnees: champsIntrant(i));
     }
     await preferences.definirIntrantsAdoptes();
+  }
+
+  // ------------------------------------------------- Paramètres d'élevage (P7c)
+
+  /// Champs d'un barème de ration proposés au serveur.
+  static Map<String, Object?> champsBareme(BaremeRationRow b) => {
+    'id': b.id,
+    'espece': b.espece,
+    'stade': b.stade,
+    'ration_grammes_par_jour': b.rationGrammesParJour,
+    'confirme': b.confirme,
+  };
+
+  /// Champs d'un taux de ration par classe de poids vif.
+  static Map<String, Object?> champsTauxPoids(TauxRationPoidsRow t) => {
+    'id': t.id,
+    'espece': t.espece,
+    'poids_min_g': t.poidsMinG,
+    'poids_max_g': t.poidsMaxG,
+    'taux_pourcent': t.tauxPourcent,
+    'confirme': t.confirme,
+  };
+
+  /// Champs d'une échéance du calendrier de prophylaxie.
+  static Map<String, Object?> champsEcheance(EcheanceProphylaxieRow e) => {
+    'id': e.id,
+    'espece': e.espece,
+    'jour_cycle': e.jourCycle,
+    'traitement': e.traitement,
+    'produit': e.produit,
+    'remanence_jours': e.remanenceJours,
+    'dose': e.dose,
+  };
+
+  /// Propose l'état ACTUEL d'un barème (relu en base).
+  Future<void> proposerBareme(String id) async {
+    final ligne = await (_db.select(
+      _db.baremesRation,
+    )..where((b) => b.id.equals(id))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(type: typeBareme, cle: id, donnees: champsBareme(ligne));
+  }
+
+  /// Suppression d'un barème : le serveur ne l'efface jamais, il le marque archivé
+  /// (pierre tombale) et le redistribue. [ligne] : l'état AVANT la suppression locale.
+  Future<void> proposerArchivageBareme(BaremeRationRow ligne) => proposer(
+    type: typeBareme,
+    cle: ligne.id,
+    donnees: {...champsBareme(ligne), 'archive': true},
+  );
+
+  Future<void> proposerTauxPoids(String id) async {
+    final ligne = await (_db.select(
+      _db.tauxRationPoids,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(type: typeTauxPoids, cle: id, donnees: champsTauxPoids(ligne));
+  }
+
+  Future<void> proposerArchivageTauxPoids(TauxRationPoidsRow ligne) => proposer(
+    type: typeTauxPoids,
+    cle: ligne.id,
+    donnees: {...champsTauxPoids(ligne), 'archive': true},
+  );
+
+  Future<void> proposerEcheance(String id) async {
+    final ligne = await (_db.select(
+      _db.calendrierProphylaxie,
+    )..where((c) => c.id.equals(id))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(type: typeEcheance, cle: id, donnees: champsEcheance(ligne));
+  }
+
+  Future<void> proposerArchivageEcheance(EcheanceProphylaxieRow ligne) =>
+      proposer(
+        type: typeEcheance,
+        cle: ligne.id,
+        donnees: {...champsEcheance(ligne), 'archive': true},
+      );
+
+  /// Une seule fois : propose TOUS les barèmes, taux et échéances locaux. Les lignes
+  /// semées ont le même UUID sur tous les postes (le serveur accepte sans conflit ce
+  /// qu'il connaît à l'identique) ; celles que la Gérante a créées ou modifiées ici
+  /// sont ainsi connues du serveur AVANT que les autres postes n'en dépendent.
+  Future<void> adopterParametresElevageSiBesoin(
+    PreferencesPosteRepository preferences,
+  ) async {
+    if (await preferences.parametresElevageAdoptes()) return;
+    for (final b in await _db.select(_db.baremesRation).get()) {
+      await proposer(type: typeBareme, cle: b.id, donnees: champsBareme(b));
+    }
+    for (final t in await _db.select(_db.tauxRationPoids).get()) {
+      await proposer(type: typeTauxPoids, cle: t.id, donnees: champsTauxPoids(t));
+    }
+    for (final e in await _db.select(_db.calendrierProphylaxie).get()) {
+      await proposer(type: typeEcheance, cle: e.id, donnees: champsEcheance(e));
+    }
+    await preferences.definirParametresElevageAdoptes();
   }
 
   /// La demande **en attente** de cette clé, s'il y en a une.

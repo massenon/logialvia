@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../sync/identifiants_parametres_elevage.dart';
 
 /// Socle des barèmes de rationnement et des calendriers de prophylaxie.
 ///
@@ -366,6 +367,7 @@ class ParametresElevageSeeder {
           .where((t) => espece == null || t.espece == espece)
           .map(
             (t) => TauxRationPoidsCompanion.insert(
+              id: Value(IdentifiantsParametresElevage.taux(t.espece, t.minG)),
               espece: t.espece,
               poidsMinG: t.minG,
               poidsMaxG: Value(t.maxG),
@@ -373,6 +375,13 @@ class ParametresElevageSeeder {
               confirme: Value(t.confirme),
             ),
           );
+
+  /// Vrai quand la colonne `id` de [table] est du texte (schéma v40 et suivants).
+  static Future<bool> _idsTexte(AppDatabase db, String table) async {
+    final colonnes = await db.customSelect('PRAGMA table_info("$table")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    return id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT';
+  }
 
   /// Migrations v28 et v30 : sème les classes de poids des filières qui n'en
   /// ont aucune (bovins, puis poissons-chats). Réservée à la migration, comme
@@ -386,6 +395,26 @@ class ParametresElevageSeeder {
                 ..limit(1))
               .getSingleOrNull();
       if (existant != null) continue;
+      if (!await _idsTexte(db, 'taux_ration_poids')) {
+        // Migration d'une base AVANT la v40 : la cle est encore un entier auto-
+        // incremente, que la v40 convertira en UUID deterministe.
+        for (final t in tauxPoidsInitiaux.where((t) => t.espece == espece)) {
+          await db.customInsert(
+            'INSERT INTO taux_ration_poids '
+            '(espece, poids_min_g, poids_max_g, taux_pourcent, confirme) '
+            'VALUES (?, ?, ?, ?, ?)',
+            variables: [
+              Variable.withString(t.espece),
+              Variable.withInt(t.minG),
+              Variable<int>(t.maxG),
+              Variable.withReal(t.taux),
+              Variable.withBool(t.confirme),
+            ],
+            updates: {db.tauxRationPoids},
+          );
+        }
+        continue;
+      }
       await db.batch((batch) {
         batch.insertAll(db.tauxRationPoids, _tauxPoids(espece).toList());
       });
@@ -405,7 +434,26 @@ class ParametresElevageSeeder {
                 ..where((b) => b.espece.equals(espece))
                 ..limit(1))
               .getSingleOrNull();
-      if (aDesRations == null) {
+      final avantV40 = !await _idsTexte(db, 'baremes_ration');
+      if (aDesRations == null && avantV40) {
+        // Base d'avant la v40 : cle entiere auto-incrementee (convertie en v40).
+        for (final b in baremesNouvellesFilieres.where(
+          (b) => b.espece == espece,
+        )) {
+          await db.customInsert(
+            'INSERT INTO baremes_ration '
+            '(espece, stade, ration_grammes_par_jour, confirme) '
+            'VALUES (?, ?, ?, ?)',
+            variables: [
+              Variable.withString(b.espece),
+              Variable.withString(b.stade),
+              Variable.withInt(b.ration),
+              Variable.withBool(b.confirme),
+            ],
+            updates: {db.baremesRation},
+          );
+        }
+      } else if (aDesRations == null) {
         await db.batch((batch) {
           batch.insertAll(
             db.baremesRation,
@@ -413,6 +461,9 @@ class ParametresElevageSeeder {
                 .where((b) => b.espece == espece)
                 .map(
                   (b) => BaremesRationCompanion.insert(
+                    id: Value(
+                      IdentifiantsParametresElevage.bareme(b.espece, b.stade),
+                    ),
                     espece: b.espece,
                     stade: b.stade,
                     rationGrammesParJour: b.ration,
@@ -429,14 +480,35 @@ class ParametresElevageSeeder {
                 ..limit(1))
               .getSingleOrNull();
       if (aDesEcheances == null) {
-        await db.batch((batch) {
-          batch.insertAll(
-            db.calendrierProphylaxie,
-            echeancesNouvellesFilieres
-                .where((e) => e.espece == espece)
-                .map(_versCompagnon),
-          );
-        });
+        if (!await _idsTexte(db, 'calendrier_prophylaxie')) {
+          for (final e in echeancesNouvellesFilieres.where(
+            (e) => e.espece == espece,
+          )) {
+            await db.customInsert(
+              'INSERT INTO calendrier_prophylaxie '
+              '(espece, jour_cycle, traitement, produit, remanence_jours, dose) '
+              'VALUES (?, ?, ?, ?, ?, ?)',
+              variables: [
+                Variable.withString(e.espece),
+                Variable.withInt(e.jour),
+                Variable.withString(e.traitement),
+                Variable.withString(e.produit),
+                Variable.withInt(e.remanence),
+                Variable.withString(e.dose),
+              ],
+              updates: {db.calendrierProphylaxie},
+            );
+          }
+        } else {
+          await db.batch((batch) {
+            batch.insertAll(
+              db.calendrierProphylaxie,
+              echeancesNouvellesFilieres
+                  .where((e) => e.espece == espece)
+                  .map(_versCompagnon),
+            );
+          });
+        }
       }
     }
   }
@@ -452,6 +524,14 @@ class ParametresElevageSeeder {
     })
     e,
   ) => CalendrierProphylaxieCompanion.insert(
+    id: Value(
+      IdentifiantsParametresElevage.echeance(
+        e.espece,
+        e.jour,
+        e.traitement,
+        e.produit,
+      ),
+    ),
     espece: e.espece,
     jourCycle: e.jour,
     traitement: e.traitement,
@@ -476,6 +556,9 @@ class ParametresElevageSeeder {
           _db.baremesRation,
           [...baremes, ...baremesNouvellesFilieres].map(
             (b) => BaremesRationCompanion.insert(
+              id: Value(
+                IdentifiantsParametresElevage.bareme(b.espece, b.stade),
+              ),
               espece: b.espece,
               stade: b.stade,
               rationGrammesParJour: b.ration,
@@ -504,6 +587,14 @@ class ParametresElevageSeeder {
         batch.insertAll(_db.calendrierProphylaxie, [
           ...echeances.map(
             (e) => CalendrierProphylaxieCompanion.insert(
+              id: Value(
+                IdentifiantsParametresElevage.echeance(
+                  e.espece,
+                  e.jour,
+                  e.traitement,
+                  e.produit,
+                ),
+              ),
               espece: e.espece,
               jourCycle: e.jour,
               traitement: e.traitement,

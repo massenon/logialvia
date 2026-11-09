@@ -304,6 +304,17 @@ class ServiceArchivage {
           _db,
         ).proposerProduit('${donnees[type.clePrimaire]}');
       }
+
+      // Barème, taux ou échéance restaurés : la demande lève la pierre tombale posée
+      // au serveur à leur suppression (P7c).
+      final idRestaure = '${donnees[type.clePrimaire]}';
+      if (type.nomTable == TypeArchivable.baremes.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerBareme(idRestaure);
+      } else if (type.nomTable == TypeArchivable.tauxPoids.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerTauxPoids(idRestaure);
+      } else if (type.nomTable == TypeArchivable.prophylaxie.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerEcheance(idRestaure);
+      }
     });
   }
 

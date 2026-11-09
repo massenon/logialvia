@@ -35,6 +35,9 @@ import 'approvisionnement/data/sync/table_fournisseurs_poste.dart';
 import 'approvisionnement/data/sync/table_intrants_poste.dart';
 import 'approvisionnement/data/sync/table_mouvements_intrant_poste.dart';
 import 'commercial/data/sync/table_mouvements_produit_poste.dart';
+import 'elevage/data/sync/table_infirmerie_poste.dart';
+import 'elevage/data/sync/table_parametres_elevage_poste.dart';
+import 'elevage/data/sync/table_soins_poste.dart';
 import 'commercial/data/sync/table_clients_poste.dart';
 import 'commercial/data/sync/table_produits_poste.dart';
 import 'commercial/data/sync/table_factures_poste.dart';
@@ -190,6 +193,10 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableParametresEntreprisePoste(widget.database),
       TableProduitsPoste(widget.database),
       TableIntrantsPoste(widget.database),
+      // Parametres d'elevage (P7c) : referentiels, le serveur gagne.
+      TableBaremesRationPoste(widget.database),
+      TableTauxRationPoidsPoste(widget.database),
+      TableCalendrierProphylaxiePoste(widget.database),
       TableClientsPoste(widget.database),
       TableFournisseursPoste(widget.database),
       TableVentesPoste(widget.database),
@@ -206,6 +213,9 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       // Palier 7b : incubateurs AVANT les lots qui les occupent.
       TableMachinesIncubateurPoste(widget.database),
       TableCyclesCouveusePoste(widget.database),
+      // Soins et infirmerie (P7c) : faits saisis au poste.
+      TableSoinsPoste(widget.database),
+      TableInfirmeriePoste(widget.database),
     ],
   );
   late final PlanificateurSynchronisation
