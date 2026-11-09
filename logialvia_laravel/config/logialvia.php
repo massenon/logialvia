@@ -144,6 +144,9 @@ return [
             \App\Sync\Tables\ParametresEntrepriseTable::class,
             \App\Sync\Tables\ProduitsVendablesTable::class,
             \App\Sync\Tables\IntrantsTable::class,
+            \App\Sync\Tables\BaremesRationTable::class,
+            \App\Sync\Tables\TauxRationPoidsTable::class,
+            \App\Sync\Tables\CalendrierProphylaxieTable::class,
             \App\Sync\Tables\ClientsTable::class,
             \App\Sync\Tables\FournisseursTable::class,
             \App\Sync\Tables\VentesTable::class,
@@ -159,6 +162,8 @@ return [
             // Couveuse (7b) : les incubateurs AVANT les lots qui les occupent.
             \App\Sync\Tables\MachinesIncubateurTable::class,
             \App\Sync\Tables\CyclesCouveuseTable::class,
+            \App\Sync\Tables\SoinsCalendrierTable::class,
+            \App\Sync\Tables\InfirmerieTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),

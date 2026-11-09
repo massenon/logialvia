@@ -120,6 +120,15 @@ abstract class TableSync
     }
 
     /**
+     * Controles croises d'une ligne DEJA valide champ par champ (coherence entre champs,
+     * existence d'une ligne referencee). Par defaut aucun. Renvoie le motif du refus.
+     */
+    protected function controler(array $ligne): ?string
+    {
+        return null;
+    }
+
+    /**
      * Absorbe UNE ligne poussee par un poste (fait). Par defaut : insertion, ou
      * dernier ecrivain gagne a l'instant de SAISIE ; un rejeu est accepte sans rien
      * changer. Une table dont l'unite n'est pas une ligne plate (une vente et ses
@@ -141,6 +150,11 @@ abstract class TableSync
 
         if ($validateur->fails()) {
             return $validateur->errors()->first();
+        }
+
+        // Controles croises (plusieurs champs, ou une ligne d'une autre table).
+        if (($motif = $this->controler($ligne)) !== null) {
+            return $motif;
         }
 
         $saisie = CarbonImmutable::parse($ligne['updated_at'])->utc();

@@ -2,11 +2,14 @@
 
 namespace App\Sync;
 
+use App\Models\BaremeRation;
 use App\Models\DemandeReferentiel;
+use App\Models\EcheanceProphylaxie;
 use App\Models\Intrant;
 use App\Models\ModuleActif;
 use App\Models\ParametresEntreprise;
 use App\Models\ProduitVendable;
+use App\Models\TauxRationPoids;
 use App\Models\User;
 use App\Support\Audit;
 use Carbon\CarbonImmutable;
@@ -34,6 +37,12 @@ class DemandesReferentiel
     public const TYPE_PRODUIT = 'produit_vendable';
 
     public const TYPE_INTRANT = 'intrant';
+
+    public const TYPE_BAREME = 'bareme_ration';
+
+    public const TYPE_TAUX_POIDS = 'taux_ration_poids';
+
+    public const TYPE_ECHEANCE = 'echeance_prophylaxie';
 
     /** Champs de `parametres_entreprise` qu'un poste peut proposer. */
     public const CHAMPS_PARAMETRES = [
@@ -106,6 +115,7 @@ class DemandesReferentiel
             self::TYPE_PARAMETRES => $this->parametres($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_PRODUIT => $this->produit($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_INTRANT => $this->intrant($utilisateur, $demande['donnees'], $saisie, $cle),
+            self::TYPE_BAREME, self::TYPE_TAUX_POIDS, self::TYPE_ECHEANCE => $this->parametreElevage($utilisateur, $demande['type'], $demande['donnees'], $saisie, $cle),
             default => "Type de demande inconnu du serveur : « {$demande['type']} ».",
         };
 
@@ -374,6 +384,149 @@ class DemandesReferentiel
             return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
         }
         $intrant->forceFill($champs + ['saisi_le' => $saisie])->save();
+
+        return null;
+    }
+
+    // ------------------------------------------------- Parametres d'elevage (P7c)
+
+    /**
+     * Cree ou modifie un bareme, un taux par classe de poids ou une echeance de
+     * prophylaxie (`46c_`). Memes regles que le catalogue :
+     *
+     *  - droit `manage-elevage` ; une SUPPRESSION (pierre tombale, `archive`) exige
+     *    `archive-elevage` ;
+     *  - une demande identique a l'etat actuel est acceptee sans rien changer (deux
+     *    postes semes du meme programme proposent les memes lignes : pas un conflit) ;
+     *  - une demande plus ANCIENNE (ou egale) que la derniere acceptee est refusee ;
+     *  - la cle naturelle (espece + stade, espece + poids minimal) ne peut etre portee
+     *    que par UN identifiant : un autre UUID est refuse, avec son motif.
+     */
+    private function parametreElevage(User $utilisateur, string $type, array $donnees, CarbonImmutable $saisie, ?string &$cle): ?string
+    {
+        $cle = is_string($donnees['id'] ?? null) ? $donnees['id'] : null;
+
+        [$modele, $champs, $regles, $messages] = match ($type) {
+            self::TYPE_BAREME => [BaremeRation::class, ['espece', 'stade', 'ration_grammes_par_jour', 'confirme'], [
+                'espece' => ['required', 'string', 'max:40'],
+                'stade' => ['required', 'string', 'max:255'],
+                'ration_grammes_par_jour' => ['required', 'integer', 'min:1', 'max:20000'],
+                'confirme' => ['required', 'boolean'],
+            ], [
+                'espece.required' => "L'espèce est obligatoire.",
+                'stade.required' => 'Le stade du barème est obligatoire.',
+                'ration_grammes_par_jour.required' => 'La ration doit être comprise entre 1 et 20 000 g par jour.',
+                'ration_grammes_par_jour.integer' => 'La ration doit être comprise entre 1 et 20 000 g par jour.',
+                'ration_grammes_par_jour.min' => 'La ration doit être comprise entre 1 et 20 000 g par jour.',
+                'ration_grammes_par_jour.max' => 'La ration doit être comprise entre 1 et 20 000 g par jour.',
+                'confirme.required' => 'Le statut du barème est invalide.',
+                'confirme.boolean' => 'Le statut du barème est invalide.',
+            ]],
+            self::TYPE_TAUX_POIDS => [TauxRationPoids::class, ['espece', 'poids_min_g', 'poids_max_g', 'taux_pourcent', 'confirme'], [
+                'espece' => ['required', 'string', 'max:40'],
+                'poids_min_g' => ['required', 'integer', 'min:0'],
+                'poids_max_g' => ['nullable', 'integer', 'gt:poids_min_g'],
+                'taux_pourcent' => ['required', 'numeric', 'gt:0', 'max:25'],
+                'confirme' => ['required', 'boolean'],
+            ], [
+                'espece.required' => "L'espèce est obligatoire.",
+                'poids_min_g.required' => 'Le poids minimal est invalide.',
+                'poids_min_g.integer' => 'Le poids minimal est invalide.',
+                'poids_min_g.min' => 'Le poids minimal est invalide.',
+                'poids_max_g.integer' => 'Le poids maximal doit dépasser le poids minimal.',
+                'poids_max_g.gt' => 'Le poids maximal doit dépasser le poids minimal.',
+                'taux_pourcent.required' => 'Le taux doit être compris entre 0 et 25 % du poids vif par jour.',
+                'taux_pourcent.numeric' => 'Le taux doit être compris entre 0 et 25 % du poids vif par jour.',
+                'taux_pourcent.gt' => 'Le taux doit être compris entre 0 et 25 % du poids vif par jour.',
+                'taux_pourcent.max' => 'Le taux doit être compris entre 0 et 25 % du poids vif par jour.',
+                'confirme.required' => 'Le statut du taux est invalide.',
+                'confirme.boolean' => 'Le statut du taux est invalide.',
+            ]],
+            default => [EcheanceProphylaxie::class, ['espece', 'jour_cycle', 'traitement', 'produit', 'remanence_jours', 'dose'], [
+                'espece' => ['required', 'string', 'max:40'],
+                'jour_cycle' => ['required', 'integer', 'min:1', 'max:365'],
+                'traitement' => ['required', 'string', 'max:255'],
+                'produit' => ['required', 'string', 'max:255'],
+                'remanence_jours' => ['required', 'integer', 'min:0', 'max:3650'],
+                'dose' => ['nullable', 'string', 'max:255'],
+            ], [
+                'espece.required' => "L'espèce est obligatoire.",
+                'jour_cycle.required' => 'Le jour du cycle doit être compris entre 1 et 365.',
+                'jour_cycle.integer' => 'Le jour du cycle doit être compris entre 1 et 365.',
+                'jour_cycle.min' => 'Le jour du cycle doit être compris entre 1 et 365.',
+                'jour_cycle.max' => 'Le jour du cycle doit être compris entre 1 et 365.',
+                'traitement.required' => 'Le traitement et le produit sont obligatoires.',
+                'produit.required' => 'Le traitement et le produit sont obligatoires.',
+                'remanence_jours.required' => 'La rémanence ne peut pas être négative.',
+                'remanence_jours.integer' => 'La rémanence ne peut pas être négative.',
+                'remanence_jours.min' => 'La rémanence ne peut pas être négative.',
+                'remanence_jours.max' => 'La rémanence est invraisemblable.',
+            ]],
+        };
+
+        $v = Validator::make($donnees, array_merge([
+            'id' => ['required', 'uuid'],
+            'archive' => ['nullable', 'boolean'],
+        ], $regles), array_merge([
+            'id.required' => "L'identifiant de la ligne est obligatoire.",
+            'id.uuid' => "L'identifiant de la ligne doit être un UUID.",
+            'archive.boolean' => "Le drapeau d'archivage est invalide.",
+        ], $messages));
+        if ($v->fails()) {
+            return $v->errors()->first();
+        }
+
+        $archive = (bool) ($donnees['archive'] ?? false);
+        if (! $utilisateur->can($archive ? 'archive-elevage' : 'manage-elevage')) {
+            return $archive
+                ? 'Droit insuffisant pour supprimer un paramètre d\'élevage.'
+                : 'Droit insuffisant pour modifier les paramètres d\'élevage.';
+        }
+
+        $valeurs = [];
+        foreach ($champs as $champ) {
+            $valeur = $donnees[$champ] ?? null;
+            $valeurs[$champ] = $champ === 'dose' && $valeur === '' ? null : $valeur;
+        }
+
+        // Cle naturelle : une AUTRE ligne ne peut pas la porter.
+        $conflit = match ($type) {
+            self::TYPE_BAREME => BaremeRation::query()->where('espece', $valeurs['espece'])
+                ->where('stade', $valeurs['stade'])->where('id', '!=', $donnees['id'])->exists()
+                ? 'Un barème existe déjà pour ce stade.' : null,
+            self::TYPE_TAUX_POIDS => TauxRationPoids::query()->where('espece', $valeurs['espece'])
+                ->where('poids_min_g', $valeurs['poids_min_g'])->where('id', '!=', $donnees['id'])->exists()
+                ? 'Une classe de poids existe déjà avec ce poids minimal.' : null,
+            default => null,
+        };
+        if ($conflit !== null) {
+            return $conflit;
+        }
+
+        $ligne = $modele::query()->find($donnees['id']);
+        if ($ligne === null) {
+            (new $modele)->forceFill($valeurs + [
+                'id' => $donnees['id'],
+                'saisi_le' => $saisie,
+                'archive_le' => $archive ? $saisie : null,
+            ])->save();
+
+            return null;
+        }
+
+        $identique = collect($valeurs)->every(
+            fn ($valeur, $colonne) => $colonne === 'taux_pourcent'
+                ? abs((float) $ligne->{$colonne} - (float) $valeur) < 1e-9
+                : $ligne->{$colonne} == $valeur,
+        ) && ($ligne->archive_le !== null) === $archive;
+        if ($identique) {
+            return null;
+        }
+        if ($ligne->saisi_le !== null && $ligne->saisi_le->greaterThanOrEqualTo($saisie)) {
+            return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+        }
+
+        $ligne->forceFill($valeurs + ['saisi_le' => $saisie, 'archive_le' => $archive ? $saisie : null])->save();
 
         return null;
     }
