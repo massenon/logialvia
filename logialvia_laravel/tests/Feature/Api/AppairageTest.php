@@ -350,11 +350,12 @@ class AppairageTest extends TestCase
         $poste = (string) Str::uuid();
         $jeton = $this->connexion('marie', $poste)->json('token');
 
-        // Le moteur est l'etape W3 : on verifie seulement que le garde-fou laisse
-        // passer le bon poste (et que la reponse est honnete).
-        $this->avecJeton($jeton)->postJson('/api/sync/push', ['device_id' => $poste, 'tables' => []])
-            ->assertStatus(501)
-            ->assertJsonPath('code', 'synchronisation_indisponible');
+        // Le garde-fou laisse passer le bon poste ; un lot vide est accepte, sans trace.
+        $this->avecJeton($jeton)->postJson('/api/sync/push', [
+            'device_id' => $poste,
+            'reset_mark' => 'initiale',
+            'tables' => [],
+        ])->assertOk();
     }
 
     // ------------------------------------------------------------------ Revocation

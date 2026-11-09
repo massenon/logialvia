@@ -128,6 +128,24 @@ return [
     ],
 
     /*
+    | Synchronisation (`docs/logialvia/46_CONTRAT_SYNCHRONISATION.md`).
+    | Les tables sont traitees DANS CET ORDRE (dependances : clients avant ventes...),
+    | quel que soit l'ordre du lot recu.
+    */
+    'sync' => [
+        'tables' => [
+            \App\Sync\Tables\ModulesActifsTable::class,
+            \App\Sync\Tables\ParametresEntrepriseTable::class,
+            \App\Sync\Tables\ClientsTable::class,
+        ],
+        // Lignes par table et par page de tirage.
+        'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),
+        // Chevauchement du curseur : une ecriture validee juste apres la lecture du
+        // tirage precedent est reprise au suivant. Sans danger : tout est idempotent.
+        'recouvrement_secondes' => (int) env('SYNC_RECOUVREMENT_SECONDES', 2),
+    ],
+
+    /*
     | Fuseau des dates METIER affichees (Natitingou, Benin). Les instants
     | techniques restent stockes en UTC ; on ne convertit qu'a l'affichage.
     */

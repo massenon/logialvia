@@ -3,7 +3,7 @@
 > **Statut : brouillon à valider.** Il classe les **38 tables** du poste (schéma v30) et fixe le format des échanges.
 > Règles de fond : `docs/BLUEPRINT_SYNCHRONISATION_MULTIPOSTES.md` d'AgriERP et `43_APPAIRAGE_SYNCHRO_MODALE_ALERTES.md`.
 > Décisions : DV-19 (poste entièrement en UUID), DV-20 (comptes locaux conservés) — voir `45_`.
-> **Rien ici n'est implémenté.** Les points marqués **[À TRANCHER]** bloquent l'implémentation de la table concernée.
+> **Implémentation (W3, 09/11/2026)** : le moteur serveur `pull`/`push` existe pour 3 tables (`modules_actifs`, `parametres_entreprise`, `clients`) ; voir §6. Les autres tables restent à brancher, une par une. Les points marqués **[À TRANCHER]** bloquent l'implémentation de la table concernée.
 
 ## 1. Principe
 
@@ -121,3 +121,23 @@ silencieux ; hors ligne n'est pas une erreur.
       reconnectent dans le désordre, et obtiennent la même base ; renvoi d'un lot déjà reçu sans effet ; vente d'un
       poste révoqué refusée ; remise à zéro d'un côté, purge de l'autre.
 - [ ] Aucune règle métier n'est recopiée dans le client : le poste envoie des faits, le serveur décide.
+
+## 6. Ce que W3 a livré (serveur) — précisions au contrat
+
+**Tables branchées** : `modules_actifs`, `parametres_entreprise` (référentiels, `marque_remise_a_zero` jamais servie) et `clients` (fait). Chaque table = une classe `App\Sync\Tables\*` ; ajouter une table = ajouter une classe et la déclarer dans `config/logialvia.php` (`sync.tables`).
+
+Précisions apportées au §4 :
+
+- **Curseur de réception.** Pour les faits, le tirage se base sur `serveur_modifie_le` (instant où le **serveur** reçoit), jamais sur `updated_at` (instant de **saisie**). Sinon un poste hors ligne 3 jours, qui envoie une saisie ancienne, resterait invisible pour les postes déjà à jour. Testé (`DeuxPostesTest`).
+- **Recouvrement.** Le tirage relit `since − 2 s` (`SYNC_RECOUVREMENT_SECONDES`) : une ligne peut être servie deux fois, jamais manquée ; l'absorption est idempotente par UUID.
+- **Pagination.** `GET /api/sync/pull?since=&until=&page=` : `until` fige la borne haute pendant les pages suivantes (une ligne écrite entre deux pages n'est ni sautée ni dupliquée) ; le poste n'avance son curseur qu'après la dernière page.
+- **Suppression.** Pas de suppression physique : `supprime_le` (pierre tombale) descend comme une modification.
+- **Référentiels envoyés par le poste.** Réponse `ignored: [{id, motif}]` (« Référentiel : le serveur fait foi… »), rien d'écrit, trace d'audit.
+- **Droits.** Lecture/écriture vérifiées table par table ; sans droit d'écriture, toutes les lignes sont refusées avec motif ; table inconnue refusée.
+- **Dernier écrivain gagne** à l'instant de saisie, strictement supérieur ; un rejeu (même `updated_at`) est accepté sans effet et ne touche pas l'instant de réception.
+- **Atomicité.** Un lot = une transaction (3 essais) ; une exception en milieu de lot annule tout (500, rien d'écrit).
+- **Marque de remise à zéro** inconnue : 409 `remise_a_zero_inconnue`.
+
+**Essai à deux postes** (`tests/Feature/Sync/DeuxPostesTest.php`) : échange et correction croisée, poste hors ligne 3 jours, saisie ancienne arrivée en retard, poste révoqué (401, rien d'écrit), `device_id` d'un autre poste (403), homonymes distincts, et **6 simulations à graine fixe** (saisies, envois partiels, rejeux, tirages incrémentaux paginés dans le désordre) qui convergent toutes vers l'état « dernier écrivain gagne ». Gardes vérifiés par mutation (LWW inconditionnel, curseur = saisie, `>=` au lieu de `>` : chacun fait échouer des tests).
+
+**Reste (W3b)** : `GET /api/sync/demande`, `POST /api/sync/resynchronisation/acquittement`, `POST /api/sync/demandes` ; purge/marque de remise à zéro côté serveur ; les 35 autres tables.

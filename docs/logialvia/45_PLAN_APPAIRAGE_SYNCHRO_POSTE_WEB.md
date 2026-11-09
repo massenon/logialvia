@@ -61,8 +61,7 @@ synchronisation) avancent en attendant.
 - `POST /api/parametres/postes/revoquer` (droit `manage-users`) : tous les jetons du poste, tous comptes ; le poste
   reçoit 401 au contact suivant. Journal d'audit (`api.login`, `login.failed`, `sync.appairage_revoque`…).
 - **Le jeton dit qui parle** : le `device_id` du push doit être le nom du jeton courant, sinon 403, rien écrit, rien
-  journalisé. `GET /api/sync/pull` et `POST /api/sync/push` répondent **501** (« moteur non disponible ») : le
-  moteur est l'étape W3.
+  journalisé. `GET /api/sync/pull` et `POST /api/sync/push` répondaient 501 à l'issue de W2 ; le moteur est livré par W3 (`46_` §6).
 
 **Web** : connexion (mêmes règles et messages que l'API), changement de mot de passe obligatoire, et la page
 **Postes & Appairage** (`/parametres/postes`, droit `manage-users`, revérifié dans chaque méthode qui écrit) :
@@ -117,7 +116,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | **fait** (09/11/2026) : Laravel 12.71, Livewire 3.8, Sanctum 4.3, Spatie Permission 7.4, DomPDF 3.1, Tailwind 3.4 ; test de conformité vérifié par mutation |
 | W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | **fait** (09/11/2026) : utilisateurs UUID + suppression logique, jetons Sanctum et rôles Spatie en UUID, 4 rôles et 22 droits, 5 modules désactivés, paramètres (ligne unique), premier administrateur par variable d'environnement ; tests de conformité des droits et des valeurs par défaut au Dart (31 tests, vérifiés par mutation) |
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
-| W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | en attente |
+| W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | **fait** (09/11/2026) pour 3 tables (référentiels + clients), 129 tests, mutations vérifiées ; voir `46_` §6. Reste W3b (demandes, acquittement, remise à zéro) |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
 | P1 | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |
 | P2 | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | en attente |
