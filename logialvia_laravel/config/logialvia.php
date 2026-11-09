@@ -132,6 +132,12 @@ return [
     | Les tables sont traitees DANS CET ORDRE (dependances : clients avant ventes...),
     | quel que soit l'ordre du lot recu.
     */
+    // Trois verrous (blueprint §6) : bascule, mot de confirmation, audit.
+    'remise_a_zero' => [
+        'activee' => (bool) env('REMISE_A_ZERO_ACTIVEE', false),
+        'mot' => 'REMETTRE A ZERO',
+    ],
+
     'sync' => [
         'tables' => [
             \App\Sync\Tables\ModulesActifsTable::class,

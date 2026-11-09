@@ -140,4 +140,11 @@ Précisions apportées au §4 :
 
 **Essai à deux postes** (`tests/Feature/Sync/DeuxPostesTest.php`) : échange et correction croisée, poste hors ligne 3 jours, saisie ancienne arrivée en retard, poste révoqué (401, rien d'écrit), `device_id` d'un autre poste (403), homonymes distincts, et **6 simulations à graine fixe** (saisies, envois partiels, rejeux, tirages incrémentaux paginés dans le désordre) qui convergent toutes vers l'état « dernier écrivain gagne ». Gardes vérifiés par mutation (LWW inconditionnel, curseur = saisie, `>=` au lieu de `>` : chacun fait échouer des tests).
 
-**Reste (W3b)** : `GET /api/sync/demande`, `POST /api/sync/resynchronisation/acquittement`, `POST /api/sync/demandes` ; purge/marque de remise à zéro côté serveur ; les 35 autres tables.
+## 7. Ce que W3b a livré (serveur)
+
+- `GET /api/sync/demande` → `{synchroniser, resynchronisation_complete}`. Une **demande** (`POST /api/parametres/postes/synchroniser`, droit `manage-users`, un poste ou tous) vaut **60 min** et est **servie une fois par poste**.
+- **Renvoyer vers ce poste** (`POST /api/parametres/postes/renvoyer`) lève `resync_demandee_le` ; le poste refait un tirage **complet** puis appelle `POST /api/sync/resynchronisation/acquittement`. Le serveur mémorise le curseur de chaque poste à la **dernière page** d'un tirage (`postes.curseur_tirage`).
+- **Remise à zéro** (`POST /api/parametres/remise-a-zero`, droit `manage-parametres`, administrateur seul) : trois verrous (bascule `REMISE_A_ZERO_ACTIVEE`, désactivée par défaut ; mot exact `REMETTRE A ZERO` ; audit). Efface les tables de **faits**, préserve comptes, rôles, référentiels et audit, pose une nouvelle `reset_mark`, annule demandes et curseurs. Un poste qui envoie l'ancienne marque reçoit **409** ; son tirage suivant lui apprend la nouvelle (il purgera alors son activité : P2).
+- Tests : `DemandesEtRemiseAZeroTest` (15), six gardes vérifiés par mutation.
+
+**Reste côté serveur** : `POST /api/sync/demandes` (modification d'un référentiel faite au poste, rejouée par le serveur) — non fait, car il suppose les règles métier des référentiels côté web (W4+) ; en attendant le poste ne modifie ses référentiels que via le serveur ou les ignore. Les 35 autres tables sont à brancher une par une. Écran web « Synchroniser / Renvoyer » : à ajouter à la page Postes.

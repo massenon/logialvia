@@ -22,6 +22,15 @@ Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(func
         Route::post('/parametres/postes/revoquer', [PostesController::class, 'revoquer'])
             ->middleware('can:manage-users');
 
+        Route::post('/parametres/postes/synchroniser', [PostesController::class, 'synchroniser'])
+            ->middleware('can:manage-users');
+        Route::post('/parametres/postes/renvoyer', [PostesController::class, 'renvoyer'])
+            ->middleware('can:manage-users');
+        Route::post('/parametres/remise-a-zero', [PostesController::class, 'remiseAZero'])
+            ->middleware('can:manage-parametres');
+
+        Route::get('/sync/demande', [SyncController::class, 'demande']);
+        Route::post('/sync/resynchronisation/acquittement', [SyncController::class, 'acquittement']);
         Route::get('/sync/pull', [SyncController::class, 'pull']);
         Route::post('/sync/push', [SyncController::class, 'push'])->middleware('poste.jeton');
     });
