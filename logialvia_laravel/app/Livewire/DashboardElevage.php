@@ -5,8 +5,12 @@ namespace App\Livewire;
 use App\Models\FicheJournee;
 use App\Models\LigneVente;
 use App\Models\ModuleActif;
+use App\Models\CycleCouveuse;
+use App\Models\SoinCalendrier;
 use App\Support\FilieresElevage;
+use App\Support\SuiviIncubation;
 use App\Support\ReperesZootechniques;
+use App\Support\RetardDeSoin;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -146,6 +150,26 @@ class DashboardElevage extends Component
         return $resultat;
     }
 
+    /** @return \Illuminate\Support\Collection<int, SoinCalendrier> Les 5 prochains soins non effectues (Dart : `prochainsSoins`). */
+    private function prochainsSoins()
+    {
+        return SoinCalendrier::query()->where('statut', '!=', 'Effectué')->orderBy('date_prevue')->limit(5)->get();
+    }
+
+    /** Statistiques de la couveuse (Dart : `statistiquesCouveuse`) depuis les lots synchronises. */
+    private function couveuse(): array
+    {
+        $lots = CycleCouveuse::query()->whereNull('supprime_le')->get();
+        $enCours = $lots->filter(fn (CycleCouveuse $l) => SuiviIncubation::enCours($l));
+
+        return [
+            'cycles_en_cours' => $enCours->count(),
+            'oeufs_charges' => (int) $enCours->sum('oeufs_couves'),
+            'taux_eclosion' => SuiviIncubation::tauxBrutMoyen($lots),
+            'poussins_attendus' => SuiviIncubation::poussinsAttendus($lots),
+        ];
+    }
+
     /** Revenus Elevage : ventes non annulees du mois hors « Commerce Annexe » (Dart : `.avicole`). */
     private function revenusElevage(): float
     {
@@ -171,6 +195,12 @@ class DashboardElevage extends Component
             'apercus' => collect(self::APERCUS)->filter(fn ($a, $module) => ! ($modules[$module] ?? false))->all(),
             'revenus' => $this->revenusElevage(),
             'gmq' => $this->gmqParFiliere($this->especesActives($modules)),
+            'couveuse' => $this->couveuse(),
+            'aujourdhui' => $this->maintenant()->format('Y-m-d'),
+            'rappels' => $this->prochainsSoins(),
+            'alertes' => SoinCalendrier::query()->where('statut', '!=', 'Effectué')->orderBy('date_prevue')->get()
+                ->filter(fn (SoinCalendrier $s) => RetardDeSoin::estEnRetard($s, $this->maintenant()->format('Y-m-d')))->values(),
+            'libellesEspeces' => FilieresElevage::LIBELLES,
             'peutParametrer' => Auth::user()?->can('view-parametres') ?? false,
         ])->title('Dashboard Élevage');
     }

@@ -37,11 +37,15 @@
             </a>
         @endforeach
 
-        <div class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Couveuse">
+        <a href="/elevage/couveuse" data-carte="couveuse" class="block rounded-lg border border-outline-variant bg-surface-card p-md shadow-sm hover:border-brand-navy">
             <h2 class="mb-sm text-section-title font-bold">Couveuse</h2>
-            <p class="text-caption font-semibold">Disponible sur le poste</p>
-            <p class="text-caption">Les cycles de couveuse ne sont pas encore synchronisés avec le serveur.</p>
-        </div>
+            <div class="grid grid-cols-2 gap-sm text-xs">
+                <div><p class="text-caption uppercase text-outline">Cycles en cours</p><p class="text-page-title font-bold" data-couveuse="cycles">{{ $couveuse['cycles_en_cours'] }}</p></div>
+                <div><p class="text-caption uppercase text-outline">Œufs chargés</p><p class="text-page-title font-bold" data-couveuse="oeufs">{{ $couveuse['oeufs_charges'] }}</p></div>
+                <div><p class="text-caption uppercase text-outline">Taux d'éclosion moyen</p><p class="text-page-title font-bold" data-couveuse="taux">{{ $couveuse['taux_eclosion'] === null ? '—' : number_format($couveuse['taux_eclosion'], 1, ',', ' ').' %' }}</p></div>
+                <div><p class="text-caption uppercase text-outline">Poussins attendus</p><p class="text-page-title font-bold" data-couveuse="attendus">{{ $couveuse['poussins_attendus'] }}</p></div>
+            </div>
+        </a>
 
         @foreach ($apercus as $module => [$titre, $texte])
             <div class="rounded-lg border border-outline-variant bg-surface-zebra p-md" data-apercu="{{ $module }}">
@@ -70,18 +74,29 @@
                 </ul>
             @endif
         </section>
-        <section class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Rappels Vétérinaires à Venir">
+        <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-panneau="rappels">
             <h2 class="mb-sm text-section-title font-bold">Rappels Vétérinaires à Venir</h2>
-            <p class="text-caption font-semibold">Disponible sur le poste</p>
-            <p class="text-caption">Le calendrier de soins n'est pas encore synchronisé avec le serveur.</p>
+            @forelse ($rappels as $r)
+                <p class="border-t border-outline-variant py-xs text-xs" data-rappel="{{ $r->id }}">
+                    <strong>{{ $r->type_soin }}</strong> — {{ $libellesEspeces[$r->espece] ?? $r->espece }} · {{ $r->date_prevue->format('d/m/Y') }}
+                    @if (\App\Support\RetardDeSoin::estEnRetard($r, $aujourdhui))<span class="font-bold text-error-deep">(En retard)</span>@endif
+                </p>
+            @empty
+                <p class="text-xs text-outline" data-rappel="vide">Aucun rappel : tous les soins sont effectués.</p>
+            @endforelse
         </section>
     </div>
 
     <div class="grid grid-cols-1 gap-md lg:grid-cols-2">
-        <section class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Alertes Sanitaires du Jour">
+        <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-panneau="alertes">
             <h2 class="mb-sm text-section-title font-bold">Alertes Sanitaires du Jour</h2>
-            <p class="text-caption font-semibold">Disponible sur le poste</p>
-            <p class="text-caption">Soins en retard et stocks d'intrants sous leur seuil : propres au poste, jamais estimés ici.</p>
+            @forelse ($alertes as $a)
+                <p class="border-t border-outline-variant py-xs text-xs text-error-deep" data-alerte="{{ $a->id }}">{{ $a->type_soin }} — {{ $libellesEspeces[$a->espece] ?? $a->espece }} (En Retard, prévu le {{ $a->date_prevue->format('d/m/Y') }})</p>
+            @empty
+                <p class="text-xs text-outline" data-alerte="vide">Aucun soin en retard.</p>
+            @endforelse
+            {{-- Dépend du STOCK d'intrants : propre à chaque poste (décision du client) --}}
+            <p class="mt-sm rounded-lg bg-surface-zebra p-sm text-caption text-outline opacity-60" data-stock-poste>Stocks d'intrants sous leur seuil : Disponible sur le poste (le stock est propre à chaque poste).</p>
         </section>
 
         <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-panneau="bilan">

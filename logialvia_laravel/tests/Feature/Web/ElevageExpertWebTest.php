@@ -601,4 +601,68 @@ class ElevageExpertWebTest extends TestCase
             ['date' => '2026-11-08', 'poids_total_g' => 5, 'effectif' => 1], ['date' => '2026-11-08', 'poids_total_g' => 6, 'effectif' => 1],
         ]));
     }
+
+    // ======================================== dashboard : couveuse, rappels, alertes
+
+    private function soin(string $statut, string $date, string $type = 'Vaccination'): SoinCalendrier
+    {
+        return SoinCalendrier::query()->create([
+            'id' => (string) Str::uuid(), 'device_id' => (string) Str::uuid(), 'espece' => 'goliaths', 'date_prevue' => $date,
+            'type_soin' => $type, 'statut' => $statut, 'remanence_jours' => 0, 'cout_fcfa' => 0,
+            'updated_at' => now(), 'serveur_modifie_le' => now(),
+        ]);
+    }
+
+    private function dashboard()
+    {
+        return Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(\App\Livewire\DashboardElevage::class);
+    }
+
+    public function test_un_soin_planifie_dont_la_date_est_passee_est_en_retard(): void
+    {
+        $this->soin('Planifié', '2026-11-05', 'Vaccin Newcastle');   // passe : en retard
+        $this->soin('Planifié', '2026-11-12', 'Vermifuge');            // futur : a venir
+        $this->soin('En retard', '2026-11-20', 'Vitamines');          // marque a la main
+        $this->soin('Effectué', '2026-11-01', 'Traitement curatif');  // fait : nulle part
+
+        $c = $this->dashboard();
+        $c->assertSeeHtml('data-panneau="alertes"')->assertSee('Vaccin Newcastle — Goliaths (En Retard, prévu le 05/11/2026)')
+            ->assertSee('Vitamines — Goliaths (En Retard, prévu le 20/11/2026)')
+            ->assertDontSee('Vermifuge — Goliaths (En Retard')->assertDontSee('Traitement curatif — Goliaths');
+        $c->assertSee('Vermifuge')->assertDontSee('Traitement curatif');
+    }
+
+    public function test_sans_soin_en_retard_le_dashboard_le_dit(): void
+    {
+        $this->soin('Planifié', '2026-11-12');
+        $this->dashboard()->assertSeeHtml('data-alerte="vide"')->assertSee('Aucun soin en retard.');
+    }
+
+    public function test_les_rappels_sont_les_cinq_prochains_soins_non_effectues(): void
+    {
+        foreach (range(1, 7) as $i) {
+            $this->soin('Planifié', '2026-11-'.str_pad((string) (9 + $i), 2, '0', STR_PAD_LEFT), 'Soin n°'.$i);
+        }
+        $html = $this->dashboard()->html();
+        $this->assertSame(5, substr_count($html, 'data-rappel="'.''), 'cinq rappels au plus');
+        $this->assertStringContainsString('Soin n°1', $html);
+        $this->assertStringContainsString('Soin n°5', $html);
+        $this->assertStringNotContainsString('Soin n°6', $html);
+    }
+
+    public function test_la_carte_couveuse_compte_les_lots_synchronises(): void
+    {
+        $this->lot('goliath', '2026-11-01')->save();
+        $eclos = $this->lot('goliath', '2026-09-01');
+        $eclos->forceFill(['code_incubation' => 'C-WEB-2026-009', 'statut' => 'Éclosion Effectuée', 'oeufs_couves' => 200, 'poussins_nes' => 160])->save();
+
+        // 1 cycle en cours de 100 oeufs ; taux brut moyen 160 / 200 = 80 % ; 100 x 80 % = 80 poussins attendus.
+        $this->dashboard()->assertSeeHtml('data-couveuse="cycles">1<')->assertSeeHtml('data-couveuse="oeufs">100<')
+            ->assertSeeHtml('data-couveuse="taux">80,0 %<')->assertSeeHtml('data-couveuse="attendus">80<');
+    }
+
+    public function test_les_stocks_d_intrants_restent_grises_disponibles_sur_le_poste(): void
+    {
+        $this->dashboard()->assertSeeHtml('data-stock-poste')->assertSee('Stocks d\'intrants sous leur seuil : Disponible sur le poste', false);
+    }
 }

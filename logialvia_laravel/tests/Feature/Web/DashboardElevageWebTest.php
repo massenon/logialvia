@@ -200,9 +200,11 @@ class DashboardElevageWebTest extends TestCase
     {
         $html = Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(DashboardElevage::class)->html();
 
-        foreach (['Couveuse', 'Rappels Vétérinaires à Venir', 'Alertes Sanitaires du Jour'] as $carte) {
-            $this->assertMatchesRegularExpression('#data-carte-poste="'.preg_quote($carte, '#').'".*?Disponible sur le poste#s', $html, $carte);
-        }
+        // Couveuse, rappels et alertes sanitaires sont desormais calcules depuis les tables synchronisees ;
+        // seul ce qui depend du STOCK d'intrants reste propre au poste, grise.
+        $this->assertStringContainsString('data-carte="couveuse"', $html);
+        $this->assertStringContainsString('data-panneau="rappels"', $html);
+        $this->assertMatchesRegularExpression('#data-panneau="alertes".*?data-stock-poste[^>]*>Stocks d\'intrants sous leur seuil : Disponible sur le poste#s', $html);
         $this->assertStringContainsString('Gain Moyen Quotidien (GMQ) par Espèce', $html);
         $this->assertStringContainsString('data-bilan="couts">—<', $html);
         $this->assertStringContainsString('data-bilan="marge">—<', $html);
