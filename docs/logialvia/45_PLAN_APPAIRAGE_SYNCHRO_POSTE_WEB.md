@@ -224,7 +224,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1, 3 et 4 faits** : `clients` (v31), produits, lignes de vente, ventes (v33-v34), fournisseurs, achats, lignes d'achat (v35), références à préfixe de poste ; voir §6d-§6i. Restent 16 fichiers de tables |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
 | P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait** pour modules, paramètres, produits, clients, ventes (§6d-§6h) ; reste les autres tables |
-| W4+ | Écrans web par module, conformes au Dart | W1 | **en cours** : W4a coque, W4b Catalogue, W4c Clients (§7) ; recette §8 ; reste les autres écrans |
+| W4+ | Écrans web par module, conformes au Dart | W1 | **en cours** : W4a coque, W4b Catalogue, W4c Clients, W4d à W4h (§7.1) ; recette §8 ; restent les écrans dont les données ne sont pas synchronisées (§7.2) |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait
 sans avoir tourné.
@@ -272,6 +272,30 @@ d'un recouvrement reste au poste (il modifie une vente) ; pas d'export PDF.
 **Registre des écrans.** Un écran = UN fichier `routes/ecrans/<nom>.php` qui appelle `Ecrans::declarer('/route', Composant::class)`
 (`app/Support/Ecrans.php`) : droit et module actif posés d'office (middleware `ecran.actif`). Ce qui n'est pas déclaré garde la page
 « bientôt ». Plusieurs écrans peuvent donc être convertis en parallèle sans toucher aux mêmes lignes.
+
+### 7.1 Écrans convertis par les agents (09/11/2026)
+
+Chaque écran : un fichier `routes/ecrans/`, tests d'accès/contenu/validation/droits, mutations. Écarts **déclarés dans chaque écran**.
+
+| Écran | Route | Ce que fait le web | Écarts avec le Dart |
+|---|---|---|---|
+| Ventes | `/ventes` | Historique en lecture, KPI du jour (fuseau Porto-Novo), détail des lignes | Caisse, devis, retours/avoirs, annulation, export PDF : au poste |
+| Fournisseurs | `/fournisseurs` | KPI, liste, ajout, modification, suppression douce, dettes (agrégats recalculés) | Règlement d'une dette, export PDF : au poste. Ajouts web : modification, suppression (refusée si dette ouverte, **à confirmer**), recherche |
+| Achats & Commandes | `/achats` | Liste (200 derniers), filtre de statut, détail des lignes, lecture seule | Panier, réception, règlement, export PDF : au poste |
+| Gestion Stocks | `/stocks` | Intrants (référentiel : ajout, modification) + journal des 100 derniers mouvements avec poste d'origine | Pas de stock, PMP, valeur, seuils critiques (décision du client) ; pas de suppression d'intrant (inexistante au serveur) ni d'ajustement/fabrication |
+| Tableau de Bord | `/dashboard` | CA de la période, soldes dus, clients, dettes fournisseurs, courbe CA 6 mois, transactions récentes, meilleures ventes ; droits par carte | Trésorerie, résultat, dépenses, stock critique, cheptel, couveuse : cartes grisées « Disponible sur le poste ». Fin de période **incluse** (le Dart exclut le jour choisi). « Soldes dus » compte une vente Avance même soldée, comme le Dart |
+| Paramètres Généraux | `/parametres/generaux` | 8 onglets ; fiche entreprise, conditions de vente, MeCeF, SMTP (sans mot de passe), activation des filières — par demandes | Jamais de secret ; une valeur vidée est ignorée par le serveur ; sauvegardes, corbeille, données de test, création d'utilisateurs : au poste |
+| Mon Profil | `/profil` | Identité et changement de mot de passe (règle du serveur : 10 caractères) | Pas d'historique de connexion |
+| Aide & À Propos | `/aide` | Vignettes selon droits et modules, FAQ avec recherche | — |
+| Contact | `/contact` | Coordonnées de l'éditeur | Pas de formulaire ni d'envoi (pas de table de messages) |
+
+À traiter : `/stocks` n'est ouvert qu'à l'administrateur (matrice `view-stocks`) ; aucun lien vers Profil/Aide/Contact dans la barre latérale (le layout ne le prévoyait pas).
+
+### 7.2 Écrans restant à convertir — bloqués par des données absentes du serveur
+
+Le serveur ne synchronise ni les **fiches d'élevage** (11 écrans : couveuse, mirages, 8 filières, soins, dashboard et paramètres élevage),
+ni les **dépenses**, ni la **comptabilité** (6 écrans), ni les **factures MeCeF**. `/inventaire` et `/rapports` dépendent du stock propre à
+chaque poste ou de ces données. Chacun demande d'abord ses tables serveur et sa synchronisation (comme P3 à P6), puis l'écran.
 
 ## 8. Recette de conversion d'un écran (à suivre à la lettre)
 
