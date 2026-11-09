@@ -843,4 +843,12 @@ class CommerceWebTest extends TestCase
         $v = $this->vendre($this->caisse($this->utilisateurAvecRole('admin', 'chef')));
         $this->assertSame('V-WEB-2026-001', $v->reference);
     }
+
+    public function test_l_ecran_ventes_mene_aux_devis_de_prestations(): void
+    {
+        $this->actingAs($this->utilisateurAvecRole('admin', 'gerante'))->get('/ventes')
+            ->assertOk()->assertSeeHtml('data-lien="devis-prestations"')->assertSeeHtml('href="/ventes/devis"');
+        $this->actingAs($this->comptable())->get('/ventes')
+            ->assertSeeHtml('data-lien="devis-prestations"');
+    }
 }

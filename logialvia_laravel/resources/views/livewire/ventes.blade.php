@@ -24,6 +24,8 @@
         traitent dans leur propre écran ; l'export de l'historique se fait au format XLSX, la facture s'imprime depuis le détail d'une vente.
     </p>
 
+    <div class="mb-md">@include('partiels.lien-devis')</div>
+
     <div class="mb-md flex flex-wrap border-b border-outline-variant" role="tablist">
         @foreach ($onglets as $cle => $libelle)
             <button type="button" role="tab" wire:click="choisirOnglet('{{ $cle }}')" data-onglet="{{ $cle }}"
