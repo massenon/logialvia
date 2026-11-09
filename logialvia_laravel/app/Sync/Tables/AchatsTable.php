@@ -6,6 +6,7 @@ use App\Models\Achat;
 use App\Models\Fournisseur;
 use App\Models\Intrant;
 use App\Models\LigneAchat;
+use App\Services\PosteDeStock;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -97,6 +98,7 @@ class AchatsTable extends TableSync
             'paye' => ['required', 'numeric', 'min:0'],
             'mode' => ['nullable', 'string', 'in:'.implode(',', self::MODES)],
             'echeance' => ['nullable', 'date'],
+            'poste_cible' => ['nullable', 'uuid'],
             'updated_at' => ['required', 'date'],
             'lignes' => ['required', 'array', 'min:1'],
             'lignes.*.id' => ['required', 'uuid'],
@@ -116,6 +118,7 @@ class AchatsTable extends TableSync
             'mode.in' => 'Le mode de règlement est inconnu.',
             'total.min' => "Le total de l'achat ne peut pas être négatif.",
             'paye.min' => 'Le montant payé ne peut pas être négatif.',
+            'poste_cible.uuid' => 'Le poste de stock doit être un identifiant de poste valide.',
             'updated_at.required' => "La date de saisie de l'achat est obligatoire.",
             'lignes.required' => 'Un achat doit avoir au moins une ligne.',
             'lignes.min' => 'Un achat doit avoir au moins une ligne.',
@@ -162,10 +165,18 @@ class AchatsTable extends TableSync
             'echeance' => empty($ligne['echeance']) ? null : CarbonImmutable::parse($ligne['echeance'])->utc(),
         ];
 
+        // `47s_` : le poste de stock. Posé à la création (ou une fois, tant que la commande est
+        // « Commandé »), jamais changé ; l'absence dans un envoi ne l'efface pas.
+        $cible = $ligne['poste_cible'] ?? null;
+
         if ($existant === null) {
+            if (($motif = PosteDeStock::controlerDesignation($deviceId, $cible, PosteDeStock::RECEPTION)) !== null) {
+                return $motif;
+            }
             $achat = (new Achat)->forceFill($entete + [
                 'id' => $ligne['id'],
                 'device_id' => $deviceId,
+                'poste_cible' => $cible,
                 'reference' => $ligne['reference'],
                 'portee_reference' => $portee,
                 'updated_at' => $saisie,
@@ -189,7 +200,21 @@ class AchatsTable extends TableSync
             // suivent la saisie la plus recente. Livree ou annulee, ses lignes ne bougent plus
             // (le stock des postes en depend).
             $modifiable = $existant->statut === 'Commandé';
+            $poste = $existant->poste_cible;
+            if ($cible !== null && $cible !== $poste) {
+                if ($poste !== null) {
+                    return PosteDeStock::MOTIF_LIEN;
+                }
+                if (! $modifiable) {
+                    return 'Cette commande est déjà livrée ou annulée : elle ne peut plus désigner de poste de stock.';
+                }
+                if (($motif = PosteDeStock::controlerDesignation($deviceId, $cible, PosteDeStock::RECEPTION)) !== null) {
+                    return $motif;
+                }
+                $poste = $cible;
+            }
             $existant->forceFill($entete + [
+                'poste_cible' => $poste,
                 'updated_at' => $saisie,
                 'serveur_modifie_le' => CarbonImmutable::now('UTC'),
             ])->save();

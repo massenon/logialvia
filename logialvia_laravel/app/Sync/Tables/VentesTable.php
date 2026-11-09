@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\LigneVente;
 use App\Models\ProduitVendable;
 use App\Models\Vente;
+use App\Services\PosteDeStock;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -100,6 +101,7 @@ class VentesTable extends TableSync
             'livraison_contact' => ['nullable', 'string', 'max:255'],
             'echeance' => ['nullable', 'date'],
             'ligne_mobile_money' => ['nullable', 'string', 'max:255'],
+            'poste_cible' => ['nullable', 'uuid'],
             'updated_at' => ['required', 'date'],
             'lignes' => ['required', 'array', 'min:1'],
             'lignes.*.id' => ['required', 'uuid'],
@@ -120,6 +122,7 @@ class VentesTable extends TableSync
             'status.in' => 'Le statut de la vente est inconnu.',
             'total.min' => 'Le total de la vente ne peut pas être négatif.',
             'paye.min' => 'Le montant payé ne peut pas être négatif.',
+            'poste_cible.uuid' => 'Le poste de stock doit être un identifiant de poste valide.',
             'updated_at.required' => 'La date de saisie de la vente est obligatoire.',
             'lignes.required' => 'Une vente doit avoir au moins une ligne.',
             'lignes.min' => 'Une vente doit avoir au moins une ligne.',
@@ -175,10 +178,18 @@ class VentesTable extends TableSync
             'ligne_mobile_money' => $ligne['ligne_mobile_money'] ?? null,
         ];
 
+        // `47s_` : le poste de stock se pose à la CRÉATION de la vente et ne change plus (une
+        // annulation suit le même poste) ; son absence dans un envoi ne l'efface pas.
+        $cible = $ligne['poste_cible'] ?? null;
+
         if ($existante === null) {
+            if (($motif = PosteDeStock::controlerDesignation($deviceId, $cible, PosteDeStock::VENTE)) !== null) {
+                return $motif;
+            }
             $vente = (new Vente)->forceFill($entete + [
                 'id' => $ligne['id'],
                 'device_id' => $deviceId,
+                'poste_cible' => $cible,
                 'reference' => $ligne['reference'],
                 'portee_reference' => $portee,
                 'updated_at' => $saisie,
@@ -199,6 +210,11 @@ class VentesTable extends TableSync
                 ])->save();
             }
         } elseif ($saisie->greaterThan($existante->updated_at)) {
+            if ($cible !== null && $cible !== $existante->poste_cible) {
+                return $existante->poste_cible !== null
+                    ? PosteDeStock::MOTIF_LIEN
+                    : 'Cette vente a été saisie sans poste de stock : elle ne peut plus en désigner un.';
+            }
             // Dernier ecrivain gagne sur l'ENTETE ; la reference et les lignes ne bougent pas.
             $existante->forceFill($entete + [
                 'updated_at' => $saisie,

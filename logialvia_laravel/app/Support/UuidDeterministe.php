@@ -38,6 +38,12 @@ final class UuidDeterministe
         return self::de("soin_prophylaxie:$bandeId|$echeanceId");
     }
 
+    /** UUID de l'effet de stock (`47s_`) d'une nature donnée sur un fait : le même qu'au poste. */
+    public static function effetStock(string $faitId, string $nature): string
+    {
+        return self::de("effet:$nature:$faitId");
+    }
+
     public static function note(int $annee, int $numero): string
     {
         return self::de("note:$annee-$numero");

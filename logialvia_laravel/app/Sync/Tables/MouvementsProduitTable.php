@@ -5,6 +5,7 @@ namespace App\Sync\Tables;
 use App\Models\MouvementProduit;
 use App\Models\ProduitVendable;
 use App\Models\User;
+use App\Services\PosteDeStock;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
@@ -61,7 +62,9 @@ class MouvementsProduitTable extends TableSync
             'article' => ['required', 'string', 'max:255'],
             'motif' => ['required', 'string', 'max:255'],
             'quantite' => ['required', 'numeric'],
+            'poste_cible' => ['nullable', 'uuid'],
         ], [
+            'poste_cible.uuid' => 'Le poste de stock doit être un identifiant de poste valide.',
             'id.required' => "L'identifiant du mouvement est obligatoire.",
             'id.uuid' => "L'identifiant du mouvement doit être un UUID.",
             'horodatage.required' => 'La date du mouvement est obligatoire.',
@@ -87,9 +90,17 @@ class MouvementsProduitTable extends TableSync
             return null;
         }
 
+        // `47s_` : une correction saisie au web désigne le poste dont le stock la subira ; seul ce
+        // poste l'applique (une fois). Seul le web désigne, et le poste doit être désignable.
+        $cible = $ligne['poste_cible'] ?? null;
+        if (($motif = PosteDeStock::controlerDesignation($deviceId, $cible, PosteDeStock::CORRECTION)) !== null) {
+            return $motif;
+        }
+
         (new MouvementProduit)->forceFill([
             'id' => $ligne['id'],
             'device_id' => $deviceId,
+            'poste_cible' => $cible,
             'horodatage' => CarbonImmutable::parse($ligne['horodatage'])->utc(),
             'produit_id' => $ligne['produit_id'],
             'article' => $ligne['article'],

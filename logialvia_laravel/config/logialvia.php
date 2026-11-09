@@ -157,6 +157,8 @@ return [
             \App\Sync\Tables\AchatsTable::class,
             \App\Sync\Tables\MouvementsIntrantTable::class,
             \App\Sync\Tables\MouvementsProduitTable::class,
+            // `47s_` : trace des effets de stock appliqués par les postes désignés (APRÈS les faits).
+            \App\Sync\Tables\EffetsStockTable::class,
             // Elevage, palier 7a (`46a_`) : fiches journalieres, compteurs de ventes du jour, bandes.
             \App\Sync\Tables\FichesJourneeTable::class,
             \App\Sync\Tables\VentesJourTable::class,
@@ -183,6 +185,16 @@ return [
         // Chevauchement du curseur : une ecriture validee juste apres la lecture du
         // tirage precedent est reprise au suivant. Sans danger : tout est idempotent.
         'recouvrement_secondes' => (int) env('SYNC_RECOUVREMENT_SECONDES', 2),
+    ],
+
+    /*
+    | `47s_` — stock cible : une operation web qui a un effet de stock (reception d'achat, vente,
+    | correction) designe le POSTE dont le stock la subit. `false` (defaut) : le poste est
+    | facultatif (sans poste, le fait n'est que du journal partage, comme avant) ; `true` : le
+    | client EXIGE un poste pour toute operation de ce genre.
+    */
+    'stock_cible' => [
+        'obligatoire' => (bool) env('STOCK_CIBLE_OBLIGATOIRE', false),
     ],
 
     /*

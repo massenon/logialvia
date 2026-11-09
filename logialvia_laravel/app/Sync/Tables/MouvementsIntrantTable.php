@@ -5,6 +5,7 @@ namespace App\Sync\Tables;
 use App\Models\Intrant;
 use App\Models\MouvementIntrant;
 use App\Models\User;
+use App\Services\PosteDeStock;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
@@ -67,7 +68,9 @@ class MouvementsIntrantTable extends TableSync
             'motif' => ['required', 'string', 'max:255'],
             'quantite' => ['required', 'numeric'],
             'reference' => ['nullable', 'string', 'max:60'],
+            'poste_cible' => ['nullable', 'uuid'],
         ], [
+            'poste_cible.uuid' => 'Le poste de stock doit être un identifiant de poste valide.',
             'id.required' => "L'identifiant du mouvement est obligatoire.",
             'id.uuid' => "L'identifiant du mouvement doit être un UUID.",
             'horodatage.required' => "La date du mouvement est obligatoire.",
@@ -93,9 +96,19 @@ class MouvementsIntrantTable extends TableSync
             return null;
         }
 
+        // `47s_` : INFORMATIF — le poste que le web a désigné pour la réception ou l'annulation
+        // qui produit cette ligne. L'effet de stock est porté par l'ACHAT, jamais par ce journal.
+        // Pas de contrôle « révoqué » ici : annuler une commande dont le poste a été révoqué
+        // depuis doit rester possible (l'écran prévient que l'effet ne s'appliquera pas).
+        $cible = $ligne['poste_cible'] ?? null;
+        if ($cible !== null && $deviceId !== \App\Livewire\Catalogue::POSTE_WEB) {
+            return PosteDeStock::MOTIF_SEUL_LE_WEB;
+        }
+
         (new MouvementIntrant)->forceFill([
             'id' => $ligne['id'],
             'device_id' => $deviceId,
+            'poste_cible' => $cible,
             'horodatage' => CarbonImmutable::parse($ligne['horodatage'])->utc(),
             'intrant_code' => $ligne['intrant_code'],
             'article' => $ligne['article'],
