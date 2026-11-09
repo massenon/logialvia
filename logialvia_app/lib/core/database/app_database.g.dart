@@ -9488,6 +9488,62 @@ class $FacturesTable extends Factures
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $FacturesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   static const VerificationMeta _refMeta = const VerificationMeta('ref');
   @override
   late final GeneratedColumn<String> ref = GeneratedColumn<String>(
@@ -9698,6 +9754,11 @@ class $FacturesTable extends Factures
   );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     type,
     venteRef,
@@ -9731,6 +9792,33 @@ class $FacturesTable extends Factures
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     if (data.containsKey('ref')) {
       context.handle(
         _refMeta,
@@ -9888,9 +9976,33 @@ class $FacturesTable extends Factures
   @override
   Set<GeneratedColumn> get $primaryKey => {ref};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {id},
+  ];
+  @override
   FactureRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FactureRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
       ref: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
@@ -9981,7 +10093,26 @@ class $FacturesTable extends Factures
 }
 
 class FactureRow extends DataClass implements Insertable<FactureRow> {
-  /// 'FV-2026-001' ou 'FA-2026-001'.
+  /// UUID de la facture (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste
+  /// [ref] (les lignes et les ventes s'y rattachent par texte) ; `ref` est le
+  /// numero OFFICIEL de la piece (`FV-P2-2026-001`, DV-21), jamais renumerote.
+  final String id;
+
+  /// `null` : facture emise sur CE poste. Sinon l'identifiant du poste qui l'a
+  /// emise (facture absorbee du serveur). **Seul le poste emetteur transmet** a la
+  /// DGI : une facture d'un autre poste n'offre ni transmission ni saisie
+  /// manuelle, pour qu'elle ne soit pas normalisee deux fois (`46e_` §3).
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) : emission, puis derniere
+  /// transmission ou saisie du code. Jamais l'instant d'envoi.
+  final String updatedAt;
+
+  /// 'FV-P2-2026-001' / 'FA-P2-2026-001' (poste appaire) ou 'FV-2026-001'.
   final String ref;
 
   /// [TypeFacture.vente] ou [TypeFacture.avoir].
@@ -10029,6 +10160,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   final String? erreurTransmission;
   final DateTime creeLe;
   const FactureRow({
+    required this.id,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
     required this.ref,
     required this.type,
     this.venteRef,
@@ -10053,6 +10189,15 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     map['ref'] = Variable<String>(ref);
     map['type'] = Variable<String>(type);
     if (!nullToAbsent || venteRef != null) {
@@ -10100,6 +10245,15 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
 
   FacturesCompanion toCompanion(bool nullToAbsent) {
     return FacturesCompanion(
+      id: Value(id),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
       ref: Value(ref),
       type: Value(type),
       venteRef: venteRef == null && nullToAbsent
@@ -10149,6 +10303,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FactureRow(
+      id: serializer.fromJson<String>(json['id']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
       ref: serializer.fromJson<String>(json['ref']),
       type: serializer.fromJson<String>(json['type']),
       venteRef: serializer.fromJson<String?>(json['venteRef']),
@@ -10179,6 +10338,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
       'ref': serializer.toJson<String>(ref),
       'type': serializer.toJson<String>(type),
       'venteRef': serializer.toJson<String?>(venteRef),
@@ -10203,6 +10367,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }
 
   FactureRow copyWith({
+    String? id,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
     String? ref,
     String? type,
     Value<String?> venteRef = const Value.absent(),
@@ -10224,6 +10393,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
     Value<String?> erreurTransmission = const Value.absent(),
     DateTime? creeLe,
   }) => FactureRow(
+    id: id ?? this.id,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
     ref: ref ?? this.ref,
     type: type ?? this.type,
     venteRef: venteRef.present ? venteRef.value : this.venteRef,
@@ -10255,6 +10429,13 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   );
   FactureRow copyWithCompanion(FacturesCompanion data) {
     return FactureRow(
+      id: data.id.present ? data.id.value : this.id,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       ref: data.ref.present ? data.ref.value : this.ref,
       type: data.type.present ? data.type.value : this.type,
       venteRef: data.venteRef.present ? data.venteRef.value : this.venteRef,
@@ -10293,6 +10474,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   @override
   String toString() {
     return (StringBuffer('FactureRow(')
+          ..write('id: $id, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('type: $type, ')
           ..write('venteRef: $venteRef, ')
@@ -10318,7 +10504,12 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
+    id,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     type,
     venteRef,
@@ -10339,11 +10530,16 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
     dateNormalisation,
     erreurTransmission,
     creeLe,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FactureRow &&
+          other.id == this.id &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt &&
           other.ref == this.ref &&
           other.type == this.type &&
           other.venteRef == this.venteRef &&
@@ -10367,6 +10563,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
 }
 
 class FacturesCompanion extends UpdateCompanion<FactureRow> {
+  final Value<String> id;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<String> ref;
   final Value<String> type;
   final Value<String?> venteRef;
@@ -10389,6 +10590,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   final Value<DateTime> creeLe;
   final Value<int> rowid;
   const FacturesCompanion({
+    this.id = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.ref = const Value.absent(),
     this.type = const Value.absent(),
     this.venteRef = const Value.absent(),
@@ -10412,6 +10618,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     this.rowid = const Value.absent(),
   });
   FacturesCompanion.insert({
+    this.id = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     required String ref,
     required String type,
     this.venteRef = const Value.absent(),
@@ -10442,6 +10653,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
        totalTtc = Value(totalTtc),
        statut = Value(statut);
   static Insertable<FactureRow> custom({
+    Expression<String>? id,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<String>? ref,
     Expression<String>? type,
     Expression<String>? venteRef,
@@ -10465,6 +10681,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (ref != null) 'ref': ref,
       if (type != null) 'type': type,
       if (venteRef != null) 'vente_ref': venteRef,
@@ -10490,6 +10711,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   }
 
   FacturesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<String>? ref,
     Value<String>? type,
     Value<String?>? venteRef,
@@ -10513,6 +10739,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     Value<int>? rowid,
   }) {
     return FacturesCompanion(
+      id: id ?? this.id,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       ref: ref ?? this.ref,
       type: type ?? this.type,
       venteRef: venteRef ?? this.venteRef,
@@ -10540,6 +10771,21 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
@@ -10609,6 +10855,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   @override
   String toString() {
     return (StringBuffer('FacturesCompanion(')
+          ..write('id: $id, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('type: $type, ')
           ..write('venteRef: $venteRef, ')
@@ -10643,16 +10894,13 @@ class $LignesFactureTable extends LignesFacture
   $LignesFactureTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _factureRefMeta = const VerificationMeta(
     'factureRef',
@@ -10868,7 +11116,7 @@ class $LignesFactureTable extends LignesFacture
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneFactureRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       factureRef: attachedDatabase.typeMapping.read(
@@ -10917,7 +11165,9 @@ class $LignesFactureTable extends LignesFacture
 }
 
 class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne de facture est un fait synchronise, et voyage DANS
+  /// sa facture, jamais seule.
+  final String id;
   final String factureRef;
   final String designation;
   final double quantite;
@@ -10949,7 +11199,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['facture_ref'] = Variable<String>(factureRef);
     map['designation'] = Variable<String>(designation);
     map['quantite'] = Variable<double>(quantite);
@@ -10987,7 +11237,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneFactureRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       factureRef: serializer.fromJson<String>(json['factureRef']),
       designation: serializer.fromJson<String>(json['designation']),
       quantite: serializer.fromJson<double>(json['quantite']),
@@ -11003,7 +11253,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'factureRef': serializer.toJson<String>(factureRef),
       'designation': serializer.toJson<String>(designation),
       'quantite': serializer.toJson<double>(quantite),
@@ -11017,7 +11267,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   }
 
   LigneFactureRow copyWith({
-    int? id,
+    String? id,
     String? factureRef,
     String? designation,
     double? quantite,
@@ -11111,7 +11361,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
 }
 
 class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> factureRef;
   final Value<String> designation;
   final Value<double> quantite;
@@ -11121,6 +11371,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
   final Value<double> tauxTaxe;
   final Value<double> montantHt;
   final Value<double> montantTaxe;
+  final Value<int> rowid;
   const LignesFactureCompanion({
     this.id = const Value.absent(),
     this.factureRef = const Value.absent(),
@@ -11132,6 +11383,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     this.tauxTaxe = const Value.absent(),
     this.montantHt = const Value.absent(),
     this.montantTaxe = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesFactureCompanion.insert({
     this.id = const Value.absent(),
@@ -11144,6 +11396,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     required double tauxTaxe,
     required double montantHt,
     required double montantTaxe,
+    this.rowid = const Value.absent(),
   }) : factureRef = Value(factureRef),
        designation = Value(designation),
        quantite = Value(quantite),
@@ -11153,7 +11406,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
        montantHt = Value(montantHt),
        montantTaxe = Value(montantTaxe);
   static Insertable<LigneFactureRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? factureRef,
     Expression<String>? designation,
     Expression<double>? quantite,
@@ -11163,6 +11416,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     Expression<double>? tauxTaxe,
     Expression<double>? montantHt,
     Expression<double>? montantTaxe,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -11175,11 +11429,12 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
       if (tauxTaxe != null) 'taux_taxe': tauxTaxe,
       if (montantHt != null) 'montant_ht': montantHt,
       if (montantTaxe != null) 'montant_taxe': montantTaxe,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesFactureCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? factureRef,
     Value<String>? designation,
     Value<double>? quantite,
@@ -11189,6 +11444,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     Value<double>? tauxTaxe,
     Value<double>? montantHt,
     Value<double>? montantTaxe,
+    Value<int>? rowid,
   }) {
     return LignesFactureCompanion(
       id: id ?? this.id,
@@ -11201,6 +11457,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
       tauxTaxe: tauxTaxe ?? this.tauxTaxe,
       montantHt: montantHt ?? this.montantHt,
       montantTaxe: montantTaxe ?? this.montantTaxe,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -11208,7 +11465,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (factureRef.present) {
       map['facture_ref'] = Variable<String>(factureRef.value);
@@ -11237,6 +11494,9 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     if (montantTaxe.present) {
       map['montant_taxe'] = Variable<double>(montantTaxe.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -11252,7 +11512,8 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
           ..write('groupeTaxe: $groupeTaxe, ')
           ..write('tauxTaxe: $tauxTaxe, ')
           ..write('montantHt: $montantHt, ')
-          ..write('montantTaxe: $montantTaxe')
+          ..write('montantTaxe: $montantTaxe, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -28396,6 +28657,11 @@ typedef $$GroupesTaxeTableProcessedTableManager =
     >;
 typedef $$FacturesTableCreateCompanionBuilder =
     FacturesCompanion Function({
+      Value<String> id,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       required String ref,
       required String type,
       Value<String?> venteRef,
@@ -28420,6 +28686,11 @@ typedef $$FacturesTableCreateCompanionBuilder =
     });
 typedef $$FacturesTableUpdateCompanionBuilder =
     FacturesCompanion Function({
+      Value<String> id,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<String> ref,
       Value<String> type,
       Value<String?> venteRef,
@@ -28452,6 +28723,31 @@ class $$FacturesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnFilters(column),
@@ -28562,6 +28858,31 @@ class $$FacturesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
@@ -28672,6 +28993,23 @@ class $$FacturesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
 
@@ -28776,6 +29114,11 @@ class $$FacturesTableTableManager
               $$FacturesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<String> ref = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String?> venteRef = const Value.absent(),
@@ -28798,6 +29141,11 @@ class $$FacturesTableTableManager
                 Value<DateTime> creeLe = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacturesCompanion(
+                id: id,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 type: type,
                 venteRef: venteRef,
@@ -28822,6 +29170,11 @@ class $$FacturesTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 required String ref,
                 required String type,
                 Value<String?> venteRef = const Value.absent(),
@@ -28844,6 +29197,11 @@ class $$FacturesTableTableManager
                 Value<DateTime> creeLe = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacturesCompanion.insert(
+                id: id,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 type: type,
                 venteRef: venteRef,
@@ -28890,7 +29248,7 @@ typedef $$FacturesTableProcessedTableManager =
     >;
 typedef $$LignesFactureTableCreateCompanionBuilder =
     LignesFactureCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String factureRef,
       required String designation,
       required double quantite,
@@ -28900,10 +29258,11 @@ typedef $$LignesFactureTableCreateCompanionBuilder =
       required double tauxTaxe,
       required double montantHt,
       required double montantTaxe,
+      Value<int> rowid,
     });
 typedef $$LignesFactureTableUpdateCompanionBuilder =
     LignesFactureCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> factureRef,
       Value<String> designation,
       Value<double> quantite,
@@ -28913,6 +29272,7 @@ typedef $$LignesFactureTableUpdateCompanionBuilder =
       Value<double> tauxTaxe,
       Value<double> montantHt,
       Value<double> montantTaxe,
+      Value<int> rowid,
     });
 
 class $$LignesFactureTableFilterComposer
@@ -28924,7 +29284,7 @@ class $$LignesFactureTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28984,7 +29344,7 @@ class $$LignesFactureTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -29044,7 +29404,7 @@ class $$LignesFactureTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get factureRef => $composableBuilder(
@@ -29116,7 +29476,7 @@ class $$LignesFactureTableTableManager
               $$LignesFactureTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> factureRef = const Value.absent(),
                 Value<String> designation = const Value.absent(),
                 Value<double> quantite = const Value.absent(),
@@ -29126,6 +29486,7 @@ class $$LignesFactureTableTableManager
                 Value<double> tauxTaxe = const Value.absent(),
                 Value<double> montantHt = const Value.absent(),
                 Value<double> montantTaxe = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesFactureCompanion(
                 id: id,
                 factureRef: factureRef,
@@ -29137,10 +29498,11 @@ class $$LignesFactureTableTableManager
                 tauxTaxe: tauxTaxe,
                 montantHt: montantHt,
                 montantTaxe: montantTaxe,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String factureRef,
                 required String designation,
                 required double quantite,
@@ -29150,6 +29512,7 @@ class $$LignesFactureTableTableManager
                 required double tauxTaxe,
                 required double montantHt,
                 required double montantTaxe,
+                Value<int> rowid = const Value.absent(),
               }) => LignesFactureCompanion.insert(
                 id: id,
                 factureRef: factureRef,
@@ -29161,6 +29524,7 @@ class $$LignesFactureTableTableManager
                 tauxTaxe: tauxTaxe,
                 montantHt: montantHt,
                 montantTaxe: montantTaxe,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

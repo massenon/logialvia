@@ -425,13 +425,25 @@ class _LigneFacture extends StatelessWidget {
                 BoutonExportPdf(
                   construire: () => DocumentsMecef.facture(facture),
                 ),
-                if (!facture.estNormalisee)
+                if (facture.estDUnAutrePoste && !facture.estNormalisee)
+                  const Tooltip(
+                    message: FacturesMecefViewModel.messageAutrePoste,
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      child: Icon(
+                        Symbols.devices,
+                        size: 18,
+                        color: AppColors.outline,
+                      ),
+                    ),
+                  ),
+                if (!facture.estNormalisee && !facture.estDUnAutrePoste)
                   _ActionIcone(
                     tooltip: 'Transmettre à e-MECeF',
                     icone: Symbols.cloud_upload,
                     onPressed: () => _transmettre(context, vm, facture),
                   ),
-                if (!facture.estNormalisee)
+                if (!facture.estNormalisee && !facture.estDUnAutrePoste)
                   _ActionIcone(
                     tooltip: 'Saisir le code de normalisation',
                     icone: Symbols.edit_note,

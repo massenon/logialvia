@@ -100,7 +100,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 37;
+  static const int versionSchema = 42;
 
   @override
   int get schemaVersion => versionSchema;
@@ -422,6 +422,12 @@ class AppDatabase extends _$AppDatabase {
         // Palier 6 : journal des corrections de stock des produits vendables.
         await _creerTable(m, mouvementsProduit);
       }
+      if (from < 42) {
+        // DV-19, palier P9 : factures et lignes de facture en UUID, avec leurs
+        // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
+        // JAMAIS (DV-21) ; les factures d'hier sont a envoyer, normalisees ou non.
+        await _facturesEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -682,6 +688,52 @@ class AppDatabase extends _$AppDatabase {
       'WHERE (SELECT COUNT(*) FROM clients c '
       'WHERE lower(trim(c.nom)) = lower(trim(ventes.client))) = 1',
     );
+  }
+
+  /// Donne a `factures` un UUID, une origine et les colonnes de synchronisation,
+  /// et passe `lignes_facture` en UUID. Idempotent, **chaque table sa garde** :
+  /// une migration interrompue entre les deux reprend la ou elle s'est arretee.
+  ///
+  /// - La cle primaire reste `ref` (numero officiel, jamais renumerote).
+  /// - Aucune cle etrangere ne pointe sur `factures` : la reconstruction n'emporte
+  ///   aucune ligne (verifie par test).
+  /// - Une facture d'hier a ete SAISIE le jour de sa derniere modification : sa
+  ///   normalisation si elle en a une, sinon son emission (pas l'instant de la
+  ///   migration, qui la ferait gagner contre une correction faite ailleurs).
+  /// - `groupes_taxe` ne bouge pas : sa cle est la lettre du groupe, deja
+  ///   deterministe et identique sur tous les postes.
+  Future<void> _facturesEnUuid(Migrator m) async {
+    if (!await _colonneExiste('factures', 'id')) {
+      await m.alterTable(
+        TableMigration(
+          factures,
+          columnTransformer: {
+            factures.id: const CustomExpression<String>(_uuidSql),
+            factures.updatedAt: const CustomExpression<String>(
+              "strftime('%Y-%m-%dT%H:%M:%fZ', COALESCE(date_normalisation, date_facture), 'unixepoch')",
+            ),
+          },
+          newColumns: [
+            factures.id,
+            factures.origine,
+            factures.syncStatus,
+            factures.syncMotif,
+            factures.updatedAt,
+          ],
+        ),
+      );
+    }
+
+    final colonnes = await customSelect('PRAGMA table_info("lignes_facture")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() != 'TEXT') {
+      await m.alterTable(
+        TableMigration(
+          lignesFacture,
+          columnTransformer: {lignesFacture.id: const CustomExpression<String>(_uuidSql)},
+        ),
+      );
+    }
   }
 
   /// Reconstruit `clients` en UUID. Idempotent : une base dont `clients.id` est

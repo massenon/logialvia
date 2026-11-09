@@ -43,6 +43,11 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> mouvements = {};
   final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
+  /// Factures e-MECeF (avec leurs lignes imbriquées) et grille de taxation
+  /// (référentiel, clé : la lettre). Le serveur ne transmet JAMAIS à la DGI.
+  final Map<String, Map<String, dynamic>> factures = {};
+  final Map<String, Map<String, dynamic>> groupesTaxe = {};
+
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
   Map<String, dynamic>? parametres;
@@ -114,6 +119,8 @@ class FauxServeurSync {
     voir(intrants.values);
     voir(mouvements.values);
     voir(mouvementsProduit.values);
+    voir(factures.values);
+    voir(groupesTaxe.values);
     if (parametres != null) voir([parametres!]);
     return plusRecent.toIso8601String();
   }
@@ -124,6 +131,7 @@ class FauxServeurSync {
     achats.clear();
     fournisseurs.clear();
     mouvementsProduit.clear();
+    factures.clear(); // la grille de taxation (référentiel) est préservée
     mouvements.clear(); // les intrants (référentiel) sont préservés
     marque = 'rz-${++_horloge}';
   }
@@ -290,6 +298,14 @@ class FauxServeurSync {
           for (final m in mouvementsProduit.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
         ],
+        'groupes_taxe': [
+          for (final g in groupesTaxe.values)
+            if (_dans(g['updated_at'] as String, since, jusqua)) g,
+        ],
+        'factures': [
+          for (final f in factures.values)
+            if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
+        ],
       },
     });
   }
@@ -431,6 +447,12 @@ class FauxServeurSync {
     if (tables.containsKey('mouvements_intrant')) {
       reponse['mouvements_intrant'] = _mouvements(
         (tables['mouvements_intrant'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('factures')) {
+      reponse['factures'] = _factures(
+        (tables['factures'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -781,6 +803,181 @@ class FauxServeurSync {
           'device_id': deviceId,
           'serveur_modifie_le': _instant(),
         };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Un groupe de taxe tel que le serveur le garde. `decide: false` : valeur de
+  /// semis (`updated_at == created_at`), que le serveur n'a jamais modifiée.
+  void ajouterGroupeTaxe(
+    String code,
+    String libelle,
+    double taux, {
+    int ordre = 1,
+    bool decide = true,
+    String? id,
+  }) {
+    final cree = _instant();
+    groupesTaxe[code] = {
+      'id': id,
+      'code': code,
+      'libelle': libelle,
+      'taux': taux,
+      'ordre': ordre,
+      'created_at': cree,
+      'updated_at': decide ? _instant() : cree,
+    };
+  }
+
+  /// Une facture déjà reçue par le serveur, émise par un autre poste.
+  void ajouterFacture(Map<String, dynamic> f, {String device = 'autre-poste'}) {
+    factures[f['id'] as String] = {
+      ...f,
+      'device_id': device,
+      'serveur_modifie_le': _instant(),
+    };
+  }
+
+  static const _rang = {'a_transmettre': 0, 'rejetee': 1, 'normalisee': 2};
+
+  /// Rejoue les règles du vrai serveur (`FacturesTable`) : lot facture + lignes,
+  /// référence unique, avoir sur une facture connue, UNE facture de vente par
+  /// vente, contenu immuable, statut qui ne régresse jamais, normalisation
+  /// immuable (deux codes différents : refus).
+  Map<String, dynamic> _factures(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    bool codee(String? ref) =>
+        ref != null && RegExp(r'^[A-Z]{2}-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+
+    for (final f in lot) {
+      final id = f['id'] as String;
+      final lignes = (f['lignes'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      if (lignes.isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Une facture doit avoir au moins une ligne.',
+        });
+        continue;
+      }
+      final existante = factures[id];
+      final ref = f['reference'] as String;
+      final doublon = factures.values.any(
+        (x) =>
+            x['id'] != id &&
+            x['reference'] == ref &&
+            (codee(ref) || x['device_id'] == deviceId),
+      );
+      if (doublon) {
+        refusees.add({
+          'id': id,
+          'motif': 'Cette référence est déjà utilisée par une autre facture.',
+        });
+        continue;
+      }
+      final saisie = DateTime.parse(f['updated_at'] as String);
+      if (existante == null) {
+        if (f['type'] == 'FA' &&
+            !factures.values.any(
+              (x) => x['type'] == 'FV' && x['reference'] == f['origine_ref'],
+            )) {
+          refusees.add({
+            'id': id,
+            'motif': 'La facture d\'origine est inconnue du serveur.',
+          });
+          continue;
+        }
+        final venteRef = f['vente_ref'];
+        if (f['type'] == 'FV' && venteRef != null) {
+          final autre = factures.values.where(
+            (x) =>
+                x['id'] != id &&
+                x['type'] == 'FV' &&
+                x['vente_ref'] == venteRef &&
+                (x['device_id'] == deviceId ||
+                    RegExp(r'^V-P\d+-').hasMatch(venteRef as String)),
+          );
+          if (autre.isNotEmpty) {
+            refusees.add({
+              'id': id,
+              'motif':
+                  'Cette vente porte déjà la facture ${autre.first['reference']}.',
+            });
+            continue;
+          }
+        }
+        factures[id] = {
+          ...f,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+        acceptees.add(id);
+        continue;
+      }
+
+      // Facture connue : le contenu ne change JAMAIS.
+      if (existante['reference'] != ref ||
+          existante['type'] != f['type'] ||
+          existante['total_ttc'] != f['total_ttc'] ||
+          existante['client'] != f['client']) {
+        refusees.add({
+          'id': id,
+          'motif': 'Une facture émise ne se modifie pas : émettez un avoir.',
+        });
+        continue;
+      }
+      final rangServeur = _rang[existante['statut']]!;
+      final rangRecu = _rang[f['statut']]!;
+      if (rangRecu < rangServeur) {
+        refusees.add({
+          'id': id,
+          'motif':
+              'La facture est déjà « ${existante['statut']} » sur le serveur : '
+              'un statut ne régresse jamais.',
+        });
+        continue;
+      }
+      if (rangRecu == rangServeur && f['statut'] == 'normalisee') {
+        if (existante['code_mecef'] != f['code_mecef'] ||
+            existante['nim'] != f['nim']) {
+          refusees.add({
+            'id': id,
+            'motif':
+                'Cette facture est déjà normalisée sous un autre code '
+                '(${existante['code_mecef']}) : une normalisation ne change pas.',
+          });
+          continue;
+        }
+        acceptees.add(id); // rejeu : rien ne change
+        continue;
+      }
+      final applique =
+          rangRecu > rangServeur ||
+          (rangRecu == rangServeur &&
+              f['statut'] == 'rejetee' &&
+              saisie.isAfter(DateTime.parse(existante['updated_at'] as String)));
+      if (applique) {
+        for (final c in const [
+          'statut',
+          'code_mecef',
+          'nim',
+          'compteur',
+          'lien_verification',
+          'date_normalisation',
+          'erreur_transmission',
+        ]) {
+          existante[c] = f[c];
+        }
+        existante
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
       }
       acceptees.add(id);
     }

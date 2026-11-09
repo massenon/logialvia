@@ -177,8 +177,17 @@ class FacturesMecefViewModel extends ChangeNotifier {
     }
   }
 
+  /// Une seule machine normalise une facture : celle qui l'a émise.
+  static const String messageAutrePoste =
+      'Cette facture a été émise sur un autre poste : elle se transmet à la '
+      'DGI depuis ce poste, pour qu\'elle ne soit pas normalisée deux fois.';
+
   /// Transmet une facture à e-MECeF.
   Future<Resultat<void>> transmettre(String reference) async {
+    final aTransmettre = await _repository.parReference(reference);
+    if (aTransmettre != null && aTransmettre.estDUnAutrePoste) {
+      return const Echec(messageAutrePoste);
+    }
     if (!transmissionConfiguree) {
       return const Echec(
         'Transmission non configurée : renseignez l\'URL e-MECeF et le jeton '

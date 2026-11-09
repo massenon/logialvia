@@ -37,6 +37,8 @@ import 'approvisionnement/data/sync/table_mouvements_intrant_poste.dart';
 import 'commercial/data/sync/table_mouvements_produit_poste.dart';
 import 'commercial/data/sync/table_clients_poste.dart';
 import 'commercial/data/sync/table_produits_poste.dart';
+import 'commercial/data/sync/table_factures_poste.dart';
+import 'commercial/data/sync/table_groupes_taxe_poste.dart';
 import 'commercial/data/sync/table_ventes_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
@@ -186,6 +188,8 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableClientsPoste(widget.database),
       TableFournisseursPoste(widget.database),
       TableVentesPoste(widget.database),
+      TableGroupesTaxePoste(widget.database),
+      TableFacturesPoste(widget.database),
       TableAchatsPoste(widget.database),
       TableMouvementsIntrantPoste(widget.database),
       TableMouvementsProduitPoste(widget.database),
