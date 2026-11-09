@@ -7,6 +7,7 @@ use App\Models\PieceComptable;
 use App\Models\PlanComptable;
 use App\Models\User;
 use App\Services\Comptabilite\Verrous;
+use App\Sync\DroitsPoste;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -159,9 +160,9 @@ class EcrituresTable extends TableSync
             $droits[] = 'manage-achats';
         }
         if (! $this->aUnDesDroits($this->utilisateur, $droits)) {
-            return $manuelle
+            return $this->refuserAvecCode(DroitsPoste::CODE_REFUS, $manuelle
                 ? 'Droit insuffisant : une écriture manuelle exige de gérer la comptabilité.'
-                : 'Droit insuffisant pour enregistrer cette écriture.';
+                : 'Droit insuffisant pour enregistrer cette écriture.');
         }
 
         // Partie double : une ligne porte un debit OU un credit, jamais les deux.

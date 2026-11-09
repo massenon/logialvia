@@ -7,6 +7,7 @@ use App\Models\ExerciceComptable;
 use App\Models\User;
 use App\Services\Comptabilite\Verrous;
 use App\Support\UuidDeterministe;
+use App\Sync\DroitsPoste;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
@@ -108,9 +109,9 @@ class CloturesPeriodiquesTable extends TableSync
         // Le droit dépend du geste : clore ou rouvrir.
         $droit = $cloture ? 'manage-comptabilite' : 'close-fiscal-year';
         if (! $this->utilisateur->can($droit)) {
-            return $cloture
+            return $this->refuserAvecCode(DroitsPoste::CODE_REFUS, $cloture
                 ? 'Droit insuffisant pour clôturer un mois.'
-                : 'Seule une administratrice peut déclôturer un mois (BR-CPT-006).';
+                : 'Seule une administratrice peut déclôturer un mois (BR-CPT-006).');
         }
 
         $saisie = CarbonImmutable::parse($ligne['updated_at'])->utc();

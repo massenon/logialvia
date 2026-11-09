@@ -81,10 +81,16 @@ final class GardeHorloge
         return "L'horloge de ce poste avance de ".self::duree($secondes).' : corrigez la date et l\'heure du poste.';
     }
 
-    /** « 2 ans », « 2 jours », « 1 h 05 », « 7 min » : une duree lisible. */
+    /**
+     * « 2 ans », « 2 jours », « 1 h 05 », « 7 min » : une duree lisible. Au-dela d'une minute elle
+     * est arrondie a la minute la plus proche (la mesure est toujours entachee du temps de reponse).
+     */
     public static function duree(int $secondes): string
     {
         $secondes = max(0, $secondes);
+        if ($secondes >= 60) {
+            $secondes = (int) (round($secondes / 60) * 60);
+        }
 
         if ($secondes >= 365 * 86400) {
             $n = intdiv($secondes, 365 * 86400);

@@ -246,10 +246,9 @@ class ComptabiliteTest extends TestCase
 
         $manuelle = $this->pieceComptable(['journal_code' => 'OD']);
 
-        $this->assertSame(
-            'Droit insuffisant : une écriture manuelle exige de gérer la comptabilité.',
-            $this->motif($this->une($caissier, $manuelle)),
-        );
+        $refus = $this->une($caissier, $manuelle);
+        $this->assertSame('Droit insuffisant : une écriture manuelle exige de gérer la comptabilité.', $this->motif($refus));
+        $this->assertSame('droit_insuffisant', $refus['rejected'][0]['code'], 'code stable : le poste ne compare jamais le texte');
         $this->assertCount(1, $this->une($comptable, $this->pieceComptable())['accepted']);
         $this->assertSame(
             "Droit insuffisant pour écrire dans « ecriture_comptable ».",
@@ -266,7 +265,9 @@ class ComptabiliteTest extends TestCase
 
         $this->assertCount(1, $this->une($caissier, $vente)['accepted']);
         // Le caissier ne gere pas les achats.
-        $this->assertSame('Droit insuffisant pour enregistrer cette écriture.', $this->motif($this->une($caissier, $achat)));
+        $refus = $this->une($caissier, $achat);
+        $this->assertSame('Droit insuffisant pour enregistrer cette écriture.', $this->motif($refus));
+        $this->assertSame('droit_insuffisant', $refus['rejected'][0]['code']);
     }
 
     public function test_seuls_les_comptes_qui_voient_la_comptabilite_la_lisent(): void
@@ -412,6 +413,7 @@ class ComptabiliteTest extends TestCase
             $this->cloture(3, false, ['updated_at' => now()->addSecond()->format('Y-m-d\TH:i:s.u\Z')]),
         ]);
         $this->assertSame('Seule une administratrice peut déclôturer un mois (BR-CPT-006).', $this->motif($refus));
+        $this->assertSame('droit_insuffisant', $refus['rejected'][0]['code']);
         $this->assertTrue(CloturePeriodique::query()->first()->is_cloture);
 
         $ok = $this->pousserTable($admin, 'clotures_periodiques', [
