@@ -121,4 +121,41 @@ trait PostesDeTest
             ]],
         ], $surcharge);
     }
+
+    /** Un fournisseur tel qu'un poste l'enverrait. */
+    protected function ligneFournisseur(array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'nom' => 'Maïs Local',
+            'telephone' => '97000001',
+            'adresse' => null,
+            'fournit' => 'Maïs, Soja',
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
+
+    /** Un achat (avec une ligne) tel qu'un poste l'enverrait. */
+    protected function ligneAchat(string $fournisseurId, array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'reference' => 'ACH-P1-2026-001',
+            'fournisseur_id' => $fournisseurId,
+            'date_achat' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'statut' => 'Commandé',
+            'total' => 30000,
+            'paye' => 10000,
+            'mode' => 'Espèces',
+            'echeance' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'lignes' => [[
+                'id' => (string) Str::uuid(),
+                'intrant_code' => 'INT-001',
+                'nom' => 'Maïs',
+                'qte' => 100,
+                'pu_achat' => 300,
+            ]],
+        ], $surcharge);
+    }
 }

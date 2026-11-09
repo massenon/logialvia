@@ -144,7 +144,9 @@ return [
             \App\Sync\Tables\ParametresEntrepriseTable::class,
             \App\Sync\Tables\ProduitsVendablesTable::class,
             \App\Sync\Tables\ClientsTable::class,
+            \App\Sync\Tables\FournisseursTable::class,
             \App\Sync\Tables\VentesTable::class,
+            \App\Sync\Tables\AchatsTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),
