@@ -88,6 +88,7 @@ class DepotDemandesReferentiel {
     required String type,
     required String cle,
     required Map<String, Object?> donnees,
+    String? saisiLe,
   }) async {
     await (_db.delete(_db.demandesReferentiel)..where(
           (d) =>
@@ -104,9 +105,33 @@ class DepotDemandesReferentiel {
             type: type,
             cle: cle,
             donnees: jsonEncode(donnees),
-            saisiLe: Value(instantSaisie()),
+            saisiLe: Value(saisiLe ?? instantSaisie()),
           ),
         );
+  }
+
+  /// Instant d'une proposition d'ADOPTION (`47h_` D1). Une ligne que le poste n'a jamais
+  /// décidée (semis ou saisie d'avant l'appairage) est proposée datée d'un instant
+  /// ANCIEN : si le serveur la connaît déjà, une décision plus récente (prise sur un
+  /// autre poste ou au web) l'emporte et redescend ; il ne la remplace JAMAIS. Sans
+  /// cela, le premier cycle d'un second poste écrasait avec son semis la correction
+  /// qu'un premier poste avait faite entre-temps.
+  static const String instantAdoption = '2000-01-01T00:00:00.000Z';
+
+  /// Adoption d'une ligne : n'écrase pas la modification que la Gérante vient de faire
+  /// (demande déjà en attente pour cette clé) et porte [instantAdoption].
+  Future<void> _adopter({
+    required String type,
+    required String cle,
+    required Map<String, Object?> donnees,
+  }) async {
+    if (await enAttente(type, cle) != null) return;
+    await proposer(
+      type: type,
+      cle: cle,
+      donnees: donnees,
+      saisiLe: instantAdoption,
+    );
   }
 
   Future<void> proposerModule(String moduleId, {required bool actif}) =>
@@ -162,7 +187,7 @@ class DepotDemandesReferentiel {
   ) async {
     if (await preferences.catalogueAdopte()) return;
     for (final p in await _db.select(_db.produitsVendables).get()) {
-      await proposer(type: typeProduit, cle: p.id, donnees: champsProduit(p));
+      await _adopter(type: typeProduit, cle: p.id, donnees: champsProduit(p));
     }
     await preferences.definirCatalogueAdopte();
   }
@@ -185,7 +210,7 @@ class DepotDemandesReferentiel {
   ) async {
     if (await preferences.intrantsAdoptes()) return;
     for (final i in await _db.select(_db.intrants).get()) {
-      await proposer(type: typeIntrant, cle: i.code, donnees: champsIntrant(i));
+      await _adopter(type: typeIntrant, cle: i.code, donnees: champsIntrant(i));
     }
     await preferences.definirIntrantsAdoptes();
   }
@@ -281,17 +306,17 @@ class DepotDemandesReferentiel {
   ) async {
     if (await preferences.parametresElevageAdoptes()) return;
     for (final b in await _db.select(_db.baremesRation).get()) {
-      await proposer(type: typeBareme, cle: b.id, donnees: champsBareme(b));
+      await _adopter(type: typeBareme, cle: b.id, donnees: champsBareme(b));
     }
     for (final t in await _db.select(_db.tauxRationPoids).get()) {
-      await proposer(
+      await _adopter(
         type: typeTauxPoids,
         cle: t.id,
         donnees: champsTauxPoids(t),
       );
     }
     for (final e in await _db.select(_db.calendrierProphylaxie).get()) {
-      await proposer(type: typeEcheance, cle: e.id, donnees: champsEcheance(e));
+      await _adopter(type: typeEcheance, cle: e.id, donnees: champsEcheance(e));
     }
     await preferences.definirParametresElevageAdoptes();
   }
