@@ -152,6 +152,8 @@ return [
             \App\Sync\Tables\VentesTable::class,
             \App\Sync\Tables\GroupesTaxeTable::class,
             \App\Sync\Tables\FacturesTable::class,
+            // `47a2_` : devis de prestations (faits, dernier ecrivain gagne).
+            \App\Sync\Tables\DevisTable::class,
             \App\Sync\Tables\AchatsTable::class,
             \App\Sync\Tables\MouvementsIntrantTable::class,
             \App\Sync\Tables\MouvementsProduitTable::class,
