@@ -54,6 +54,17 @@ final class Verrous
         );
     }
 
+    /** Motif du refus si l'EXERCICE est cloture (sans regarder le mois), sinon `null`. */
+    public static function motifVerrouExercice(int $annee): ?string
+    {
+        $exercice = ExerciceComptable::query()->find($annee);
+        if ($exercice !== null && $exercice->is_cloture) {
+            return "L'exercice $annee est clôturé : aucune écriture ne peut y être ajoutée ni modifiée (BR-CPT-001).";
+        }
+
+        return null;
+    }
+
     /** Motif du refus si l'exercice ou le mois est verrouille, sinon `null`. */
     public static function motifVerrou(int $annee, int $mois): ?string
     {

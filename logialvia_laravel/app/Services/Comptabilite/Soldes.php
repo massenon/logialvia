@@ -48,6 +48,18 @@ final class Soldes
         return $this->parPrefixe($classe);
     }
 
+    /** Soldes DEBITEURS des comptes dont le numero commence par `$prefixe`. */
+    public function debiteursParPrefixe(string $prefixe): float
+    {
+        return $this->debiteursParClasse($prefixe);
+    }
+
+    /** Soldes CREDITEURS (valeur absolue) des comptes dont le numero commence par `$prefixe`. */
+    public function crediteursParPrefixe(string $prefixe): float
+    {
+        return $this->crediteursParClasse($prefixe);
+    }
+
     /** Soldes DEBITEURS d'une classe (montants positifs uniquement). */
     public function debiteursParClasse(string $classe): float
     {

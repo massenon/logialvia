@@ -283,7 +283,7 @@ class ComptabiliteTest extends TestCase
 
         $this->assertCount(1, $r->json('tables.ecriture_comptable'));
         $this->assertCount(2, $r->json('tables.ecriture_comptable.0.lignes'));
-        $this->assertCount(19, $r->json('tables.plan_comptable'));
+        $this->assertCount(24, $r->json('tables.plan_comptable'));
         $this->assertNotEmpty($r->json('tables.exercice_comptable'));
     }
 
@@ -510,6 +510,38 @@ class ComptabiliteTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'comptabilite.cloture_exercice']);
     }
 
+    public function test_la_cloture_d_un_poste_fait_engendrer_cl_et_an_par_le_serveur_et_les_sert_aux_autres(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $annee = $this->anneeComptable();
+        $this->une($a, $this->pieceComptable(['lignes' => [$this->ligneEcriture('531', 1000, 0), $this->ligneEcriture('701', 0, 1000)]]));
+
+        $fait = $this->clotureExercice(['affectation' => ['reserve_legale' => 100, 'dividendes' => 400, 'autres_reserves' => 0]]);
+        $this->assertCount(1, $this->pousserTable($a, 'clotures_exercice', [$fait])['accepted']);
+
+        // Resultat 1 000 : reserve 100, dividendes 400, report a nouveau 500. A-nouveaux : 531 D 1 000 = 111 100 + 465 400 + 121 500.
+        $an = EcritureComptable::query()->whereHas('piece', fn ($q) => $q->where('journal_code', 'AN'))->get();
+        $this->assertEqualsCanonicalizing(['531', '111', '465', '121'], $an->pluck('numero_compte')->all());
+        $this->assertEquals(1000.0, (float) $an->sum('debit'));
+        $this->assertEquals(1000.0, (float) $an->sum('credit'));
+        $this->assertSame(['reserve_legale' => 100, 'autres_reserves' => 0, 'dividendes' => 400], json_decode(ExerciceComptable::query()->find($annee)->affectation, true));
+
+        // Un autre poste les recoit, avec l'exercice clos : jamais ecrites par lui, servies par le serveur.
+        $comptable = $this->poste('comptable');
+        $r = $this->avecJeton($comptable['jeton'])->getJson('/api/sync/pull')->assertOk();
+        $journaux = collect($r->json('tables.ecriture_comptable'))->pluck('journal_code')->unique()->all();
+        $this->assertEqualsCanonicalizing(['AN', 'CA', 'CL'], $journaux);
+
+        // Reouverture par le web : l'exercice est servi ouvert, DATE (`rouvert_le`), sans CL ni AN.
+        $motif = (new \App\Sync\Tables\ClotureExerciceTable)->pourUtilisateur($a['utilisateur'])->rouvrir($annee);
+        $this->assertNull($motif);
+        $r = $this->avecJeton($comptable['jeton'])->getJson('/api/sync/pull?complet=1')->assertOk();
+        $exercice = collect($r->json('tables.exercice_comptable'))->firstWhere('annee', $annee);
+        $this->assertFalse($exercice['is_cloture']);
+        $this->assertNotNull($exercice['rouvert_le']);
+        $this->assertSame([], collect($r->json('tables.ecriture_comptable'))->whereIn('journal_code', ['CL', 'AN'])->all());
+    }
+
     public function test_seule_l_administratrice_cloture_un_exercice(): void
     {
         $comptable = $this->poste('comptable');
@@ -717,6 +749,6 @@ class ComptabiliteTest extends TestCase
         $this->assertSame(0, CloturePeriodique::query()->count());
         $this->assertSame(0, ClotureExercice::query()->count());
         $this->assertFalse(ExerciceComptable::query()->find($this->anneeComptable())->is_cloture);
-        $this->assertSame(19, \App\Models\PlanComptable::query()->count());
+        $this->assertSame(24, \App\Models\PlanComptable::query()->count());
     }
 }

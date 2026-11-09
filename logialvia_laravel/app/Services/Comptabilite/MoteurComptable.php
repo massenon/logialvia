@@ -19,20 +19,24 @@ final class MoteurComptable
 
     // ------------------------------------------------------------ Resultat net
 
-    /** Source UNIQUE du Resultat Net (BR-CPT-005) : produits (classe 7) − charges (classe 6). */
+    /**
+     * Source UNIQUE du Resultat Net (BR-CPT-005) : produits (classe 7 + soldes crediteurs de la
+     * classe 8) − charges (classe 6 + soldes debiteurs de la classe 8). La classe 8 (HAO, participation,
+     * impot sur le resultat) fait partie du resultat net SYSCOHADA.
+     */
     public static function resultatNet(Soldes $s): float
     {
-        return -$s->parClasse('7') - $s->parClasse('6');
+        return self::produits($s) - self::charges($s);
     }
 
     public static function produits(Soldes $s): float
     {
-        return -$s->parClasse('7');
+        return -$s->parClasse('7') + $s->crediteursParClasse('8');
     }
 
     public static function charges(Soldes $s): float
     {
-        return $s->parClasse('6');
+        return $s->parClasse('6') + $s->debiteursParClasse('8');
     }
 
     private static function poste(string $libelle, float $montant, array $options = []): array
@@ -51,9 +55,11 @@ final class MoteurComptable
 
         $chargesImmobilisees = $s->parPrefixe('20');
         $incorporelles = $s->parPrefixe('21');
-        $corporelles = $s->parPrefixe('22') + $s->parPrefixe('23') + $s->parPrefixe('24');
+        $corporelles = $s->parPrefixe('22') + $s->parPrefixe('23') + $s->parPrefixe('24') + $s->parPrefixe('25');
         $financieres = $s->parPrefixe('26') + $s->parPrefixe('27');
-        $totalImmobilise = $chargesImmobilisees + $incorporelles + $corporelles + $financieres;
+        // Amortissements et depreciations (28-29) : soldes crediteurs, ils MINORENT l'actif.
+        $amortissements = $s->parPrefixe('28') + $s->parPrefixe('29');
+        $totalImmobilise = $chargesImmobilisees + $incorporelles + $corporelles + $financieres + $amortissements;
 
         $stocks = $s->parClasse('3');
         $creances = $s->debiteursParClasse('4');
@@ -65,8 +71,9 @@ final class MoteurComptable
         $actif = [
             self::poste('Charges Immobilisées', $chargesImmobilisees, ['detail' => 'Comptes 20']),
             self::poste('Immobilisations Incorporelles', $incorporelles, ['detail' => 'Comptes 21']),
-            self::poste('Immobilisations Corporelles', $corporelles, ['detail' => 'Comptes 22 à 24']),
+            self::poste('Immobilisations Corporelles', $corporelles, ['detail' => 'Comptes 22 à 25']),
             self::poste('Immobilisations Financières', $financieres, ['detail' => 'Comptes 26-27']),
+            self::poste('Amortissements et Dépréciations', $amortissements, ['detail' => 'Comptes 28-29 (à déduire)']),
             self::poste('Total Actif Immobilisé', $totalImmobilise, ['sous_total' => true]),
             self::poste('Stocks', $stocks, ['detail' => 'Classe 3']),
             self::poste('Créances et Emplois Assimilés', $creances, ['detail' => 'Classe 4, soldes débiteurs']),
@@ -77,7 +84,8 @@ final class MoteurComptable
 
         $capital = -$s->parPrefixe('10');
         $reserves = -($s->parPrefixe('11') + $s->parPrefixe('12'));
-        $capitauxPropres = $capital + $reserves + $resultatNet;
+        $subventions = -($s->parPrefixe('13') + $s->parPrefixe('14') + $s->parPrefixe('15'));
+        $capitauxPropres = $capital + $reserves + $subventions + $resultatNet;
 
         $dettesFinancieres = -($s->parPrefixe('16') + $s->parPrefixe('17') + $s->parPrefixe('18') + $s->parPrefixe('19'));
         $ressourcesStables = $capitauxPropres + $dettesFinancieres;
@@ -89,6 +97,7 @@ final class MoteurComptable
         $passif = [
             self::poste('Capital', $capital, ['detail' => 'Compte 10']),
             self::poste('Réserves et Report à Nouveau', $reserves, ['detail' => 'Comptes 11-12']),
+            self::poste('Subventions et Provisions Réglementées', $subventions, ['detail' => 'Comptes 13 (résiduel), 14-15']),
             self::poste('Résultat Net de l\'Exercice', $resultatNet, ['detail' => 'Compte 13 — source unique']),
             self::poste('Total Capitaux Propres', $capitauxPropres, ['sous_total' => true]),
             self::poste('Dettes Financières', $dettesFinancieres, ['detail' => 'Comptes 16-19']),
@@ -121,16 +130,19 @@ final class MoteurComptable
         $achatsMatieres = $s->parPrefixe('601');
 
         $margeCommerciale = $ventesMarchandises - $achatsMarchandises;
-        $consommationsTiers = $achatsMatieres + $s->parPrefixe('61') + $s->parPrefixe('62');
+        // Toute la classe 60 hors marchandises, puis 61 transports, 62 et 63 services exterieurs.
+        $consommationsTiers = $achatsMatieres + ($s->parPrefixe('60') - $achatsMarchandises - $achatsMatieres)
+            + $s->parPrefixe('61') + $s->parPrefixe('62') + $s->parPrefixe('63');
         $valeurAjoutee = $ventesTotales - $achatsMarchandises - $consommationsTiers;
 
         $chargesPersonnel = $s->parPrefixe('66');
         $impotsTaxes = $s->parPrefixe('64');
         $excedentBrut = $valeurAjoutee - $chargesPersonnel - $impotsTaxes;
 
-        $autresProduits = -$s->parPrefixe('75');
+        // Autres produits d'exploitation : la classe 7 hors ventes (70) et produits financiers (77).
+        $autresProduits = -($s->parClasse('7') - $s->parPrefixe('70') - $s->parPrefixe('77'));
         $autresCharges = $s->parPrefixe('65');
-        $dotations = $s->parPrefixe('68');
+        $dotations = $s->parPrefixe('68') + $s->parPrefixe('69');
         $resultatExploitation = $excedentBrut + $autresProduits - $autresCharges - $dotations;
 
         $produitsFinanciers = -$s->parPrefixe('77');
@@ -138,9 +150,8 @@ final class MoteurComptable
         $resultatFinancier = $produitsFinanciers - $chargesFinancieres;
         $resultatOrdinaires = $resultatExploitation + $resultatFinancier;
 
-        $produitsHao = -$s->parPrefixe('78');
-        $chargesHao = $s->parPrefixe('83');
-        $resultatHao = $produitsHao - $chargesHao;
+        // HAO : la classe 8 hors participation (87) et impot sur le resultat (89).
+        $resultatHao = -($s->parClasse('8') - $s->parPrefixe('87') - $s->parPrefixe('89'));
 
         $participation = $s->parPrefixe('87');
         $impotSocietes = $s->parPrefixe('89');
@@ -155,14 +166,14 @@ final class MoteurComptable
                 self::poste('Achats de Marchandises Consommés', -$achatsMarchandises, ['detail' => 'Compte 602']),
                 self::poste('MARGE COMMERCIALE', $margeCommerciale, ['sous_total' => true]),
                 self::poste('Ventes de Produits Avicoles', $ventesProduits, ['detail' => 'Compte 701']),
-                self::poste('Consommations en Provenance des Tiers', -$consommationsTiers, ['detail' => 'Comptes 601, 61, 62']),
+                self::poste('Consommations en Provenance des Tiers', -$consommationsTiers, ['detail' => 'Comptes 60 (hors 602), 61, 62, 63']),
                 self::poste('VALEUR AJOUTÉE', $valeurAjoutee, ['sous_total' => true]),
                 self::poste('Charges de Personnel', -$chargesPersonnel, ['detail' => 'Classe 66']),
                 self::poste('Impôts et Taxes', -$impotsTaxes, ['detail' => 'Classe 64']),
                 self::poste('EXCÉDENT BRUT D\'EXPLOITATION', $excedentBrut, ['sous_total' => true]),
-                self::poste('Autres Produits', $autresProduits),
+                self::poste('Autres Produits', $autresProduits, ['detail' => 'Classe 7 hors 70 et 77']),
                 self::poste('Autres Charges', -$autresCharges),
-                self::poste('Dotations aux Amortissements et Provisions', -$dotations, ['detail' => 'Classe 68']),
+                self::poste('Dotations aux Amortissements et Provisions', -$dotations, ['detail' => 'Classes 68-69']),
                 self::poste('RÉSULTAT D\'EXPLOITATION', $resultatExploitation, ['sous_total' => true]),
                 self::poste('Résultat Financier', $resultatFinancier, ['detail' => 'Classe 77 − Classe 67']),
                 self::poste('RÉSULTAT DES ACTIVITÉS ORDINAIRES', $resultatOrdinaires, ['sous_total' => true]),
@@ -180,18 +191,25 @@ final class MoteurComptable
     public static function tafire(Soldes $s, Soldes $ouverture): array
     {
         $resultatNet = self::resultatNet($s);
-        $dotations = $s->parPrefixe('68');
 
-        $bfr = fn (Soldes $x) => $x->parClasse('3') + $x->debiteursParClasse('4') - $x->crediteursParClasse('4');
+        // Charges non decaissees : accroissement des provisions (28, 29, 39, 49), soldes crediteurs.
+        $provisions = fn (Soldes $x) => $x->parPrefixe('28') + $x->parPrefixe('29') + $x->parPrefixe('39') + $x->parPrefixe('49');
+        $nonDecaisse = -($provisions($s) - $provisions($ouverture));
+        $dotations = $nonDecaisse;
+
+        // Variation du BFR brut : stocks + creances − dettes circulantes, hors provisions.
+        $bfr = fn (Soldes $x) => $x->parClasse('3') + $x->parClasse('4') - $x->parPrefixe('39') - $x->parPrefixe('49');
         $variationBfr = $bfr($s) - $bfr($ouverture);
 
-        $fluxExploitation = $resultatNet + $dotations - $variationBfr;
+        $fluxExploitation = $resultatNet + $nonDecaisse - $variationBfr;
 
-        $acquisitions = $s->parClasse('2') - $ouverture->parClasse('2');
+        // Investissement : variation des immobilisations BRUTES (classe 2 hors 28-29).
+        $immoBrutes = fn (Soldes $x) => $x->parClasse('2') - $x->parPrefixe('28') - $x->parPrefixe('29');
+        $acquisitions = $immoBrutes($s) - $immoBrutes($ouverture);
         $fluxInvestissement = -$acquisitions;
 
-        $financement = -($s->parClasse('1') - $ouverture->parClasse('1'));
-        $fluxFinancement = $financement - $resultatNet;
+        // Financement : variation de la classe 1. Le resultat n'y figure pas (pas encore au compte 13).
+        $fluxFinancement = -($s->parClasse('1') - $ouverture->parClasse('1'));
 
         $tresorerieOuverture = $ouverture->parClasse('5');
         $variation = $fluxExploitation + $fluxInvestissement + $fluxFinancement;
@@ -205,7 +223,7 @@ final class MoteurComptable
             'tresorerie_cloture' => $tresorerieOuverture + $variation,
             'postes' => [
                 self::poste('Résultat Net de l\'Exercice', $resultatNet),
-                self::poste('Dotations aux Amortissements', $dotations, ['detail' => 'Charge non décaissée']),
+                self::poste('Dotations aux Amortissements et Provisions', $dotations, ['detail' => 'Charge non décaissée (comptes 28, 29, 39, 49)']),
                 self::poste('Variation du Besoin en Fonds de Roulement', -$variationBfr),
                 self::poste('FLUX NET DE TRÉSORERIE D\'EXPLOITATION', $fluxExploitation, ['sous_total' => true]),
                 self::poste('Acquisitions d\'Immobilisations', -$acquisitions),
@@ -222,30 +240,52 @@ final class MoteurComptable
     /** @return array{actif: list<array>, passif: list<array>, total_actif: float, total_passif: float, ecart: float, equilibre: bool, vide: bool} */
     public static function bilanEntreprise(Soldes $s): array
     {
-        $stocks = $s->parPrefixe('31') + $s->parPrefixe('32');
+        // Immobilisations nettes (classe 2, amortissements deduits) : sans elles, un batiment achete
+        // ferait « sortir » l'argent du bilan.
+        $immobilisations = $s->parClasse('2');
+        $stocks = $s->parClasse('3');
         $clients = $s->parPrefixe('411');
         $banques = $s->parPrefixe('512');
         $caisse = $s->parPrefixe('531');
+        // Tout autre solde debiteur de tiers ou de tresorerie : l'ecart affiche reste de l'argent d'origine inconnue.
+        $autresActifs = $s->parClasse('5') - $banques - $caisse
+            + ($s->debiteursParClasse('4') - $s->debiteursParPrefixe('411') - $s->debiteursParPrefixe('401'));
 
-        $actif = [
-            ['libelle' => 'Stocks (Intrants + Marchandises)', 'compte' => '31/32', 'montant' => $stocks],
-            ['libelle' => 'Clients (Solde Restant Dû)', 'compte' => '411', 'montant' => $clients],
-            ['libelle' => 'Banques — Mobile Money', 'compte' => '512', 'montant' => $banques],
-            ['libelle' => 'Caisse', 'compte' => '531', 'montant' => $caisse],
-        ];
-        $totalActif = $stocks + $clients + $banques + $caisse;
+        $actif = [];
+        if (abs($immobilisations) >= 0.01) {
+            $actif[] = ['libelle' => 'Immobilisations (nettes)', 'compte' => '2', 'montant' => $immobilisations];
+        }
+        $actif[] = ['libelle' => 'Stocks (Intrants + Marchandises)', 'compte' => '31/32', 'montant' => $stocks];
+        $actif[] = ['libelle' => 'Clients (Solde Restant Dû)', 'compte' => '411', 'montant' => $clients];
+        $actif[] = ['libelle' => 'Banques — Mobile Money', 'compte' => '512', 'montant' => $banques];
+        $actif[] = ['libelle' => 'Caisse', 'compte' => '531', 'montant' => $caisse];
+        if (abs($autresActifs) >= 0.01) {
+            $actif[] = ['libelle' => 'Autres comptes débiteurs et trésorerie', 'compte' => '4/5', 'montant' => $autresActifs];
+        }
+        $totalActif = array_sum(array_column($actif, 'montant'));
 
         // Le capital est LU au compte 101, jamais deduit : l'ecart est affiche en clair.
         $capital = -$s->parPrefixe('101');
+        $reserves = -($s->parPrefixe('11') + $s->parPrefixe('12') + $s->parPrefixe('13') + $s->parPrefixe('14')
+            + $s->parPrefixe('15') + ($s->parPrefixe('10') - $s->parPrefixe('101')));
+        $emprunts = -($s->parPrefixe('16') + $s->parPrefixe('17') + $s->parPrefixe('18') + $s->parPrefixe('19'));
         $resultatNet = self::resultatNet($s);
         $fournisseurs = -$s->parPrefixe('401');
+        $autresDettes = $s->crediteursParClasse('4') - $s->crediteursParPrefixe('401') - $s->crediteursParPrefixe('411');
 
-        $passif = [
-            ['libelle' => 'Capital Initial', 'compte' => '101', 'montant' => $capital],
-            ['libelle' => 'Résultat de l\'Exercice', 'compte' => '13', 'montant' => $resultatNet],
-            ['libelle' => 'Fournisseurs (Dettes)', 'compte' => '401', 'montant' => $fournisseurs],
-        ];
-        $totalPassif = $capital + $resultatNet + $fournisseurs;
+        $passif = [['libelle' => 'Capital Initial', 'compte' => '101', 'montant' => $capital]];
+        if (abs($reserves) >= 0.01) {
+            $passif[] = ['libelle' => 'Réserves et Report à Nouveau', 'compte' => '11-15', 'montant' => $reserves];
+        }
+        $passif[] = ['libelle' => 'Résultat de l\'Exercice', 'compte' => '13', 'montant' => $resultatNet];
+        if (abs($emprunts) >= 0.01) {
+            $passif[] = ['libelle' => 'Emprunts et Dettes Financières', 'compte' => '16-19', 'montant' => $emprunts];
+        }
+        $passif[] = ['libelle' => 'Fournisseurs (Dettes)', 'compte' => '401', 'montant' => $fournisseurs];
+        if (abs($autresDettes) >= 0.01) {
+            $passif[] = ['libelle' => 'Autres dettes (avances, dividendes, État…)', 'compte' => '4', 'montant' => $autresDettes];
+        }
+        $totalPassif = array_sum(array_column($passif, 'montant'));
         $ecart = $totalActif - $totalPassif;
 
         return [
@@ -271,10 +311,24 @@ final class MoteurComptable
      */
     public static function balance(Collection $plan, iterable $anterieures, iterable $periode): array
     {
-        $ant = [];
+        $ouverture = [];
         foreach ($anterieures as $e) {
-            $ant[$e->compte][] = $e;
+            $ouverture[$e->compte] = ($ouverture[$e->compte] ?? 0.0) + $e->debit - $e->credit;
         }
+
+        return self::balanceDepuis($plan, $ouverture, $periode);
+    }
+
+    /**
+     * Balance dont l'ouverture est donnee en SOLDES NETS (debit − credit) par compte : les a-nouveaux
+     * de l'exercice (`ReportANouveau::soldesOuverture`).
+     *
+     * @param  Collection<string, PlanComptable>  $plan
+     * @param  array<string, float>  $ouvertureNet
+     * @param  iterable<LigneEcriture>  $periode
+     */
+    public static function balanceDepuis(Collection $plan, array $ouvertureNet, iterable $periode): array
+    {
         $per = [];
         foreach ($periode as $e) {
             $per[$e->compte][] = $e;
@@ -283,27 +337,24 @@ final class MoteurComptable
         $lignes = [];
         foreach ($plan as $numero => $compte) {
             $numero = (string) $numero;
-            if (empty($ant[$numero]) && empty($per[$numero])) {
+            if (! array_key_exists($numero, $ouvertureNet) && empty($per[$numero])) {
                 continue;
             }
-            $ouvertureNet = 0.0;
-            foreach ($ant[$numero] ?? [] as $e) {
-                $ouvertureNet += $e->debit - $e->credit;
-            }
+            $ouvertureCompte = (float) ($ouvertureNet[$numero] ?? 0.0);
             $mouvementsDebit = 0.0;
             $mouvementsCredit = 0.0;
             foreach ($per[$numero] ?? [] as $e) {
                 $mouvementsDebit += $e->debit;
                 $mouvementsCredit += $e->credit;
             }
-            $finalNet = $ouvertureNet + $mouvementsDebit - $mouvementsCredit;
+            $finalNet = $ouvertureCompte + $mouvementsDebit - $mouvementsCredit;
 
             $lignes[] = [
                 'numero' => $numero,
                 'libelle' => $compte->libelle,
                 // Un solde n'apparait que d'un seul cote : positif au debit, negatif au credit.
-                'ouverture_debit' => $ouvertureNet > 0 ? $ouvertureNet : 0.0,
-                'ouverture_credit' => $ouvertureNet < 0 ? -$ouvertureNet : 0.0,
+                'ouverture_debit' => $ouvertureCompte > 0 ? $ouvertureCompte : 0.0,
+                'ouverture_credit' => $ouvertureCompte < 0 ? -$ouvertureCompte : 0.0,
                 'mouvements_debit' => $mouvementsDebit,
                 'mouvements_credit' => $mouvementsCredit,
                 'final_debit' => $finalNet > 0 ? $finalNet : 0.0,

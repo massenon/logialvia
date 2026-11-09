@@ -160,6 +160,6 @@ class PlanComptableDemandesTest extends TestCase
 
         $this->assertSame('Frais bancaires', $plan['635']['libelle']);
         $this->assertArrayHasKey('saisi_le', $plan['635']);
-        $this->assertSame(20, $plan->count());
+        $this->assertSame(25, $plan->count());
     }
 }

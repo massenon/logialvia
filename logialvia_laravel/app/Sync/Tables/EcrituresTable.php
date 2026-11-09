@@ -34,7 +34,15 @@ class EcrituresTable extends TableSync
 {
     public const JOURNAUX = ['VT', 'AC', 'CA', 'OD'];
 
+    /**
+     * Journaux ENGENDRES par la cloture annuelle (`47c_`) : jamais acceptes d'un poste, seulement
+     * du serveur lui-meme (`pourCloture`), pour l'administratrice (`close-fiscal-year`).
+     */
+    public const JOURNAUX_DE_CLOTURE = ['CL', 'AN'];
+
     private ?User $utilisateur = null;
+
+    private bool $pourCloture = false;
 
     public function nom(): string
     {
@@ -68,6 +76,14 @@ class EcrituresTable extends TableSync
         return $this->aUnDesDroits($utilisateur, ['manage-comptabilite', 'manage-ventes', 'manage-achats']);
     }
 
+    /** Pieces de cloture / d'a-nouveaux ecrites par le serveur lui-meme (journaux CL et AN). */
+    public function pourCloture(): static
+    {
+        $this->pourCloture = true;
+
+        return $this;
+    }
+
     /** Qui ecrit : le moteur le fixe par `peutEcrire`, le web par cet appel explicite. */
     public function pourUtilisateur(User $utilisateur): static
     {
@@ -93,7 +109,7 @@ class EcrituresTable extends TableSync
             'numero_piece' => ['nullable', 'string', 'max:60'],
             'date_ecriture' => ['required', 'date'],
             'exercice_annee' => ['required', 'integer'],
-            'journal_code' => ['required', 'string', 'in:'.implode(',', self::JOURNAUX)],
+            'journal_code' => ['required', 'string', 'in:'.implode(',', $this->pourCloture ? [...self::JOURNAUX, ...self::JOURNAUX_DE_CLOTURE] : self::JOURNAUX)],
             'vente_ref' => ['nullable', 'string', 'max:60'],
             'achat_ref' => ['nullable', 'string', 'max:60'],
             'contrepasse_de' => ['nullable', 'uuid'],
@@ -133,9 +149,9 @@ class EcrituresTable extends TableSync
             return null;
         }
 
-        // Droit selon la nature de la piece.
+        // Droit selon la nature de la piece. Une piece de cloture exige la cloture annuelle.
         $manuelle = empty($ligne['vente_ref']) && empty($ligne['achat_ref']);
-        $droits = ['manage-comptabilite'];
+        $droits = $this->pourCloture ? ['close-fiscal-year'] : ['manage-comptabilite'];
         if (! empty($ligne['vente_ref'])) {
             $droits[] = 'manage-ventes';
         }
@@ -192,7 +208,8 @@ class EcrituresTable extends TableSync
         if (Verrous::exercice($annee) === null) {
             return "Exercice $annee hors des bornes acceptées.";
         }
-        $motif = Verrous::motifVerrou($annee, $mois);
+        // La cloture annuelle prime sur le verrou mensuel : ses pieces s'ecrivent au 31/12 et au 01/01.
+        $motif = $this->pourCloture ? Verrous::motifVerrouExercice($annee) : Verrous::motifVerrou($annee, $mois);
         if ($motif !== null) {
             return $motif;
         }

@@ -40,6 +40,12 @@ class PlanComptableSeeder extends Seeder
         ['616', 'Assurances', '6'],
         ['624', 'Transports', '6'],
         ['628', 'Charges Diverses de Gestion', '6'],
+        // Comptes de la cloture annuelle (`47c_`) : reserves, report debiteur, perte, dividendes.
+        ['111', 'Réserve Légale', '1'],
+        ['118', 'Autres Réserves', '1'],
+        ['129', 'Report à Nouveau — Solde Débiteur', '1'],
+        ['139', 'Résultat Net : Perte', '1'],
+        ['465', 'Associés — Dividendes à Payer', '4'],
     ];
 
     public function run(): void

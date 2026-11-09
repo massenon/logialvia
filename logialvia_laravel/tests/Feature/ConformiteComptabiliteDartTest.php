@@ -34,7 +34,7 @@ class ConformiteComptabiliteDartTest extends TestCase
             $trouves,
             PREG_SET_ORDER,
         );
-        $this->assertCount(19, $trouves, 'Le poste doit semer 19 comptes.');
+        $this->assertCount(24, $trouves, 'Le poste doit semer 24 comptes.');
 
         $attendu = [];
         foreach ($trouves as [, $numero, $libelle, $classe]) {
@@ -57,7 +57,7 @@ class ConformiteComptabiliteDartTest extends TestCase
 
         $this->seed(PlanComptableSeeder::class);
 
-        $this->assertSame(19, PlanComptable::query()->count());
+        $this->assertSame(24, PlanComptable::query()->count());
         $this->assertSame('Déplacements', PlanComptable::query()->find('624')->libelle);
         $this->assertTrue(PlanComptable::query()->find('624')->archive);
     }
