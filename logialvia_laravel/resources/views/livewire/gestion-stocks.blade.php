@@ -94,7 +94,15 @@
         @endforelse
     </div>
 
-    <h2 class="mb-sm text-modal-title font-bold">Journal des Mouvements</h2>
+    <div class="mb-sm flex flex-wrap items-center justify-between gap-sm">
+        <h2 class="text-modal-title font-bold">Journal des Mouvements</h2>
+        <div class="flex gap-sm">
+            <a href="{{ url('/stocks/impression') }}" target="_blank" rel="noopener" data-action="imprimer-journal"
+               class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
+            <button type="button" wire:click="exporter" data-action="exporter"
+                    class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+        </div>
+    </div>
     <p class="mb-sm text-xs text-outline">
         Historique de tous les postes (les {{ \App\Livewire\GestionStocks::LIMITE_JOURNAL }} derniers), en lecture seule :
         un mouvement d'un autre poste ne change jamais le stock d'un poste. Heures en UTC.

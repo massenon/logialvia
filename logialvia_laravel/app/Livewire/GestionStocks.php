@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Support\ExportXlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Gestion des Stocks (Dart : `gestion_stocks_screen.dart`).
@@ -164,6 +166,21 @@ class GestionStocks extends Component
         }
 
         return $codes[$deviceId] ?? 'Poste '.Str::substr($deviceId, 0, 8);
+    }
+
+    /** Export XLSX du journal des mouvements (tous postes). Droit de lecture verifie ICI. */
+    public function exporter(): StreamedResponse
+    {
+        abort_unless(Auth::user()?->can('view-stocks'), 403);
+        $codes = Poste::query()->pluck('code', 'device_id')->all();
+        $fuseau = config('logialvia.fuseau');
+        $lignes = [['Date / Heure', 'Poste', 'Référence', 'Article', 'Type', 'Motif', 'Quantité']];
+        foreach (MouvementIntrant::query()->orderByDesc('horodatage')->limit(self::LIMITE_JOURNAL)->get() as $m) {
+            $lignes[] = [$m->horodatage->timezone($fuseau)->format('d/m/Y H:i'), $this->libellePoste($m->device_id, $codes),
+                $m->reference ?? '', $m->article, $m->type, $m->motif, (float) $m->quantite];
+        }
+
+        return ExportXlsx::telecharger($lignes, 'journal-mouvements.xlsx', 'Journal');
     }
 
     public function render()
