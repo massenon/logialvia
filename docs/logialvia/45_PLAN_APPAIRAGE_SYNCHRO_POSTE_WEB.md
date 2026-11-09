@@ -48,6 +48,32 @@ en supprimant les `.git` de `vendor/` et le cache Composer). Il faut le refaire 
 pousser le dossier sans `vendor/`. Les travaux qui ne dépendent pas du réseau (migration UUID du poste, contrat de
 synchronisation) avancent en attendant.
 
+## 6b. Ce que W2 a livré, et ses limites
+
+**Serveur** (`logialvia_laravel/`, 89 tests dont chaque garde-fou vérifié par mutation) :
+
+- `POST /api/auth/login {identifiant, password, device_name}` : `device_name` = UUID du poste (refusé sinon) ; un seul
+  jeton par poste (se reconnecter supprime l'ancien) ; 90 jours ; limiteur 5/min par identifiant et adresse ; compte
+  désactivé refusé avec son motif ; identifiant inconnu et mot de passe faux donnent le même message.
+- **Code de poste** `P1`, `P2`… attribué à l'appairage, stable (DV-21), table `postes`.
+- `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/mot-de-passe` (seule action permise avec un mot de
+  passe temporaire ; elle coupe les jetons des autres postes).
+- `POST /api/parametres/postes/revoquer` (droit `manage-users`) : tous les jetons du poste, tous comptes ; le poste
+  reçoit 401 au contact suivant. Journal d'audit (`api.login`, `login.failed`, `sync.appairage_revoque`…).
+- **Le jeton dit qui parle** : le `device_id` du push doit être le nom du jeton courant, sinon 403, rien écrit, rien
+  journalisé. `GET /api/sync/pull` et `POST /api/sync/push` répondent **501** (« moteur non disponible ») : le
+  moteur est l'étape W3.
+
+**Web** : connexion (mêmes règles et messages que l'API), changement de mot de passe obligatoire, et la page
+**Postes & Appairage** (`/parametres/postes`, droit `manage-users`, revérifié dans chaque méthode qui écrit) :
+liste (code, poste, utilisateur, appairé le en heure du Bénin, dernier contact en français, état), révocation par
+modale. Tableau au-dessus de 640 px, cartes en dessous. Vérifié en navigateur aux trois tailles.
+
+**Limites connues** : la coque web (barre latérale, modules) est **provisoire**, elle sera convertie du Dart avec le
+premier module ; la page est une route propre au serveur, l'onglet « Postes & Appairage » de Paramètres Généraux
+viendra avec cet écran ; pas encore d'écran de gestion des utilisateurs (création, désactivation, mot de passe
+temporaire).
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,
@@ -90,7 +116,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 |---|---|---|---|
 | W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | **fait** (09/11/2026) : Laravel 12.71, Livewire 3.8, Sanctum 4.3, Spatie Permission 7.4, DomPDF 3.1, Tailwind 3.4 ; test de conformité vérifié par mutation |
 | W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | **fait** (09/11/2026) : utilisateurs UUID + suppression logique, jetons Sanctum et rôles Spatie en UUID, 4 rôles et 22 droits, 5 modules désactivés, paramètres (ligne unique), premier administrateur par variable d'environnement ; tests de conformité des droits et des valeurs par défaut au Dart (31 tests, vérifiés par mutation) |
-| W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | en attente |
+| W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | en attente |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
 | P1 | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |

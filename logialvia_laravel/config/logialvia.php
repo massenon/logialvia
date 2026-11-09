@@ -128,6 +128,12 @@ return [
     ],
 
     /*
+    | Fuseau des dates METIER affichees (Natitingou, Benin). Les instants
+    | techniques restent stockes en UTC ; on ne convertit qu'a l'affichage.
+    */
+    'fuseau' => 'Africa/Porto-Novo',
+
+    /*
     | Duree de vie du jeton d'un poste (blueprint : 90 jours).
     */
     'jeton_duree_jours' => (int) env('SANCTUM_EXPIRATION_JOURS', 90),

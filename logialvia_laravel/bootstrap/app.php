@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ChangementMotDePasseObligatoireApi;
+use App\Http\Middleware\ChangementMotDePasseObligatoireWeb;
 use App\Http\Middleware\CompteActif;
 use App\Http\Middleware\EnregistrerContactPoste;
 use App\Http\Middleware\PosteDuJeton;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'compte.actif' => CompteActif::class,
             'mdp.change' => ChangementMotDePasseObligatoireApi::class,
+            'mdp.web' => ChangementMotDePasseObligatoireWeb::class,
             'contact.poste' => EnregistrerContactPoste::class,
             'poste.jeton' => PosteDuJeton::class,
         ]);
