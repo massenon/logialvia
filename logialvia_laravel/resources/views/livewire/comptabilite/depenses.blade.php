@@ -4,7 +4,8 @@
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="faits-immuables">
         Une dépense enregistrée est une pièce comptable partagée entre tous les postes : elle ne se modifie pas, elle s'annule par une
-        écriture inverse. Pas de pièce justificative ni d'export PDF au web.
+        écriture inverse. « Corriger » annule la pièce puis passe la pièce corrigée (en une seule opération). Pas de pièce justificative
+        (le poste n'en stocke pas non plus).
     </p>
 
     @if ($message)
@@ -82,6 +83,10 @@
                     </div>
                 </div>
                 <div class="mt-md flex justify-end">
+                    @if ($corrigeDe)
+                        <button type="button" wire:click="renoncerCorrection" data-action="renoncer-correction"
+                                class="mr-sm rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Renoncer à la correction</button>
+                    @endif
                     <button type="button" wire:click="enregistrer" data-action="enregistrer"
                             class="rounded-lg bg-brand-navy px-md py-sm text-xs font-bold text-white">Enregistrer la Dépense</button>
                 </div>
@@ -90,6 +95,10 @@
     @endif
 
     <div class="mb-sm flex flex-wrap items-center gap-sm">
+        <a href="{{ url('/depenses/impression') }}?statut={{ urlencode($statut) }}&amp;recherche={{ urlencode($recherche) }}" target="_blank" rel="noopener" data-action="imprimer-liste"
+           class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra sm:order-last sm:ml-auto">Imprimer / PDF</a>
+        <button type="button" wire:click="exporter" data-action="exporter"
+                class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra sm:order-last">Exporter (XLSX)</button>
         <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Rechercher…" aria-label="Rechercher une dépense"
                class="w-full rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs sm:max-w-xs">
         <select wire:model.live="statut" aria-label="Filtrer par statut" class="rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs">
@@ -127,6 +136,8 @@
                         </td>
                         <td class="px-md py-sm text-right">
                             @if ($peutGerer && ! $cloture)
+                                <button type="button" wire:click="corriger('{{ $d['piece_id'] }}')" data-action="corriger-depense"
+                                        class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Corriger</button>
                                 <button type="button" wire:click="demanderAnnulation('{{ $d['piece_id'] }}')" data-action="annuler-depense"
                                         class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Annuler la dépense</button>
                             @endif

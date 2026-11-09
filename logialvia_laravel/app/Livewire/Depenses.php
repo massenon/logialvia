@@ -11,6 +11,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Support\ExportXlsx;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Saisie des Depenses (Dart : `SaisieDepensesScreen`, `saisie_depenses_screen.dart`).
@@ -61,6 +64,12 @@ class Depenses extends Component
 
     /** Piece de la depense dont l'annulation attend la confirmation. */
     public ?string $aAnnuler = null;
+
+    /**
+     * Piece de la depense en cours de CORRECTION : une piece acceptee est immuable, « corriger » =
+     * l'annuler (ecriture inverse) puis passer la piece corrigee, en UNE transaction (tout ou rien).
+     */
+    public ?string $corrigeDe = null;
 
     public function mount(): void
     {
@@ -130,20 +139,88 @@ class Depenses extends Component
 
         [$annee] = Verrous::anneeMois(CarbonImmutable::parse($instant));
         $numero = Saisie::numeroSuivant('DEP', $annee);
-        $motif = (new Saisie(Auth::user()))->enregistrer($instant, 'CA', $numero, [
-            // Seule la ligne de CHARGE porte le centre : la contrepartie n'appartient a aucune filiere.
-            ['compte' => $this->categorie, 'debit' => $montant, 'credit' => 0, 'libelle' => $libelle, 'axe' => $this->centre !== '' ? $this->centre : null],
-            ['compte' => $this->reglement, 'debit' => 0, 'credit' => $montant, 'libelle' => $libelle],
-        ]);
+        $saisie = new Saisie(Auth::user());
+        $corrige = $this->corrigeDe;
+        $motif = null;
+        try {
+            DB::transaction(function () use (&$motif, $saisie, $corrige, $instant, $numero, $libelle, $montant) {
+                if ($corrige !== null && ($refus = $saisie->contrepasser($corrige)) !== null) {
+                    $motif = $refus;
+                    throw new \RuntimeException('refus');
+                }
+                $motif = $saisie->enregistrer($instant, 'CA', $numero, [
+                    // Seule la ligne de CHARGE porte le centre : la contrepartie n'appartient a aucune filiere.
+                    ['compte' => $this->categorie, 'debit' => $montant, 'credit' => 0, 'libelle' => $libelle, 'axe' => $this->centre !== '' ? $this->centre : null],
+                    ['compte' => $this->reglement, 'debit' => 0, 'credit' => $montant, 'libelle' => $libelle],
+                ]);
+                if ($motif !== null) {
+                    throw new \RuntimeException('refus');
+                }
+            });
+        } catch (\RuntimeException) {
+            // `$motif` porte le refus : l'annulation eventuelle de la piece d'origine est annulee avec lui.
+        }
         if ($motif !== null) {
             $this->erreur = $motif;
 
             return;
         }
 
-        $this->message = "Dépense $numero enregistrée — ".\App\Support\FormatComptable::montant($montant)." imputés au compte {$this->categorie}.";
+        $this->message = ($corrige !== null ? "Dépense corrigée : l'ancienne pièce est annulée, " : '')."Dépense $numero enregistrée — ".\App\Support\FormatComptable::montant($montant)." imputés au compte {$this->categorie}.";
         // Comme `submitExpense()` : le formulaire est reinitialise, l'ecran enchaine les saisies.
-        $this->reset(['libelle', 'categorie', 'montant', 'reglement', 'centre']);
+        $this->reset(['libelle', 'categorie', 'montant', 'reglement', 'centre', 'corrigeDe']);
+    }
+
+    /** Pre-remplit le formulaire avec la depense a corriger (annulee puis ressaisie a l'enregistrement). */
+    public function corriger(string $pieceId): void
+    {
+        $this->verifierDroitDeGerer();
+        $this->message = null;
+        $this->erreur = null;
+
+        [$ecritures] = $this->ecritures($this->annee());
+        $d = collect(MoteurComptable::depenses($ecritures, LivreComptable::plan()))->firstWhere('piece_id', $pieceId);
+        if ($d === null) {
+            $this->erreur = 'Cette dépense n\'existe plus ou est déjà annulée.';
+
+            return;
+        }
+        $this->corrigeDe = $pieceId;
+        $this->libelle = $d['libelle'];
+        $this->categorie = $d['compte'];
+        $this->montant = (string) $d['montant'];
+        $this->reglement = $d['compte_regle'];
+        $this->centre = (string) ($d['centre'] ?? '');
+        $this->jour = $d['date']->format('Y-m-d');
+    }
+
+    public function renoncerCorrection(): void
+    {
+        $this->reset(['libelle', 'categorie', 'montant', 'reglement', 'centre', 'corrigeDe', 'erreurs', 'erreur']);
+        $this->jour = now(config('logialvia.fuseau'))->format('Y-m-d');
+    }
+
+    /** Export XLSX des depenses filtrees. Droit de lecture de la comptabilite verifie ICI. */
+    public function exporter(): StreamedResponse
+    {
+        abort_unless(Auth::user()?->can('view-comptabilite'), 403);
+        [$ecritures] = $this->ecritures($this->annee());
+        $plan = LivreComptable::plan();
+        $terme = mb_strtolower(trim($this->recherche));
+        $lignes = [['N° Pièce', 'Date', 'Libellé', 'Compte', 'Catégorie', 'Montant', 'Statut', 'Centre analytique']];
+        foreach (MoteurComptable::depenses($ecritures, $plan) as $d) {
+            if (($this->statut === 'payee' && ! $d['payee']) || ($this->statut === 'attente' && $d['payee'])) {
+                continue;
+            }
+            if ($terme !== '' && ! str_contains(mb_strtolower($d['libelle']), $terme) && ! str_contains(mb_strtolower($d['libelle_compte']), $terme)
+                && ! str_contains($d['compte'], $terme) && ! str_contains(mb_strtolower($d['numero_piece']), $terme)) {
+                continue;
+            }
+            $lignes[] = [$d['numero_piece'], $d['date']->format('d/m/Y'), $d['libelle'], $d['compte'], $d['libelle_compte'],
+                (float) $d['montant'], $d['payee'] ? 'Payée' : 'En attente', $d['centre'] ?? ''];
+        }
+
+        return ExportXlsx::telecharger($lignes, 'depenses.xlsx', 'Dépenses');
     }
 
     public function demanderAnnulation(string $pieceId): void
