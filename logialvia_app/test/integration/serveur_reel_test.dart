@@ -1032,7 +1032,7 @@ void main() {
         await saisirJour(
           a,
           jourPlus(2),
-          morts: [0, 2, 1],
+          morts: [2, 0, 0], // des sujets existent seulement dans la 1re catégorie
           observation: 'Traitement 47h',
         );
 
@@ -2238,7 +2238,7 @@ void main() {
           clientIfu: '3201234567890',
           clientAdresse: 'Natitingou',
         );
-        await saisirJour(a, jourPlus(1100), achat: 7, ne: 2, morts: [1, 0, 2]);
+        await saisirJour(a, jourPlus(1100), achat: 7, ne: 2, morts: [3, 0, 0]);
         await BandesRepositoryDrift(a.db).creerBande(
           espece: 'goliaths',
           code: 'R47-${unique.substring(unique.length - 5)}',
@@ -2388,7 +2388,7 @@ void main() {
                 achat: i == 0 ? 30 : 0,
                 ne: i == 0 ? 5 : 1,
                 mortsParCategorie: [for (var c = 0; c < n; c++) c == 0 ? i : 0],
-                donsParCategorie: [for (var c = 0; c < n; c++) c == 1 ? 1 : 0],
+                donsParCategorie: [for (var c = 0; c < n; c++) c == 0 ? 1 : 0],
               ),
               poidsGeneralG: config.rationEnPourcentagePoidsVif ? 250000 : 1450,
               traitementObs: '${config.identifiant} jour $i',
@@ -2939,7 +2939,7 @@ void main() {
           );
           for (var i = 0; i < 3; i++) {
             final morts = [for (var c = 0; c < n; c++) c == 0 ? i : 0];
-            final dons = [for (var c = 0; c < n; c++) c == 1 ? 1 : 0];
+            final dons = [for (var c = 0; c < n; c++) c == 0 ? 1 : 0];
             final poids = config.rationEnPourcentagePoidsVif ? 250000 : 1450;
             final pondeuses = config.identifiant == 'pondeuses';
             final r = await cas.executer(

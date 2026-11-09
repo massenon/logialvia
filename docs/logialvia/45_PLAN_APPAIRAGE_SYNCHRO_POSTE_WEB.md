@@ -334,3 +334,21 @@ local) ; `46_` §2.5 et §3 (numérotation des écritures et des factures par le
    chaque règle de validation avec son message, écriture en base (device web, curseur de tirage avancé), droits des méthodes (un
    composant neuf par appel interdit), puis **mutations** : casser chaque garde et voir un test rougir.
 7. **Fin** : `php artisan test` entier vert, `npm run build`, doc §7 mise à jour, **un commit** par écran, chemins explicites.
+
+## 9. Parité web ↔ poste (09/11/2026)
+
+Demande du client : tout ce qui se voit et se fait au poste doit exister au web, avec tous les CRUD. Sept chantiers (un doc chacun) :
+
+| Chantier | Doc | Schéma poste | Ce que le web sait faire maintenant |
+|---|---|---|---|
+| Preuve contre le vrai serveur | `47h_` | — | 55 essais réels (28 tables) ; 5 divergences corrigées (adoption du semis, textes conservés, ordre de remise à zéro, suppression d'intrant) |
+| Commerce | `47a_` | — | Caisse, annulation, retours, recouvrement, modification, impressions, XLSX |
+| Devis et factures | `47a2_` | 43 | Devis synchronisés (CRUD), émission de factures et d'avoirs, verrou de transmission (réservation 15 min), impressions |
+| Achats | `47b_` | — | Commande, modification, réception, règlement, annulation, dettes, dépenses corrigeables |
+| Comptabilité SYSCOHADA | `47c_` | 44 | Report à nouveau (CL/AN), clôture en 4 étapes, états cumulés, TAFIRE exact, réouverture |
+| Élevage expert | `47e_` | 47 | Décès avec cascade, soins depuis le calendrier, lien soin↔bande, divergence de fiches visible, chaîne d'effectifs, contrôles zootechniques |
+| Administration | `47u_` | 45 | Utilisateurs, journal d'audit, corbeille avec restauration, messages à l'éditeur, sauvegarde logique |
+
+Règles transversales : **export de tableaux = XLSX** (`App\Support\ExportXlsx`), documents = vues imprimables ; **stock propre à chaque poste**
+(aucune écriture web ne touche un stock ou un PMP) ; la transmission e-MECeF et ses secrets restent au poste.
+Les décisions métier prises sans le client sont dans les sections « Décisions à valider » de chaque doc `47*_` et dans `46f_`.

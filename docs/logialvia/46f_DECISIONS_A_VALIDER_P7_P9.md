@@ -24,3 +24,17 @@ de la même main) ; `/rapports` ordonne les mouvements de trésorerie du même j
   le comptable voit les six onglets des rapports avec le seul droit `view-rapports` (comme au poste) ; « Achats livrés » se calcule sur la
   date de commande (la date de réception n'est pas synchronisée) ; les œufs en incubation s'affichent en ligne à l'inventaire web (le poste
   ne les met que sur le PDF).
+
+## Parité web ↔ poste (docs 47a_ à 47u_)
+
+Chaque doc `47*_` porte sa propre section de décisions à valider. À arbitrer EN PRIORITÉ avant toute mise en service :
+
+- **Plan comptable non conforme au SYSCOHADA révisé** (hérité du prototype, signalé par deux agents) : 601/602 inversés, 701 = « marchandises »
+  au plan officiel, caisse en 531 au lieu de 571, banque 512 vs 52x, 613/616/624/628 mal numérotés, 622 « frais vétérinaires » = location
+  au plan officiel, TVA (443/445) jamais ventilée, frais de livraison en 707. Une renumérotation demande une migration coordonnée
+  poste + serveur + historique : **à valider avec l'expert-comptable du client avant la première déclaration fiscale** (`47a_` §6 D4, `47c_` §5).
+- **Report à nouveau** (`47c_`) : 131/139 pour le résultat, affectation décidée à la clôture dans l'écran (en droit : l'Assemblée en N+1), pas de réserve légale codée.
+- **Fiches d'élevage divergentes** (`47e_`) : la plus récente reste courante, l'autre est conservée et le choix est explicite (plus de perte silencieuse).
+- **Transmission des factures web** (`47a2_` A3) : n'importe quel poste avec `manage-facturation` peut transmettre, un seul à la fois (réservation 15 min).
+- **Rôles** (`47u_` D1) : le web attribue aussi Administrateur et Comptable, le Dart seulement agent de vente et d'élevage.
+- **Poste appairé à un compte sans droits** (`47h_` D6) : il propose tout son semis, ~74 demandes refusées restent en conflit.
