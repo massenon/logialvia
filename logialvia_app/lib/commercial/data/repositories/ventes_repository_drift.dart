@@ -282,6 +282,7 @@ class VentesRepositoryDrift implements VentesRepository {
       total: total,
       paye: montantPaye,
       ventilation: await _ventilerVente(panier),
+      fraisLivraison: livraison?.supplementFacture ?? 0,
     );
 
     // Publie APRES la transaction : notifier des ecrans d'une ecriture qui
@@ -379,6 +380,11 @@ class VentesRepositoryDrift implements VentesRepository {
         total: annulee.total,
         paye: annulee.paye,
         ventilation: ventilation,
+        // Les frais d'une livraison facturée font partie du total : l'écriture
+        // de vente les a crédités, la contrepassation les reprend.
+        fraisLivraison: annulee.livraisonMode == ModeLivraison.facturee.code
+            ? (annulee.livraisonFrais ?? 0)
+            : 0,
       );
     }
 
@@ -391,6 +397,8 @@ class VentesRepositoryDrift implements VentesRepository {
     required double montant,
   }) async {
     String? modeVente;
+    // Ce qui est REELLEMENT encaisse : le versement borne au reste du.
+    var encaisse = 0.0;
 
     await _db.transaction(() async {
       final vente = await (_db.select(
@@ -405,6 +413,7 @@ class VentesRepositoryDrift implements VentesRepository {
 
       // Ne jamais encaisser plus que le total dû.
       final nouveauPaye = (vente.paye + montant).clamp(0.0, vente.total);
+      encaisse = nouveauPaye - vente.paye;
 
       await (_db.update(
         _db.ventes,
@@ -423,12 +432,14 @@ class VentesRepositoryDrift implements VentesRepository {
       );
     });
 
-    // Encaissement d'une creance : Tresorerie au debit, Clients au credit.
+    // Encaissement d'une creance : Tresorerie au debit, Clients au credit — du
+    // montant REELLEMENT encaisse. Comptabiliser le versement saisi (borne dans
+    // la vente mais pas dans l'ecriture) creditait 411 de plus que la creance.
     await _ecritures.pourReglement(
       reference: reference,
       date: DateTime.now(),
       mode: modeVente ?? 'Espèces',
-      montant: montant,
+      montant: encaisse,
       estEncaissement: true,
     );
   }

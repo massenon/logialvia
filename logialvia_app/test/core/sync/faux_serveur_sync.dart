@@ -763,7 +763,7 @@ class FauxServeurSync {
   ) {
     final acceptees = <String>[];
     final refusees = <Map<String, String>>[];
-    bool codee(String ref) => RegExp(r'^V-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+    bool codee(String ref) => RegExp(r'^V-(P\d+|WEB)-\d{4}-\d{3,}$').hasMatch(ref);
 
     for (final v in lot) {
       final id = v['id'] as String;

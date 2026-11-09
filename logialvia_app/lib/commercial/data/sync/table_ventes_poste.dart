@@ -29,7 +29,10 @@ class TableVentesPoste implements TablePoste {
   static final RegExp _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
-  static final RegExp _reference = RegExp(r'^V-(P\d+-)?\d{4}-\d{3,}$');
+
+  /// `V-P2-2026-001` (poste appairé), `V-WEB-2026-001` (vente saisie au web, code
+  /// `WEB` comme pour ses pièces comptables) ou `V-2026-001` (avant l'appairage).
+  static final RegExp _reference = RegExp(r'^V-((P\d+|WEB)-)?\d{4}-\d{3,}$');
 
   @override
   String get nom => 'ventes';
@@ -97,6 +100,9 @@ class TableVentesPoste implements TablePoste {
 
   DateTime? _date(Object? v) =>
       v is String ? DateTime.tryParse(v)?.toLocal() : null;
+
+  bool _memeInstant(DateTime? a, DateTime? b) =>
+      a == null || b == null ? a == b : a.isAtSameMomentAs(b);
 
   @override
   Future<ResultatAbsorption> absorber(List<Map<String, dynamic>> lignes) {
@@ -203,6 +209,11 @@ class TableVentesPoste implements TablePoste {
             locale.paye == (l['paye'] as num).toDouble() &&
             locale.total == (l['total'] as num).toDouble() &&
             locale.motifAnnulation == _texte(l['motif_annulation']) &&
+            locale.clientId == _texte(l['client_id']) &&
+            locale.client == (l['client'] as String).trim() &&
+            locale.livraisonAdresse == _texte(l['livraison_adresse']) &&
+            locale.livraisonContact == _texte(l['livraison_contact']) &&
+            _memeInstant(locale.echeance, _date(l['echeance'])) &&
             locale.syncStatus == 'synced';
         if (identique) continue;
 
@@ -216,6 +227,10 @@ class TableVentesPoste implements TablePoste {
             paye: Value((l['paye'] as num).toDouble()),
             motifAnnulation: Value(_texte(l['motif_annulation'])),
             echeance: Value(_date(l['echeance'])),
+            // Corrigés au web (adresse ou contact de livraison) : sans eux, la
+            // modification arrivait « identique » et se perdait en silence.
+            livraisonAdresse: Value(_texte(l['livraison_adresse'])),
+            livraisonContact: Value(_texte(l['livraison_contact'])),
             syncStatus: const Value('synced'),
             syncMotif: const Value(null),
             updatedAt: Value(instant.toUtc().toIso8601String()),

@@ -521,6 +521,81 @@ void main() {
       },
     );
 
+    test('une vente saisie au WEB (V-WEB-2026-001) est absorbée', () async {
+      final b = await poste('P2');
+      serveur.ventes['x'] = venteServeur(
+        await produitId(b),
+        surcharge: {'reference': 'V-WEB-2026-001'},
+      );
+
+      final r = await b.moteur.synchroniser();
+
+      expect(r.recues, 1);
+      expect((await b.lesVentes()).single.ref, 'V-WEB-2026-001');
+    });
+
+    test(
+      'une référence « V-WEB » sans année ni numéro reste refusée',
+      () async {
+        final b = await poste('P2');
+        serveur.ventes['x'] = venteServeur(
+          await produitId(b),
+          surcharge: {'reference': 'V-WEB-2026'},
+        );
+
+        final r = await b.moteur.synchroniser();
+
+        expect(r.refuseesALaReception, 1);
+        expect(await b.lesVentes(), isEmpty);
+      },
+    );
+
+    // UN champ à la fois : statut et montants restent identiques, seule la
+    // modification faite au web doit suffire à déclencher l'écriture.
+    final modifications = <String, (String, Object, bool Function(VenteRow))>{
+      'le client': (
+        'client',
+        'AGOSSOU Prudence',
+        (v) => v.client == 'AGOSSOU Prudence',
+      ),
+      'le client rattaché': (
+        'client_id',
+        'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        (v) => v.clientId == 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      ),
+      'l\'échéance': (
+        'echeance',
+        '2026-12-15T11:00:00.000000Z',
+        (v) => v.echeance != null,
+      ),
+      'l\'adresse de livraison': (
+        'livraison_adresse',
+        'Kantaborifa, Natitingou',
+        (v) => v.livraisonAdresse == 'Kantaborifa, Natitingou',
+      ),
+      'le contact de livraison': (
+        'livraison_contact',
+        '+229 97 11 22 33',
+        (v) => v.livraisonContact == '+229 97 11 22 33',
+      ),
+    };
+    modifications.forEach((nom, cas) {
+      final (champ, valeur, verifie) = cas;
+      test('une modification faite au web de $nom est appliquée', () async {
+        final b = await poste('P2');
+        serveur.ventes['x'] = venteServeur(await produitId(b));
+        await b.moteur.synchroniser();
+
+        serveur.ventes['x']![champ] = valeur;
+        serveur.ventes['x']!['updated_at'] = '2026-11-09T13:00:00.000000Z';
+        serveur.ventes['x']!['serveur_modifie_le'] = serveur.instantServeur();
+        final r = await b.moteur.synchroniser();
+
+        expect(r.reussie, isTrue, reason: r.message);
+        expect(verifie((await b.lesVentes()).single), isTrue);
+      });
+    });
+
     test('les lignes d\'une vente connue ne changent jamais', () async {
       final b = await poste('P2');
       final pid = await produitId(b);

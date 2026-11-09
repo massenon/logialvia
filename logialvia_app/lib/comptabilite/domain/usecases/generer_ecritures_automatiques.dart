@@ -18,6 +18,11 @@ class ComptesAutomatiques {
   static const String ventesAvicoles = '701';
   static const String ventesMarchandises = '707';
 
+  /// Frais de livraison **facturés séparément** : un produit accessoire de la
+  /// vente, crédité sans centre analytique (il n'appartient à aucune filière).
+  /// Le plan ne compte que 701 et 707 ; la génération n'invente aucun compte.
+  static const String fraisLivraison = '707';
+
   static const String achatsMatieres = '601';
   static const String achatsMarchandises = '602';
   static const String fraisVeterinaires = '622';
@@ -61,6 +66,7 @@ class GenererEcrituresAutomatiques {
     required double total,
     required double paye,
     required Map<(String, String?), double> ventilation,
+    double fraisLivraison = 0,
   }) async {
     if (total <= 0) return;
 
@@ -96,11 +102,26 @@ class GenererEcrituresAutomatiques {
           numeroCompte: compte,
           debit: 0,
           credit: montant,
-          libelle: centre == null ? 'Vente $reference' : 'Vente $reference — $centre',
+          libelle: centre == null
+              ? 'Vente $reference'
+              : 'Vente $reference — $centre',
           axeAnalytique: centre,
         ),
       );
     });
+
+    // Les frais d'une livraison facturée sont DANS le total : sans cette ligne la
+    // pièce serait déséquilibrée de leur montant (le serveur la refuserait).
+    if (fraisLivraison > 0) {
+      lignes.add(
+        LigneAEcrire(
+          numeroCompte: ComptesAutomatiques.fraisLivraison,
+          debit: 0,
+          credit: fraisLivraison,
+          libelle: 'Frais de livraison facturés — vente $reference',
+        ),
+      );
+    }
 
     await _enregistrer(
       date: date,
@@ -123,6 +144,7 @@ class GenererEcrituresAutomatiques {
     required double total,
     required double paye,
     required Map<(String, String?), double> ventilation,
+    double fraisLivraison = 0,
   }) async {
     if (total <= 0) return;
 
@@ -166,6 +188,17 @@ class GenererEcrituresAutomatiques {
         ),
       );
     });
+
+    if (fraisLivraison > 0) {
+      lignes.add(
+        LigneAEcrire(
+          numeroCompte: ComptesAutomatiques.fraisLivraison,
+          debit: fraisLivraison,
+          credit: 0,
+          libelle: 'Annulation frais de livraison — vente $reference',
+        ),
+      );
+    }
 
     await _enregistrer(
       date: date,
