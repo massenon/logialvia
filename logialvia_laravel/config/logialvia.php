@@ -156,6 +156,9 @@ return [
             \App\Sync\Tables\FichesJourneeTable::class,
             \App\Sync\Tables\VentesJourTable::class,
             \App\Sync\Tables\BandesTable::class,
+            // Couveuse (7b) : les incubateurs AVANT les lots qui les occupent.
+            \App\Sync\Tables\MachinesIncubateurTable::class,
+            \App\Sync\Tables\CyclesCouveuseTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),

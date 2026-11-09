@@ -59,6 +59,40 @@ trait PostesDeTest
         ], $surcharge);
     }
 
+    /** Un incubateur tel qu'un poste l'enverrait. */
+    protected function ligneMachine(array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'code' => 'INC-01',
+            'libelle' => 'Couveuse atelier 528 œufs',
+            'capacite_oeufs' => 528,
+            'active' => true,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
+
+    /** Un lot de couveuse tel qu'un poste l'enverrait (mirages encore a faire). */
+    protected function ligneCycle(array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'code_incubation' => 'C-P1-2026-001',
+            'espece' => 'goliath',
+            'date_incubation' => '2026-08-01',
+            'oeufs_couves' => 200,
+            'poussins_nes' => null,
+            'oeufs_perdus' => null,
+            'statut' => 'En Incubation',
+            'machine_id' => null,
+            'oeufs_blancs_j7' => null,
+            'oeufs_gates_j14' => null,
+            'lot_parent_id' => null,
+            'supprime_le' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
+
     /** Un produit tel qu'un poste le propose (sans stock : jamais synchronise). */
     protected function ligneProduit(array $surcharge = []): array
     {
