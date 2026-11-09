@@ -17,6 +17,9 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class PostesAppairage extends Component
 {
+    /** Tables que n'importe quel compte peut ecrire (aucun droit particulier requis). */
+    private const TABLES_OUVERTES_A_TOUT_COMPTE = ['messages_editeur', 'effets_stock'];
+
     /** Identifiant (UUID) du poste dont on demande la revocation ; `null` = modale fermee. */
     public ?string $posteAConfirmer = null;
 
@@ -79,8 +82,9 @@ class PostesAppairage extends Component
             'roles' => implode(', ', array_map(fn (string $r) => $libelles[$r] ?? $r, $d['roles'])) ?: 'Aucun rôle',
             'tables' => count($d['tables_ecrites']),
             'demandes' => count($d['demandes']),
-            // Les messages a l'editeur sont ouverts a tout compte : ils ne comptent pas comme un droit.
-            'lecture_seule' => array_diff($d['tables_ecrites'], ['messages_editeur']) === [] && $d['demandes'] === [],
+            // Les tables ouvertes a TOUT compte (messages a l'editeur, trace des effets de stock du poste) ne
+            // comptent pas comme un droit d'ecriture.
+            'lecture_seule' => array_diff($d['tables_ecrites'], self::TABLES_OUVERTES_A_TOUT_COMPTE) === [] && $d['demandes'] === [],
             'supprime' => $utilisateur->trashed(),
         ];
     }

@@ -112,6 +112,16 @@ class PostesAppairageTest extends TestCase
             ->assertSee('Aucun rôle');
     }
 
+    public function test_les_tables_ouvertes_a_tout_compte_ne_comptent_pas_comme_un_droit(): void
+    {
+        $sans = User::factory()->create(['username' => 'vide2', 'name' => 'Vide2']);
+        $this->appairer($sans);
+        $tables = \App\Sync\DroitsPoste::pour($sans)['tables_ecrites'];
+
+        // Si une nouvelle table s'ouvre a tout compte, la liste de PostesAppairage doit la connaitre.
+        $this->assertEqualsCanonicalizing(['effets_stock', 'messages_editeur'], $tables);
+    }
+
     public function test_sans_poste_la_page_l_explique(): void
     {
         Livewire::actingAs($this->utilisateur('admin'))->test(PostesAppairage::class)
