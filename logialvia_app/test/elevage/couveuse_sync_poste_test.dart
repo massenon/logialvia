@@ -310,6 +310,26 @@ void main() {
     );
   });
 
+  group('identité de l\'incubateur', () {
+    test(
+      'INC-01 a le même identifiant au poste et au web (vecteur partagé avec Laravel)',
+      () async {
+        // Le même littéral figure dans `CouveuseWebTest` côté serveur : si l'un des deux
+        // algorithmes change, les deux postes — et le web — ne désigneraient plus le même
+        // incubateur.
+        const attendu = 'ef7bcd40-7c36-5786-992e-94f3a9b0dc0f';
+        expect(uuidDeterministe('machine:inc-01'), attendu);
+        final a = await poste('P1');
+
+        expect((await a.machine('INC-01')).id, attendu);
+        expect(
+          (await a.machine('Inc-02')).id,
+          uuidDeterministe('machine:inc-02'),
+        );
+      },
+    );
+  });
+
   group('deux postes', () {
     test(
       'B reçoit les lots et incubateurs de A, SANS aucun effet de bord',
