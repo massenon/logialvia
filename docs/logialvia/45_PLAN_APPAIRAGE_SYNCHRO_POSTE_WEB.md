@@ -40,6 +40,9 @@ que les dépôts rattachés à la session, et Composer en réclame des centaines
 publics. C'est lourd (plusieurs Go de dépôts pour un squelette, les historiques complets étant clonés) : un
 garde-fou arrête l'installation si l'espace libre passe sous 6 Go. `vendor/` n'est jamais versionné.
 
+**Résultat (09/11/2026)** : l'installation par clonage a réussi (environ 7 Go le temps du clonage, ramenés à 0,9 Go
+en supprimant les `.git` de `vendor/` et le cache Composer). Il faut le refaire après chaque `composer require`.
+
 **Si l'installation échoue** : installer sur le poste du client ou une machine avec accès normal à Packagist, puis
 pousser le dossier sans `vendor/`. Les travaux qui ne dépendent pas du réseau (migration UUID du poste, contrat de
 synchronisation) avancent en attendant.
@@ -75,7 +78,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 
 | # | Étape | Dépend de | État |
 |---|---|---|---|
-| W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | en cours |
+| W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | **fait** (09/11/2026) : Laravel 12.71, Livewire 3.8, Sanctum 4.3, Spatie Permission 7.4, DomPDF 3.1, Tailwind 3.4 ; test de conformité vérifié par mutation |
 | W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | en attente |
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | en attente |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2, Q-SYNC-1 | en attente |

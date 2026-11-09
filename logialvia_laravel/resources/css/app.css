@@ -1,0 +1,25 @@
+/* Roboto variable, servie par le site : aucune requete externe au chargement. */
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-Italic-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-surface-bg font-sans text-body text-on-surface;
+    }
+}

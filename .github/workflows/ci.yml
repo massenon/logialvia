@@ -30,3 +30,28 @@ jobs:
 
       - name: Les tests ne modifient pas docs/manuel
         run: git diff --exit-code -- ../docs
+
+  laravel:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: logialvia_laravel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+
+      # Comprend ConformiteDartTest : Tailwind doit rester egal au code Dart.
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php artisan test
