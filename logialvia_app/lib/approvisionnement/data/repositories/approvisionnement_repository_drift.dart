@@ -109,10 +109,9 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
   @override
   Future<List<Intrant>> chargerIntrants() async {
-    final lignes =
-        await (_db.select(_db.intrants)
-              ..orderBy([(i) => OrderingTerm.asc(i.name)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.intrants,
+    )..orderBy([(i) => OrderingTerm.asc(i.name)])).get();
     return [
       for (final i in lignes)
         Intrant(
@@ -150,10 +149,9 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
   @override
   Future<List<Fournisseur>> chargerFournisseurs() async {
-    final lignes =
-        await (_db.select(_db.fournisseurs)
-              ..orderBy([(f) => OrderingTerm.asc(f.nom)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.fournisseurs,
+    )..orderBy([(f) => OrderingTerm.asc(f.nom)])).get();
     final commandes = await _db.select(_db.achats).get();
 
     return [
@@ -197,14 +195,16 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
     final parAchat = <String, List<LigneAchat>>{};
     for (final l in lignes) {
-      parAchat.putIfAbsent(l.achatRef, () => []).add(
-        LigneAchat(
-          intrantCode: l.intrantCode,
-          nom: l.nom,
-          quantite: l.qte,
-          prixUnitaire: l.puAchat,
-        ),
-      );
+      parAchat
+          .putIfAbsent(l.achatRef, () => [])
+          .add(
+            LigneAchat(
+              intrantCode: l.intrantCode,
+              nom: l.nom,
+              quantite: l.qte,
+              prixUnitaire: l.puAchat,
+            ),
+          );
     }
 
     return [
@@ -347,11 +347,9 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         final intrant = intrants[entree.key]!;
         final restant = intrant.stock - entree.value.round();
 
-        await (_db.update(
-          _db.intrants,
-        )..where((i) => i.code.equals(entree.key))).write(
-          IntrantsCompanion(stock: Value(restant)),
-        );
+        await (_db.update(_db.intrants)
+              ..where((i) => i.code.equals(entree.key)))
+            .write(IntrantsCompanion(stock: Value(restant)));
 
         await _journaliser(
           intrantCode: entree.key,
@@ -507,31 +505,28 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         _db.lignesAchat,
       )..where((l) => l.achatRef.equals(reference))).get();
 
-      await _receptionnerLignes(
-        reference,
-        [
-          for (final l in lignes)
-            LignePanierAchat(
-              intrantCode: l.intrantCode,
-              nom: l.nom,
-              quantite: l.qte,
-              prixUnitaire: l.puAchat,
-              unite: '',
-            ),
-        ],
-        DateTime.now(),
-      );
+      await _receptionnerLignes(reference, [
+        for (final l in lignes)
+          LignePanierAchat(
+            intrantCode: l.intrantCode,
+            nom: l.nom,
+            quantite: l.qte,
+            prixUnitaire: l.puAchat,
+            unite: '',
+          ),
+      ], DateTime.now());
 
-      await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(
-            AchatsCompanion(
-              statut: const Value(StatutAchat.livre),
-              // Toute modification locale repasse l'achat a envoyer.
-              syncStatus: const Value('pending'),
-              syncMotif: const Value(null),
-              updatedAt: Value(instantSaisie()),
-            ),
-          );
+      await (_db.update(
+        _db.achats,
+      )..where((a) => a.ref.equals(reference))).write(
+        AchatsCompanion(
+          statut: const Value(StatutAchat.livre),
+          // Toute modification locale repasse l'achat a envoyer.
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
     });
   }
 
@@ -541,6 +536,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
     required double montant,
   }) async {
     String? modeAchat;
+    var verse = 0.0;
 
     await _db.transaction(() async {
       final achat = await (_db.select(
@@ -548,19 +544,27 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       )..where((a) => a.ref.equals(reference))).getSingleOrNull();
       if (achat == null) throw StateError('Commande $reference introuvable.');
 
+      if (achat.statut == StatutAchat.annule) {
+        throw StateError('Cette commande est annulée.');
+      }
       modeAchat = achat.mode;
 
       // Ne jamais regler plus que le total du.
       final nouveauPaye = (achat.paye + montant).clamp(0.0, achat.total);
-      await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(
-            AchatsCompanion(
-              paye: Value(nouveauPaye),
-              syncStatus: const Value('pending'),
-              syncMotif: const Value(null),
-              updatedAt: Value(instantSaisie()),
-            ),
-          );
+      // Ce qui est REELLEMENT verse : l'ecriture porte ce montant, pas celui saisi. Avec le
+      // montant saisi, un versement de 999 999 sur 4 000 dus laissait 401 DEBITEUR de 995 999
+      // alors que la dette de l'achat etait ramenee a zero (solde 401 != dettes fournisseurs).
+      verse = nouveauPaye - achat.paye;
+      await (_db.update(
+        _db.achats,
+      )..where((a) => a.ref.equals(reference))).write(
+        AchatsCompanion(
+          paye: Value(nouveauPaye),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
     });
 
     // Reglement d'une dette : Fournisseurs au debit, Tresorerie au credit.
@@ -568,7 +572,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       reference: reference,
       date: DateTime.now(),
       mode: modeAchat ?? 'Espèces',
-      montant: montant,
+      montant: verse,
       estEncaissement: false,
     );
   }
@@ -611,10 +615,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       await (_db.update(
         _db.intrants,
       )..where((i) => i.code.equals(ligne.intrantCode))).write(
-        IntrantsCompanion(
-          stock: Value(nouveauStock),
-          pmp: Value(nouveauPmp),
-        ),
+        IntrantsCompanion(stock: Value(nouveauStock), pmp: Value(nouveauPmp)),
       );
 
       await _journaliser(

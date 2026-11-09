@@ -13,8 +13,10 @@ import '../../domain/entities/approvisionnement.dart';
 /// - absorber l'achat d'un autre poste ne produit **aucun effet** : ni entrée de
 ///   stock, ni recalcul du PMP, ni mouvement journalisé, ni écriture comptable (la
 ///   réception appartient au poste qui a reçu la marchandise) ;
-/// - les lignes sont **immuables** ; l'entête (statut, montant payé) suit « dernier
-///   écrivain gagne » ; la référence ne change jamais.
+/// - les lignes sont **immuables** dès que l'achat n'est plus « Commandé » ; tant qu'il
+///   l'est, une saisie plus récente (la commande modifiée au web) **remplace** ses
+///   lignes ; l'entête (statut, montant payé) suit « dernier écrivain gagne » ; la
+///   référence ne change jamais.
 class TableAchatsPoste implements TablePoste {
   const TableAchatsPoste(this._db);
 
@@ -23,7 +25,10 @@ class TableAchatsPoste implements TablePoste {
   static final RegExp _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
-  static final RegExp _reference = RegExp(r'^ACH-(P\d+-)?\d{4}-\d{3,}$');
+
+  /// `ACH-2026-001` (poste jamais appairé), `ACH-P2-2026-001` (poste appairé) ou
+  /// `ACH-WEB-2026-001` (commande saisie au web, qui est un « poste » de code WEB).
+  static final RegExp _reference = RegExp(r'^ACH-((P\d+|WEB)-)?\d{4}-\d{3,}$');
 
   @override
   String get nom => 'achats';
@@ -40,9 +45,13 @@ class TableAchatsPoste implements TablePoste {
     StatutAchat.livre,
     StatutAchat.annule,
   };
+
+  /// `Crédit` : le choix de la liste déroulante de la commande. Il manquait ici : un achat
+  /// à crédit était refusé en bloc par le serveur (« mode inconnu »).
   static const _modes = {
     ModeReglement.especes,
     ModeReglement.mobileMoney,
+    ModeAchat.credit,
     ModeReglement.nonPrecise,
   };
 
@@ -176,7 +185,16 @@ class TableAchatsPoste implements TablePoste {
           continue;
         }
 
-        // Achat déjà connu : règle du plus récent, comme le serveur.
+        // Achat déjà connu : règle du plus récent, comme le serveur. Même une ligne locale
+        // déjà synchronisée ne cède pas à une version STRICTEMENT plus ancienne (tirage
+        // rejoué dans le désordre) : sinon une commande modifiée reviendrait en arrière.
+        if (locale.syncStatus == 'synced') {
+          final saisieLocale = DateTime.tryParse(locale.updatedAt);
+          if (saisieLocale != null && instant.isBefore(saisieLocale)) {
+            conservees++;
+            continue;
+          }
+        }
         if (locale.syncStatus != 'synced') {
           final saisieLocale = DateTime.tryParse(locale.updatedAt);
           if (saisieLocale != null && !instant.isAfter(saisieLocale)) {
@@ -185,7 +203,26 @@ class TableAchatsPoste implements TablePoste {
           }
           supplantees++;
         }
+        // Les lignes ne se remplacent que tant que l'achat LOCAL est « Commandé » (rien
+        // n'est entré en stock) ; chaque intrant de la nouvelle composition doit exister.
+        final remplacerLignes = locale.statut == StatutAchat.commande;
+        if (remplacerLignes) {
+          var connus = true;
+          for (final x in lignesAchat) {
+            final i =
+                await (_db.select(
+                      _db.intrants,
+                    )..where((i) => i.code.equals(x['intrant_code'] as String)))
+                    .getSingleOrNull();
+            if (i == null) connus = false;
+          }
+          if (!connus) {
+            refusees++;
+            continue;
+          }
+        }
         final identique =
+            !remplacerLignes &&
             locale.statut == l['statut'] &&
             locale.paye == (l['paye'] as num).toDouble() &&
             locale.total == (l['total'] as num).toDouble() &&
@@ -204,6 +241,25 @@ class TableAchatsPoste implements TablePoste {
             updatedAt: Value(instant.toUtc().toIso8601String()),
           ),
         );
+        if (remplacerLignes) {
+          await (_db.delete(
+            _db.lignesAchat,
+          )..where((x) => x.achatRef.equals(locale.ref))).go();
+          for (final x in lignesAchat) {
+            await _db
+                .into(_db.lignesAchat)
+                .insert(
+                  LignesAchatCompanion.insert(
+                    id: Value(x['id'] as String),
+                    achatRef: locale.ref,
+                    intrantCode: x['intrant_code'] as String,
+                    nom: (x['nom'] as String).trim(),
+                    qte: (x['qte'] as num).toDouble(),
+                    puAchat: (x['pu_achat'] as num).toDouble(),
+                  ),
+                );
+          }
+        }
         absorbees++;
       }
       return ResultatAbsorption(

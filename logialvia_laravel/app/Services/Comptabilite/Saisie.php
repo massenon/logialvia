@@ -71,6 +71,7 @@ final class Saisie
         string $numeroPiece,
         array $lignes,
         ?string $contrepasseDe = null,
+        ?string $achatRef = null,
     ): ?string {
         $date = CarbonImmutable::parse($instant)->utc();
         [$annee] = Verrous::anneeMois($date);
@@ -82,7 +83,7 @@ final class Saisie
             'exercice_annee' => $annee,
             'journal_code' => $journal,
             'vente_ref' => null,
-            'achat_ref' => null,
+            'achat_ref' => $achatRef,
             'contrepasse_de' => $contrepasseDe,
             'updated_at' => self::instantMaintenant(),
             'lignes' => array_map(fn (array $l) => [
@@ -107,13 +108,15 @@ final class Saisie
      * `ANN-<numero>`. Le serveur verifie qu'elle reprend la piece ligne pour ligne, qu'elle n'est
      * annulee qu'une fois et qu'une annulation ne s'annule pas.
      */
-    public function contrepasser(string $pieceId): ?string
+    public function contrepasser(string $pieceId, bool $automatique = false, ?string $motif = null): ?string
     {
         $originale = PieceComptable::query()->with('lignes')->find($pieceId);
         if ($originale === null) {
             return 'Cette pièce n\'existe plus.';
         }
-        if ($originale->vente_ref !== null || $originale->achat_ref !== null) {
+        // Une piece AUTOMATIQUE (vente, achat) ne s'annule pas a la main : on annule l'operation
+        // d'origine, qui la contrepasse elle-meme (`$automatique = true`, seul appel permis).
+        if (! $automatique && ($originale->vente_ref !== null || $originale->achat_ref !== null)) {
             return 'Cette pièce est générée automatiquement par '.($originale->vente_ref ?? $originale->achat_ref)
                 .'. Annulez l\'opération d\'origine plutôt que l\'écriture.';
         }
@@ -126,10 +129,11 @@ final class Saisie
                 'compte' => $l->numero_compte,
                 'debit' => $l->credit,
                 'credit' => $l->debit,
-                'libelle' => 'Annulation — '.$l->libelle,
+                'libelle' => mb_substr('Annulation — '.$l->libelle.($motif !== null ? " ($motif)" : ''), 0, 255),
                 'axe' => $l->axe_analytique,
             ])->all(),
             $originale->id,
+            $originale->achat_ref,
         );
     }
 

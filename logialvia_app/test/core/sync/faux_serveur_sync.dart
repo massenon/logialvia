@@ -1786,7 +1786,8 @@ class FauxServeurSync {
   ) {
     final acceptees = <String>[];
     final refusees = <Map<String, String>>[];
-    bool codee(String ref) => RegExp(r'^ACH-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+    bool codee(String ref) =>
+        RegExp(r'^ACH-(P\d+|WEB)-\d{4}-\d{3,}$').hasMatch(ref);
 
     for (final a in lot) {
       final id = a['id'] as String;
@@ -1840,6 +1841,8 @@ class FauxServeurSync {
       } else if (saisie.isAfter(
         DateTime.parse(existant['updated_at'] as String),
       )) {
+        // Les lignes ne se remplacent que tant que l'achat est « Commandé ».
+        if (existant['statut'] == 'Commandé') existant['lignes'] = lignes;
         for (final c in const [
           'fournisseur_id',
           'statut',

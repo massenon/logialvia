@@ -531,31 +531,71 @@ void main() {
       },
     );
 
-    test('les lignes d\'un achat connu ne changent jamais', () async {
-      final b = await poste('P2');
-      final f = await avecFournisseurServeur(b);
-      serveur.achats['x'] = achatServeur(f);
-      await b.moteur.synchroniser();
+    test(
+      'les lignes d\'un achat DÉJÀ LIVRÉ ici ne changent jamais (le stock en dépend)',
+      () async {
+        final b = await poste('P2');
+        final f = await avecFournisseurServeur(b);
+        serveur.achats['x'] = achatServeur(
+          f,
+          surcharge: {'statut': StatutAchat.livre},
+        );
+        await b.moteur.synchroniser();
 
-      serveur.achats['x']!['lignes'] = [
-        {
-          'id': 'abababab-abab-4bab-8bab-abababababab',
-          'intrant_code': 'INT-001',
-          'nom': 'Autre',
-          'qte': 9,
-          'pu_achat': 1,
-        },
-      ];
-      serveur.achats['x']!['statut'] = StatutAchat.livre;
-      serveur.achats['x']!['updated_at'] = '2026-11-09T13:00:00.000000Z';
-      serveur.achats['x']!['serveur_modifie_le'] = serveur.instantServeur();
-      await b.moteur.synchroniser();
+        serveur.achats['x']!['lignes'] = [
+          {
+            'id': 'abababab-abab-4bab-8bab-abababababab',
+            'intrant_code': 'INT-001',
+            'nom': 'Autre',
+            'qte': 9,
+            'pu_achat': 1,
+          },
+        ];
+        serveur.achats['x']!['updated_at'] = '2026-11-09T13:00:00.000000Z';
+        serveur.achats['x']!['serveur_modifie_le'] = serveur.instantServeur();
+        await b.moteur.synchroniser();
 
-      final lignes = await b.db.select(b.db.lignesAchat).get();
-      expect(lignes, hasLength(1));
-      expect(lignes.single.qte, 100);
-      expect((await b.achats()).single.statut, StatutAchat.livre);
-    });
+        final lignes = await b.db.select(b.db.lignesAchat).get();
+        expect(lignes, hasLength(1));
+        expect(lignes.single.qte, 100);
+      },
+    );
+
+    test(
+      'tant que l\'achat est « Commandé » ici, une modification plus récente remplace ses lignes',
+      () async {
+        final b = await poste('P2');
+        final f = await avecFournisseurServeur(b);
+        serveur.achats['x'] = achatServeur(f);
+        await b.moteur.synchroniser();
+
+        serveur.achats['x']!['lignes'] = [
+          {
+            'id': 'abababab-abab-4bab-8bab-abababababab',
+            'intrant_code': 'INT-001',
+            'nom': 'Autre',
+            'qte': 9,
+            'pu_achat': 1,
+          },
+        ];
+        serveur.achats['x']!['total'] = 9;
+        serveur.achats['x']!['paye'] = 0;
+        serveur.achats['x']!['statut'] = StatutAchat.livre;
+        serveur.achats['x']!['updated_at'] = '2026-11-09T13:00:00.000000Z';
+        serveur.achats['x']!['serveur_modifie_le'] = serveur.instantServeur();
+        await b.moteur.synchroniser();
+
+        final lignes = await b.db.select(b.db.lignesAchat).get();
+        expect(lignes, hasLength(1));
+        expect(lignes.single.qte, 9);
+        expect((await b.achats()).single.statut, StatutAchat.livre);
+        expect(
+          (await b.stockMais()),
+          18,
+          reason: 'recevoir ailleurs ne met pas le stock de CE poste à jour',
+        );
+      },
+    );
   });
 
   group('fournisseurs : absorbeur strict', () {

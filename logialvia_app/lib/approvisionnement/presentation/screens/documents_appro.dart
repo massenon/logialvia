@@ -120,6 +120,8 @@ class DocumentsAppro {
   /// Achats et commandes — `achats-commandes.html`.
   static DocumentPdf achats(ApprovisionnementViewModel vm) {
     final achats = vm.achats;
+    // Les commandes annulées (au web) restent listées mais ne comptent dans aucun total.
+    final actifs = achats.where((a) => !a.estAnnule).toList();
 
     return DocumentPdf(
       titre: 'Achats & Commandes',
@@ -161,9 +163,9 @@ class DocumentsAppro {
                 CellulePdf(a.mode ?? '—'),
                 CellulePdf(Formats.nombre(a.total)),
                 CellulePdf(Formats.nombre(a.paye)),
-                (a.total - a.paye) > 0.01
+                a.soldeDu > 0.01
                     ? CellulePdf.montant(
-                        Formats.nombre(a.total - a.paye),
+                        Formats.nombre(a.soldeDu),
                         teinte: TeintePdf.negative,
                       )
                     : const CellulePdf('—', teinte: TeintePdf.attenuee),
@@ -176,15 +178,13 @@ class DocumentsAppro {
             const CellulePdf(''),
             const CellulePdf(''),
             CellulePdf(
-              Formats.nombre(achats.fold<double>(0, (s, a) => s + a.total)),
+              Formats.nombre(actifs.fold<double>(0, (s, a) => s + a.total)),
             ),
             CellulePdf(
-              Formats.nombre(achats.fold<double>(0, (s, a) => s + a.paye)),
+              Formats.nombre(actifs.fold<double>(0, (s, a) => s + a.paye)),
             ),
             CellulePdf(
-              Formats.nombre(
-                achats.fold<double>(0, (s, a) => s + a.total - a.paye),
-              ),
+              Formats.nombre(actifs.fold<double>(0, (s, a) => s + a.soldeDu)),
             ),
             const CellulePdf(''),
           ],

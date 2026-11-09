@@ -77,6 +77,14 @@ class StatutAchat {
   static const String annule = 'Annulé';
 }
 
+/// Mode de règlement propre à une commande d'achat, en plus de ceux des ventes
+/// (`ModeReglement`) : la liste déroulante de la commande propose « Crédit ».
+class ModeAchat {
+  ModeAchat._();
+
+  static const String credit = 'Crédit';
+}
+
 class Fournisseur {
   const Fournisseur({
     required this.id,

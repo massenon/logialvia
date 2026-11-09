@@ -3,6 +3,7 @@
 namespace Tests\Feature\Sync;
 
 use App\Models\Achat;
+use App\Sync\Tables\AchatsTable;
 use App\Models\Fournisseur;
 use App\Models\LigneAchat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -203,7 +204,7 @@ class AchatsTest extends TestCase
     public static function achatsInvalides(): array
     {
         return [
-            'référence invalide' => [['reference' => 'V-2026-001'], "La référence de l'achat est invalide (attendu : ACH-P2-2026-001)."],
+            'référence invalide' => [['reference' => 'V-2026-001'], "La référence de l'achat est invalide (attendu : ACH-P2-2026-001 ou ACH-WEB-2026-001)."],
             'statut inconnu' => [['statut' => 'Perdu'], "Le statut de l'achat est inconnu."],
             'mode inconnu' => [['mode' => 'Troc'], 'Le mode de règlement est inconnu.'],
             'total négatif' => [['total' => -1], "Le total de l'achat ne peut pas être négatif."],
@@ -249,6 +250,22 @@ class AchatsTest extends TestCase
         $this->assertSame(1, LigneAchat::query()->count());
     }
 
+    public function test_une_reference_web_et_le_mode_credit_sont_acceptes_et_la_reference_web_est_unique_pour_tous(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $b = $this->poste('admin', 'autre');
+        $f = $this->fournisseurConnu($a);
+        $web = $this->ligneAchat($f, ['reference' => 'ACH-WEB-2026-001', 'mode' => 'Crédit']);
+
+        $this->assertSame([$web['id']], $this->bilanAchats($a, [$web])['accepted']);
+        $this->assertSame('Crédit', Achat::query()->find($web['id'])->mode);
+        $this->assertSame('', Achat::query()->find($web['id'])->portee_reference, 'globale, comme un code de poste');
+
+        $doublon = $this->ligneAchat($f, ['reference' => 'ACH-WEB-2026-001']);
+        $this->assertSame(AchatsTable::MOTIF_REFERENCE, $this->bilanAchats($b, [$doublon])['rejected'][0]['motif']);
+        $this->assertSame(1, Achat::query()->count());
+    }
+
     public function test_l_entete_suit_le_dernier_ecrivain_les_lignes_et_la_reference_ne_bougent_jamais(): void
     {
         $a = $this->poste('admin', 'gerante');
@@ -267,7 +284,17 @@ class AchatsTest extends TestCase
         $this->assertSame('Livré', $row->statut);
         $this->assertSame(30000.0, $row->paye);
         $this->assertSame('ACH-P1-2026-001', $row->reference, 'numéro officiel : jamais changé');
-        $this->assertSame(100.0, $row->lignes()->first()->qte, 'lignes immuables');
+        // La commande etait « Commandé » : une saisie plus recente (modification) remplace ses lignes.
+        $this->assertSame(9.0, $row->lignes()->first()->qte, 'commande modifiee : lignes remplacees');
+        $this->assertSame(1, $row->lignes()->count());
+
+        // Livree, ses lignes ne bougent plus (le stock des postes en depend).
+        $apres = array_merge($livre, [
+            'updated_at' => '2026-11-01T12:00:00.000000Z',
+            'lignes' => [['id' => (string) Str::uuid(), 'intrant_code' => 'INT-002', 'nom' => 'Encore', 'qte' => 77, 'pu_achat' => 1]],
+        ]);
+        $this->bilanAchats($a, [$apres]);
+        $this->assertSame(9.0, Achat::query()->find($achat['id'])->lignes()->first()->qte, 'lignes immuables des la livraison');
 
         $ancien = array_merge($achat, ['statut' => 'Annulé', 'updated_at' => '2026-11-01T09:00:00.000000Z']);
         $this->bilanAchats($a, [$ancien]);

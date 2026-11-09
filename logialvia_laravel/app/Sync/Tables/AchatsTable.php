@@ -18,13 +18,22 @@ use Illuminate\Support\Facades\Validator;
  *    ensemble) ;
  *  - `reference` : numero OFFICIEL (DV-21), unique pour tous avec un code de poste
  *    (`ACH-P2-2026-001`), unique PAR POSTE sans code (`ACH-2026-001`) ;
- *  - lignes IMMUABLES, entete en « dernier ecrivain gagne », reference jamais changee ;
+ *  - lignes IMMUABLES des que l'achat n'est plus « Commandé » ; tant qu'il l'est, une saisie plus
+ *    recente (modification de la commande) REMPLACE ses lignes ; entete en « dernier ecrivain gagne »,
+ *    reference jamais changee ;
  *  - ni stock, ni PMP, ni ecriture comptable : le serveur enregistre le fait d'achat,
  *    il ne rejoue aucune reception (`46_` §2.3-§2.4).
  */
 class AchatsTable extends TableSync
 {
-    public const MODES = ['Espèces', 'Mobile Money', 'Non précisé'];
+    /**
+     * `Crédit` : proposé par la commande du poste (liste déroulante du Dart) mais absent de la liste
+     * d'origine — un achat à crédit du poste était refusé en bloc par le serveur (« mode inconnu »).
+     */
+    public const MODES = ['Espèces', 'Mobile Money', 'Crédit', 'Non précisé'];
+
+    /** Code du « poste » web dans les références (`ACH-WEB-2026-001`) : le web est un poste de code WEB. */
+    public const CODE_WEB = 'WEB';
 
     public const STATUTS = ['Commandé', 'Livré', 'Annulé'];
 
@@ -62,7 +71,7 @@ class AchatsTable extends TableSync
 
     public static function porteeReference(string $reference, string $deviceId): string
     {
-        return preg_match('/^ACH-P\d+-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
+        return preg_match('/^ACH-(P\d+|WEB)-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
     }
 
     public function exporter(Model $ligne): array
@@ -80,7 +89,7 @@ class AchatsTable extends TableSync
     {
         $v = Validator::make($ligne, [
             'id' => ['required', 'uuid'],
-            'reference' => ['required', 'string', 'regex:/^ACH-(P\d+-)?\d{4}-\d{3,}$/'],
+            'reference' => ['required', 'string', 'regex:/^ACH-((P\d+|WEB)-)?\d{4}-\d{3,}$/'],
             'fournisseur_id' => ['required', 'uuid'],
             'date_achat' => ['required', 'date'],
             'statut' => ['required', 'string', 'in:'.implode(',', self::STATUTS)],
@@ -99,7 +108,7 @@ class AchatsTable extends TableSync
             'id.required' => "L'identifiant de l'achat est obligatoire.",
             'id.uuid' => "L'identifiant de l'achat doit être un UUID.",
             'reference.required' => "La référence de l'achat est obligatoire.",
-            'reference.regex' => "La référence de l'achat est invalide (attendu : ACH-P2-2026-001).",
+            'reference.regex' => "La référence de l'achat est invalide (attendu : ACH-P2-2026-001 ou ACH-WEB-2026-001).",
             'fournisseur_id.required' => "Le fournisseur de l'achat est obligatoire.",
             'date_achat.required' => "La date de l'achat est obligatoire.",
             'date_achat.date' => "La date de l'achat est invalide.",
@@ -175,12 +184,41 @@ class AchatsTable extends TableSync
                 ])->save();
             }
         } elseif ($saisie->greaterThan($existant->updated_at)) {
+            // Une commande encore « Commandé » peut etre modifiee (le web le permet) : ses lignes
+            // suivent la saisie la plus recente. Livree ou annulee, ses lignes ne bougent plus
+            // (le stock des postes en depend).
+            $modifiable = $existant->statut === 'Commandé';
             $existant->forceFill($entete + [
                 'updated_at' => $saisie,
                 'serveur_modifie_le' => CarbonImmutable::now('UTC'),
             ])->save();
+            if ($modifiable) {
+                $this->remplacerLignes($existant, $ligne['lignes']);
+            }
         }
 
         return null;
+    }
+
+    /** @param list<array<string, mixed>> $lignes Le jeu complet de la commande : l'absent est supprime. */
+    private function remplacerLignes(Achat $achat, array $lignes): void
+    {
+        $gardees = array_column($lignes, 'id');
+        LigneAchat::query()->where('achat_id', $achat->id)->whereNotIn('id', $gardees)->delete();
+
+        foreach ($lignes as $l) {
+            $existante = LigneAchat::query()->find($l['id']);
+            if ($existante !== null && $existante->achat_id !== $achat->id) {
+                continue; // un UUID de ligne appartient a un seul achat : jamais deplace
+            }
+            ($existante ?? new LigneAchat)->forceFill([
+                'id' => $l['id'],
+                'achat_id' => $achat->id,
+                'intrant_code' => $l['intrant_code'],
+                'nom' => $l['nom'],
+                'qte' => $l['qte'],
+                'pu_achat' => $l['pu_achat'],
+            ])->save();
+        }
     }
 }
