@@ -24,6 +24,17 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') ? null : route('login'),
         );
 
+        // 47h : ce que le POSTE envoie est conservé OCTET POUR OCTET. Le rognage des espaces et la
+        // conversion « vide -> null » de Laravel altéraient les saisies (retour à la ligne final
+        // d'une note, espaces d'une désignation, chaîne vide) : le poste B ne lisait plus ce
+        // que le poste A avait saisi. Les écrans web gardent les deux comportements.
+        $middleware->trimStrings(except: [
+            fn (Request $request) => $request->is('api/sync/*'),
+        ]);
+        $middleware->convertEmptyStringsToNull(except: [
+            fn (Request $request) => $request->is('api/sync/*'),
+        ]);
+
         $middleware->alias([
             'compte.actif' => CompteActif::class,
             'compte.web' => \App\Http\Middleware\CompteActifWeb::class,
