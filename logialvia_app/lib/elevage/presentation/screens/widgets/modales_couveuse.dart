@@ -60,7 +60,7 @@ class _FormulaireCreation extends StatefulWidget {
 class _FormulaireCreationState extends State<_FormulaireCreation> {
   EspeceCouvable? _espece;
   DateTime? _date;
-  int? _machineId;
+  String? _machineId;
   final _oeufs = TextEditingController();
   String? _erreur;
   bool _enCours = false;
@@ -190,7 +190,7 @@ class _FormulaireCreationState extends State<_FormulaireCreation> {
         // incubateur ne filtrait rien.
         Text('Incubateur'.toUpperCase(), style: AppTypography.label),
         const SizedBox(height: AppSpacing.xs),
-        DropdownButtonFormField<int?>(
+        DropdownButtonFormField<String?>(
           initialValue: _machineId,
           isExpanded: true,
           decoration: _decoration,
@@ -203,11 +203,11 @@ class _FormulaireCreationState extends State<_FormulaireCreation> {
           items: [
             // « Non précisé » reste possible : un lot peut être suivi sans
             // machine, et l'imposer bloquerait une saisie légitime.
-            const DropdownMenuItem<int?>(
+            const DropdownMenuItem<String?>(
               child: Text('Non précisé', style: _styleChamp),
             ),
             for (final machine in widget.vm.machines)
-              DropdownMenuItem<int?>(
+              DropdownMenuItem<String?>(
                 value: machine.id,
                 child: Text(
                   machine.capaciteOeufs == null

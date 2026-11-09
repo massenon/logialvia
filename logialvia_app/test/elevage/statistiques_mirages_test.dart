@@ -27,7 +27,7 @@ void main() {
     DateTime? chargement,
     EspeceCouvable espece = EspeceCouvable.goliath,
   }) => CycleIncubation(
-    id: code.hashCode,
+    id: 'lot-${code.hashCode}',
     code: code,
     espece: espece,
     dateChargement: chargement ?? DateTime(2026, 8, 1),

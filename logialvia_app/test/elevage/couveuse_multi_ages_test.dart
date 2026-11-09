@@ -28,7 +28,7 @@ void main() {
     EspeceCouvable espece = EspeceCouvable.goliath,
     DateTime? date,
     int oeufs = 200,
-    int? machineId,
+    String? machineId,
   }) async {
     final resultat = await vm.creerCycle(
       espece: espece,

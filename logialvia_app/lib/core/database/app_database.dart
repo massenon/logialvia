@@ -430,6 +430,13 @@ class AppDatabase extends _$AppDatabase {
         // suit (`bande_id`). Voir `46a_`.
         await _elevageEnUuid(m);
       }
+      // v38 : reserve a une autre tranche de la synchronisation.
+      if (from < 39) {
+        // DV-19, palier 7b : lots de couveuse et incubateurs en UUID, avec leurs
+        // colonnes de synchronisation. Chaque lot garde son incubateur et son lot
+        // d'origine ; aucun lot n'est perdu.
+        await _couveuseEnUuid(m);
+      }
       if (from < 42) {
         // DV-19, palier P9 : factures et lignes de facture en UUID, avec leurs
         // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
@@ -796,6 +803,126 @@ class AppDatabase extends _$AppDatabase {
     );
 
     await customStatement('DROP TABLE IF EXISTS _map_fournisseurs');
+  }
+
+  /// Lots de couveuse et incubateurs en UUID. Idempotent.
+  ///
+  /// - Un incubateur recoit un UUID DETERMINISTE depuis son code (deux postes qui
+  ///   declarent « INC-01 » designent le meme incubateur) ; un doublon de code a la
+  ///   casse pres se departage par son ancien entier.
+  /// - Un lot garde son incubateur et son lot d'origine (tables de correspondance
+  ///   ancien entier -> UUID, supprimees en fin de migration).
+  /// - Son instant de saisie est sa date de chargement (pas l'instant de la
+  ///   migration, qui le ferait gagner contre une correction faite ailleurs).
+  /// - Les lots deja SUPPRIMES (corbeille) voient leur instantane reecrit : sinon
+  ///   ils reviendraient avec leurs anciens entiers.
+  Future<void> _couveuseEnUuid(Migrator m) async {
+    final colonnes = await customSelect('PRAGMA table_info("cycle_couveuse")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT') {
+      return;
+    }
+
+    await customStatement('DROP TABLE IF EXISTS _map_machines');
+    await customStatement(
+      'CREATE TABLE _map_machines (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+    );
+    final vus = <String>{};
+    final machines = await customSelect(
+      'SELECT id, code FROM machines_incubateur ORDER BY id',
+    ).get();
+    for (final machine in machines) {
+      final ancien = machine.read<int>('id');
+      var cle = 'machine:${machine.read<String>('code').trim().toLowerCase()}';
+      if (!vus.add(cle)) cle = '$cle#$ancien';
+      vus.add(cle);
+      await customStatement(
+        'INSERT INTO _map_machines (ancien, nouveau) VALUES (?, ?)',
+        [ancien, uuidDeterministe(cle)],
+      );
+    }
+
+    await customStatement('DROP TABLE IF EXISTS _map_cycles');
+    await customStatement(
+      'CREATE TABLE _map_cycles AS '
+      'SELECT id AS ancien, $_uuidSql AS nouveau FROM cycle_couveuse',
+    );
+
+    await m.alterTable(
+      TableMigration(
+        machinesIncubateur,
+        columnTransformer: {
+          machinesIncubateur.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_machines WHERE ancien = id)',
+          ),
+          // Saisi avant la migration, a une date inconnue : l'instant de la
+          // migration, qu'aucun autre poste ne peut contredire.
+          machinesIncubateur.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          ),
+        },
+        newColumns: [
+          machinesIncubateur.syncStatus,
+          machinesIncubateur.syncMotif,
+          machinesIncubateur.updatedAt,
+        ],
+      ),
+    );
+    await m.alterTable(
+      TableMigration(
+        cycleCouveuse,
+        columnTransformer: {
+          cycleCouveuse.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_cycles WHERE ancien = id)',
+          ),
+          cycleCouveuse.machineId: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_machines WHERE ancien = machine_id)',
+          ),
+          cycleCouveuse.lotParentId: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_cycles WHERE ancien = lot_parent_id)',
+          ),
+          cycleCouveuse.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', date_incubation, 'unixepoch')",
+          ),
+        },
+        newColumns: [
+          cycleCouveuse.syncStatus,
+          cycleCouveuse.syncMotif,
+          cycleCouveuse.updatedAt,
+        ],
+      ),
+    );
+
+    final archives = await customSelect(
+      "SELECT id, donnees_json FROM corbeille WHERE nom_table = 'cycle_couveuse'",
+    ).get();
+    for (final a in archives) {
+      final donnees = jsonDecode(a.read<String>('donnees_json')) as Map<String, Object?>;
+      final machine = donnees['machine_id'];
+      final parent = donnees['lot_parent_id'];
+      final nouvelleMachine = machine == null
+          ? null
+          : await customSelect(
+              'SELECT nouveau FROM _map_machines WHERE ancien = ?',
+              variables: [Variable(machine)],
+            ).getSingleOrNull();
+      final nouveauParent = parent == null
+          ? null
+          : await customSelect(
+              'SELECT nouveau FROM _map_cycles WHERE ancien = ?',
+              variables: [Variable(parent)],
+            ).getSingleOrNull();
+      donnees['id'] = nouvelUuid();
+      donnees['machine_id'] = nouvelleMachine?.read<String>('nouveau');
+      donnees['lot_parent_id'] = nouveauParent?.read<String>('nouveau');
+      await customStatement(
+        'UPDATE corbeille SET donnees_json = ? WHERE id = ?',
+        [jsonEncode(donnees), a.read<int>('id')],
+      );
+    }
+
+    await customStatement('DROP TABLE IF EXISTS _map_machines');
+    await customStatement('DROP TABLE IF EXISTS _map_cycles');
   }
 
   /// Donne a `ventes` un UUID, un `client_id` et les colonnes de synchronisation.

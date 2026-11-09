@@ -43,6 +43,8 @@ import 'commercial/data/sync/table_ventes_poste.dart';
 import 'elevage/data/sync/table_bandes_poste.dart';
 import 'elevage/data/sync/table_fiches_journee_poste.dart';
 import 'elevage/data/sync/table_ventes_jour_poste.dart';
+import 'elevage/data/sync/table_cycles_couveuse_poste.dart';
+import 'elevage/data/sync/table_machines_incubateur_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
@@ -201,6 +203,9 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableFichesJourneePoste(widget.database),
       TableVentesJourPoste(widget.database),
       TableBandesPoste(widget.database),
+      // Palier 7b : incubateurs AVANT les lots qui les occupent.
+      TableMachinesIncubateurPoste(widget.database),
+      TableCyclesCouveusePoste(widget.database),
     ],
   );
   late final PlanificateurSynchronisation

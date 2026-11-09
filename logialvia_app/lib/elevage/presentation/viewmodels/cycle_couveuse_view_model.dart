@@ -35,10 +35,10 @@ class CycleCouveuseViewModel extends ChangeNotifier {
   List<MachineIncubateur> get machines => _machines;
 
   /// Filtre par machine — un couvoir a plusieurs incubateurs.
-  int? _filtreMachine;
-  int? get filtreMachine => _filtreMachine;
+  String? _filtreMachine;
+  String? get filtreMachine => _filtreMachine;
 
-  void definirFiltreMachine(int? machineId) {
+  void definirFiltreMachine(String? machineId) {
     _filtreMachine = machineId;
     notifyListeners();
   }
@@ -102,9 +102,9 @@ class CycleCouveuseViewModel extends ChangeNotifier {
       .where((c) => c.estEnCours)
       .fold<int>(0, (s, c) => s + c.oeufsRetenusApresMirages);
 
-  int occupation(int machineId) => _suivi.occupation(_cycles, machineId);
+  int occupation(String machineId) => _suivi.occupation(_cycles, machineId);
 
-  List<CycleIncubation> lignee(int lotRacineId) =>
+  List<CycleIncubation> lignee(String lotRacineId) =>
       _suivi.lignee(_cycles, lotRacineId);
 
   CycleIncubation? racineDe(CycleIncubation lot) =>
@@ -114,7 +114,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
   ///
   /// C'est la productivité d'un **emplacement** sur la durée : le TER d'un seul
   /// lot ne dit rien de la rotation qui l'a suivi.
-  double? terDeLaLignee(int lotRacineId) =>
+  double? terDeLaLignee(String lotRacineId) =>
       _suivi.terDeLaLignee(_cycles, lotRacineId, _reference);
 
   /// Capacité totale déclarée du parc, `null` si aucune machine ne l'annonce.
@@ -167,7 +167,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     required EspeceCouvable? espece,
     required DateTime? dateChargement,
     required int? oeufsCharges,
-    int? machineId,
+    String? machineId,
   }) async {
     // Validations de la modale (`data-required`, cycle-couveuse.html l.229-246).
     if (espece == null) return const Echec('L\'espèce est obligatoire.');
@@ -202,7 +202,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     required EspeceCouvable? espece,
     required DateTime? dateChargement,
     required int? oeufsCharges,
-    int? machineId,
+    String? machineId,
   }) async {
     if (!cycle.estEnCours) {
       return const Echec(

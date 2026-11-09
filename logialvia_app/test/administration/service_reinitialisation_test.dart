@@ -48,9 +48,11 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO cycle_couveuse (code_incubation, espece, date_incubation, '
-      'oeufs_couves, statut) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO cycle_couveuse (id, updated_at, code_incubation, espece, '
+      'date_incubation, oeufs_couves, statut) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
+        'a1b2c3d4-0000-4000-8000-000000000001',
+        '2026-08-01T00:00:00.000000Z',
         'C-2026-001',
         'goliath',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,

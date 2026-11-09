@@ -140,18 +140,18 @@ class SuiviIncubation {
   /// le TER d'un seul lot ne dit rien de la rotation.
   double? terDeLaLignee(
     List<CycleIncubation> lots,
-    int lotRacineId,
+    String lotRacineId,
     DateTime t,
   ) => terMoyenA(lignee(lots, lotRacineId), t);
 
   /// Le lot racine et tous ses descendants, dans l'ordre chronologique.
-  List<CycleIncubation> lignee(List<CycleIncubation> lots, int lotRacineId) {
+  List<CycleIncubation> lignee(List<CycleIncubation> lots, String lotRacineId) {
     final parIdentifiant = {for (final l in lots) l.id: l};
     final racine = parIdentifiant[lotRacineId];
     if (racine == null) return const [];
 
     final resultat = <CycleIncubation>[racine];
-    final aExplorer = <int>[lotRacineId];
+    final aExplorer = <String>[lotRacineId];
 
     while (aExplorer.isNotEmpty) {
       final courant = aExplorer.removeLast();
@@ -172,7 +172,7 @@ class SuiviIncubation {
     final parIdentifiant = {for (final l in lots) l.id: l};
     var courant = lot;
     // Garde-fou : une reference circulaire en base ferait boucler a l'infini.
-    final vus = <int>{courant.id};
+    final vus = <String>{courant.id};
     while (courant.lotParentId != null) {
       final parent = parIdentifiant[courant.lotParentId];
       if (parent == null || !vus.add(parent.id)) break;
@@ -184,7 +184,7 @@ class SuiviIncubation {
   // --------------------------------------------------------------- machines
 
   /// Œufs actuellement en incubation dans une machine à la date [t].
-  int occupation(List<CycleIncubation> lots, int machineId) => lots
+  int occupation(List<CycleIncubation> lots, String machineId) => lots
       .where((l) => l.machineId == machineId && l.estEnCours)
       .fold<int>(0, (s, l) => s + l.oeufsRetenusApresMirages);
 

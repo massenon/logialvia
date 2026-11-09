@@ -22,6 +22,13 @@ class NumerotationPieces {
       ? 'ACH-$annee-'
       : 'ACH-$codePoste-$annee-';
 
+  /// `C-P2-2026-` ou, sans code de poste, `C-2026-` : code d'un lot de couveuse
+  /// (`46b_` : le code de poste évite deux lots `C-2026-001` sur deux postes).
+  static String prefixeLot(int annee, String? codePoste) =>
+      codePoste == null || codePoste.isEmpty
+      ? 'C-$annee-'
+      : 'C-$codePoste-$annee-';
+
   /// Le numéro d'ordre d'une référence qui porte ce [prefixe], ou `null`.
   static int? sequence(String reference, String prefixe) {
     if (!reference.startsWith(prefixe)) return null;

@@ -1,7 +1,10 @@
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
+import '../../../commercial/domain/services/numerotation_pieces.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/cycle_incubation.dart';
 import '../../domain/repositories/cycle_couveuse_repository.dart';
 
@@ -63,10 +66,14 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
     required String libelle,
     int? capaciteOeufs,
   }) async {
-    final id = await _db
+    // Identite = code : deux postes qui declarent « INC-01 » designent le meme
+    // incubateur (`46b_`, decision a valider).
+    final id = uuidDeterministe('machine:${code.trim().toLowerCase()}');
+    await _db
         .into(_db.machinesIncubateur)
         .insert(
           MachinesIncubateurCompanion.insert(
+            id: Value(id),
             code: code,
             libelle: libelle,
             capaciteOeufs: Value(capaciteOeufs),
@@ -85,18 +92,20 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
     required EspeceCouvable espece,
     required DateTime dateChargement,
     required int oeufsCharges,
-    int? machineId,
-    int? lotParentId,
+    String? machineId,
+    String? lotParentId,
   }) async {
     final annee = dateChargement.year;
     final numero = await prochainNumero(annee);
-    final code = 'C-$annee-${numero.toString().padLeft(3, '0')}';
+    final code = NumerotationPieces.composer(await _prefixe(annee), numero);
     final jour = _minuit(dateChargement);
 
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.cycleCouveuse)
         .insert(
           CycleCouveuseCompanion.insert(
+            id: Value(id),
             codeIncubation: code,
             espece: Value(espece.identifiant),
             dateIncubation: jour,
@@ -121,16 +130,22 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
 
   @override
   Future<void> enregistrerMirage({
-    required int cycleId,
+    required String cycleId,
     required int jour,
     required int oeufsRetires,
   }) async {
     final companion = switch (jour) {
       EspeceCouvable.jourMirage1 => CycleCouveuseCompanion(
         oeufsBlancsJ7: Value(oeufsRetires),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
       EspeceCouvable.jourMirage2 => CycleCouveuseCompanion(
         oeufsGatesJ14: Value(oeufsRetires),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
       _ => throw ArgumentError('Mirage inconnu au jour $jour.'),
     };
@@ -142,7 +157,7 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
 
   @override
   Future<ResultatEclosion> enregistrerEclosion({
-    required int cycleId,
+    required String cycleId,
     required int poussinsEclos,
     required int oeufsPerdus,
     int? oeufsRemplacement,
@@ -169,6 +184,9 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
                     ? StatutCycle.remplace
                     : StatutCycle.eclosionEffectuee,
               ),
+              syncStatus: const Value('pending'),
+              syncMotif: const Value(null),
+              updatedAt: Value(instantSaisie()),
             ),
           );
 
@@ -198,11 +216,11 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
 
   @override
   Future<void> modifier({
-    required int cycleId,
+    required String cycleId,
     required EspeceCouvable espece,
     required DateTime dateChargement,
     required int oeufsCharges,
-    int? machineId,
+    String? machineId,
   }) async {
     await (_db.update(
       _db.cycleCouveuse,
@@ -212,13 +230,16 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
         dateIncubation: Value(_minuit(dateChargement)),
         oeufsCouves: Value(oeufsCharges),
         machineId: Value(machineId),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }
 
   @override
   Future<void> supprimer(
-    int cycleId, {
+    String cycleId, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
@@ -226,10 +247,27 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
     // ils sont physiquement dans la machine, et leur suppression en cascade
     // ferait s'evaporer des oeufs bien reels.
     await _db.transaction(() async {
+      // Les sous-lots sont MODIFIES : ils repartent au serveur avec leur nouvel etat.
       await (_db.update(
         _db.cycleCouveuse,
       )..where((c) => c.lotParentId.equals(cycleId))).write(
-        const CycleCouveuseCompanion(lotParentId: Value(null)),
+        CycleCouveuseCompanion(
+          lotParentId: const Value(null),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
+      // La suppression est un fait daté : l'instantané de la corbeille porte l'instant
+      // de saisie de la suppression (pierre tombale envoyée au serveur, `46b_`).
+      await (_db.update(
+        _db.cycleCouveuse,
+      )..where((c) => c.id.equals(cycleId))).write(
+        CycleCouveuseCompanion(
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
       );
       final ligne = await (_db.select(
         _db.cycleCouveuse,
@@ -239,7 +277,7 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
         type: TypeArchivable.lots,
         cle: cycleId,
         designation: ligne == null
-            ? 'Lot #$cycleId'
+            ? 'Lot $cycleId'
             : '${ligne.codeIncubation} — ${ligne.oeufsCouves} œufs',
         utilisateurId: utilisateurId,
         utilisateurNom: utilisateurNom,
@@ -249,17 +287,21 @@ class CycleCouveuseRepositoryDrift implements CycleCouveuseRepository {
 
   @override
   Future<int> prochainNumero(int annee) async {
+    final prefixe = await _prefixe(annee);
     final lignes = await _db.select(_db.cycleCouveuse).get();
-    final prefixe = 'C-$annee-';
     var maximum = 0;
     for (final ligne in lignes) {
-      if (!ligne.codeIncubation.startsWith(prefixe)) continue;
-      final numero = int.tryParse(
-        ligne.codeIncubation.substring(prefixe.length),
-      );
+      final numero = NumerotationPieces.sequence(ligne.codeIncubation, prefixe);
       if (numero != null && numero > maximum) maximum = numero;
     }
     return maximum + 1;
+  }
+
+  /// `C-P2-2026-` pour un poste appairé (DV-21 étendu aux lots, `46b_`), `C-2026-`
+  /// sinon. Le code de poste fait l'unicité entre postes sans passer par le serveur.
+  Future<String> _prefixe(int annee) async {
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    return NumerotationPieces.prefixeLot(annee, code);
   }
 
   CycleIncubation _versDomaine(

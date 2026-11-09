@@ -1,9 +1,14 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `CYCLE_COUVEUSE` — Doc D1 §2.
 @DataClassName('CycleCouveuseRow')
 class CycleCouveuse extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID genere au poste (DV-19, `46b_`) : un lot est un fait synchronise, jamais
+  /// un entier que deux postes attribueraient chacun de leur cote. Les lots
+  /// existants recoivent le leur a la migration v39.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// Ex. 'C-2026-014'.
   TextColumn get codeIncubation => text().unique()();
@@ -41,8 +46,8 @@ class CycleCouveuse extends Table {
 
   /// Incubateur occupe — le couvoir peut en compter plusieurs.
   /// Nullable : les lots anterieurs a la v21 n'en designent aucun.
-  IntColumn get machineId =>
-      integer().nullable().references(MachinesIncubateur, #id)();
+  TextColumn get machineId =>
+      text().nullable().references(MachinesIncubateur, #id)();
 
   /// `B_i(7)` — oeufs clairs retires au **premier mirage**, a J+7.
   /// `null` tant que le mirage n'a pas ete fait : c'est ce qui distingue
@@ -59,7 +64,24 @@ class CycleCouveuse extends Table {
   /// sous-lot lui-meme. Les stocker deux fois les laisserait diverger.
   ///
   /// L'historique des remplacements est la chaine de ces liens.
-  IntColumn get lotParentId => integer().nullable()();
+  TextColumn get lotParentId => text().nullable()();
+
+  // ------------------------------------------------------- Synchronisation
+  //
+  // Colonnes communes a toute table synchronisee (`46_` §1). `device_id` n'est
+  // PAS stocke : le serveur le deduit du jeton.
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// Un incubateur physique — table `MACHINES_INCUBATEUR`, ajoutee en v21.
@@ -70,7 +92,9 @@ class CycleCouveuse extends Table {
 /// occupation.
 @DataClassName('MachineIncubateurRow')
 class MachinesIncubateur extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID **deterministe depuis le code** (`machine:inc-01`) : deux postes qui
+  /// declarent « INC-01 » designent le MEME incubateur (decision a valider, `46b_`).
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// Ex. 'INC-01'.
   TextColumn get code => text().unique()();
@@ -82,4 +106,15 @@ class MachinesIncubateur extends Table {
   IntColumn get capaciteOeufs => integer().nullable()();
 
   BoolColumn get active => boolean().withDefault(const Constant(true))();
+
+  // --- Synchronisation (`46_` §1) ---
+
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

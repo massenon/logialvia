@@ -16552,16 +16552,13 @@ class $MachinesIncubateurTable extends MachinesIncubateur
   $MachinesIncubateurTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _codeMeta = const VerificationMeta('code');
   @override
@@ -16608,6 +16605,41 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -16615,6 +16647,9 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     libelle,
     capaciteOeufs,
     active,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -16662,6 +16697,24 @@ class $MachinesIncubateurTable extends MachinesIncubateur
         active.isAcceptableOrUnknown(data['active']!, _activeMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -16672,7 +16725,7 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MachineIncubateurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       code: attachedDatabase.typeMapping.read(
@@ -16691,6 +16744,18 @@ class $MachinesIncubateurTable extends MachinesIncubateur
         DriftSqlType.bool,
         data['${effectivePrefix}active'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -16702,7 +16767,9 @@ class $MachinesIncubateurTable extends MachinesIncubateur
 
 class MachineIncubateurRow extends DataClass
     implements Insertable<MachineIncubateurRow> {
-  final int id;
+  /// UUID **deterministe depuis le code** (`machine:inc-01`) : deux postes qui
+  /// declarent « INC-01 » designent le MEME incubateur (decision a valider, `46b_`).
+  final String id;
 
   /// Ex. 'INC-01'.
   final String code;
@@ -16712,23 +16779,36 @@ class MachineIncubateurRow extends DataClass
   /// pas a la bloquer : la Gerante sait ce que sa machine encaisse.
   final int? capaciteOeufs;
   final bool active;
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const MachineIncubateurRow({
     required this.id,
     required this.code,
     required this.libelle,
     this.capaciteOeufs,
     required this.active,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['code'] = Variable<String>(code);
     map['libelle'] = Variable<String>(libelle);
     if (!nullToAbsent || capaciteOeufs != null) {
       map['capacite_oeufs'] = Variable<int>(capaciteOeufs);
     }
     map['active'] = Variable<bool>(active);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -16741,6 +16821,11 @@ class MachineIncubateurRow extends DataClass
           ? const Value.absent()
           : Value(capaciteOeufs),
       active: Value(active),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -16750,31 +16835,40 @@ class MachineIncubateurRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MachineIncubateurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       code: serializer.fromJson<String>(json['code']),
       libelle: serializer.fromJson<String>(json['libelle']),
       capaciteOeufs: serializer.fromJson<int?>(json['capaciteOeufs']),
       active: serializer.fromJson<bool>(json['active']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'code': serializer.toJson<String>(code),
       'libelle': serializer.toJson<String>(libelle),
       'capaciteOeufs': serializer.toJson<int?>(capaciteOeufs),
       'active': serializer.toJson<bool>(active),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   MachineIncubateurRow copyWith({
-    int? id,
+    String? id,
     String? code,
     String? libelle,
     Value<int?> capaciteOeufs = const Value.absent(),
     bool? active,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => MachineIncubateurRow(
     id: id ?? this.id,
     code: code ?? this.code,
@@ -16783,6 +16877,9 @@ class MachineIncubateurRow extends DataClass
         ? capaciteOeufs.value
         : this.capaciteOeufs,
     active: active ?? this.active,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   MachineIncubateurRow copyWithCompanion(MachinesIncubateurCompanion data) {
     return MachineIncubateurRow(
@@ -16793,6 +16890,11 @@ class MachineIncubateurRow extends DataClass
           ? data.capaciteOeufs.value
           : this.capaciteOeufs,
       active: data.active.present ? data.active.value : this.active,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -16803,13 +16905,25 @@ class MachineIncubateurRow extends DataClass
           ..write('code: $code, ')
           ..write('libelle: $libelle, ')
           ..write('capaciteOeufs: $capaciteOeufs, ')
-          ..write('active: $active')
+          ..write('active: $active, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, code, libelle, capaciteOeufs, active);
+  int get hashCode => Object.hash(
+    id,
+    code,
+    libelle,
+    capaciteOeufs,
+    active,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -16818,22 +16932,33 @@ class MachineIncubateurRow extends DataClass
           other.code == this.code &&
           other.libelle == this.libelle &&
           other.capaciteOeufs == this.capaciteOeufs &&
-          other.active == this.active);
+          other.active == this.active &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class MachinesIncubateurCompanion
     extends UpdateCompanion<MachineIncubateurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> code;
   final Value<String> libelle;
   final Value<int?> capaciteOeufs;
   final Value<bool> active;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const MachinesIncubateurCompanion({
     this.id = const Value.absent(),
     this.code = const Value.absent(),
     this.libelle = const Value.absent(),
     this.capaciteOeufs = const Value.absent(),
     this.active = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MachinesIncubateurCompanion.insert({
     this.id = const Value.absent(),
@@ -16841,14 +16966,22 @@ class MachinesIncubateurCompanion
     required String libelle,
     this.capaciteOeufs = const Value.absent(),
     this.active = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : code = Value(code),
        libelle = Value(libelle);
   static Insertable<MachineIncubateurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? code,
     Expression<String>? libelle,
     Expression<int>? capaciteOeufs,
     Expression<bool>? active,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -16856,15 +16989,23 @@ class MachinesIncubateurCompanion
       if (libelle != null) 'libelle': libelle,
       if (capaciteOeufs != null) 'capacite_oeufs': capaciteOeufs,
       if (active != null) 'active': active,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MachinesIncubateurCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? code,
     Value<String>? libelle,
     Value<int?>? capaciteOeufs,
     Value<bool>? active,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return MachinesIncubateurCompanion(
       id: id ?? this.id,
@@ -16872,6 +17013,10 @@ class MachinesIncubateurCompanion
       libelle: libelle ?? this.libelle,
       capaciteOeufs: capaciteOeufs ?? this.capaciteOeufs,
       active: active ?? this.active,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -16879,7 +17024,7 @@ class MachinesIncubateurCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (code.present) {
       map['code'] = Variable<String>(code.value);
@@ -16893,6 +17038,18 @@ class MachinesIncubateurCompanion
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -16903,7 +17060,11 @@ class MachinesIncubateurCompanion
           ..write('code: $code, ')
           ..write('libelle: $libelle, ')
           ..write('capaciteOeufs: $capaciteOeufs, ')
-          ..write('active: $active')
+          ..write('active: $active, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -16917,16 +17078,13 @@ class $CycleCouveuseTable extends CycleCouveuse
   $CycleCouveuseTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _codeIncubationMeta = const VerificationMeta(
     'codeIncubation',
@@ -17019,11 +17177,11 @@ class $CycleCouveuseTable extends CycleCouveuse
     'machineId',
   );
   @override
-  late final GeneratedColumn<int> machineId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> machineId = GeneratedColumn<String>(
     'machine_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES machines_incubateur (id)',
@@ -17055,12 +17213,47 @@ class $CycleCouveuseTable extends CycleCouveuse
     'lotParentId',
   );
   @override
-  late final GeneratedColumn<int> lotParentId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> lotParentId = GeneratedColumn<String>(
     'lot_parent_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -17077,6 +17270,9 @@ class $CycleCouveuseTable extends CycleCouveuse
     oeufsBlancsJ7,
     oeufsGatesJ14,
     lotParentId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -17200,6 +17396,24 @@ class $CycleCouveuseTable extends CycleCouveuse
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -17210,7 +17424,7 @@ class $CycleCouveuseTable extends CycleCouveuse
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return CycleCouveuseRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       codeIncubation: attachedDatabase.typeMapping.read(
@@ -17246,7 +17460,7 @@ class $CycleCouveuseTable extends CycleCouveuse
         data['${effectivePrefix}statut'],
       )!,
       machineId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}machine_id'],
       ),
       oeufsBlancsJ7: attachedDatabase.typeMapping.read(
@@ -17258,9 +17472,21 @@ class $CycleCouveuseTable extends CycleCouveuse
         data['${effectivePrefix}oeufs_gates_j14'],
       ),
       lotParentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}lot_parent_id'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -17272,7 +17498,10 @@ class $CycleCouveuseTable extends CycleCouveuse
 
 class CycleCouveuseRow extends DataClass
     implements Insertable<CycleCouveuseRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46b_`) : un lot est un fait synchronise, jamais
+  /// un entier que deux postes attribueraient chacun de leur cote. Les lots
+  /// existants recoivent le leur a la migration v39.
+  final String id;
 
   /// Ex. 'C-2026-014'.
   final String codeIncubation;
@@ -17303,7 +17532,7 @@ class CycleCouveuseRow extends DataClass
 
   /// Incubateur occupe — le couvoir peut en compter plusieurs.
   /// Nullable : les lots anterieurs a la v21 n'en designent aucun.
-  final int? machineId;
+  final String? machineId;
 
   /// `B_i(7)` — oeufs clairs retires au **premier mirage**, a J+7.
   /// `null` tant que le mirage n'a pas ete fait : c'est ce qui distingue
@@ -17320,7 +17549,16 @@ class CycleCouveuseRow extends DataClass
   /// sous-lot lui-meme. Les stocker deux fois les laisserait diverger.
   ///
   /// L'historique des remplacements est la chaine de ces liens.
-  final int? lotParentId;
+  final String? lotParentId;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const CycleCouveuseRow({
     required this.id,
     required this.codeIncubation,
@@ -17335,11 +17573,14 @@ class CycleCouveuseRow extends DataClass
     this.oeufsBlancsJ7,
     this.oeufsGatesJ14,
     this.lotParentId,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['code_incubation'] = Variable<String>(codeIncubation);
     map['espece'] = Variable<String>(espece);
     if (!nullToAbsent || bandeReproducteurs != null) {
@@ -17355,7 +17596,7 @@ class CycleCouveuseRow extends DataClass
     }
     map['statut'] = Variable<String>(statut);
     if (!nullToAbsent || machineId != null) {
-      map['machine_id'] = Variable<int>(machineId);
+      map['machine_id'] = Variable<String>(machineId);
     }
     if (!nullToAbsent || oeufsBlancsJ7 != null) {
       map['oeufs_blancs_j7'] = Variable<int>(oeufsBlancsJ7);
@@ -17364,8 +17605,13 @@ class CycleCouveuseRow extends DataClass
       map['oeufs_gates_j14'] = Variable<int>(oeufsGatesJ14);
     }
     if (!nullToAbsent || lotParentId != null) {
-      map['lot_parent_id'] = Variable<int>(lotParentId);
+      map['lot_parent_id'] = Variable<String>(lotParentId);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -17398,6 +17644,11 @@ class CycleCouveuseRow extends DataClass
       lotParentId: lotParentId == null && nullToAbsent
           ? const Value.absent()
           : Value(lotParentId),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -17407,7 +17658,7 @@ class CycleCouveuseRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CycleCouveuseRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       codeIncubation: serializer.fromJson<String>(json['codeIncubation']),
       espece: serializer.fromJson<String>(json['espece']),
       bandeReproducteurs: serializer.fromJson<String?>(
@@ -17418,17 +17669,20 @@ class CycleCouveuseRow extends DataClass
       poussinsNes: serializer.fromJson<int?>(json['poussinsNes']),
       oeufsPerdus: serializer.fromJson<int?>(json['oeufsPerdus']),
       statut: serializer.fromJson<String>(json['statut']),
-      machineId: serializer.fromJson<int?>(json['machineId']),
+      machineId: serializer.fromJson<String?>(json['machineId']),
       oeufsBlancsJ7: serializer.fromJson<int?>(json['oeufsBlancsJ7']),
       oeufsGatesJ14: serializer.fromJson<int?>(json['oeufsGatesJ14']),
-      lotParentId: serializer.fromJson<int?>(json['lotParentId']),
+      lotParentId: serializer.fromJson<String?>(json['lotParentId']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'codeIncubation': serializer.toJson<String>(codeIncubation),
       'espece': serializer.toJson<String>(espece),
       'bandeReproducteurs': serializer.toJson<String?>(bandeReproducteurs),
@@ -17437,15 +17691,18 @@ class CycleCouveuseRow extends DataClass
       'poussinsNes': serializer.toJson<int?>(poussinsNes),
       'oeufsPerdus': serializer.toJson<int?>(oeufsPerdus),
       'statut': serializer.toJson<String>(statut),
-      'machineId': serializer.toJson<int?>(machineId),
+      'machineId': serializer.toJson<String?>(machineId),
       'oeufsBlancsJ7': serializer.toJson<int?>(oeufsBlancsJ7),
       'oeufsGatesJ14': serializer.toJson<int?>(oeufsGatesJ14),
-      'lotParentId': serializer.toJson<int?>(lotParentId),
+      'lotParentId': serializer.toJson<String?>(lotParentId),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   CycleCouveuseRow copyWith({
-    int? id,
+    String? id,
     String? codeIncubation,
     String? espece,
     Value<String?> bandeReproducteurs = const Value.absent(),
@@ -17454,10 +17711,13 @@ class CycleCouveuseRow extends DataClass
     Value<int?> poussinsNes = const Value.absent(),
     Value<int?> oeufsPerdus = const Value.absent(),
     String? statut,
-    Value<int?> machineId = const Value.absent(),
+    Value<String?> machineId = const Value.absent(),
     Value<int?> oeufsBlancsJ7 = const Value.absent(),
     Value<int?> oeufsGatesJ14 = const Value.absent(),
-    Value<int?> lotParentId = const Value.absent(),
+    Value<String?> lotParentId = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => CycleCouveuseRow(
     id: id ?? this.id,
     codeIncubation: codeIncubation ?? this.codeIncubation,
@@ -17478,6 +17738,9 @@ class CycleCouveuseRow extends DataClass
         ? oeufsGatesJ14.value
         : this.oeufsGatesJ14,
     lotParentId: lotParentId.present ? lotParentId.value : this.lotParentId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   CycleCouveuseRow copyWithCompanion(CycleCouveuseCompanion data) {
     return CycleCouveuseRow(
@@ -17512,6 +17775,11 @@ class CycleCouveuseRow extends DataClass
       lotParentId: data.lotParentId.present
           ? data.lotParentId.value
           : this.lotParentId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -17530,7 +17798,10 @@ class CycleCouveuseRow extends DataClass
           ..write('machineId: $machineId, ')
           ..write('oeufsBlancsJ7: $oeufsBlancsJ7, ')
           ..write('oeufsGatesJ14: $oeufsGatesJ14, ')
-          ..write('lotParentId: $lotParentId')
+          ..write('lotParentId: $lotParentId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -17550,6 +17821,9 @@ class CycleCouveuseRow extends DataClass
     oeufsBlancsJ7,
     oeufsGatesJ14,
     lotParentId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -17567,11 +17841,14 @@ class CycleCouveuseRow extends DataClass
           other.machineId == this.machineId &&
           other.oeufsBlancsJ7 == this.oeufsBlancsJ7 &&
           other.oeufsGatesJ14 == this.oeufsGatesJ14 &&
-          other.lotParentId == this.lotParentId);
+          other.lotParentId == this.lotParentId &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> codeIncubation;
   final Value<String> espece;
   final Value<String?> bandeReproducteurs;
@@ -17580,10 +17857,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
   final Value<int?> poussinsNes;
   final Value<int?> oeufsPerdus;
   final Value<String> statut;
-  final Value<int?> machineId;
+  final Value<String?> machineId;
   final Value<int?> oeufsBlancsJ7;
   final Value<int?> oeufsGatesJ14;
-  final Value<int?> lotParentId;
+  final Value<String?> lotParentId;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const CycleCouveuseCompanion({
     this.id = const Value.absent(),
     this.codeIncubation = const Value.absent(),
@@ -17598,6 +17879,10 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     this.oeufsBlancsJ7 = const Value.absent(),
     this.oeufsGatesJ14 = const Value.absent(),
     this.lotParentId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   CycleCouveuseCompanion.insert({
     this.id = const Value.absent(),
@@ -17613,12 +17898,16 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     this.oeufsBlancsJ7 = const Value.absent(),
     this.oeufsGatesJ14 = const Value.absent(),
     this.lotParentId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : codeIncubation = Value(codeIncubation),
        dateIncubation = Value(dateIncubation),
        oeufsCouves = Value(oeufsCouves),
        statut = Value(statut);
   static Insertable<CycleCouveuseRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? codeIncubation,
     Expression<String>? espece,
     Expression<String>? bandeReproducteurs,
@@ -17627,10 +17916,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     Expression<int>? poussinsNes,
     Expression<int>? oeufsPerdus,
     Expression<String>? statut,
-    Expression<int>? machineId,
+    Expression<String>? machineId,
     Expression<int>? oeufsBlancsJ7,
     Expression<int>? oeufsGatesJ14,
-    Expression<int>? lotParentId,
+    Expression<String>? lotParentId,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -17646,11 +17939,15 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       if (oeufsBlancsJ7 != null) 'oeufs_blancs_j7': oeufsBlancsJ7,
       if (oeufsGatesJ14 != null) 'oeufs_gates_j14': oeufsGatesJ14,
       if (lotParentId != null) 'lot_parent_id': lotParentId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   CycleCouveuseCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? codeIncubation,
     Value<String>? espece,
     Value<String?>? bandeReproducteurs,
@@ -17659,10 +17956,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     Value<int?>? poussinsNes,
     Value<int?>? oeufsPerdus,
     Value<String>? statut,
-    Value<int?>? machineId,
+    Value<String?>? machineId,
     Value<int?>? oeufsBlancsJ7,
     Value<int?>? oeufsGatesJ14,
-    Value<int?>? lotParentId,
+    Value<String?>? lotParentId,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return CycleCouveuseCompanion(
       id: id ?? this.id,
@@ -17678,6 +17979,10 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       oeufsBlancsJ7: oeufsBlancsJ7 ?? this.oeufsBlancsJ7,
       oeufsGatesJ14: oeufsGatesJ14 ?? this.oeufsGatesJ14,
       lotParentId: lotParentId ?? this.lotParentId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -17685,7 +17990,7 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (codeIncubation.present) {
       map['code_incubation'] = Variable<String>(codeIncubation.value);
@@ -17712,7 +18017,7 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       map['statut'] = Variable<String>(statut.value);
     }
     if (machineId.present) {
-      map['machine_id'] = Variable<int>(machineId.value);
+      map['machine_id'] = Variable<String>(machineId.value);
     }
     if (oeufsBlancsJ7.present) {
       map['oeufs_blancs_j7'] = Variable<int>(oeufsBlancsJ7.value);
@@ -17721,7 +18026,19 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       map['oeufs_gates_j14'] = Variable<int>(oeufsGatesJ14.value);
     }
     if (lotParentId.present) {
-      map['lot_parent_id'] = Variable<int>(lotParentId.value);
+      map['lot_parent_id'] = Variable<String>(lotParentId.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -17741,7 +18058,11 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
           ..write('machineId: $machineId, ')
           ..write('oeufsBlancsJ7: $oeufsBlancsJ7, ')
           ..write('oeufsGatesJ14: $oeufsGatesJ14, ')
-          ..write('lotParentId: $lotParentId')
+          ..write('lotParentId: $lotParentId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -33293,19 +33614,27 @@ typedef $$FicheVentesJourTableProcessedTableManager =
     >;
 typedef $$MachinesIncubateurTableCreateCompanionBuilder =
     MachinesIncubateurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String code,
       required String libelle,
       Value<int?> capaciteOeufs,
       Value<bool> active,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$MachinesIncubateurTableUpdateCompanionBuilder =
     MachinesIncubateurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> code,
       Value<String> libelle,
       Value<int?> capaciteOeufs,
       Value<bool> active,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$MachinesIncubateurTableReferences
@@ -33331,7 +33660,7 @@ final class $$MachinesIncubateurTableReferences
     final manager = $$CycleCouveuseTableTableManager(
       $_db,
       $_db.cycleCouveuse,
-    ).filter((f) => f.machineId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.machineId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_cycleCouveuseRefsTable($_db));
     return ProcessedTableManager(
@@ -33349,7 +33678,7 @@ class $$MachinesIncubateurTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -33371,6 +33700,21 @@ class $$MachinesIncubateurTableFilterComposer
 
   ColumnFilters<bool> get active => $composableBuilder(
     column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33409,7 +33753,7 @@ class $$MachinesIncubateurTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -33433,6 +33777,21 @@ class $$MachinesIncubateurTableOrderingComposer
     column: $table.active,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MachinesIncubateurTableAnnotationComposer
@@ -33444,7 +33803,7 @@ class $$MachinesIncubateurTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get code =>
@@ -33460,6 +33819,17 @@ class $$MachinesIncubateurTableAnnotationComposer
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> cycleCouveuseRefs<T extends Object>(
     Expression<T> Function($$CycleCouveuseTableAnnotationComposer a) f,
@@ -33520,31 +33890,47 @@ class $$MachinesIncubateurTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> libelle = const Value.absent(),
                 Value<int?> capaciteOeufs = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MachinesIncubateurCompanion(
                 id: id,
                 code: code,
                 libelle: libelle,
                 capaciteOeufs: capaciteOeufs,
                 active: active,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String code,
                 required String libelle,
                 Value<int?> capaciteOeufs = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MachinesIncubateurCompanion.insert(
                 id: id,
                 code: code,
                 libelle: libelle,
                 capaciteOeufs: capaciteOeufs,
                 active: active,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -33606,7 +33992,7 @@ typedef $$MachinesIncubateurTableProcessedTableManager =
     >;
 typedef $$CycleCouveuseTableCreateCompanionBuilder =
     CycleCouveuseCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String codeIncubation,
       Value<String> espece,
       Value<String?> bandeReproducteurs,
@@ -33615,14 +34001,18 @@ typedef $$CycleCouveuseTableCreateCompanionBuilder =
       Value<int?> poussinsNes,
       Value<int?> oeufsPerdus,
       required String statut,
-      Value<int?> machineId,
+      Value<String?> machineId,
       Value<int?> oeufsBlancsJ7,
       Value<int?> oeufsGatesJ14,
-      Value<int?> lotParentId,
+      Value<String?> lotParentId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$CycleCouveuseTableUpdateCompanionBuilder =
     CycleCouveuseCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> codeIncubation,
       Value<String> espece,
       Value<String?> bandeReproducteurs,
@@ -33631,10 +34021,14 @@ typedef $$CycleCouveuseTableUpdateCompanionBuilder =
       Value<int?> poussinsNes,
       Value<int?> oeufsPerdus,
       Value<String> statut,
-      Value<int?> machineId,
+      Value<String?> machineId,
       Value<int?> oeufsBlancsJ7,
       Value<int?> oeufsGatesJ14,
-      Value<int?> lotParentId,
+      Value<String?> lotParentId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$CycleCouveuseTableReferences
@@ -33651,7 +34045,7 @@ final class $$CycleCouveuseTableReferences
       .createAlias('cycle_couveuse__machine_id__machines_incubateur__id');
 
   $$MachinesIncubateurTableProcessedTableManager? get machineId {
-    final $_column = $_itemColumn<int>('machine_id');
+    final $_column = $_itemColumn<String>('machine_id');
     if ($_column == null) return null;
     final manager = $$MachinesIncubateurTableTableManager(
       $_db,
@@ -33674,7 +34068,7 @@ class $$CycleCouveuseTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -33729,8 +34123,23 @@ class $$CycleCouveuseTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get lotParentId => $composableBuilder(
+  ColumnFilters<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33767,7 +34176,7 @@ class $$CycleCouveuseTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -33822,8 +34231,23 @@ class $$CycleCouveuseTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get lotParentId => $composableBuilder(
+  ColumnOrderings<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -33860,7 +34284,7 @@ class $$CycleCouveuseTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get codeIncubation => $composableBuilder(
@@ -33909,10 +34333,21 @@ class $$CycleCouveuseTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get lotParentId => $composableBuilder(
+  GeneratedColumn<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$MachinesIncubateurTableAnnotationComposer get machineId {
     final $$MachinesIncubateurTableAnnotationComposer composer =
@@ -33967,7 +34402,7 @@ class $$CycleCouveuseTableTableManager
               $$CycleCouveuseTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> codeIncubation = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<String?> bandeReproducteurs = const Value.absent(),
@@ -33976,10 +34411,14 @@ class $$CycleCouveuseTableTableManager
                 Value<int?> poussinsNes = const Value.absent(),
                 Value<int?> oeufsPerdus = const Value.absent(),
                 Value<String> statut = const Value.absent(),
-                Value<int?> machineId = const Value.absent(),
+                Value<String?> machineId = const Value.absent(),
                 Value<int?> oeufsBlancsJ7 = const Value.absent(),
                 Value<int?> oeufsGatesJ14 = const Value.absent(),
-                Value<int?> lotParentId = const Value.absent(),
+                Value<String?> lotParentId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CycleCouveuseCompanion(
                 id: id,
                 codeIncubation: codeIncubation,
@@ -33994,10 +34433,14 @@ class $$CycleCouveuseTableTableManager
                 oeufsBlancsJ7: oeufsBlancsJ7,
                 oeufsGatesJ14: oeufsGatesJ14,
                 lotParentId: lotParentId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String codeIncubation,
                 Value<String> espece = const Value.absent(),
                 Value<String?> bandeReproducteurs = const Value.absent(),
@@ -34006,10 +34449,14 @@ class $$CycleCouveuseTableTableManager
                 Value<int?> poussinsNes = const Value.absent(),
                 Value<int?> oeufsPerdus = const Value.absent(),
                 required String statut,
-                Value<int?> machineId = const Value.absent(),
+                Value<String?> machineId = const Value.absent(),
                 Value<int?> oeufsBlancsJ7 = const Value.absent(),
                 Value<int?> oeufsGatesJ14 = const Value.absent(),
-                Value<int?> lotParentId = const Value.absent(),
+                Value<String?> lotParentId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CycleCouveuseCompanion.insert(
                 id: id,
                 codeIncubation: codeIncubation,
@@ -34024,6 +34471,10 @@ class $$CycleCouveuseTableTableManager
                 oeufsBlancsJ7: oeufsBlancsJ7,
                 oeufsGatesJ14: oeufsGatesJ14,
                 lotParentId: lotParentId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(

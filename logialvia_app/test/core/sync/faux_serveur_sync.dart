@@ -44,6 +44,10 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> mouvements = {};
   final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
+  /// Incubateurs et lots de couveuse (faits plats, dernier écrivain gagne).
+  final Map<String, Map<String, dynamic>> machines = {};
+  final Map<String, Map<String, dynamic>> cycles = {};
+
   /// Factures e-MECeF (avec leurs lignes imbriquées) et grille de taxation
   /// (référentiel, clé : la lettre). Le serveur ne transmet JAMAIS à la DGI.
   final Map<String, Map<String, dynamic>> factures = {};
@@ -126,6 +130,8 @@ class FauxServeurSync {
     voir(intrants.values);
     voir(mouvements.values);
     voir(mouvementsProduit.values);
+    voir(machines.values);
+    voir(cycles.values);
     voir(factures.values);
     voir(groupesTaxe.values);
     voir(fichesJournee.values);
@@ -146,6 +152,8 @@ class FauxServeurSync {
     ventesJour.clear();
     bandes.clear();
     mouvements.clear(); // les intrants (référentiel) sont préservés
+    cycles.clear();
+    machines.clear();
     marque = 'rz-${++_horloge}';
   }
 
@@ -306,6 +314,14 @@ class FauxServeurSync {
         'mouvements_intrant': [
           for (final m in mouvements.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
+        ],
+        'machines_incubateur': [
+          for (final m in machines.values)
+            if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
+        ],
+        'cycle_couveuse': [
+          for (final c in cycles.values)
+            if (_dans(c['serveur_modifie_le'] as String, since, jusqua)) c,
         ],
         'mouvements_produit': [
           for (final m in mouvementsProduit.values)
@@ -475,6 +491,18 @@ class FauxServeurSync {
         corps['device_id'] as String,
       );
     }
+    if (tables.containsKey('machines_incubateur')) {
+      reponse['machines_incubateur'] = _machines(
+        (tables['machines_incubateur'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('cycle_couveuse')) {
+      reponse['cycle_couveuse'] = _cycles(
+        (tables['cycle_couveuse'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
     if (tables.containsKey('factures')) {
       reponse['factures'] = _factures(
         (tables['factures'] as List).cast<Map<String, dynamic>>(),
@@ -636,6 +664,276 @@ class FauxServeurSync {
           existante[c] = v[c];
         }
         existante
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Un incubateur déjà connu du serveur (saisi par un autre poste).
+  void ajouterMachine(
+    String id,
+    String code, {
+    String libelle = 'Couveuse',
+    int? capacite,
+    bool active = true,
+    String? updatedAt,
+  }) {
+    machines[id] = {
+      'id': id,
+      'device_id': 'autre-poste',
+      'code': code,
+      'libelle': libelle,
+      'capacite_oeufs': capacite,
+      'active': active,
+      'updated_at': updatedAt ?? _instant(),
+      'serveur_modifie_le': _instant(),
+      'supprime_le': null,
+    };
+  }
+
+  /// Un lot déjà connu du serveur (saisi par un autre poste).
+  void ajouterCycle(
+    String id,
+    String code, {
+    String espece = 'goliath',
+    String date = '2026-08-01',
+    int charges = 100,
+    String statut = 'En Incubation',
+    String? machineId,
+    int? blancs,
+    int? gates,
+    int? eclos,
+    int? perdus,
+    String? parentId,
+    String? updatedAt,
+    String? supprimeLe,
+  }) {
+    cycles[id] = {
+      'id': id,
+      'device_id': 'autre-poste',
+      'code_incubation': code,
+      'espece': espece,
+      'date_incubation': date,
+      'oeufs_couves': charges,
+      'poussins_nes': eclos,
+      'oeufs_perdus': perdus,
+      'statut': statut,
+      'machine_id': machineId,
+      'oeufs_blancs_j7': blancs,
+      'oeufs_gates_j14': gates,
+      'lot_parent_id': parentId,
+      'updated_at': updatedAt ?? _instant(),
+      'serveur_modifie_le': _instant(),
+      'supprime_le': supprimeLe,
+    };
+  }
+
+  /// Rejoue les règles du vrai serveur (`MachinesIncubateurTable`) : champs
+  /// obligatoires, code unique (jamais fusionné), dernier écrivain gagne.
+  Map<String, dynamic> _machines(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final m in lot) {
+      final id = m['id'] as String;
+      final code = m['code'];
+      final libelle = m['libelle'];
+      final capacite = m['capacite_oeufs'];
+      if (code is! String || code.trim().isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Le code de l\'incubateur est obligatoire.',
+        });
+        continue;
+      }
+      if (libelle is! String || libelle.trim().isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Le libellé de l\'incubateur est obligatoire.',
+        });
+        continue;
+      }
+      if (capacite != null && (capacite is! int || capacite < 1)) {
+        refusees.add({
+          'id': id,
+          'motif': 'La capacité doit être supérieure à 0.',
+        });
+        continue;
+      }
+      if (m['active'] is! bool) {
+        refusees.add({
+          'id': id,
+          'motif': 'L\'état de l\'incubateur est invalide.',
+        });
+        continue;
+      }
+      final homonyme = machines.values.any(
+        (x) =>
+            x['id'] != id &&
+            (x['code'] as String).toLowerCase() == code.trim().toLowerCase(),
+      );
+      if (homonyme) {
+        refusees.add({
+          'id': id,
+          'motif': 'Un incubateur porte déjà le code ${code.trim()}.',
+        });
+        continue;
+      }
+      final saisie = DateTime.parse(m['updated_at'] as String);
+      final existant = machines[id];
+      if (existant == null) {
+        machines[id] = {
+          'id': id,
+          'device_id': deviceId,
+          'code': code.trim(),
+          'libelle': libelle.trim(),
+          'capacite_oeufs': capacite,
+          'active': m['active'],
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+          'supprime_le': null,
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        existant
+          ..['code'] = code.trim()
+          ..['libelle'] = libelle.trim()
+          ..['capacite_oeufs'] = capacite
+          ..['active'] = m['active']
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Rejoue les règles du vrai serveur (`CyclesCouveuseTable`) : valeurs permises,
+  /// compteurs cohérents, incubateur connu, code unique (global avec code de poste,
+  /// par poste sinon, hors lots supprimés), dernier écrivain gagne, pierre tombale.
+  Map<String, dynamic> _cycles(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    bool codee(String c) => RegExp(r'^C-P\d+-\d{4}-\d{3,}$').hasMatch(c);
+    const champs = [
+      'code_incubation',
+      'espece',
+      'date_incubation',
+      'oeufs_couves',
+      'poussins_nes',
+      'oeufs_perdus',
+      'statut',
+      'machine_id',
+      'oeufs_blancs_j7',
+      'oeufs_gates_j14',
+      'lot_parent_id',
+      'supprime_le',
+    ];
+
+    for (final c in lot) {
+      final id = c['id'] as String;
+      String? motif;
+      final code = c['code_incubation'];
+      final charges = c['oeufs_couves'];
+      int? n(String cle) => c[cle] is int ? c[cle] as int : null;
+      if (code is! String || code.trim().isEmpty) {
+        motif = 'Le code du lot est obligatoire.';
+      } else if (c['espece'] != 'goliath' && c['espece'] != 'pintade') {
+        motif = 'L\'espèce du lot est inconnue.';
+      } else if (!const [
+        'En Incubation',
+        'Éclosion Effectuée',
+        'Remplacé',
+      ].contains(c['statut'])) {
+        motif = 'Le statut du lot est inconnu.';
+      } else if (charges is! int || charges < 1) {
+        motif = 'Le nombre d\'œufs chargés est obligatoire.';
+      } else if (c['date_incubation'] is! String) {
+        motif = 'La date de chargement est obligatoire.';
+      } else {
+        for (final cle in const [
+          'poussins_nes',
+          'oeufs_perdus',
+          'oeufs_blancs_j7',
+          'oeufs_gates_j14',
+        ]) {
+          if (c[cle] != null && (c[cle] is! int || (c[cle] as int) < 0)) {
+            motif = 'Les quantités ne peuvent être négatives.';
+          }
+        }
+        if (motif == null) {
+          final retenus =
+              charges -
+              (n('oeufs_blancs_j7') ?? 0) -
+              (n('oeufs_gates_j14') ?? 0);
+          if (retenus < 0) {
+            motif =
+                'Les mirages retirent plus d\'œufs que le lot n\'en contient.';
+          } else if (n('poussins_nes') != null &&
+              n('poussins_nes')! + (n('oeufs_perdus') ?? 0) > retenus) {
+            motif =
+                'Poussins éclos + œufs perdus dépasse les œufs encore en incubation.';
+          }
+        }
+      }
+      if (motif == null && c['lot_parent_id'] == id) {
+        motif = 'Un lot ne peut pas se remplacer lui-même.';
+      }
+      if (motif == null &&
+          cycles[id] != null &&
+          cycles[id]!['code_incubation'] != (code as String).trim()) {
+        motif = 'Le code d\'un lot ne change jamais.';
+      }
+      // Une pierre tombale ne demande ni incubateur connu ni code libre.
+      final tombale = c['supprime_le'] != null;
+      if (motif == null &&
+          !tombale &&
+          c['machine_id'] != null &&
+          !machines.containsKey(c['machine_id'])) {
+        motif = 'Incubateur inconnu du serveur.';
+      }
+      if (motif == null && !tombale) {
+        final doublon = cycles.values.any(
+          (x) =>
+              x['id'] != id &&
+              x['supprime_le'] == null &&
+              x['code_incubation'] == (code as String).trim() &&
+              (codee(code.trim()) || x['device_id'] == deviceId),
+        );
+        if (doublon) motif = 'Ce code est déjà utilisé par un autre lot.';
+      }
+      if (motif != null) {
+        refusees.add({'id': id, 'motif': motif});
+        continue;
+      }
+
+      final saisie = DateTime.parse(c['updated_at'] as String);
+      final existant = cycles[id];
+      if (existant == null) {
+        cycles[id] = {
+          for (final k in champs) k: c[k],
+          'id': id,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        for (final k in champs) {
+          existant[k] = c[k];
+        }
+        existant
+          ..['device_id'] = deviceId
           ..['updated_at'] = saisie.toUtc().toIso8601String()
           ..['serveur_modifie_le'] = _instant();
       }

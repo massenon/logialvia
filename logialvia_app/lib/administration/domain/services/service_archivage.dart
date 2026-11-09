@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../data/sync/depot_demandes_referentiel.dart';
 
 /// Un élément archivé, tel que l'onglet Corbeille l'affiche.
@@ -262,6 +263,13 @@ class ServiceArchivage {
       }
 
       final donnees = (jsonDecode(archive.donneesJson) as Map<String, Object?>);
+      if (type.nomTable == TypeArchivable.lots.nomTable) {
+        // Un lot restauré lève la pierre tombale envoyée au serveur : il repart,
+        // daté de maintenant (`46b_`). Un instantané ancien n'a pas ces colonnes.
+        donnees['sync_status'] = 'pending';
+        donnees['sync_motif'] = null;
+        donnees['updated_at'] = instantSaisie();
+      }
       final colonnes = donnees.keys.toList();
 
       final existe = await _db
