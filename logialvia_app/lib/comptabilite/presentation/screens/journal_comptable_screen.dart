@@ -18,6 +18,7 @@ import '../../../core/pdf/bouton_export_pdf.dart';
 import '../../data/repositories/comptabilite_repository_drift.dart';
 import '../../domain/entities/comptabilite.dart';
 import '../../domain/services/moteur_comptable.dart';
+import '../../domain/services/report_a_nouveau.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
 import '../../../core/saisie/formats_saisie.dart';
@@ -243,11 +244,14 @@ class _FiltresJournal extends StatelessWidget {
               const DropdownMenuItem<String?>(
                 child: Text('Journal : Tous', style: texteCompta),
               ),
-              for (final code in CodeJournal.tous)
+              for (final code in [
+                ...CodeJournal.tous,
+                ...JournauxDeCloture.libelles.keys,
+              ])
                 DropdownMenuItem<String?>(
                   value: code,
                   child: Text(
-                    '$code — ${CodeJournal.libelles[code]}',
+                    '$code — ${CodeJournal.libelles[code] ?? JournauxDeCloture.libelles[code]}',
                     style: texteCompta,
                   ),
                 ),
@@ -465,9 +469,12 @@ class _LigneJournal extends StatelessWidget {
                 if (ecriture.estAutomatique) ...[
                   const SizedBox(width: AppSpacing.xs),
                   Tooltip(
-                    message:
-                        'Écriture générée automatiquement par '
-                        '${ecriture.venteRef ?? ecriture.achatRef}',
+                    message: ecriture.estDeCloture
+                        ? 'Écriture de clôture générée par la clôture annuelle '
+                              '(journal ${ecriture.journalCode}) : rouvrez l\'exercice '
+                              'pour la refaire.'
+                        : 'Écriture générée automatiquement par '
+                              '${ecriture.venteRef ?? ecriture.achatRef}',
                     child: const Icon(
                       Symbols.bolt,
                       size: 14,

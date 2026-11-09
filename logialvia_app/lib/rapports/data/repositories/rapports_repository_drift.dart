@@ -85,7 +85,11 @@ class RapportsRepositoryDrift implements RapportsRepository {
               ..where(
                 (e) =>
                     e.dateEcriture.isBiggerOrEqualValue(debut) &
-                    e.dateEcriture.isSmallerOrEqualValue(fin),
+                    e.dateEcriture.isSmallerOrEqualValue(fin) &
+                    // Les écritures de clôture (CL) et d'à-nouveaux (AN) ne sont ni des
+                    // recettes, ni des dépenses, ni des mouvements de trésorerie : les
+                    // compter doublerait les totaux (`47c_`).
+                    e.journalCode.isNotIn(const ['AN', 'CL']),
               )
               ..orderBy([(e) => OrderingTerm.asc(e.numeroCompte)]))
             .get();
@@ -196,7 +200,11 @@ class RapportsRepositoryDrift implements RapportsRepository {
               ..where(
                 (e) =>
                     e.dateEcriture.isBiggerOrEqualValue(debut) &
-                    e.dateEcriture.isSmallerOrEqualValue(fin),
+                    e.dateEcriture.isSmallerOrEqualValue(fin) &
+                    // Les écritures de clôture (CL) et d'à-nouveaux (AN) ne sont ni des
+                    // recettes, ni des dépenses, ni des mouvements de trésorerie : les
+                    // compter doublerait les totaux (`47c_`).
+                    e.journalCode.isNotIn(const ['AN', 'CL']),
               )
               ..orderBy([
                 (e) => OrderingTerm.asc(e.dateEcriture),

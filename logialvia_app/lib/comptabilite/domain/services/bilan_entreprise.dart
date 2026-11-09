@@ -49,33 +49,72 @@ class BilanEntrepriseCalculator {
   BilanEntreprise calculer(SoldesComptes soldes) {
     // ------------------------------------------------------------------ ACTIF
     // Les 4 postes de `bilan-entreprise.html` l.6-11, dans son ordre.
-    // Classe 3 : « Stocks (Intrants + Marchandises) », comptes 31 et 32.
-    final stocks = soldes.parPrefixe('31') + soldes.parPrefixe('32');
+    // Immobilisations NETTES (classe 2, amortissements 28-29 déduits) : sans elles, un
+    // bâtiment ou un véhicule acheté ferait « sortir » l'argent du bilan et l'écart
+    // affiché serait faux.
+    final immobilisations = soldes.parClasse('2');
+    // Classe 3 : « Stocks (Intrants + Marchandises) », comptes 31 et 32 (39 déduit).
+    final stocks = soldes.parClasse('3');
     final clients = soldes.parPrefixe('411');
     final banques = soldes.parPrefixe('512');
     final caisse = soldes.parPrefixe('531');
+    // Reste de la trésorerie et des créances : tout solde que les quatre lignes ci-dessus
+    // ne portent pas (mobile money 52x-58x, avances 409, taxes à récupérer 44x débiteurs…),
+    // pour que l'écart affiché soit réellement de l'argent d'origine inconnue.
+    final autresActifs =
+        soldes.parClasse('5') - banques - caisse +
+        (soldes.debiteursParClasse('4') -
+            soldes.debiteursParPrefixe('411') -
+            soldes.debiteursParPrefixe('401'));
 
     final actif = <PosteBilanEntreprise>[
+      if (immobilisations.abs() >= 0.01)
+        PosteBilanEntreprise('Immobilisations (nettes)', '2', immobilisations),
       PosteBilanEntreprise('Stocks (Intrants + Marchandises)', '31/32', stocks),
       PosteBilanEntreprise('Clients (Solde Restant Dû)', '411', clients),
       PosteBilanEntreprise('Banques — Mobile Money', '512', banques),
       PosteBilanEntreprise('Caisse', '531', caisse),
+      if (autresActifs.abs() >= 0.01)
+        PosteBilanEntreprise('Autres comptes débiteurs et trésorerie', '4/5', autresActifs),
     ];
-    final totalActif = stocks + clients + banques + caisse;
+    final totalActif = actif.fold<double>(0, (t, p) => t + p.montant);
 
     // ----------------------------------------------------------------- PASSIF
     // Comptes de passif : crediteurs, donc de solde negatif dans la convention
     // debit-credit de `SoldesComptes`. On les presente en positif.
     final capital = -soldes.parPrefixe('101');
+    // Réserves, report à nouveau (121 créditeur, 129 débiteur), subventions : le reste de
+    // la classe 1 hors capital et emprunts. C'est ici que la clôture annuelle reporte le
+    // résultat de l'exercice précédent.
+    final reserves = -(soldes.parPrefixe('11') +
+        soldes.parPrefixe('12') +
+        soldes.parPrefixe('13') +
+        soldes.parPrefixe('14') +
+        soldes.parPrefixe('15') +
+        (soldes.parPrefixe('10') - soldes.parPrefixe('101')));
+    final emprunts = -(soldes.parPrefixe('16') +
+        soldes.parPrefixe('17') +
+        soldes.parPrefixe('18') +
+        soldes.parPrefixe('19'));
     final resultatNet = CalculerResultatNet.calculer(soldes);
     final fournisseurs = -soldes.parPrefixe('401');
+    final autresDettes =
+        soldes.crediteursParClasse('4') -
+        soldes.crediteursParPrefixe('401') -
+        soldes.crediteursParPrefixe('411');
 
     final passif = <PosteBilanEntreprise>[
       PosteBilanEntreprise('Capital Initial', '101', capital),
+      if (reserves.abs() >= 0.01)
+        PosteBilanEntreprise('Réserves et Report à Nouveau', '11-15', reserves),
       PosteBilanEntreprise('Résultat de l\'Exercice', '13', resultatNet),
+      if (emprunts.abs() >= 0.01)
+        PosteBilanEntreprise('Emprunts et Dettes Financières', '16-19', emprunts),
       PosteBilanEntreprise('Fournisseurs (Dettes)', '401', fournisseurs),
+      if (autresDettes.abs() >= 0.01)
+        PosteBilanEntreprise('Autres dettes (avances, dividendes, État…)', '4', autresDettes),
     ];
-    final totalPassif = capital + resultatNet + fournisseurs;
+    final totalPassif = passif.fold<double>(0, (t, p) => t + p.montant);
 
     return BilanEntreprise(
       actif: actif,

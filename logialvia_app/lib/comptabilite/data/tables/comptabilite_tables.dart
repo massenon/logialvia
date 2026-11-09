@@ -13,6 +13,12 @@ class ExerciceComptable extends Table {
 
   DateTimeColumn get dateCloture => dateTime().nullable()();
 
+  /// Décision d'affectation du résultat prise à la clôture (JSON :
+  /// `{reserve_legale, autres_reserves, dividendes}`), `null` = tout au report à nouveau.
+  /// Elle voyage avec le fait de clôture : le serveur génère les mêmes écritures
+  /// (`47c_` §3). Schéma v44.
+  TextColumn get affectation => text().nullable()();
+
   // --- Synchronisation (`46d_` §2) ---
   //
   // La clé reste l'**année** (clé naturelle, partagée par tous les postes : deux

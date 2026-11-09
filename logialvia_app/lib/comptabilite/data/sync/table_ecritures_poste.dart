@@ -28,7 +28,9 @@ class TableEcrituresPoste implements TablePoste {
   static final RegExp _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
-  static const _journaux = {'VT', 'AC', 'CA', 'OD'};
+  // VT/AC/CA/OD se saisissent ; AN/CL (à-nouveaux et clôture) sont engendrés par la clôture
+  // annuelle : le serveur les sert aux autres postes, ce poste ne les envoie jamais (`47c_`).
+  static const _journaux = {'VT', 'AC', 'CA', 'OD', 'AN', 'CL'};
   static const double _tolerance = 0.01;
 
   @override

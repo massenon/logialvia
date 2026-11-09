@@ -21998,6 +21998,17 @@ class $ExerciceComptableTable extends ExerciceComptable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _affectationMeta = const VerificationMeta(
+    'affectation',
+  );
+  @override
+  late final GeneratedColumn<String> affectation = GeneratedColumn<String>(
+    'affectation',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -22038,6 +22049,7 @@ class $ExerciceComptableTable extends ExerciceComptable
     annee,
     isCloture,
     dateCloture,
+    affectation,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -22072,6 +22084,15 @@ class $ExerciceComptableTable extends ExerciceComptable
         dateCloture.isAcceptableOrUnknown(
           data['date_cloture']!,
           _dateClotureMeta,
+        ),
+      );
+    }
+    if (data.containsKey('affectation')) {
+      context.handle(
+        _affectationMeta,
+        affectation.isAcceptableOrUnknown(
+          data['affectation']!,
+          _affectationMeta,
         ),
       );
     }
@@ -22114,6 +22135,10 @@ class $ExerciceComptableTable extends ExerciceComptable
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_cloture'],
       ),
+      affectation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}affectation'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -22142,6 +22167,12 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
   /// BR-CPT-001 — verrouillage **définitif**, aucun mécanisme de déclôture.
   final bool isCloture;
   final DateTime? dateCloture;
+
+  /// Décision d'affectation du résultat prise à la clôture (JSON :
+  /// `{reserve_legale, autres_reserves, dividendes}`), `null` = tout au report à nouveau.
+  /// Elle voyage avec le fait de clôture : le serveur génère les mêmes écritures
+  /// (`47c_` §3). Schéma v44.
+  final String? affectation;
   final String syncStatus;
   final String? syncMotif;
   final String updatedAt;
@@ -22149,6 +22180,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     required this.annee,
     required this.isCloture,
     this.dateCloture,
+    this.affectation,
     required this.syncStatus,
     this.syncMotif,
     required this.updatedAt,
@@ -22160,6 +22192,9 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     map['is_cloture'] = Variable<bool>(isCloture);
     if (!nullToAbsent || dateCloture != null) {
       map['date_cloture'] = Variable<DateTime>(dateCloture);
+    }
+    if (!nullToAbsent || affectation != null) {
+      map['affectation'] = Variable<String>(affectation);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || syncMotif != null) {
@@ -22176,6 +22211,9 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: dateCloture == null && nullToAbsent
           ? const Value.absent()
           : Value(dateCloture),
+      affectation: affectation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(affectation),
       syncStatus: Value(syncStatus),
       syncMotif: syncMotif == null && nullToAbsent
           ? const Value.absent()
@@ -22193,6 +22231,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       annee: serializer.fromJson<int>(json['annee']),
       isCloture: serializer.fromJson<bool>(json['isCloture']),
       dateCloture: serializer.fromJson<DateTime?>(json['dateCloture']),
+      affectation: serializer.fromJson<String?>(json['affectation']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
@@ -22205,6 +22244,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       'annee': serializer.toJson<int>(annee),
       'isCloture': serializer.toJson<bool>(isCloture),
       'dateCloture': serializer.toJson<DateTime?>(dateCloture),
+      'affectation': serializer.toJson<String?>(affectation),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
       'updatedAt': serializer.toJson<String>(updatedAt),
@@ -22215,6 +22255,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     int? annee,
     bool? isCloture,
     Value<DateTime?> dateCloture = const Value.absent(),
+    Value<String?> affectation = const Value.absent(),
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
     String? updatedAt,
@@ -22222,6 +22263,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     annee: annee ?? this.annee,
     isCloture: isCloture ?? this.isCloture,
     dateCloture: dateCloture.present ? dateCloture.value : this.dateCloture,
+    affectation: affectation.present ? affectation.value : this.affectation,
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -22233,6 +22275,9 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: data.dateCloture.present
           ? data.dateCloture.value
           : this.dateCloture,
+      affectation: data.affectation.present
+          ? data.affectation.value
+          : this.affectation,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -22247,6 +22292,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
+          ..write('affectation: $affectation, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt')
@@ -22259,6 +22305,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     annee,
     isCloture,
     dateCloture,
+    affectation,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -22270,6 +22317,7 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
           other.annee == this.annee &&
           other.isCloture == this.isCloture &&
           other.dateCloture == this.dateCloture &&
+          other.affectation == this.affectation &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif &&
           other.updatedAt == this.updatedAt);
@@ -22279,6 +22327,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
   final Value<int> annee;
   final Value<bool> isCloture;
   final Value<DateTime?> dateCloture;
+  final Value<String?> affectation;
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<String> updatedAt;
@@ -22286,6 +22335,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.affectation = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -22294,6 +22344,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.affectation = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -22302,6 +22353,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     Expression<int>? annee,
     Expression<bool>? isCloture,
     Expression<DateTime>? dateCloture,
+    Expression<String>? affectation,
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<String>? updatedAt,
@@ -22310,6 +22362,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
       if (annee != null) 'annee': annee,
       if (isCloture != null) 'is_cloture': isCloture,
       if (dateCloture != null) 'date_cloture': dateCloture,
+      if (affectation != null) 'affectation': affectation,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -22320,6 +22373,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     Value<int>? annee,
     Value<bool>? isCloture,
     Value<DateTime?>? dateCloture,
+    Value<String?>? affectation,
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<String>? updatedAt,
@@ -22328,6 +22382,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
       annee: annee ?? this.annee,
       isCloture: isCloture ?? this.isCloture,
       dateCloture: dateCloture ?? this.dateCloture,
+      affectation: affectation ?? this.affectation,
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -22345,6 +22400,9 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     }
     if (dateCloture.present) {
       map['date_cloture'] = Variable<DateTime>(dateCloture.value);
+    }
+    if (affectation.present) {
+      map['affectation'] = Variable<String>(affectation.value);
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
@@ -22364,6 +22422,7 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
+          ..write('affectation: $affectation, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt')
@@ -37757,6 +37816,7 @@ typedef $$ExerciceComptableTableCreateCompanionBuilder =
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String?> affectation,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -37766,6 +37826,7 @@ typedef $$ExerciceComptableTableUpdateCompanionBuilder =
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String?> affectation,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -37845,6 +37906,11 @@ class $$ExerciceComptableTableFilterComposer
 
   ColumnFilters<DateTime> get dateCloture => $composableBuilder(
     column: $table.dateCloture,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get affectation => $composableBuilder(
+    column: $table.affectation,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -37938,6 +38004,11 @@ class $$ExerciceComptableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get affectation => $composableBuilder(
+    column: $table.affectation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -37971,6 +38042,11 @@ class $$ExerciceComptableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get dateCloture => $composableBuilder(
     column: $table.dateCloture,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get affectation => $composableBuilder(
+    column: $table.affectation,
     builder: (column) => column,
   );
 
@@ -38076,6 +38152,7 @@ class $$ExerciceComptableTableTableManager
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String?> affectation = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -38083,6 +38160,7 @@ class $$ExerciceComptableTableTableManager
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                affectation: affectation,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
@@ -38092,6 +38170,7 @@ class $$ExerciceComptableTableTableManager
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String?> affectation = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -38099,6 +38178,7 @@ class $$ExerciceComptableTableTableManager
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                affectation: affectation,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,

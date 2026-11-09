@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../administration/data/repositories/preferences_poste_repository.dart';
@@ -5,6 +7,8 @@ import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/comptabilite.dart';
+import '../../domain/services/report_a_nouveau.dart';
+import 'pieces_cloture_drift.dart';
 
 /// Une ligne à écrire (partie double).
 class LigneAEcrire {
@@ -112,7 +116,22 @@ abstract class ComptabiliteRepository {
     required String utilisateurId,
   });
 
-  Future<void> cloturerExercice(int annee);
+  /// Clôture l'exercice [annee] : solde des classes 6/7/8 au compte 13, affectation du
+  /// résultat, verrouillage, puis à-nouveaux de l'exercice suivant (`ReportANouveau`).
+  /// **Idempotente** : un exercice déjà clôturé n'est pas retouché, rien n'est dupliqué.
+  Future<void> cloturerExercice(
+    int annee, {
+    AffectationResultat affectation = AffectationResultat.aucune,
+  });
+
+  /// Rouvre l'exercice [annee] : retire les écritures de clôture et les à-nouveaux de
+  /// l'exercice suivant, déverrouille. Refusée si la clôture est déjà acceptée par le
+  /// serveur (fait partagé) ou si l'exercice suivant est clôturé.
+  Future<void> rouvrirExercice(int annee, {required String utilisateurId});
+
+  /// Décision d'affectation prise à la clôture de [annee], `aucune` si elle n'a pas eu lieu.
+  Future<AffectationResultat> chargerAffectation(int annee);
+
   Future<void> enregistrerNote(int exerciceAnnee, NoteAnnexe note);
 }
 
@@ -318,6 +337,17 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       'Cette pièce a déjà été transmise au serveur : c\'est un fait partagé, '
       'elle ne peut plus être modifiée. Annulez-la, puis saisissez-la de nouveau.';
 
+  static const String _motifJournalDeCloture =
+      'Les écritures de clôture (CL) et d\'à-nouveaux (AN) sont générées par la clôture '
+      'annuelle : elles ne se saisissent ni ne se modifient à la main. Rouvrez l\'exercice '
+      'pour les refaire.';
+
+  void _refuserSiDeCloture(List<EcritureRow> lignes) {
+    if (lignes.any((l) => JournauxDeCloture.estDeCloture(l.journalCode))) {
+      throw StateError(_motifJournalDeCloture);
+    }
+  }
+
   Future<void> _refuserSiAutrePoste(List<EcritureRow> lignes) async {
     if (lignes.any((l) => l.origine != null)) {
       throw StateError(_motifFaitPartage);
@@ -333,6 +363,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
     String? venteRef,
     String? achatRef,
   }) async {
+    if (JournauxDeCloture.estDeCloture(journalCode)) {
+      throw StateError(_motifJournalDeCloture);
+    }
     await _db.transaction(() async {
       await _verifierVerrouillage(date);
       await _inserer(
@@ -392,6 +425,7 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       if (ecriture == null) return;
 
       await _refuserSiAutrePoste([ecriture]);
+      _refuserSiDeCloture([ecriture]);
       await _verifierVerrouillage(ecriture.dateEcriture);
 
       if (ecriture.venteRef != null || ecriture.achatRef != null) {
@@ -427,6 +461,7 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       if (lignes.isEmpty) return;
 
       await _refuserSiAutrePoste(lignes);
+      _refuserSiDeCloture(lignes);
 
       for (final ligne in lignes) {
         if (ligne.venteRef != null || ligne.achatRef != null) {
@@ -520,6 +555,7 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       }
 
       await _refuserSiAutrePoste(anciennes);
+      _refuserSiDeCloture(anciennes);
 
       // Les deux dates comptent : l'ancienne parce qu'on retire une ecriture
       // de sa periode, la nouvelle parce qu'on en depose une. Si l'une des
@@ -619,8 +655,21 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
   /// refuserait ensuite ces écritures. Un poste jamais appairé n'a personne à
   /// attendre : il clôture seul.
   @override
-  Future<void> cloturerExercice(int annee) async {
+  Future<void> cloturerExercice(
+    int annee, {
+    AffectationResultat affectation = AffectationResultat.aucune,
+  }) async {
     await _db.transaction(() async {
+      final exercice = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee))).getSingleOrNull();
+      if (exercice == null) {
+        throw StateError('Aucun exercice comptable $annee à clôturer.');
+      }
+      // Idempotence : un exercice déjà clôturé n'est pas retouché (ni pièce dupliquée,
+      // ni date de clôture écrasée).
+      if (exercice.isCloture) return;
+
       if (await codePoste() != null) {
         final enAttente =
             await (_db.select(_db.ecritureComptable)..where(
@@ -646,33 +695,141 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
         }
       }
 
+      // L'exercice suivant doit exister (clé étrangère des à-nouveaux) et ne pas être clos.
+      final suivant = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee + 1))).getSingleOrNull();
+      if (suivant != null && suivant.isCloture) {
+        throw StateError(
+          'L\'exercice ${annee + 1} est déjà clôturé : clôturez les exercices dans l\'ordre.',
+        );
+      }
+
+      // Calcul : résultat, affectation, à-nouveaux. Refusé s'il est incohérent.
+      final plan = await chargerPlanComptable();
+      final calcul = const ReportANouveau().calculer(
+        await chargerEcritures(),
+        annee,
+        affectation: affectation,
+        comptesConnus: {for (final c in plan) c.numero},
+      );
+      if (calcul.bloquee) {
+        throw StateError(calcul.anomalies.join(' '));
+      }
+
+      if (suivant == null) {
+        await _db
+            .into(_db.exerciceComptable)
+            .insert(ExerciceComptableCompanion.insert(annee: Value(annee + 1)));
+      }
+
+      final pieces = PiecesClotureDrift(_db);
+      for (final piece in calcul.pieces) {
+        await pieces.inserer(piece, verrouillee: piece.exerciceAnnee == annee);
+      }
+
       await (_db.update(
         _db.exerciceComptable,
       )..where((e) => e.annee.equals(annee))).write(
         ExerciceComptableCompanion(
           isCloture: const Value(true),
           dateCloture: Value(DateTime.now()),
+          affectation: Value(
+            affectation.totalDistribue > 0
+                ? jsonEncode(affectation.toJson())
+                : null,
+          ),
           syncStatus: const Value('pending'),
           syncMotif: const Value(null),
           updatedAt: Value(instantSaisie()),
         ),
       );
 
-      // Verrouille toutes les ecritures de l'exercice.
+      // Verrouille toutes les ecritures de l'exercice (clôture comprise).
       await (_db.update(_db.ecritureComptable)
             ..where((e) => e.exerciceAnnee.equals(annee)))
           .write(const EcritureComptableCompanion(isLocked: Value(true)));
+    });
+  }
 
-      // Ouvre l'exercice suivant s'il n'existe pas.
+  @override
+  Future<AffectationResultat> chargerAffectation(int annee) async {
+    final e = await (_db.select(
+      _db.exerciceComptable,
+    )..where((x) => x.annee.equals(annee))).getSingleOrNull();
+    final brut = e?.affectation;
+    if (brut == null) return AffectationResultat.aucune;
+    try {
+      return AffectationResultat.depuisJson(jsonDecode(brut));
+    } on FormatException {
+      return AffectationResultat.aucune;
+    }
+  }
+
+  @override
+  Future<void> rouvrirExercice(
+    int annee, {
+    required String utilisateurId,
+  }) async {
+    await _db.transaction(() async {
+      final exercice = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee))).getSingleOrNull();
+      if (exercice == null || !exercice.isCloture) {
+        throw StateError('L\'exercice $annee n\'est pas clôturé.');
+      }
       final suivant = await (_db.select(
         _db.exerciceComptable,
       )..where((e) => e.annee.equals(annee + 1))).getSingleOrNull();
-      if (suivant == null) {
-        await _db
-            .into(_db.exerciceComptable)
-            .insert(ExerciceComptableCompanion.insert(annee: Value(annee + 1)));
+      if (suivant != null && suivant.isCloture) {
+        throw StateError(
+          'L\'exercice ${annee + 1} est clôturé : rouvrez-le d\'abord.',
+        );
       }
+      if (await codePoste() != null && exercice.syncStatus == 'synced') {
+        throw StateError(
+          'La clôture de $annee a été acceptée par le serveur : c\'est un fait '
+          'partagé. Elle se déclôture depuis le serveur (écran Clôture du web, '
+          'droit close-fiscal-year), puis ce poste se synchronise.',
+        );
+      }
+      await rouvrirLocalement(_db, annee);
+      await _db
+          .into(_db.auditLogs)
+          .insert(
+            AuditLogsCompanion.insert(
+              horodatage: DateTime.now(),
+              utilisateurId: utilisateurId,
+              action: 'reouverture_exercice',
+              entiteConcernee: 'ExerciceComptable',
+              entiteId: '$annee',
+            ),
+          );
     });
+  }
+
+  /// Rouvre l'exercice ici, sans contrôle : retire la clôture et les à-nouveaux, déverrouille.
+  /// Appelée par la réouverture (après ses contrôles), par le refus d'une clôture et par la
+  /// réouverture venue du serveur.
+  static Future<void> rouvrirLocalement(AppDatabase db, int annee) async {
+    await PiecesClotureDrift(db).supprimerDeLExercice(annee);
+    await (db.update(
+      db.exerciceComptable,
+    )..where((e) => e.annee.equals(annee))).write(
+      ExerciceComptableCompanion(
+        isCloture: const Value(false),
+        dateCloture: const Value(null),
+        affectation: const Value(null),
+        syncStatus: const Value('synced'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
+      ),
+    );
+    await (db.update(
+      db.ecritureComptable,
+    )..where((e) => e.exerciceAnnee.equals(annee))).write(
+      const EcritureComptableCompanion(isLocked: Value(false)),
+    );
   }
 
   @override

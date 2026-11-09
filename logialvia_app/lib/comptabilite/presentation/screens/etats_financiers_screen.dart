@@ -426,7 +426,9 @@ class _OngletTafire extends StatelessWidget {
 
     // Le prototype annonce cette verification sans jamais la faire : la
     // Tresorerie de cloture du TAFIRE doit egaler la Tresorerie-Actif du Bilan.
-    final tresorerieBilan = vm.tresorerie;
+    // Trésorerie NETTE (classe 5, découverts déduits) : le TAFIRE part de la trésorerie
+    // d'ouverture (à-nouveaux) et doit retrouver exactement le solde de clôture.
+    final tresorerieBilan = vm.tresorerieNette;
     final ecart = tafire.tresorerieCloture - tresorerieBilan;
     final coherent = ecart.abs() < 0.01;
 
@@ -444,8 +446,10 @@ class _OngletTafire extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: Text(
-            'La Trésorerie à la Clôture doit être égale à la Trésorerie-Actif '
-            'du Bilan (onglet Bilan) — vérification automatique ci-dessous.',
+            'La Trésorerie à la Clôture doit être égale à la Trésorerie nette du Bilan '
+            '(Trésorerie-Actif − Trésorerie-Passif) — vérification automatique '
+            'ci-dessous. Elle part de la trésorerie d\'ouverture : les soldes 5xx '
+            'reportés par la clôture de l\'exercice précédent.',
             style: texteCompta.copyWith(
               fontSize: 11,
               color: AppColors.outline,
@@ -480,12 +484,12 @@ class _OngletTafire extends StatelessWidget {
                 Expanded(
                   child: Text(
                     coherent
-                        ? 'Trésorerie de clôture (TAFIRE) = Trésorerie-Actif '
+                        ? 'Trésorerie de clôture (TAFIRE) = Trésorerie nette '
                               '(Bilan) = ${Formats.montant(tresorerieBilan)}.'
                         : 'Incohérence de ${Formats.montant(ecart.abs())} entre '
                               'la Trésorerie de clôture du TAFIRE '
                               '(${Formats.montant(tafire.tresorerieCloture)}) '
-                              'et la Trésorerie-Actif du Bilan '
+                              'et la Trésorerie nette du Bilan '
                               '(${Formats.montant(tresorerieBilan)}).',
                     style: texteCompta.copyWith(
                       fontWeight: FontWeight.w600,

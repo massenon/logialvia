@@ -5,6 +5,7 @@ import '../../data/repositories/comptabilite_repository_drift.dart';
 import '../../domain/entities/comptabilite.dart';
 import '../../domain/services/bilan_entreprise.dart';
 import '../../domain/services/moteur_comptable.dart';
+import '../../domain/services/report_a_nouveau.dart';
 
 /// État partagé du module Comptabilité — Doc F6.
 ///
@@ -38,13 +39,37 @@ class ComptabiliteViewModel extends ChangeNotifier {
   Map<int, bool> get cloturesMois => _cloturesMois;
   List<NoteAnnexe> get notes => _notes;
 
-  /// Écritures de l'exercice sélectionné.
-  List<Ecriture> get ecritures =>
+  static const ReportANouveau _ran = ReportANouveau();
+
+  /// Écritures **courantes** de l'exercice sélectionné : tout sauf les à-nouveaux (ils sont
+  /// l'ouverture) et les écritures de clôture (les états de l'exercice se lisent « avant
+  /// affectation »). C'est la base des états, de l'analytique et des dépenses.
+  List<Ecriture> get ecritures => _ran.mouvementsCourants(_toutesEcritures, _exercice);
+
+  /// Toutes les lignes de l'exercice, à-nouveaux et clôture compris : le **journal**.
+  List<Ecriture> get ecrituresDuJournal =>
       _toutesEcritures.where((e) => e.exerciceAnnee == _exercice).toList();
 
-  /// Écritures antérieures à l'exercice — soldes d'ouverture.
-  List<Ecriture> get _ecrituresAnterieures =>
-      _toutesEcritures.where((e) => e.exerciceAnnee < _exercice).toList();
+  /// Lignes du **livre** (grand livre, balance) : tout sauf les à-nouveaux, qui sont
+  /// l'ouverture ; les écritures de clôture y figurent.
+  List<Ecriture> get _ecrituresDuLivre =>
+      _ran.mouvementsDuLivre(_toutesEcritures, _exercice);
+
+  /// Soldes nets au 1ᵉʳ janvier de l'exercice : les à-nouveaux (classes 1 à 5), ou la
+  /// clôture virtuelle de l'exercice précédent tant qu'il n'est pas clôturé.
+  Map<String, double> get soldesOuverture =>
+      _ran.soldesOuverture(_toutesEcritures, _exercice);
+
+  /// L'ouverture vient-elle d'écritures d'à-nouveaux (vraie clôture) ?
+  bool get ouvertureParANouveaux => _toutesEcritures.any(
+    (e) =>
+        e.exerciceAnnee == _exercice &&
+        e.journalCode == JournauxDeCloture.reportANouveau,
+  );
+
+  /// Décision d'affectation prise à la clôture de l'exercice sélectionné.
+  AffectationResultat _affectation = AffectationResultat.aucune;
+  AffectationResultat get affectation => _affectation;
 
   // ------------------------------------------------------------- chargement
 
@@ -66,6 +91,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
     _cloturesMois = await _repository.chargerCloturesPeriodiques(_exercice);
     _notes = await _repository.chargerNotes(_exercice);
     _exerciceCloture = await _repository.exerciceEstCloture(_exercice);
+    _affectation = await _repository.chargerAffectation(_exercice);
     _codePoste = await _repository.codePoste();
     _motifRefusCloture = await _repository.motifRefusCloture(_exercice);
   }
@@ -114,7 +140,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   List<Ecriture> get journalFiltre {
     final terme = _rechercheJournal.trim().toLowerCase();
-    return ecritures.where((e) {
+    return ecrituresDuJournal.where((e) {
       if (_filtreJournalCode != null && e.journalCode != _filtreJournalCode) {
         return false;
       }
@@ -190,10 +216,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
     final compte = compteCourant;
     if (compte == null) return 0;
     final net =
-        _ecrituresAnterieures
-            .where((e) => e.numeroCompte == compte.numero)
-            .fold<double>(0, (s, e) => s + e.debit - e.credit) +
-        ecritures
+        (soldesOuverture[compte.numero] ?? 0) +
+        _ecrituresDuLivre
             .where((e) => e.numeroCompte == compte.numero && _avantPeriode(e))
             .fold<double>(0, (s, e) => s + e.debit - e.credit);
     return compte.estDebiteurParNature ? net : -net;
@@ -211,7 +235,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
     return const GrandLivreCalculator().calculer(
       compte: compte,
       soldeOuverture: soldeOuvertureCompte,
-      ecritures: ecritures
+      ecritures: _ecrituresDuLivre
           .where((e) => e.numeroCompte == compte.numero && _dansPeriode(e))
           .toList(),
     );
@@ -294,24 +318,27 @@ class ComptabiliteViewModel extends ChangeNotifier {
   ];
 
   List<LigneBalance> get balance {
+    final livre = _ecrituresDuLivre;
     if (!_balanceMoisCourant) {
-      return const BalanceCalculator().calculer(
+      return const BalanceCalculator().calculerDepuis(
         comptes: _plan,
-        ecrituresAnterieures: _ecrituresAnterieures,
-        ecrituresPeriode: ecritures,
+        ouvertureNet: soldesOuverture,
+        ecrituresPeriode: livre,
       );
     }
 
+    // « Mois en cours » : tout ce qui précède le 1ᵉʳ du mois — à-nouveaux compris —
+    // bascule dans l'ouverture.
     final borne = _debutMoisBalance;
-    return const BalanceCalculator().calculer(
+    final ouverture = Map<String, double>.of(soldesOuverture);
+    for (final e in livre.where((e) => e.date.isBefore(borne))) {
+      ouverture[e.numeroCompte] =
+          (ouverture[e.numeroCompte] ?? 0) + e.debit - e.credit;
+    }
+    return const BalanceCalculator().calculerDepuis(
       comptes: _plan,
-      ecrituresAnterieures: [
-        ..._ecrituresAnterieures,
-        ...ecritures.where((e) => e.date.isBefore(borne)),
-      ],
-      ecrituresPeriode: ecritures
-          .where((e) => !e.date.isBefore(borne))
-          .toList(),
+      ouvertureNet: ouverture,
+      ecrituresPeriode: livre.where((e) => !e.date.isBefore(borne)).toList(),
     );
   }
 
@@ -323,9 +350,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   // ----------------------------------------------------- États financiers
 
-  SoldesComptes get _soldes => SoldesComptes.depuis(ecritures);
+  /// Soldes de FIN d'exercice : l'ouverture (à-nouveaux) **cumulée** aux mouvements de
+  /// l'exercice, écritures de clôture exclues. Le bilan, le résultat et le TAFIRE de
+  /// N+1 partent donc de ce qui a été reporté, pas de zéro.
+  SoldesComptes get _soldes => _ran.soldesDeFin(_toutesEcritures, _exercice);
   SoldesComptes get _soldesOuverture =>
-      SoldesComptes.depuis(_ecrituresAnterieures);
+      _ran.soldesDOuverture(_toutesEcritures, _exercice);
 
   /// **Source unique du Résultat Net — BR-CPT-005.**
   double get resultatNet => CalculerResultatNet.calculer(_soldes);
@@ -350,8 +380,21 @@ class ComptabiliteViewModel extends ChangeNotifier {
     soldesOuverture: _soldesOuverture,
   );
 
-  /// Trésorerie disponible — alimente le KPI du tableau de bord (Doc F2).
+  /// Trésorerie disponible — alimente le KPI du tableau de bord (Doc F2). Ouverture comprise.
   double get tresorerie => _soldes.debiteursParClasse('5');
+
+  /// Trésorerie nette (classe 5, découverts déduits) : ce que le TAFIRE doit retrouver.
+  double get tresorerieNette => _soldes.parClasse('5');
+
+  /// Aperçu de la clôture de l'exercice sélectionné (sans rien écrire) : résultat,
+  /// pièces de clôture, à-nouveaux, anomalies bloquantes.
+  ClotureCalculee apercuCloture([AffectationResultat? affectation]) =>
+      _ran.calculer(
+        _toutesEcritures,
+        _exercice,
+        affectation: affectation ?? AffectationResultat.aucune,
+        comptesConnus: {for (final c in _plan) c.numero},
+      );
 
   // --------------------------------------------------------------- actions
 
@@ -659,7 +702,10 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// Clôture annuelle : un fait **lourd** (`46d_` §4). Réservée à l'administratrice
   /// (DV-15, droit `close-fiscal-year` au serveur) ; sur un poste appairé, toutes
   /// les pièces doivent d'abord être acceptées par le serveur.
-  Future<Resultat<void>> cloturerExercice({required String roleId}) async {
+  Future<Resultat<void>> cloturerExercice({
+    required String roleId,
+    AffectationResultat affectation = AffectationResultat.aucune,
+  }) async {
     if (roleId != 'admin') {
       return const Echec(
         'Seule une administratrice peut clôturer un exercice (DV-15).',
@@ -675,9 +721,11 @@ class ComptabiliteViewModel extends ChangeNotifier {
     if (_exerciceCloture) {
       return const Echec('Cet exercice est déjà clôturé.');
     }
+    final apercu = apercuCloture(affectation);
+    if (apercu.bloquee) return Echec(apercu.anomalies.join(' '));
 
     try {
-      await _repository.cloturerExercice(_exercice);
+      await _repository.cloturerExercice(_exercice, affectation: affectation);
       await _rafraichir();
       notifyListeners();
       return const Succes(null);
@@ -686,6 +734,33 @@ class ComptabiliteViewModel extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) debugPrint('Echec cloture exercice: $e');
       return const Echec('La clôture annuelle a échoué.');
+    }
+  }
+
+  /// Rouvre l'exercice sélectionné : retire les écritures de clôture et les à-nouveaux.
+  /// Réservé à l'administratrice (droit `close-fiscal-year` au serveur).
+  Future<Resultat<void>> rouvrirExercice({
+    required String roleId,
+    required String utilisateurId,
+  }) async {
+    if (roleId != 'admin') {
+      return const Echec(
+        'Seule une administratrice peut rouvrir un exercice (DV-15).',
+      );
+    }
+    if (!_exerciceCloture) {
+      return const Echec('Cet exercice n\'est pas clôturé.');
+    }
+    try {
+      await _repository.rouvrirExercice(_exercice, utilisateurId: utilisateurId);
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } on StateError catch (e) {
+      return Echec(e.message);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec reouverture exercice: $e');
+      return const Echec('La réouverture de l\'exercice a échoué.');
     }
   }
 

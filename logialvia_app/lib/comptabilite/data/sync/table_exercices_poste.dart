@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
+import '../repositories/comptabilite_repository_drift.dart';
 
 /// `exercice_comptable` — référentiel **reçu seulement** (`46d_` §2, §4).
 ///
@@ -95,7 +96,20 @@ class TableExercicesPoste implements TablePoste {
             ),
           );
         }
-        // Serveur « ouvert », poste « clos » : jamais de déclôture ici.
+        // Serveur « ouvert », poste « clos » : jamais de déclôture ici… sauf RÉOUVERTURE
+        // explicite du serveur (`rouvert_le`, droit close-fiscal-year, écran Clôture du web) :
+        // c'est alors un fait nouveau, que ce poste suit — son exercice, dont la clôture avait
+        // été acceptée, retrouve ses écritures déverrouillées, sans écritures de clôture ni
+        // à-nouveaux (le serveur les a retirés).
+        else if (!cloture &&
+            locale.isCloture &&
+            locale.syncStatus == 'synced' &&
+            l['rouvert_le'] is String &&
+            DateTime.tryParse(l['rouvert_le'] as String) != null) {
+          await ComptabiliteRepositoryDrift.rouvrirLocalement(_db, annee);
+          absorbees++;
+        }
+        // Sinon, serveur « ouvert » et poste « clos » : jamais de déclôture ici.
       }
       return ResultatAbsorption(absorbees: absorbees, refusees: refusees);
     });

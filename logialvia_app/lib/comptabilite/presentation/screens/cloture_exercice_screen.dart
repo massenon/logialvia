@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/carte_section.dart';
 import 'documents_comptables.dart';
 import '../../../core/pdf/bouton_export_pdf.dart';
+import '../../domain/services/report_a_nouveau.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
 
@@ -418,33 +420,54 @@ class _AssistantCloture extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _EtapeCloture(
             numero: 2,
-            titre: 'Solde des Comptes de Gestion (Classes 6 & 7)',
+            titre: 'Solde des Comptes de Gestion (Classes 6, 7 & 8)',
             description:
                 'Calcul du résultat net (Produits − Charges) et écriture de '
-                'solde vers le compte 131 (Bénéfice) ou 139 (Perte).',
-            faite: vm.balanceEstEquilibree,
+                'solde vers le compte 131 (Bénéfice) ou 139 (Perte), journal CL '
+                'au 31/12/${vm.exercice}. Les états de l\'exercice se lisent '
+                '« avant affectation » : cette écriture ne les modifie pas.',
+            faite: vm.exerciceEstCloture,
             statutFait:
-                'Résultat net calculé : ${Formats.montant(vm.resultatNet)} '
+                'Résultat net arrêté : ${Formats.montant(vm.resultatNet)} '
                 '(Produits ${Formats.montant(vm.totalProduits)} − Charges '
                 '${Formats.montant(vm.totalCharges)}).',
-            statutRestant:
-                'Balance déséquilibrée de '
-                '${Formats.montant(vm.balanceEcart.abs())} : le résultat ne '
-                'peut pas être arrêté (BR-CPT-004).',
+            statutRestant: vm.balanceEstEquilibree
+                ? 'Résultat provisoire : ${Formats.montant(vm.resultatNet)} '
+                      '(Produits ${Formats.montant(vm.totalProduits)} − Charges '
+                      '${Formats.montant(vm.totalCharges)}) — écrit à la clôture.'
+                : 'Balance déséquilibrée de '
+                      '${Formats.montant(vm.balanceEcart.abs())} : le résultat ne '
+                      'peut pas être arrêté (BR-CPT-004).',
           ),
           const SizedBox(height: AppSpacing.sm),
           _EtapeCloture(
             numero: 3,
+            titre: 'Affectation du Résultat',
+            description:
+                'Bénéfice : réserves (111 légale, 118 autres), dividendes à payer '
+                '(465), le reste en report à nouveau créditeur (121). Perte : '
+                'report à nouveau débiteur (129). Décision de l\'Assemblée, saisie '
+                'dans la fenêtre de clôture ci-dessous.',
+            faite: vm.exerciceEstCloture,
+            statutFait: _resumeAffectation(vm),
+            statutRestant:
+                'Par défaut, tout le résultat est reporté à nouveau '
+                '(${vm.resultatNet < 0 ? '129' : '121'}).',
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _EtapeCloture(
+            numero: 4,
             titre: 'Génération des Écritures d\'À-Nouveaux (RAN)',
             description:
                 'Création de l\'exercice $suivant et report des soldes de '
-                'bilan (Classes 1 à 5) au 1ᵉʳ janvier $suivant. Verrouillage '
+                'bilan (Classes 1 à 5) au 1ᵉʳ janvier $suivant, journal AN. Les '
+                'classes 6, 7 et 8 ne sont jamais reportées. Verrouillage '
                 'définitif de l\'exercice ${vm.exercice}.',
             faite: vm.exerciceEstCloture,
             statutFait: 'Exercice ${vm.exercice} clôturé et verrouillé.',
             statutRestant: null,
             action: vm.exerciceEstCloture
-                ? null
+                ? _ActionsExerciceClos(vm: vm)
                 : AppButton(
                     label: 'Clôturer l\'Exercice ${vm.exercice}',
                     icon: Symbols.lock,
@@ -594,49 +617,226 @@ class _EtapeCloture extends StatelessWidget {
   }
 }
 
+/// Résumé de l'affectation d'un exercice clôturé, pour l'étape 3.
+String _resumeAffectation(ComptabiliteViewModel vm) {
+  final r = vm.resultatNet;
+  if (r < 0) {
+    return 'Perte de ${Formats.montant(-r)} portée au report à nouveau débiteur (129).';
+  }
+  final a = vm.affectation;
+  final parts = <String>[
+    if (a.reserveLegale > 0)
+      'réserve légale ${Formats.montant(a.reserveLegale)}',
+    if (a.autresReserves > 0)
+      'autres réserves ${Formats.montant(a.autresReserves)}',
+    if (a.dividendes > 0) 'dividendes ${Formats.montant(a.dividendes)}',
+    'report à nouveau ${Formats.montant(a.reportANouveau(r))}',
+  ];
+  return 'Bénéfice de ${Formats.montant(r)} affecté : ${parts.join(', ')}.';
+}
+
+/// Exercice clôturé : à-nouveaux de l'exercice suivant, et réouverture (administratrice).
+class _ActionsExerciceClos extends StatelessWidget {
+  const _ActionsExerciceClos({required this.vm});
+
+  final ComptabiliteViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.read<AuthViewModel>().session;
+    final estAdmin = session?.role.id == 'admin';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          vm.ouvertureParANouveaux
+              ? 'À-nouveaux de l\'exercice ${vm.exercice} écrits (journal AN).'
+              : 'Cet exercice a été clôturé avant la génération des à-nouveaux : son '
+                    'ouverture est reconstituée par une clôture virtuelle de l\'exercice '
+                    'précédent.',
+          style: texteCompta.copyWith(color: AppColors.outline),
+        ),
+        if (estAdmin) ...[
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Rouvrir l\'Exercice ${vm.exercice}',
+            icon: Symbols.lock_open,
+            variant: AppButtonVariant.outline,
+            onPressed: () => _confirmerReouverture(context, vm),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+Future<void> _confirmerReouverture(
+  BuildContext context,
+  ComptabiliteViewModel vm,
+) async {
+  final annee = vm.exercice;
+  final confirme = await AppModal.show<bool>(
+    context,
+    title: 'Rouvrir l\'exercice $annee ?',
+    maxWidth: 520,
+    child: Text(
+      'Les écritures de clôture (journal CL) de $annee et les à-nouveaux (journal AN) de '
+      '${annee + 1} seront retirés, et l\'exercice $annee redeviendra modifiable. '
+      'Vous pourrez le clôturer de nouveau : les à-nouveaux seront régénérés. '
+      'L\'action est tracée dans le journal d\'audit.',
+      style: texteCompta.copyWith(height: 1.6),
+    ),
+    actions: [
+      Builder(
+        builder: (ctx) => AppButton(
+          label: 'Annuler',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(ctx).pop(false),
+        ),
+      ),
+      Builder(
+        builder: (ctx) => AppButton(
+          label: 'Rouvrir l\'exercice $annee',
+          variant: AppButtonVariant.danger,
+          onPressed: () => Navigator.of(ctx).pop(true),
+        ),
+      ),
+    ],
+  );
+  if (confirme != true || !context.mounted) return;
+
+  final session = context.read<AuthViewModel>().session;
+  final resultat = await vm.rouvrirExercice(
+    roleId: session?.role.id ?? '',
+    utilisateurId: '${session?.utilisateur.id ?? ''}',
+  );
+  if (!context.mounted) return;
+  switch (resultat) {
+    case Succes():
+      showAppToast(context, 'Exercice $annee rouvert.');
+    case Echec(:final message):
+      showAppToast(context, message, type: ToastType.error);
+  }
+}
+
+double _lireMontant(String texte) =>
+    double.tryParse(texte.trim().replaceAll(' ', '').replaceAll(',', '.')) ?? 0;
+
 Future<void> _confirmerCloture(
   BuildContext context,
   ComptabiliteViewModel vm,
 ) async {
   final annee = vm.exercice;
+  final reserveLegale = TextEditingController();
+  final autresReserves = TextEditingController();
+  final dividendes = TextEditingController();
+
+  AffectationResultat saisie() => AffectationResultat(
+    reserveLegale: _lireMontant(reserveLegale.text),
+    autresReserves: _lireMontant(autresReserves.text),
+    dividendes: _lireMontant(dividendes.text),
+  );
+
+  Widget champ(String libelle, TextEditingController c, void Function() maj) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: TextField(
+          controller: c,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9 ,.]'))],
+          onChanged: (_) => maj(),
+          decoration: InputDecoration(
+            labelText: libelle,
+            isDense: true,
+            suffixText: 'FCFA',
+          ),
+        ),
+      );
 
   final confirme = await AppModal.show<bool>(
     context,
     title: 'Clôturer définitivement l\'exercice $annee ?',
-    maxWidth: 560,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'La clôture annuelle est définitive (BR-CPT-001) :',
-          style: grasCompta.copyWith(height: 1.6),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _Puce(
-          'toutes les écritures de $annee sont verrouillées — plus aucune '
-          'vente, dépense ou correction ne pourra y être imputée ;',
-        ),
-        _Puce(
-          'l\'exercice ${annee + 1} est ouvert automatiquement ; les ventes et '
-          'achats postérieurs s\'y enregistreront ;',
-        ),
-        _Puce(
-          'le résultat net arrêté est de ${Formats.montant(vm.resultatNet)}.',
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: AppColors.errorContainer,
-            borderRadius: AppRadius.cardRadius,
-          ),
-          child: Text(
-            'Cette action ne peut pas être annulée depuis l\'application.',
-            style: grasCompta.copyWith(color: AppColors.errorDeep),
-          ),
-        ),
-      ],
+    maxWidth: 600,
+    child: StatefulBuilder(
+      builder: (ctx, setState) {
+        final affectation = saisie();
+        final apercu = vm.apercuCloture(affectation);
+        final resultat = apercu.resultat;
+        final an = apercu.aNouveaux;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'La clôture annuelle est définitive (BR-CPT-001) :',
+              style: grasCompta.copyWith(height: 1.6),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _Puce(
+              'toutes les écritures de $annee sont verrouillées — plus aucune '
+              'vente, dépense ou correction ne pourra y être imputée ;',
+            ),
+            _Puce(
+              'les comptes de gestion sont soldés vers le compte '
+              '${resultat < 0 ? '139 (perte)' : '131 (bénéfice)'} : résultat net '
+              'arrêté de ${Formats.montant(resultat)} ;',
+            ),
+            _Puce(
+              'l\'exercice ${annee + 1} est ouvert avec ses à-nouveaux '
+              '(${an?.lignes.length ?? 0} compte(s) de bilan reporté(s)).',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (resultat > ReportANouveau.tolerance) ...[
+              const Text(
+                'Affectation du bénéfice (décision de l\'Assemblée)',
+                style: AppTypography.sectionTitle,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              champ('Réserve légale (111)', reserveLegale, () => setState(() {})),
+              champ('Autres réserves (118)', autresReserves, () => setState(() {})),
+              champ('Dividendes à payer (465)', dividendes, () => setState(() {})),
+              Text(
+                'Report à nouveau créditeur (121) : '
+                '${Formats.montant(affectation.reportANouveau(resultat))}',
+                style: grasCompta,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ] else if (resultat < -ReportANouveau.tolerance) ...[
+              const Text(
+                'Perte : aucun dividende ; elle est portée au report à nouveau '
+                'débiteur (129).',
+                style: texteCompta,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            if (apercu.bloquee)
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.errorContainer,
+                  borderRadius: AppRadius.cardRadius,
+                ),
+                child: Text(
+                  apercu.anomalies.join(' '),
+                  style: grasCompta.copyWith(color: AppColors.errorDeep),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.errorContainer,
+                  borderRadius: AppRadius.cardRadius,
+                ),
+                child: Text(
+                  'La clôture ne peut pas être annulée depuis l\'écran de clôture '
+                  'une fois transmise au serveur.',
+                  style: grasCompta.copyWith(color: AppColors.errorDeep),
+                ),
+              ),
+          ],
+        );
+      },
     ),
     actions: [
       Builder(
@@ -656,10 +856,15 @@ Future<void> _confirmerCloture(
     ],
   );
 
+  final affectation = saisie();
+  reserveLegale.dispose();
+  autresReserves.dispose();
+  dividendes.dispose();
   if (confirme != true || !context.mounted) return;
 
   final resultat = await vm.cloturerExercice(
     roleId: context.read<AuthViewModel>().session?.role.id ?? '',
+    affectation: affectation,
   );
   if (!context.mounted) return;
 
@@ -667,7 +872,7 @@ Future<void> _confirmerCloture(
     case Succes():
       showAppToast(
         context,
-        'Exercice $annee clôturé. L\'exercice ${annee + 1} est ouvert.',
+        'Exercice $annee clôturé. L\'exercice ${annee + 1} est ouvert avec ses à-nouveaux.',
       );
     case Echec(:final message):
       showAppToast(context, message, type: ToastType.error);

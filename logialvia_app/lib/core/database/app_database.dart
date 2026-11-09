@@ -456,7 +456,12 @@ class AppDatabase extends _$AppDatabase {
         // JAMAIS (DV-21) ; les factures d'hier sont a envoyer, normalisees ou non.
         await _facturesEnUuid(m);
       }
-      // v43 et v44 : réservées à d'autres tranches de la synchronisation.
+      // v43 : reserve a une autre tranche de la synchronisation.
+      if (from < 44) {
+        // Report à nouveau (`47c_`) : la décision d'affectation du résultat est gardée avec
+        // la clôture de l'exercice.
+        await _ajouterColonne(m, exerciceComptable, exerciceComptable.affectation);
+      }
       if (from < 45) {
         // Doc 47u §4 : les messages à l'éditeur entrent dans la synchronisation (UUID,
         // auteur, colonnes de synchronisation). Aucun message n'est perdu ; ceux d'hier
@@ -1391,6 +1396,7 @@ class AppDatabase extends _$AppDatabase {
             ),
           },
           newColumns: [
+            exerciceComptable.affectation, // v44 : absente d'une base d'avant, recopiée vide
             exerciceComptable.syncStatus,
             exerciceComptable.syncMotif,
             exerciceComptable.updatedAt,

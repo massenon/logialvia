@@ -125,18 +125,21 @@ void main() {
     expect(vm.resultatNet, 133000);
     expect(vm.totalProduits, 200000);
     expect(vm.totalCharges, 67000);
-    expect(vm.tresorerie, 445000);
+    // Trésorerie CUMULÉE : l'ouverture (100 000 de l'exercice précédent) + 445 000 de l'exercice.
+    expect(vm.tresorerie, 545000);
   });
 
-  test('bilan : actif = passif = 675 000, postes du jeu', () {
+  test('bilan : actif = passif = 775 000 (ouverture cumulée), postes du jeu', () {
     final b = vm.bilan;
-    expect(b.totalActif, 675000);
-    expect(b.totalPassif, 675000);
+    // Calcul à la main : actif = immobilisation 200 000 + créances 30 000 + trésorerie
+    // 545 000 ; passif = capital 600 000 + résultat 133 000 + dettes 42 000.
+    expect(b.totalActif, 775000);
+    expect(b.totalPassif, 775000);
     expect(b.estEquilibre, isTrue);
     expect(poste(b.actif, 'Immobilisations Corporelles').montant, 200000);
     expect(poste(b.actif, 'Créances et Emplois Assimilés').montant, 30000);
-    expect(poste(b.actif, 'Trésorerie-Actif').montant, 445000);
-    expect(poste(b.passif, 'Capital').montant, 500000);
+    expect(poste(b.actif, 'Trésorerie-Actif').montant, 545000);
+    expect(poste(b.passif, 'Capital').montant, 600000);
     expect(poste(b.passif, 'Résultat Net de l\'Exercice').montant, 133000);
     expect(poste(b.passif, 'Dettes Circulantes').montant, 42000);
   });
@@ -154,28 +157,30 @@ void main() {
     expect(r.resultatNet, 133000);
   });
 
-  test('TAFIRE : exploitation 145 000, investissement −200 000, financement 267 000', () {
+  test('TAFIRE : exploitation 145 000, investissement −200 000, financement 500 000', () {
     final t = vm.tafire;
     expect(t.fluxExploitation, 145000);
     expect(t.fluxInvestissement, -200000);
-    expect(t.fluxFinancement, 267000);
-    expect(t.variation, 212000);
+    // Financement = apport de l'exercice (500 000), pas 267 000 : le résultat n'est pas
+    // soustrait (il n'est pas au compte 13 avant la clôture).
+    expect(t.fluxFinancement, 500000);
+    expect(t.variation, 445000);
     expect(t.tresorerieOuverture, 100000);
-    expect(t.tresorerieCloture, 312000);
-    // Le bilan lit la trésorerie de l'exercice seul (445 000) : l'écart de 133 000 est
-    // celui que le poste affiche (« Incohérence de … ») ; le web le reprend à l'identique.
-    expect(t.tresorerieCloture - vm.tresorerie, -133000);
+    expect(t.tresorerieCloture, 545000);
+    // Plus d'« Incohérence » : le TAFIRE retrouve la trésorerie nette du bilan.
+    expect(t.tresorerieCloture - vm.tresorerieNette, 0);
   });
 
-  test('bilan de l\'entreprise : actif 475 000, passif 675 000, écart −200 000', () {
+  test('bilan de l\'entreprise : actif 775 000, passif 775 000, écart 0', () {
     final b = vm.bilanEntreprise;
-    expect(b.totalActif, 475000);
-    expect(b.totalPassif, 675000);
-    expect(b.ecart, -200000);
-    expect(b.estEquilibre, isFalse);
+    // L'ancien écart de −200 000 était l'immobilisation (231), absente de l'écran.
+    expect(b.totalActif, 775000);
+    expect(b.totalPassif, 775000);
+    expect(b.ecart, 0);
+    expect(b.estEquilibre, isTrue);
     expect(b.actif.firstWhere((p) => p.compte == '411').montant, 30000);
-    expect(b.actif.firstWhere((p) => p.compte == '531').montant, 445000);
-    expect(b.passif.firstWhere((p) => p.compte == '101').montant, 500000);
+    expect(b.actif.firstWhere((p) => p.compte == '531').montant, 545000);
+    expect(b.passif.firstWhere((p) => p.compte == '101').montant, 600000);
     expect(b.passif.firstWhere((p) => p.compte == '401').montant, 42000);
   });
 

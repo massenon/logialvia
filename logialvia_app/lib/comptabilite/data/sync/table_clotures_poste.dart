@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../../core/sync/table_poste.dart';
+import '../repositories/comptabilite_repository_drift.dart';
 
 /// `clotures_periodiques` — clôture (et déclôture) d'un MOIS (`46d_` §4).
 ///
@@ -257,6 +260,10 @@ class TableCloturesExercicePoste implements TablePoste {
                 .toUtc()
                 .toIso8601String(),
             'updated_at': e.updatedAt,
+            // Décision d'affectation : le serveur engendre les mêmes écritures de clôture.
+            'affectation': e.affectation == null
+                ? null
+                : jsonDecode(e.affectation!),
           },
         ),
     ];
@@ -289,19 +296,17 @@ class TableCloturesExercicePoste implements TablePoste {
     final annee = await _annee(id);
     if (annee == null) return;
     await _db.transaction(() async {
+      // Refusée : l'exercice est rouvert ici, avec ses écritures de clôture et les
+      // à-nouveaux de l'exercice suivant retirés (ils se refont à la prochaine clôture).
+      await ComptabiliteRepositoryDrift.rouvrirLocalement(_db, annee);
       await (_db.update(
         _db.exerciceComptable,
       )..where((e) => e.annee.equals(annee))).write(
         ExerciceComptableCompanion(
-          isCloture: const Value(false),
-          dateCloture: const Value(null),
           syncStatus: const Value('conflict'),
           syncMotif: Value(motif),
         ),
       );
-      await (_db.update(_db.ecritureComptable)
-            ..where((e) => e.exerciceAnnee.equals(annee)))
-          .write(const EcritureComptableCompanion(isLocked: Value(false)));
     });
   }
 

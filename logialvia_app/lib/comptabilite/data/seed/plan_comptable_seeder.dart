@@ -89,10 +89,24 @@ class PlanComptableSeeder {
   /// les « Charges Variables »).
   static const Set<String> comptesChargesFixes = {'613', '616'};
 
+  /// Comptes SYSCOHADA révisé que la **clôture annuelle** écrit (`ReportANouveau`) : sans
+  /// eux, l'affectation du résultat ou le report d'une perte seraient refusés par la clé
+  /// étrangère. 111/118 réserves, 129 report à nouveau débiteur (le 121 est déjà semé),
+  /// 139 résultat net : perte (le 131 est déjà semé), 465 dividendes à payer.
+  static const List<({String numero, String libelle, String classe})>
+  comptesClotureAjoutes = [
+    (numero: '111', libelle: 'Réserve Légale', classe: '1'),
+    (numero: '118', libelle: 'Autres Réserves', classe: '1'),
+    (numero: '129', libelle: 'Report à Nouveau — Solde Débiteur', classe: '1'),
+    (numero: '139', libelle: 'Résultat Net : Perte', classe: '1'),
+    (numero: '465', libelle: 'Associés — Dividendes à Payer', classe: '4'),
+  ];
+
   static List<({String numero, String libelle, String classe})> get tous => [
     ...comptesReels,
     ...comptesCapitauxAjoutes,
     ...comptesDepensesAjoutes,
+    ...comptesClotureAjoutes,
   ];
 
   /// Retourne `true` si le plan vient d'être peuplé pour la première fois.

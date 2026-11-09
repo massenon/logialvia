@@ -25,8 +25,25 @@ class CompteComptable {
   /// laissait ambigu en parlant de « comptes de classe 1,4,5 créditeurs vs
   /// 2,3,4,5,6 débiteurs », où 4 et 5 apparaissent des deux côtés.
   bool get estDebiteurParNature {
+    // Comptes à sens contraire de leur classe : 129 report à nouveau débiteur et 139 perte
+    // (classe 1, débiteurs) ; 28-29 amortissements/dépréciations, 39 et 49 dépréciations,
+    // 56 crédits de trésorerie et 59 dépréciations (créditeurs).
+    if (numero.startsWith('129') || numero.startsWith('139')) return true;
+    if (numero.startsWith('28') ||
+        numero.startsWith('29') ||
+        numero.startsWith('39') ||
+        numero.startsWith('49') ||
+        numero.startsWith('56') ||
+        numero.startsWith('59')) {
+      return false;
+    }
     if (classe == '2' || classe == '3' || classe == '6') return true;
     if (classe == '1' || classe == '7') return false;
+    // Classe 8 (HAO) : 81, 83, 85, 87, 89 (charges) sont débiteurs ; 82, 84, 86, 88
+    // (produits) créditeurs.
+    if (classe == '8') {
+      return numero.length < 2 ? true : '13579'.contains(numero[1]);
+    }
 
     // Classes 4 et 5 : arbitrage sur le numéro réel du compte.
     // 40x = Fournisseurs (créditeur) · 41x = Clients (débiteur, sauf 419
@@ -51,6 +68,7 @@ class CompteComptable {
     '5': '5 - Trésorerie',
     '6': '6 - Charges',
     '7': '7 - Produits',
+    '8': '8 - Autres Charges et Produits (HAO)',
   };
 }
 
@@ -141,7 +159,12 @@ class Ecriture {
   /// Origine automatique — une écriture générée par une vente ou un achat ne
   /// doit pas être modifiable à la main (elle serait désynchronisée de sa
   /// source).
-  bool get estAutomatique => venteRef != null || achatRef != null;
+  bool get estAutomatique =>
+      venteRef != null || achatRef != null || estDeCloture;
+
+  /// Écriture de clôture (`CL`) ou d'à-nouveaux (`AN`) : générée par la clôture annuelle,
+  /// jamais saisie ni modifiée à la main (on rouvre l'exercice).
+  bool get estDeCloture => journalCode == 'CL' || journalCode == 'AN';
 }
 
 /// Une ligne du Grand Livre, avec son solde progressif.
