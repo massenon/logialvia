@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             ModulesActifsSeeder::class,
             ParametresEntrepriseSeeder::class,
             GroupesTaxeSeeder::class,
+            PlanComptableSeeder::class,
             AdminSeeder::class,
         ]);
     }

@@ -31,4 +31,19 @@ final class UuidDeterministe
     {
         return self::de("fiche_ventes_jour:$espece|$jour|$poste");
     }
+
+    public static function note(int $annee, int $numero): string
+    {
+        return self::de("note:$annee-$numero");
+    }
+
+    public static function cloturePeriodique(int $annee, int $mois): string
+    {
+        return self::de("cloture-periodique:$annee-$mois");
+    }
+
+    public static function clotureExercice(int $annee): string
+    {
+        return self::de("cloture-exercice:$annee");
+    }
 }

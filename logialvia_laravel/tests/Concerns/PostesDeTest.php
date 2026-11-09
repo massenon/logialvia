@@ -237,6 +237,65 @@ trait PostesDeTest
         ], $surcharge);
     }
 
+    // ------------------------------------------------------------------ P8
+
+    /** Plan comptable seme a l'identique du poste + exercice de l'annee courante. */
+    protected function amorcerComptabilite(): void
+    {
+        $this->seed(\Database\Seeders\PlanComptableSeeder::class);
+    }
+
+    /** Annee comptable courante (fuseau de l'exploitation). */
+    protected function anneeComptable(): int
+    {
+        return (int) now(config('logialvia.fuseau'))->year;
+    }
+
+    /** Une ligne d'ecriture telle qu'un poste l'enverrait. */
+    protected function ligneEcriture(string $compte, float $debit, float $credit, array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'numero_compte' => $compte,
+            'debit' => $debit,
+            'credit' => $credit,
+            'libelle' => 'Transport',
+            'axe_analytique' => null,
+        ], $surcharge);
+    }
+
+    /** Une piece (depense 624 / 531) telle qu'un poste l'enverrait. */
+    protected function pieceComptable(array $surcharge = [], float $montant = 3500): array
+    {
+        $date = now(config('logialvia.fuseau'))->setDate($this->anneeComptable(), 6, 15)->setTime(10, 0)->utc();
+
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'numero_piece' => 'DEP-P1-'.$this->anneeComptable().'-0001',
+            'date_ecriture' => $date->format('Y-m-d\TH:i:s.u\Z'),
+            'exercice_annee' => $this->anneeComptable(),
+            'journal_code' => 'CA',
+            'vente_ref' => null,
+            'achat_ref' => null,
+            'contrepasse_de' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'lignes' => [
+                $this->ligneEcriture('624', $montant, 0),
+                $this->ligneEcriture('531', 0, $montant),
+            ],
+        ], $surcharge);
+    }
+
+    /** Pousse des lignes dans UNE table ; renvoie le bilan de cette table. */
+    protected function pousserTable(array $poste, string $table, array $lignes): array
+    {
+        return $this->avecJeton($poste['jeton'])->postJson('/api/sync/push', [
+            'device_id' => $poste['device'],
+            'reset_mark' => 'initiale',
+            'tables' => [$table => $lignes],
+        ])->assertOk()->json($table);
+    }
+
     protected function ligneMouvementProduit(string $produitId, array $surcharge = []): array
     {
         return array_merge([

@@ -164,6 +164,15 @@ return [
             \App\Sync\Tables\CyclesCouveuseTable::class,
             \App\Sync\Tables\SoinsCalendrierTable::class,
             \App\Sync\Tables\InfirmerieTable::class,
+            // P8 — comptabilite : plan et exercices D'ABORD (references des ecritures),
+            // puis les pieces, les notes, les clotures mensuelles ; la cloture ANNUELLE
+            // en DERNIER (elle verrouille un exercice dont toutes les pieces sont recues).
+            \App\Sync\Tables\PlanComptableTable::class,
+            \App\Sync\Tables\ExercicesComptablesTable::class,
+            \App\Sync\Tables\EcrituresTable::class,
+            \App\Sync\Tables\NotesAnnexesTable::class,
+            \App\Sync\Tables\CloturesPeriodiquesTable::class,
+            \App\Sync\Tables\ClotureExerciceTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),

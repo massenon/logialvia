@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ExerciceComptable;
 use App\Models\ParametresEntreprise;
 use App\Models\Poste;
 use App\Models\User;
@@ -40,6 +41,10 @@ class RemiseAZeroService
                     $supprimees[$table->nom()] = $table->requete()->getModel()->newQuery()->delete();
                 }
             }
+
+            // P8 : les exercices sont un referentiel (preserves), mais leur CLOTURE est de
+            // l'activite : les ecritures qu'elle verrouillait viennent d'etre effacees.
+            ExerciceComptable::query()->update(['is_cloture' => false, 'date_cloture' => null, 'cloture_par' => null]);
 
             ParametresEntreprise::courant()->forceFill(['marque_remise_a_zero' => 'rz-'.Str::uuid()])->save();
             // Les postes repartent d'un tirage complet ; les demandes en cours n'ont plus d'objet.

@@ -8,6 +8,7 @@ use App\Models\EcheanceProphylaxie;
 use App\Models\Intrant;
 use App\Models\ModuleActif;
 use App\Models\ParametresEntreprise;
+use App\Models\PlanComptable;
 use App\Models\ProduitVendable;
 use App\Models\TauxRationPoids;
 use App\Models\User;
@@ -43,6 +44,7 @@ class DemandesReferentiel
     public const TYPE_TAUX_POIDS = 'taux_ration_poids';
 
     public const TYPE_ECHEANCE = 'echeance_prophylaxie';
+    public const TYPE_COMPTE = 'compte_comptable';
 
     /** Champs de `parametres_entreprise` qu'un poste peut proposer. */
     public const CHAMPS_PARAMETRES = [
@@ -116,6 +118,7 @@ class DemandesReferentiel
             self::TYPE_PRODUIT => $this->produit($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_INTRANT => $this->intrant($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_BAREME, self::TYPE_TAUX_POIDS, self::TYPE_ECHEANCE => $this->parametreElevage($utilisateur, $demande['type'], $demande['donnees'], $saisie, $cle),
+            self::TYPE_COMPTE => $this->compte($utilisateur, $demande['donnees'], $saisie, $cle),
             default => "Type de demande inconnu du serveur : « {$demande['type']} ».",
         };
 
@@ -527,6 +530,73 @@ class DemandesReferentiel
         }
 
         $ligne->forceFill($valeurs + ['saisi_le' => $saisie, 'archive_le' => $archive ? $saisie : null])->save();
+
+        return null;
+    }
+
+    /**
+     * Cree ou modifie un compte du plan comptable (P8). Cle : le NUMERO de compte, le meme
+     * sur tous les postes. Droit `manage-comptabilite`. Memes regles que le catalogue :
+     * identique accepte sans conflit, plus ancien refuse. Son numero, cle des ecritures,
+     * ne change jamais, et la classe est le premier chiffre du numero.
+     */
+    private function compte(User $utilisateur, array $donnees, CarbonImmutable $saisie, ?string &$cle): ?string
+    {
+        $cle = is_string($donnees['numero_compte'] ?? null) ? $donnees['numero_compte'] : null;
+
+        $v = Validator::make($donnees, [
+            'numero_compte' => ['required', 'string', 'regex:/^[1-7]\d{0,19}$/'],
+            'libelle' => ['required', 'string', 'max:255'],
+            'classe' => ['required', 'string', 'size:1', 'in:1,2,3,4,5,6,7'],
+            'archive' => ['required', 'boolean'],
+        ], [
+            'numero_compte.required' => 'Le numéro de compte est obligatoire.',
+            'numero_compte.regex' => 'Un numéro de compte SYSCOHADA commence par un chiffre de 1 à 7.',
+            'libelle.required' => 'Le libellé est obligatoire.',
+            'classe.required' => 'La classe est obligatoire.',
+            'classe.in' => 'La classe d\'un compte va de 1 à 7.',
+            'archive.required' => "L'état d'archivage du compte est obligatoire.",
+            'archive.boolean' => "L'état d'archivage du compte est invalide.",
+        ]);
+        if ($v->fails()) {
+            return $v->errors()->first();
+        }
+        if (! str_starts_with($donnees['numero_compte'], $donnees['classe'])) {
+            return "Le numéro {$donnees['numero_compte']} ne peut pas appartenir à la classe {$donnees['classe']}.";
+        }
+        if (! $utilisateur->can('manage-comptabilite')) {
+            return 'Droit insuffisant pour modifier le plan comptable.';
+        }
+
+        $champs = [
+            'libelle' => $donnees['libelle'],
+            'classe' => $donnees['classe'],
+            'archive' => filter_var($donnees['archive'], FILTER_VALIDATE_BOOLEAN),
+        ];
+
+        $compte = PlanComptable::query()->find($donnees['numero_compte']);
+        if ($compte === null) {
+            $nouveau = (new PlanComptable)->forceFill($champs + ['numero_compte' => $donnees['numero_compte'], 'saisi_le' => $saisie]);
+            $nouveau->save();
+            // Un compte cree par une demande est DECIDE : `updated_at` doit depasser `created_at`.
+            $nouveau->touch();
+
+            return null;
+        }
+
+        if (collect($champs)->every(fn ($valeur, $colonne) => $compte->{$colonne} == $valeur)) {
+            return null;
+        }
+        if ($compte->saisi_le !== null && $compte->saisi_le->greaterThanOrEqualTo($saisie)) {
+            return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+        }
+        // Le numero est la cle des ecritures et ne change jamais ; la classe EST son premier
+        // chiffre (verifie plus haut) : un compte mouvemente ne peut donc pas changer de
+        // classe, ni deplacer retroactivement ses ecritures d'un poste du bilan a un autre.
+
+        // La valeur differe (le cas identique est sorti plus haut) : `updated_at` avance, le
+        // compte est desormais DECIDE.
+        $compte->forceFill($champs + ['saisi_le' => $saisie])->save();
 
         return null;
     }
