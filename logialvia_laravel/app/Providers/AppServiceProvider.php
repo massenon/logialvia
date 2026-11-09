@@ -22,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Un compte desactive ne garde pas la main sur une page deja ouverte : chaque appel Livewire
+        // repasse par la verification du compte (`CompteActifWeb`, doc 47u).
+        \Livewire\Livewire::addPersistentMiddleware([\App\Http\Middleware\CompteActifWeb::class]);
+
         // Connexion d'un poste : 5 tentatives par minute, par identifiant ET adresse.
         RateLimiter::for('connexion-api', function (Request $request) {
             return Limit::perMinute(5)->by(

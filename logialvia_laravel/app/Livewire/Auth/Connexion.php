@@ -22,6 +22,12 @@ class Connexion extends Component
 
     public ?string $erreur = null;
 
+    /** Message laisse par la deconnexion d'un compte desactive en cours de session (`CompteActifWeb`). */
+    public function mount(): void
+    {
+        $this->erreur = session('erreur_connexion');
+    }
+
     public function connecter(AuthentificationService $authentification)
     {
         $this->validate();

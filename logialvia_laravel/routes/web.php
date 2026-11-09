@@ -20,7 +20,7 @@ Route::post('/deconnexion', function () {
 })->middleware('auth')->name('deconnexion');
 
 // Connectes. Un mot de passe temporaire ne laisse ouverte que son changement.
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'compte.web'])->group(function () {
     Route::get('/mot-de-passe', ChangerMotDePasse::class)->name('mot-de-passe');
 
     Route::middleware('mdp.web')->group(function () {

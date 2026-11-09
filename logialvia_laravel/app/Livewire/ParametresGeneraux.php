@@ -4,7 +4,6 @@ namespace App\Livewire;
 
 use App\Models\ModuleActif;
 use App\Models\ParametresEntreprise;
-use App\Models\User;
 use App\Sync\DemandesReferentiel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -246,15 +245,6 @@ class ParametresGeneraux extends Component
         $modules = ModuleActif::query()->pluck('is_actif', 'module_id');
         $parametres = ParametresEntreprise::courant();
 
-        $comptes = [];
-        if ($this->onglet === 2 && $utilisateur?->can('manage-users')) {
-            $comptes = User::query()->with('roles')->orderBy('name')->get()->map(fn (User $u) => [
-                'nom' => $u->name,
-                'identifiant' => $u->username,
-                'role' => config('logialvia.roles')[$u->roles->first()?->name] ?? '—',
-            ])->all();
-        }
-
         return view('livewire.parametres-generaux', [
             'onglets' => self::ONGLETS,
             'modulesEtat' => collect(self::MODULES)->map(fn ($ligne, $id) => [
@@ -266,7 +256,6 @@ class ParametresGeneraux extends Component
             'modeDonneesTest' => (bool) $parametres->mode_donnees_test,
             'mecefActivable' => $this->mecefActivable(),
             'securites' => self::SECURITES_SMTP,
-            'comptes' => $comptes,
         ])->title('Paramètres Généraux');
     }
 }

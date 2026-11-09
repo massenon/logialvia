@@ -201,41 +201,16 @@
 
     {{-- ============================================================ 2 · Utilisateurs --}}
     @if ($onglet === 2)
-        <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-onglet="utilisateurs">
-            <h2 class="mb-sm text-section-title font-bold">Gestion des Utilisateurs</h2>
-            @if ($peutVoirComptes)
-                <div class="hidden overflow-x-auto sm:block">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-surface-zebra text-caption uppercase text-outline">
-                            <tr><th class="px-md py-sm">Nom Complet</th><th class="px-md py-sm">Identifiant</th><th class="px-md py-sm">Rôle</th></tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($comptes as $c)
-                                <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-compte="{{ $c['identifiant'] }}">
-                                    <td class="px-md py-sm">{{ $c['nom'] }}</td>
-                                    <td class="px-md py-sm">{{ $c['identifiant'] }}</td>
-                                    <td class="px-md py-sm">{{ $c['role'] }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="3" class="px-md py-lg text-center text-outline">Aucun compte.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex flex-col gap-sm sm:hidden">
-                    @foreach ($comptes as $c)
-                        <article class="rounded-lg border border-outline-variant p-sm text-xs" data-carte-compte="{{ $c['identifiant'] }}">
-                            <p class="font-bold">{{ $c['nom'] }}</p>
-                            <p class="text-outline">{{ $c['identifiant'] }} · {{ $c['role'] }}</p>
-                        </article>
-                    @endforeach
-                </div>
-            @endif
-            <p class="mt-sm rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="utilisateurs">
-                Les comptes d'un poste sont propres à ce poste : leur création, leur suppression et leurs mots de passe se gèrent sur le
-                poste (Paramètres Généraux &gt; Gestion Utilisateurs). Le web n'affiche ici, en lecture seule, que les comptes du serveur.
-            </p>
-        </section>
+        @if ($peutVoirComptes)
+            <livewire:gestion-utilisateurs />
+        @else
+            <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-onglet="utilisateurs">
+                <h2 class="mb-sm text-section-title font-bold">Gestion des Utilisateurs</h2>
+                <p class="rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="utilisateurs">
+                    La gestion des comptes est réservée à l'administrateur.
+                </p>
+            </section>
+        @endif
     @endif
 
     {{-- ============================================================ 3 · Modes de paiement --}}

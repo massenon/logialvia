@@ -416,7 +416,7 @@ class ParametresGenerauxWebTest extends TestCase
 
     // ---------------------------------------------------------- Autres onglets
 
-    public function test_les_utilisateurs_du_serveur_se_lisent_sans_aucun_secret(): void
+    public function test_les_utilisateurs_du_serveur_se_gerent_sans_aucun_secret(): void
     {
         $this->utilisateur('caissier', 'amina');
         $admin = $this->admin();
@@ -424,8 +424,7 @@ class ParametresGenerauxWebTest extends TestCase
 
         $composant = Livewire::actingAs($admin)->test(ParametresGeneraux::class)->call('choisirOnglet', 2)
             ->assertSee('Gestion des Utilisateurs')->assertSeeHtml('data-compte="amina"')->assertSee('Agent de Vente')
-            ->assertSee('Administrateur')->assertSeeHtml('data-ecart="utilisateurs"')->assertSee('se gèrent sur le')
-            ->assertDontSee('Ajouter un Utilisateur')->assertDontSee('Supprimer');
+            ->assertSee('Administrateur')->assertSeeHtml('data-ecart="utilisateurs"')->assertSee('Ajouter un Utilisateur');
         $this->assertStringNotContainsString($admin->password, $composant->html());
         $this->assertStringNotContainsString('Secret-Tres-Long-1', $composant->html());
     }
@@ -435,7 +434,7 @@ class ParametresGenerauxWebTest extends TestCase
         $this->utilisateur('caissier', 'amina');
 
         Livewire::actingAs($this->lecteur())->test(ParametresGeneraux::class)->call('choisirOnglet', 2)
-            ->assertDontSeeHtml('data-compte="amina"')->assertSeeHtml('data-ecart="utilisateurs"');
+            ->assertDontSeeHtml('data-compte="amina"')->assertDontSee('Ajouter un Utilisateur')->assertSeeHtml('data-ecart="utilisateurs"');
     }
 
     public function test_les_modes_de_paiement_reprennent_le_texte_du_poste(): void
