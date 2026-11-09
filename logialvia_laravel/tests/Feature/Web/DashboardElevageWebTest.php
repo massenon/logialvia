@@ -136,18 +136,33 @@ class DashboardElevageWebTest extends TestCase
         $this->assertStringContainsString('data-chiffre="matures">30<', $carte);
         $this->assertStringContainsString('data-chiffre="jeunes">20<', $carte);
         $this->assertStringContainsString('data-chiffre="mortalite">7,7 %<', $carte); // 8 / 104
-        $this->assertStringContainsString('text-error-deep" data-chiffre="mortalite"', $carte, '7,7 % >= 2 % : rouge');
+        $this->assertStringContainsString('text-success-deep" data-niveau="normal" data-chiffre="mortalite"', $carte, '7,7 % <= 10 % cumule : normal (`47e_`)');
     }
 
-    public function test_une_mortalite_de_2_pour_cent_ou_plus_est_en_rouge_sinon_en_vert(): void
+    public function test_la_mortalite_du_mois_suit_les_seuils_cumules_10_et_20_pour_cent(): void
     {
-        $this->journee('goliaths', '2026-11-02', ['effectif' => 98, 'mort_cat1' => 2]); // 2 / 100 = 2,0 %
-        $this->journee('pintades', '2026-11-02', ['effectif' => 99, 'mort_cat1' => 1]); // 1 / 100 = 1,0 %
+        // Seuils DV-13 des CUMULS (le seuil du jour, 2 %, rendait rouge un mois ordinaire) : strictement au-dela.
+        $this->journee('goliaths', '2026-11-02', ['effectif' => 90, 'mort_cat1' => 10]); // 10 / 100 = 10,0 % : normal
+        $this->journee('pintades', '2026-11-02', ['effectif' => 89, 'mort_cat1' => 11]); // 11 %  : avertissement
+        $this->journee('lapins', '2026-11-02', ['effectif' => 79, 'mort_cat1' => 21]);   // 21 % : critique
+        $this->activer('cuniculture');
 
         $html = Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(DashboardElevage::class)->html();
 
-        $this->assertStringContainsString('text-error-deep" data-chiffre="mortalite">2,0 %', $this->carte($html, 'goliaths'));
-        $this->assertStringContainsString('text-success-deep" data-chiffre="mortalite">1,0 %', $this->carte($html, 'pintades'));
+        $this->assertStringContainsString('text-success-deep" data-niveau="normal" data-chiffre="mortalite">10,0 %', $this->carte($html, 'goliaths'));
+        $this->assertStringContainsString('text-brand-gold" data-niveau="avertissement" data-chiffre="mortalite">11,0 %', $this->carte($html, 'pintades'));
+        $this->assertStringContainsString('text-error-deep" data-niveau="critique" data-chiffre="mortalite">21,0 %', $this->carte($html, 'lapins'));
+    }
+
+    public function test_la_mortalite_du_mois_compte_les_entrees_du_mois(): void
+    {
+        // Debut 0, 200 achetes le 2 (5 morts) puis 100 le 20 : 5 / 300 = 1,7 %, jamais 5 / 200 = 2,5 %.
+        $this->journee('goliaths', '2026-11-02', ['achat' => 200, 'effectif' => 195, 'mort_cat1' => 5]);
+        $this->journee('goliaths', '2026-11-20', ['achat' => 100, 'effectif' => 295]);
+
+        $html = Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(DashboardElevage::class)->html();
+
+        $this->assertStringContainsString('data-chiffre="mortalite">1,7 %', $this->carte($html, 'goliaths'));
     }
 
     public function test_une_filiere_sans_saisie_le_dit_au_lieu_d_afficher_des_zeros(): void

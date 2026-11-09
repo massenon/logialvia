@@ -77,4 +77,32 @@
         color: inherit !important;
         text-decoration: none !important;
     }
+
+/* Vue imprimable (`47e_`) : fidele a l'etat imprime du poste. Navigation, boutons et formulaires
+   disparaissent ; les tableaux gardent leurs bordures et ne se coupent pas au milieu d'une ligne. */
+@media print {
+    body {
+        background: #fff;
+        color: #000;
+    }
+    main {
+        padding: 0 !important;
+    }
+    button,
+    [role='dialog'] {
+        display: none !important;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+    }
+    thead {
+        display: table-header-group;
+    }
+    section,
+    .rounded-lg {
+        break-inside: avoid;
+    }
 }

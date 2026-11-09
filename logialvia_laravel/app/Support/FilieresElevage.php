@@ -42,7 +42,7 @@ final class FilieresElevage
                 'categories' => [
                     ['Lapereau', 30, true, false],
                     ['Chair', 60, false, true],
-                    ['Reproducteur', 110, false, false],
+                    ['Reproducteur', 120, false, false],
                 ],
                 'etapes' => ['Naissance', 'Chair', 'Reproducteur'],
                 'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés (Mise bas)',
@@ -50,9 +50,9 @@ final class FilieresElevage
             'poissons-chats' => [
                 'libelle' => 'Poissons-Chats', 'icone' => 'set_meal', 'route' => '/elevage/poissons-chats',
                 'categories' => [
-                    ['Alevin', 30, true, false],
-                    ['Juvénile', 60, false, true],
-                    ['Mature', 110, false, false],
+                    ['Alevin', 1, true, false],
+                    ['Juvénile', 3, false, true],
+                    ['Mature', 8, false, false],
                 ],
                 'etapes' => ['Alevin', 'Juvénile', 'Mature'],
                 'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés',
@@ -100,6 +100,20 @@ final class FilieresElevage
             ],
         ];
     }
+
+    /**
+     * Autres intitules sous lesquels le BAREME d'une categorie peut avoir ete seme (`47e_`) :
+     * transcrit de `CategorieEspece.stadesEquivalents` du Dart. Sans cela, une ration modifiee
+     * pour « Sevre / Lapereaux » ou « Alevins » (stade seme a tort pour la pintade) restait sans
+     * effet sur la provende.
+     */
+    public const STADES_EQUIVALENTS = [
+        'pintades' => ['Poussins' => ['Alevins']],
+        'lapins' => ['Lapereau' => ['Sevré / Lapereaux'], 'Chair' => ['Chair / Jeune']],
+    ];
+
+    /** Filieres rationnees en % du poids vif (matiere seche) : `rationEnPourcentagePoidsVif` du Dart. */
+    public const RATION_AU_POIDS_VIF = ['poissons-chats', 'bovins'];
 
     /** @return list<string> Les identifiants, dans l'ordre du Dart. */
     public static function identifiants(): array

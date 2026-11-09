@@ -28,7 +28,7 @@
                         </div>
                         <div>
                             <p class="text-caption uppercase text-outline">Mortalité</p>
-                            <p class="text-page-title font-bold {{ $f['mortalite'] >= 2 ? 'text-error-deep' : 'text-success-deep' }}" data-chiffre="mortalite">{{ $pct($f['mortalite']) }}</p>
+                            <p class="text-page-title font-bold {{ ['critique' => 'text-error-deep', 'avertissement' => 'text-brand-gold', 'normal' => 'text-success-deep'][$f['niveau_mortalite']] }}" data-niveau="{{ $f['niveau_mortalite'] }}" data-chiffre="mortalite">{{ $pct($f['mortalite']) }}</p>
                         </div>
                     </div>
                 @else
@@ -57,7 +57,18 @@
     <div class="mb-lg grid grid-cols-1 gap-md lg:grid-cols-2">
         <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-panneau="gmq">
             <h2 class="mb-sm text-section-title font-bold">Gain Moyen Quotidien (GMQ) par Espèce — 4 Dernières Semaines</h2>
-            <p class="text-xs text-outline">Le GMQ nécessite un suivi de poids par journée. Le modèle de données (Doc D1, FICHE_JOURNEE) ne comporte aujourd'hui aucune colonne de poids, alors que le formulaire de saisie de Doc F3 en prévoit un champ — écart signalé, à trancher avant l'implémentation du module Élevage.</p>
+            @if (count($gmq) === 0)
+                <p class="text-xs text-outline" data-gmq="vide">Le GMQ se calcule à partir de deux pesées de la fiche sur les 4 dernières semaines (« Pesée totale du lot »). Aucune filière n'en a encore deux.</p>
+            @else
+                <ul class="flex flex-col gap-xs text-xs">
+                    @foreach ($filieres as $f)
+                        @if (isset($gmq[$f['espece']]))
+                            @php($g = $gmq[$f['espece']])
+                            <li data-gmq="{{ $f['espece'] }}">{{ $f['libelle'] }} : {{ number_format($g['gmq'], 1, ',', '') }} g/j ({{ (int) round($g['poids_initial_g']) }} g → {{ (int) round($g['poids_final_g']) }} g en {{ $g['jours'] }} j)</li>
+                        @endif
+                    @endforeach
+                </ul>
+            @endif
         </section>
         <section class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Rappels Vétérinaires à Venir">
             <h2 class="mb-sm text-section-title font-bold">Rappels Vétérinaires à Venir</h2>

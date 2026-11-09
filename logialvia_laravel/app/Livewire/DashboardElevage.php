@@ -6,6 +6,7 @@ use App\Models\FicheJournee;
 use App\Models\LigneVente;
 use App\Models\ModuleActif;
 use App\Support\FilieresElevage;
+use App\Support\ReperesZootechniques;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -90,7 +91,7 @@ class DashboardElevage extends Component
         $base = [
             'espece' => $espece, 'libelle' => $config['libelle'], 'route' => $config['route'],
             'libelle_jeunes' => self::LIBELLE_JEUNES[$espece] ?? 'Jeunes',
-            'effectif' => 0, 'matures' => 0, 'jeunes' => 0, 'mortalite' => 0.0, 'a_des_donnees' => false,
+            'effectif' => 0, 'matures' => 0, 'jeunes' => 0, 'mortalite' => 0.0, 'niveau_mortalite' => 'normal', 'a_des_donnees' => false,
         ];
 
         $derniere = FicheJournee::query()->where('espece', $espece)->where('is_recorded', true)->orderByDesc('date')->first();
@@ -105,15 +106,44 @@ class DashboardElevage extends Component
         $mortalite = 0.0;
         if ($jours->isNotEmpty()) {
             $morts = fn (FicheJournee $j): int => $j->mort_cat1 + $j->mort_cat2 + $j->mort_cat3 + ($j->mort_cat4 ?? 0);
+            $dons = fn (FicheJournee $j): int => $j->don_cat1 + $j->don_cat2 + $j->don_cat3 + ($j->don_cat4 ?? 0);
             $premier = $jours->first();
-            $denominateur = $premier->effectif + $morts($premier);
-            $mortalite = $denominateur === 0 ? 0.0 : $jours->sum($morts) / $denominateur * 100;
+            // Effectif EXPOSE (`47e_`) : effectif de debut de mois (reconstitue du 1er jour saisi) +
+            // toutes les entrees du mois ; ignorer les entrees faisait depasser 100 %.
+            $debutDeMois = $premier->effectif - $premier->achat - $premier->ne + $morts($premier) + $premier->vente + $dons($premier);
+            $mortalite = ReperesZootechniques::tauxMortaliteCumule(
+                (int) $jours->sum($morts), $debutDeMois, (int) $jours->sum(fn (FicheJournee $j) => $j->achat + $j->ne),
+            ) ?? 0.0;
         }
 
         return [
             'effectif' => $derniere->effectif, 'matures' => $derniere->eff_cat3_day,
-            'jeunes' => $derniere->eff_cat2_day, 'mortalite' => $mortalite, 'a_des_donnees' => true,
+            'jeunes' => $derniere->eff_cat2_day, 'mortalite' => $mortalite, 'niveau_mortalite' => ReperesZootechniques::niveauMortaliteCumul($mortalite), 'a_des_donnees' => true,
         ] + $base;
+    }
+
+    /**
+     * GMQ (g/j/sujet) des filieres actives sur les 28 derniers jours, d'apres les pesees des fiches
+     * (poids moyen = pesee / effectif) ; une filiere sans deux pesees n'a pas de GMQ (`47e_`).
+     *
+     * @param  list<string>  $especes
+     * @return array<string, array{gmq: float, poids_initial_g: float, poids_final_g: float, jours: int}>
+     */
+    private function gmqParFiliere(array $especes): array
+    {
+        $debut = $this->maintenant()->startOfDay()->subDays(28)->format('Y-m-d');
+        $resultat = [];
+        foreach ($especes as $espece) {
+            $pesees = FicheJournee::query()->where('espece', $espece)->where('is_recorded', true)
+                ->whereNotNull('poids_general_g')->where('date', '>=', $debut)->get()
+                ->map(fn (FicheJournee $f) => ['date' => $f->date, 'poids_total_g' => (int) $f->poids_general_g, 'effectif' => (int) $f->effectif])->all();
+            $gmq = ReperesZootechniques::gmqSurPesees($pesees);
+            if ($gmq !== null) {
+                $resultat[$espece] = $gmq;
+            }
+        }
+
+        return $resultat;
     }
 
     /** Revenus Elevage : ventes non annulees du mois hors « Commerce Annexe » (Dart : `.avicole`). */
@@ -140,6 +170,7 @@ class DashboardElevage extends Component
             'filieres' => array_map(fn (string $e) => $this->recensement($e), $this->especesActives($modules)),
             'apercus' => collect(self::APERCUS)->filter(fn ($a, $module) => ! ($modules[$module] ?? false))->all(),
             'revenus' => $this->revenusElevage(),
+            'gmq' => $this->gmqParFiliere($this->especesActives($modules)),
             'peutParametrer' => Auth::user()?->can('view-parametres') ?? false,
         ])->title('Dashboard Élevage');
     }

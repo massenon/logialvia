@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\CycleCouveuse;
 use App\Models\MachineIncubateur;
+use App\Support\ControleVraisemblance;
 use App\Support\SuiviIncubation;
 use App\Sync\Tables\CyclesCouveuseTable;
 use App\Sync\Tables\MachinesIncubateurTable;
@@ -319,6 +320,14 @@ class Couveuse extends Component
             return;
         }
 
+        // Un mirage ne se fait pas avant J+5 / J+12 (`47e_`, meme regle que le poste).
+        $premature = ControleVraisemblance::erreurMirage(SuiviIncubation::age($lot, $this->dateDeReference()), $this->mirageJour);
+        if ($premature !== null) {
+            $this->erreur = $premature;
+
+            return;
+        }
+
         // Un mirage ne retire pas plus d'œufs qu'il n'en reste, sinon le denominateur du TER
         // deviendrait negatif.
         $premier = $this->mirageJour === SuiviIncubation::JOUR_MIRAGE_1;
@@ -379,6 +388,18 @@ class Couveuse extends Component
         }
         $eclos = $this->entier($this->poussins) ?? 0;
         $perdus = $this->entier($this->perdus) ?? 0;
+
+        // Une eclosion plus de 4 jours avant le terme de l'espece est impossible (`47e_`).
+        $prematureEclosion = ControleVraisemblance::erreurEclosion(
+            SuiviIncubation::age($lot, $this->dateDeReference()),
+            SuiviIncubation::libelleEspece($lot->espece),
+            SuiviIncubation::duree($lot->espece),
+        );
+        if ($prematureEclosion !== null) {
+            $this->erreur = $prematureEclosion;
+
+            return;
+        }
 
         // On ne peut pas faire eclore plus d'œufs qu'il n'en RESTE apres les mirages.
         $retenus = SuiviIncubation::retenus($lot);

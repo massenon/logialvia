@@ -8,8 +8,9 @@ namespace App\Support;
  * veille et des mouvements du jour (BR-ELV-007). Aucun effectif ne devient negatif
  * (BR-ELV-001) : borne a 0, plafond a 999 999.
  *
- * Les provendes (rationnement) ne sont PAS portees : les baremes de ration ne sont pas
- * synchronises (palier `P7c`).
+ * Rationnement (`47e_`) : barèmes et taux par classe de poids sont synchronises (`P7c`) ; la
+ * provende se calcule ici comme au poste. Ce qui depend du STOCK d'intrants (provende en
+ * stock, autonomie) reste propre a chaque poste.
  */
 final class CalculFicheJournaliere
 {
@@ -82,6 +83,68 @@ final class CalculFicheJournaliere
             'sorties_oeufs' => $sortiesOeufs,
             'stock_final' => self::borner($totalStock - $sortiesOeufs),
         ];
+    }
+
+    /**
+     * Ration effective d'une categorie, en g/tete/jour : libelle de la categorie, puis ses stades
+     * equivalents, puis la valeur de reference de la filiere (jamais 0 par defaut).
+     *
+     * @param  array<string, int>  $rationsConfigurees  stade => g/jour (Parametres Elevage)
+     */
+    public static function rationCategorie(string $espece, int $index, array $rationsConfigurees): int
+    {
+        $categories = FilieresElevage::configuration($espece)['categories'];
+        if (! isset($categories[$index])) {
+            return 0;
+        }
+        [$libelle, $reference] = $categories[$index];
+        if (isset($rationsConfigurees[$libelle])) {
+            return $rationsConfigurees[$libelle];
+        }
+        foreach (FilieresElevage::STADES_EQUIVALENTS[$espece][$libelle] ?? [] as $stade) {
+            if (isset($rationsConfigurees[$stade])) {
+                return $rationsConfigurees[$stade];
+            }
+        }
+
+        return $reference;
+    }
+
+    /**
+     * Provende du jour : ration par tete, ou — filiere au poids vif, pesee, effectif et classe
+     * connus — pesee x taux. Le repli par tete est signale (`sur_poids_vif` faux).
+     *
+     * @param  list<int>  $effectifsParCategorie
+     * @param  array<string, int>  $rationsConfigurees
+     * @param  list<array{poids_min_g: int, poids_max_g: int|null, taux_pourcent: float}>  $tauxParClasse
+     * @return array{grammes: int, sur_poids_vif: bool, taux_pourcent: float|null, poids_moyen_g: int|null}
+     */
+    public static function provendeDuJour(string $espece, array $effectifsParCategorie, array $rationsConfigurees, array $tauxParClasse, ?int $poidsTotalGrammes): array
+    {
+        $effectifTotal = 0;
+        $parTete = 0;
+        foreach (array_keys(FilieresElevage::configuration($espece)['categories']) as $i) {
+            $effectif = $effectifsParCategorie[$i] ?? 0;
+            $effectifTotal += $effectif;
+            $parTete += $effectif * self::rationCategorie($espece, $i, $rationsConfigurees);
+        }
+
+        if (in_array($espece, FilieresElevage::RATION_AU_POIDS_VIF, true)
+            && $poidsTotalGrammes !== null && $poidsTotalGrammes > 0 && $effectifTotal > 0) {
+            $poidsMoyen = $poidsTotalGrammes / $effectifTotal;
+            foreach ($tauxParClasse as $classe) {
+                if ($poidsMoyen >= $classe['poids_min_g'] && ($classe['poids_max_g'] === null || $poidsMoyen < $classe['poids_max_g'])) {
+                    return [
+                        'grammes' => (int) round($poidsTotalGrammes * $classe['taux_pourcent'] / 100),
+                        'sur_poids_vif' => true,
+                        'taux_pourcent' => (float) $classe['taux_pourcent'],
+                        'poids_moyen_g' => (int) round($poidsMoyen),
+                    ];
+                }
+            }
+        }
+
+        return ['grammes' => $parTete, 'sur_poids_vif' => false, 'taux_pourcent' => null, 'poids_moyen_g' => null];
     }
 
     /** Poids moyen en grammes (arrondi) ; 0 sans effectif. */

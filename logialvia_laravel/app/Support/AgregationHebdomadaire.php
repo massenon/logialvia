@@ -23,8 +23,15 @@ final class AgregationHebdomadaire
         $semaines = [];
 
         foreach (self::decouper($nombreJoursDuMois) as $i => [$debut, $fin]) {
-            $veille = $debut > 1 ? ($journees[$debut - 1] ?? null) : null;
-            $effectifDebut = $veille['effectif'] ?? $effectifInitial;
+            // Dernier effectif CONNU avant la semaine : une veille non saisie ne ramene pas a
+            // l'effectif de debut de mois (`47e_`).
+            $effectifDebut = $effectifInitial;
+            for ($j = 1; $j < $debut; $j++) {
+                $precedente = $journees[$j] ?? null;
+                if ($precedente !== null && $precedente['is_recorded']) {
+                    $effectifDebut = $precedente['effectif'];
+                }
+            }
 
             $achats = $naissances = $morts = $ventes = 0;
             $effectifFin = $effectifDebut;
@@ -54,7 +61,10 @@ final class AgregationHebdomadaire
                 'effectif_debut' => $effectifDebut,
                 'effectif_fin' => $effectifFin,
                 'a_des_journees_saisies' => $saisie,
-                'taux_mortalite' => $effectifDebut <= 0 ? null : $morts / $effectifDebut * 100,
+                // Effectif EXPOSE : depart + entrees de la semaine (`47e_`).
+                'taux_mortalite' => ($effectifDebut + $achats + $naissances) <= 0
+                    ? null
+                    : $morts / ($effectifDebut + $achats + $naissances) * 100,
             ];
         }
 

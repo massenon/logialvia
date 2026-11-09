@@ -4,13 +4,19 @@ namespace App\Services;
 
 use App\Livewire\Catalogue;
 use App\Models\Bande;
+use App\Models\BaremeRation;
+use App\Models\EcheanceProphylaxie;
+use App\Models\SoinCalendrier;
+use App\Models\TauxRationPoids;
 use App\Models\FicheJournee;
 use App\Models\FicheVentesJour;
 use App\Support\CalculFicheJournaliere;
+use App\Support\ControleVraisemblance;
 use App\Support\FilieresElevage;
 use App\Support\UuidDeterministe;
 use App\Sync\Tables\BandesTable;
 use App\Sync\Tables\FichesJourneeTable;
+use App\Sync\Tables\SoinsCalendrierTable;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +35,9 @@ use Illuminate\Support\Facades\DB;
  */
 class FichesElevage
 {
+    /** @var array<string, string|null> jour => version que l'ecran avait sous les yeux (une seule ecriture). */
+    private array $basesVues = [];
+
     public const MESSAGE_ECHEC = "Impossible d'enregistrer la saisie du jour. Réessayez.";
 
     public function __construct(public readonly string $espece)
@@ -157,12 +166,23 @@ class FichesElevage
      * @param  array{pondus: int, casses: int, sorties: int}|null  $oeufs  Pondeuses uniquement
      * @return string|null Le motif d'echec, ou `null` si la journee est enregistree.
      */
-    public function enregistrer(string $jour, array $mouvements, ?int $poidsG, ?string $observation, bool $traitementValide, ?array $oeufs): ?string
+    public function enregistrer(string $jour, array $mouvements, ?int $poidsG, ?string $observation, bool $traitementValide, ?array $oeufs, bool $controler = true, ?string $baseVue = null, bool $baseConnue = false): ?string
     {
         $erreurs = $this->valider($mouvements, $oeufs);
         if ($erreurs !== []) {
             return $erreurs[0];
         }
+        // Controle de vraisemblance d'expert (`47e_`) : l'IMPOSSIBLE est refuse.
+        if ($controler) {
+            $erreurs = $this->controle($jour, $mouvements, $poidsG, $oeufs)['erreurs'];
+            if ($erreurs !== []) {
+                return $erreurs[0];
+            }
+        }
+
+        // La version que l'ecran avait SOUS LES YEUX (`47e_`) : si la fiche a change depuis, la
+        // saisie du web ne l'ecrase pas en silence, elle devient une divergence visible.
+        $this->basesVues = $baseConnue ? [$jour => $baseVue] : [];
 
         try {
             DB::transaction(function () use ($jour, $mouvements, $poidsG, $observation, $traitementValide, $oeufs) {
@@ -268,12 +288,321 @@ class FichesElevage
             'traitement_valide' => (bool) $j['traitement_valide'],
             'is_recorded' => (bool) $j['is_recorded'],
             'updated_at' => self::instantApres($existante?->updated_at),
+            // La version dont part cette ecriture : celle que le web vient de LIRE (`47e_`).
+            'base_updated_at' => array_key_exists($jour, $this->basesVues)
+                ? $this->basesVues[$jour]
+                : ($existante === null ? null : CarbonImmutable::instance($existante->updated_at)->utc()->format('Y-m-d\TH:i:s.u\Z')),
         ];
 
         $motif = (new FichesJourneeTable)->absorber(Catalogue::POSTE_WEB, $ligne);
         if ($motif !== null) {
             throw new \RuntimeException("Fiche refusée : $motif");
         }
+    }
+
+    // ------------------------------------------------- Rationnement (`47e_`)
+
+    /** @return array<string, int> stade => g/tete/jour des baremes actifs de la filiere. */
+    public function rationsConfigurees(): array
+    {
+        return BaremeRation::query()->where('espece', $this->espece)->whereNull('archive_le')
+            ->pluck('ration_grammes_par_jour', 'stade')->map(fn ($r) => (int) $r)->all();
+    }
+
+    /** @return list<array{poids_min_g: int, poids_max_g: int|null, taux_pourcent: float}> */
+    public function tauxParClasse(): array
+    {
+        return TauxRationPoids::query()->where('espece', $this->espece)->whereNull('archive_le')
+            ->orderBy('poids_min_g')->get()
+            ->map(fn (TauxRationPoids $t) => [
+                'poids_min_g' => (int) $t->poids_min_g,
+                'poids_max_g' => $t->poids_max_g === null ? null : (int) $t->poids_max_g,
+                'taux_pourcent' => (float) $t->taux_pourcent,
+            ])->all();
+    }
+
+    // ------------------------------------------------ Prophylaxie (`47e_`)
+
+    /**
+     * Les echeances du calendrier qui tombent ce jour-la pour la bande, avec le soin deja
+     * planifie le cas echeant. Le calendrier est indexe sur le JOUR DU CYCLE.
+     *
+     * @return list<array{echeance: EcheanceProphylaxie, soin: ?SoinCalendrier, date_prevue: string}>
+     */
+    public function prophylaxieDuJour(Bande $bande, string $jour): array
+    {
+        return $this->projeter($bande, fn (int $jourCycle) => $jourCycle === self::jourDeCycle($bande, $jour));
+    }
+
+    /** @return list<array{echeance: EcheanceProphylaxie, soin: ?SoinCalendrier, date_prevue: string}> Tout le calendrier de la bande, date. */
+    public function prophylaxieDeLaBande(Bande $bande): array
+    {
+        return $this->projeter($bande, fn () => true);
+    }
+
+    private function projeter(Bande $bande, \Closure $filtre): array
+    {
+        $soins = SoinCalendrier::query()->where('bande_id', $bande->id)->get()->keyBy('echeance_prophylaxie_id');
+        $debut = CarbonImmutable::createFromFormat('!Y-m-d', $bande->date_mise_en_bande);
+
+        return EcheanceProphylaxie::query()->where('espece', $this->espece)->whereNull('archive_le')
+            ->orderBy('jour_cycle')->orderBy('traitement')->get()
+            ->filter(fn (EcheanceProphylaxie $e) => $filtre((int) $e->jour_cycle))
+            ->map(fn (EcheanceProphylaxie $e) => [
+                'echeance' => $e,
+                'soin' => $soins->get($e->id),
+                'date_prevue' => $debut->addDays((int) $e->jour_cycle - 1)->format('Y-m-d'),
+            ])->values()->all();
+    }
+
+    /**
+     * Planifie un soin depuis une echeance du calendrier. Identifiant DETERMINISTE de (bande,
+     * echeance) : deux postes (ou le web) qui planifient la meme echeance ecrivent la MEME
+     * ligne, jamais deux rappels.
+     *
+     * @return string|null Le motif du refus, ou `null` si le soin est planifie (ou deja l'etait).
+     */
+    public function planifierEcheance(Bande $bande, EcheanceProphylaxie $echeance, string $typeSoin): ?string
+    {
+        if (! in_array($typeSoin, SoinsCalendrierTable::TYPES, true)) {
+            return "Ce type d'action n'existe pas.";
+        }
+        $id = UuidDeterministe::soinProphylaxie($bande->id, $echeance->id);
+        $existant = SoinCalendrier::query()->find($id);
+        if ($existant !== null) {
+            return 'Cette échéance est déjà planifiée.';
+        }
+        $debut = CarbonImmutable::createFromFormat('!Y-m-d', $bande->date_mise_en_bande);
+
+        return (new SoinsCalendrierTable)->absorber(Catalogue::POSTE_WEB, [
+            'id' => $id,
+            'espece' => $this->espece,
+            'date_prevue' => $debut->addDays((int) $echeance->jour_cycle - 1)->format('Y-m-d'),
+            'type_soin' => $typeSoin,
+            'statut' => 'Planifié',
+            'observations' => null,
+            'produit' => $echeance->produit,
+            'dose' => $echeance->dose,
+            'remanence_jours' => (int) $echeance->remanence_jours,
+            'veterinaire' => null,
+            'symptomes' => null,
+            'cout_fcfa' => 0,
+            'echeance_prophylaxie_id' => $echeance->id,
+            'bande_id' => $bande->id,
+            'updated_at' => self::instantApres(null),
+        ]);
+    }
+
+    // ------------------------------------------------- Vraisemblance (`47e_`)
+
+    /**
+     * Controle de vraisemblance du formulaire, en direct ou a l'enregistrement.
+     *
+     * @param  array{achat: int, ne: int, vente: int, morts: list<int>, dons: list<int>}  $mouvements
+     * @param  array{pondus: int, casses: int, sorties: int}|null  $oeufs
+     * @return array{erreurs: list<string>, avertissements: list<string>}
+     */
+    public function controle(string $jour, array $mouvements, ?int $poidsG, ?array $oeufs): array
+    {
+        $veille = $this->veille($jour);
+        $v = $veille ? $this->versDomaine($veille) : null;
+        $effectifsVeille = $v['effectifs'] ?? array_fill(0, $this->nombreCategories(), 0);
+        $effectifTotalVeille = $v['effectif'] ?? 0;
+        $effectifs = CalculFicheJournaliere::calculerJour($this->espece, $effectifsVeille, $effectifTotalVeille, $mouvements);
+
+        return ControleVraisemblance::controlerJournee(
+            $this->espece,
+            $effectifsVeille,
+            $mouvements,
+            $effectifs,
+            $effectifTotalVeille,
+            $poidsG,
+            $oeufs['pondus'] ?? null,
+            $oeufs['casses'] ?? null,
+            $oeufs['sorties'] ?? null,
+            ($v['stock_final_oeufs'] ?? 0) + max(0, min(self::PLAFOND_STOCK, ($oeufs['pondus'] ?? 0) - ($oeufs['casses'] ?? 0))),
+        );
+    }
+
+    private const PLAFOND_STOCK = 999999;
+
+    // ----------------------------------------------- Chaine des effectifs (`47e_`)
+
+    /**
+     * La chaine d'effectifs : chaque jour SAISI recalcule de la derniere fiche saisie qui le
+     * precede (meme regle que la saisie), dans l'ordre chronologique. Lecture seule.
+     *
+     * @return list<array{jour: string, original: array<string, mixed>, recalculee: array<string, mixed>, corrige: bool}>
+     */
+    public function planChaine(): array
+    {
+        $plan = [];
+        $precedente = null;
+        $jours = FicheJournee::query()->where('espece', $this->espece)->where('is_recorded', true)
+            ->orderBy('date')->get();
+        foreach ($jours as $fiche) {
+            $j = $this->versDomaine($fiche);
+            $effectifs = CalculFicheJournaliere::calculerJour(
+                $this->espece,
+                $precedente['effectifs'] ?? array_fill(0, $this->nombreCategories(), 0),
+                $precedente['effectif'] ?? 0,
+                ['achat' => $j['achat'], 'ne' => $j['ne'], 'vente' => $j['vente'], 'morts' => $j['morts'], 'dons' => $j['dons']],
+            );
+            $recalculee = $j;
+            $recalculee['effectif'] = $effectifs['effectif_total'];
+            $recalculee['effectifs'] = $effectifs['par_categorie'];
+            $stock = null;
+            if ($j['oeufs_pondus'] !== null || $j['oeufs_casses'] !== null || $j['sorties_plateaux'] !== null) {
+                $stock = CalculFicheJournaliere::stockOeufs(
+                    $precedente['stock_final_oeufs'] ?? 0, $j['oeufs_pondus'] ?? 0, $j['oeufs_casses'] ?? 0, $j['sorties_plateaux'] ?? 0,
+                );
+                $recalculee['srh'] = $stock['srh'];
+                $recalculee['ts'] = $stock['total_stock'];
+                $recalculee['stock_final_oeufs'] = $stock['stock_final'];
+            }
+            $corrige = $recalculee['effectif'] !== $j['effectif']
+                || $recalculee['effectifs'] !== $j['effectifs']
+                || ($stock !== null && ($recalculee['srh'] !== $j['srh'] || $recalculee['ts'] !== $j['ts'] || $recalculee['stock_final_oeufs'] !== $j['stock_final_oeufs']));
+            $plan[] = ['jour' => $fiche->date, 'original' => $j, 'recalculee' => $recalculee, 'corrige' => $corrige];
+            $precedente = $recalculee;
+        }
+
+        return $plan;
+    }
+
+    /** @return list<array{jour: string, enregistre: int, attendu: int}> Les jours dont l'effectif ne decoule pas de la veille. */
+    public function joursIncoherents(): array
+    {
+        $r = [];
+        foreach ($this->planChaine() as $p) {
+            if ($p['corrige']) {
+                $r[] = ['jour' => $p['jour'], 'enregistre' => $p['original']['effectif'], 'attendu' => $p['recalculee']['effectif']];
+            }
+        }
+
+        return $r;
+    }
+
+    /**
+     * Reecrit, dans l'ordre, les SEULS jours dont une valeur calculee change (reecrire un jour
+     * identique le dater de maintenant sans raison).
+     *
+     * @return array{jours_verifies: int, jours_corriges: list<string>}
+     */
+    public function recalculerChaine(): array
+    {
+        $plan = $this->planChaine();
+        $corriges = [];
+        DB::transaction(function () use ($plan, &$corriges) {
+            foreach ($plan as $p) {
+                if ($p['corrige']) {
+                    $this->ecrireJournee($p['jour'], $p['recalculee']);
+                    $corriges[] = $p['jour'];
+                }
+            }
+        });
+
+        return ['jours_verifies' => count($plan), 'jours_corriges' => $corriges];
+    }
+
+    // ----------------------------------------------------- Divergence (`47e_`)
+
+    /**
+     * Les versions en presence d'une fiche « modifiee ailleurs » : la courante d'abord, puis
+     * les autres. Liste vide sans divergence.
+     *
+     * @return list<array{origine: string, instant: string, courante: bool, journee: array<string, mixed>}>
+     */
+    public function versionsEnDivergence(string $jour): array
+    {
+        $fiche = $this->journee($jour);
+        if ($fiche === null || empty($fiche->variantes)) {
+            return [];
+        }
+        $versions = [[
+            'origine' => 'Version courante',
+            'instant' => CarbonImmutable::instance($fiche->updated_at)->utc()->format('Y-m-d\TH:i:s.u\Z'),
+            'courante' => true,
+            'journee' => $this->versDomaine($fiche),
+        ]];
+        foreach ($fiche->variantes as $v) {
+            $modele = new FicheJournee($v['contenu']);
+            $modele->is_recorded = (bool) ($v['contenu']['is_recorded'] ?? true);
+            $versions[] = [
+                'origine' => 'Poste '.substr((string) ($v['device_id'] ?? ''), 0, 8),
+                'instant' => (string) $v['updated_at'],
+                'courante' => false,
+                'journee' => $this->versDomaine($modele),
+            ];
+        }
+
+        return $versions;
+    }
+
+    /**
+     * Garde la version [$index] (0 = la courante) : la machine ne tranche jamais. Une autre
+     * version est ressaisie (effectifs recalcules de la veille, cascade comprise), puis la
+     * fiche repart avec l'indication « resolution » qui efface les variantes partout.
+     *
+     * @return string|null Le motif d'echec, ou `null` si la divergence est resolue.
+     */
+    public function resoudreDivergence(string $jour, int $index): ?string
+    {
+        $versions = $this->versionsEnDivergence($jour);
+        if ($versions === []) {
+            return "Cette fiche n'a pas de divergence à résoudre.";
+        }
+        if (! isset($versions[$index])) {
+            return 'Cette version n\'existe plus.';
+        }
+        $choisie = $versions[$index]['journee'];
+
+        try {
+            DB::transaction(function () use ($jour, $index, $choisie) {
+                if ($index > 0) {
+                    $oeufs = $this->espece === 'pondeuses' ? [
+                        'pondus' => $choisie['oeufs_pondus'] ?? 0,
+                        'casses' => $choisie['oeufs_casses'] ?? 0,
+                        'sorties' => $choisie['sorties_plateaux'] ?? 0,
+                    ] : null;
+                    $motif = $this->enregistrer($jour, [
+                        'achat' => $choisie['achat'], 'ne' => $choisie['ne'],
+                        'vente' => $this->venteDuJour($jour),
+                        'morts' => $choisie['morts'], 'dons' => $choisie['dons'],
+                    ], $choisie['poids_general_g'], $choisie['traitement_obs'], (bool) $choisie['traitement_valide'], $oeufs, false);
+                    if ($motif !== null) {
+                        throw new \RuntimeException($motif);
+                    }
+                }
+                // Ecriture RESOLVANTE : seule la fiche resolue repart avec `resolution`.
+                $fiche = $this->journee($jour);
+                $ligne = $this->ligneDeFiche($fiche);
+                $ligne['updated_at'] = self::instantApres($fiche->updated_at);
+                $ligne['resolution'] = true;
+                $ligne['base_updated_at'] = CarbonImmutable::instance($fiche->updated_at)->utc()->format('Y-m-d\TH:i:s.u\Z');
+                $motif = (new FichesJourneeTable)->absorber(Catalogue::POSTE_WEB, $ligne);
+                if ($motif !== null) {
+                    throw new \RuntimeException($motif);
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return self::MESSAGE_ECHEC;
+        }
+
+        return null;
+    }
+
+    /** @return array<string, mixed> Une fiche telle qu'un poste l'enverrait. */
+    private function ligneDeFiche(FicheJournee $f): array
+    {
+        $ligne = ['id' => $f->id];
+        foreach ((new FichesJourneeTable)->colonnesEcrites() as $colonne) {
+            $ligne[$colonne] = $f->{$colonne};
+        }
+
+        return $ligne;
     }
 
     // ------------------------------------------------------------------ Bandes
@@ -335,6 +664,47 @@ class FichesElevage
             'observations' => $bande->observations,
             'updated_at' => self::instantApres($bande->updated_at),
         ]);
+    }
+
+    /**
+     * Recode une bande (code unique par filiere) en TRACANT l'ancien code dans ses observations.
+     *
+     * @return string|null Le motif du refus, ou `null` si la bande est recodee.
+     */
+    public function recoderBande(Bande $bande, string $nouveauCode): ?string
+    {
+        $code = trim($nouveauCode);
+        if ($code === '') {
+            return 'Le code de la bande est obligatoire.';
+        }
+        $trace = "Recodée de {$bande->code} en {$code} le ".CarbonImmutable::now(config('logialvia.fuseau'))->format('Y-m-d').' (code déjà utilisé sur un autre poste).';
+
+        return (new BandesTable)->absorber(Catalogue::POSTE_WEB, [
+            'id' => $bande->id,
+            'espece' => $bande->espece,
+            'code' => $code,
+            'date_mise_en_bande' => $bande->date_mise_en_bande,
+            'effectif_initial' => $bande->effectif_initial,
+            'date_cloture' => $bande->date_cloture,
+            'observations' => $bande->observations === null || $bande->observations === '' ? $trace : $bande->observations.' · '.$trace,
+            'updated_at' => self::instantApres($bande->updated_at),
+        ]);
+    }
+
+    /** Code de recodage propose : `B2` devient `B2-WEB`, puis `B2-WEB-2`... tant qu'il est pris. */
+    public function codeRecodagePropose(Bande $bande): string
+    {
+        $pris = Bande::query()->where('espece', $this->espece)->pluck('code')->all();
+        $racine = $bande->code.'-WEB';
+        if (! in_array($racine, $pris, true)) {
+            return $racine;
+        }
+        $n = 2;
+        while (in_array("$racine-$n", $pris, true)) {
+            $n++;
+        }
+
+        return "$racine-$n";
     }
 
     /** Jour de cycle a la date donnee (J1 = jour de mise en place). */

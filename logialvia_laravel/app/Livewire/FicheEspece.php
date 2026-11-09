@@ -3,17 +3,21 @@
 namespace App\Livewire;
 
 use App\Models\Bande;
+use App\Models\EcheanceProphylaxie;
 use App\Models\FicheJournee;
 use App\Services\FichesElevage;
 use App\Support\AgregationHebdomadaire;
 use App\Support\CalculFicheJournaliere;
+use App\Support\ExportXlsx;
 use App\Support\FilieresElevage;
+use App\Support\ReperesZootechniques;
 use App\Support\Navigation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Fiche d'elevage d'une filiere (Dart : `fiche_espece_screen.dart`) — UN composant pour les
@@ -24,14 +28,20 @@ use Livewire\Component;
  * `fiche_journee` et `bandes` (device web), meme validation et meme regle « dernier
  * ecrivain gagne » que pour un poste. Les effectifs sont recalcules, jamais saisis.
  *
- * ## Ecarts assumes avec le Dart (donnees absentes du serveur)
- *  - pas de tableau de rationnement (provende) : les baremes de ration ne sont pas
- *    synchronises ; la pesee est neanmoins enregistree ;
- *  - pas de prophylaxie du jour, de calendrier de prophylaxie ni de soins planifies : tables
- *    non synchronisees (`P7c`) ;
+ * ## Expertise (`47e_`)
+ *  - controle de vraisemblance (erreurs refusees, avertissements en direct), memes regles et memes
+ *    messages que le poste ;
+ *  - chaine d'effectifs : verification (lecture seule) et bouton « Recalculer la chaine » ;
+ *  - fiche « modifiee ailleurs » : les versions en presence, choix explicite de celle a garder ;
+ *  - rationnement (provende) et prophylaxie du jour, depuis les baremes et le calendrier
+ *    synchronises ; planification d'un soin avec son lien de bande ; recodage d'une bande ;
+ *  - ce qui depend du STOCK d'intrants (provende en stock, autonomie) reste propre a chaque
+ *    poste : grise « Disponible sur le poste ».
+ *
+ * ## Ecarts assumes avec le Dart
  *  - pas d'icones Material Symbols (police non embarquee) ;
  *  - code de bande propose avec le prefixe par defaut `B` (le prefixe se regle aux Parametres
- *    Elevage du poste) ;
+ *    Elevage) ;
  *  - la clôture d'une bande est datee du jour (fuseau de l'entreprise), comme au poste.
  */
 #[Layout('components.layouts.app')]
@@ -101,6 +111,16 @@ class FicheEspece extends Component
     public ?string $erreurBande = null;
 
     public bool $confirmerCloture = false;
+
+    // Recodage de la bande
+    public bool $formulaireRecodage = false;
+
+    public string $nouveauCode = '';
+
+    public ?string $erreurRecodage = null;
+
+    /** Version de la fiche (`updated_at`) au chargement du formulaire : base de l'ecriture (`47e_`). */
+    public ?string $baseMaj = null;
 
     /** `$route` n'est fourni que par les tests : sur le web, la route est celle de la requete. */
     public function mount(?string $route = null): void
@@ -217,6 +237,7 @@ class FicheEspece extends Component
         $n = FilieresElevage::nombreCategories($this->espece);
         $f = $this->service()->journee($this->jour);
         $d = $f ? $this->service()->versDomaine($f) : null;
+        $this->baseMaj = $f?->updated_at === null ? null : CarbonImmutable::instance($f->updated_at)->utc()->format('Y-m-d\TH:i:s.u\Z');
 
         $this->achat = $d['achat'] ?? 0;
         $this->ne = $d['ne'] ?? 0;
@@ -288,7 +309,7 @@ class FicheEspece extends Component
         $poids = trim((string) $this->poids) === '' ? null : $this->entier($this->poids);
         $observation = $this->observation === '' ? null : $this->observation;
 
-        $motif = $service->enregistrer($this->jour, $mouvements, $poids, $observation, $this->traitementValide, $oeufs);
+        $motif = $service->enregistrer($this->jour, $mouvements, $poids, $observation, $this->traitementValide, $oeufs, true, $this->baseMaj, true);
         if ($motif !== null) {
             $this->erreur = $motif;
 
@@ -359,8 +380,139 @@ class FicheEspece extends Component
         $this->message = "Bande {$bande->code} clôturée.";
     }
 
+    // ------------------------------------------------------------ Export XLSX
+
+    /** Classeur XLSX du mois affiche (Historique du Mois), meme contenu que l'ecran. Droit `export-elevage`. */
+    public function exporter(): StreamedResponse
+    {
+        abort_unless(Auth::user()?->can('view-elevage') && Auth::user()?->can('export-elevage'), 403);
+        abort_unless(array_key_exists($this->route, self::ROUTES), 404);
+        abort_unless(Navigation::moduleDeRouteActif($this->route), 404);
+
+        $date = CarbonImmutable::createFromFormat('!Y-m-d', $this->jour);
+        $config = FilieresElevage::configuration($this->espece);
+        $service = $this->service();
+        $lignes = [
+            ['Fiche '.$config['libelle'].' — '.self::MOIS[$date->month - 1].' '.$date->year],
+            [],
+            ['Date', $config['libelle_achats'], $config['libelle_naissances'], 'Vente', 'Morts', 'Dons', 'Effectif', 'Pesée (g)', 'Observation de traitement'],
+        ];
+        foreach ($service->mois($date->year, $date->month) as $f) {
+            if (! $f->is_recorded) {
+                continue;
+            }
+            $j = $service->versDomaine($f);
+            $lignes[] = [
+                CarbonImmutable::parse($f->date)->format('d/m/Y'), $j['achat'], $j['ne'], $j['vente'],
+                array_sum($j['morts']), array_sum($j['dons']), $j['effectif'], $j['poids_general_g'] ?? '', (string) ($j['traitement_obs'] ?? ''),
+            ];
+        }
+
+        return ExportXlsx::telecharger(
+            array_map(fn (array $ligne) => array_map(ExportXlsx::typer(...), $ligne), $lignes),
+            'fiche-'.$this->espece.'-'.$date->format('Y-m').'.xlsx',
+            $config['libelle'],
+        );
+    }
+
+    // ------------------------------------------------- Chaine, divergence (`47e_`)
+
+    public function recalculerChaine(): void
+    {
+        $this->autoriser();
+        $this->message = $this->erreur = null;
+        try {
+            $rapport = $this->service()->recalculerChaine();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->erreur = 'Impossible de recalculer la chaîne des effectifs.';
+
+            return;
+        }
+        $n = count($rapport['jours_corriges']);
+        $this->message = $n === 0
+            ? 'La chaîne était déjà cohérente.'
+            : "$n jour".($n > 1 ? 's' : '').' recalculé'.($n > 1 ? 's' : '').'.';
+        $this->chargerFormulaire();
+    }
+
+    public function garderVersion(int $index): void
+    {
+        $this->autoriser();
+        $this->message = $this->erreur = null;
+        $motif = $this->service()->resoudreDivergence($this->jour, $index);
+        if ($motif !== null) {
+            $this->erreur = $motif;
+
+            return;
+        }
+        $this->message = 'Version gardée : la fiche n\'est plus en divergence.';
+        $this->chargerFormulaire();
+    }
+
+    // -------------------------------------------------------- Recodage de bande
+
+    public function ouvrirRecodage(): void
+    {
+        $this->autoriser();
+        $bande = $this->service()->bandeCouvrant($this->jour);
+        if ($bande === null) {
+            return;
+        }
+        $this->erreurRecodage = null;
+        $this->nouveauCode = $this->service()->codeRecodagePropose($bande);
+        $this->formulaireRecodage = true;
+    }
+
+    public function recoderBande(): void
+    {
+        $this->autoriser();
+        $bande = $this->service()->bandeCouvrant($this->jour);
+        if ($bande === null) {
+            $this->erreurRecodage = 'Aucune bande en cours.';
+
+            return;
+        }
+        $motif = $this->service()->recoderBande($bande, $this->nouveauCode);
+        if ($motif !== null) {
+            $this->erreurRecodage = $motif;
+
+            return;
+        }
+        $this->message = 'Bande recodée en '.trim($this->nouveauCode).'.';
+        $this->formulaireRecodage = false;
+    }
+
+    // ------------------------------------------------------------ Prophylaxie
+
+    public function planifierEcheance(string $echeanceId, string $type): void
+    {
+        $this->autoriser();
+        $this->message = $this->erreur = null;
+        $bande = $this->service()->bandeCouvrant($this->jour);
+        if ($bande === null) {
+            $this->erreur = 'Aucune bande en cours.';
+
+            return;
+        }
+        $echeance = EcheanceProphylaxie::query()->where('espece', $this->espece)->whereNull('archive_le')->find($echeanceId);
+        if ($echeance === null) {
+            $this->erreur = 'Cette échéance n\'existe plus.';
+
+            return;
+        }
+        $motif = $this->service()->planifierEcheance($bande, $echeance, $type);
+        if ($motif !== null) {
+            $this->erreur = $motif;
+
+            return;
+        }
+        $this->message = "{$echeance->traitement} planifié.";
+    }
+
     public function annuler(): void
     {
+        $this->formulaireRecodage = false;
         $this->formulaireBande = false;
         $this->confirmerCloture = false;
         $this->erreurBande = null;
@@ -391,17 +543,18 @@ class FicheEspece extends Component
             'libelle_immature' => count($categories) > 1 ? $categories[1][0] : 'Immatures',
             'a_des_donnees' => $saisies->isNotEmpty(),
         ];
-        if ($saisies->isNotEmpty()) {
-            $premiere = $saisies->first();
-            $base = $premiere['effectif'] + array_sum($premiere['morts']);
-            $morts = $saisies->sum(fn (array $j) => array_sum($j['morts']));
-            $kpi['mortalite'] = $base > 0 ? $morts / $base * 100 : 0.0;
-        }
         $effectifReport = 0;
         if ($saisies->isNotEmpty()) {
             $p = $saisies->first();
             $effectifReport = $p['effectif'] - $p['achat'] - $p['ne'] + array_sum($p['morts']) + $p['vente'] + array_sum($p['dons']);
+            // Effectif EXPOSE : effectif de debut de mois + entrees du mois (`47e_`).
+            $kpi['mortalite'] = ReperesZootechniques::tauxMortaliteCumule(
+                (int) $saisies->sum(fn (array $j) => array_sum($j['morts'])),
+                $effectifReport,
+                (int) $saisies->sum(fn (array $j) => $j['achat'] + $j['ne']),
+            ) ?? 0.0;
         }
+        $kpi['niveau_mortalite'] = ReperesZootechniques::niveauMortaliteCumul($kpi['mortalite']);
 
         // Totaux en direct du formulaire (le Dart : `calculerEnDirect`).
         $veille = $service->veille($this->jour);
@@ -428,6 +581,20 @@ class FicheEspece extends Component
         $poidsTotal = $this->entier($this->poids);
         $bande = $service->bandeCouvrant($this->jour);
 
+        $oeufsSaisis = null;
+        if ($this->espece === 'pondeuses') {
+            $oeufsSaisis = ['pondus' => max(0, $this->entier($this->oeufsPondus) ?? 0), 'casses' => max(0, $this->entier($this->oeufsCasses) ?? 0), 'sorties' => max(0, $this->entier($this->sortiesPlateaux) ?? 0)];
+        }
+        $controle = $service->controle($this->jour, $mouvements, $poidsTotal !== null && trim((string) $this->poids) !== '' ? $poidsTotal : null, $oeufsSaisis);
+        $provende = CalculFicheJournaliere::provendeDuJour(
+            $this->espece, $totaux['par_categorie'], $service->rationsConfigurees(), $service->tauxParClasse(),
+            trim((string) $this->poids) !== '' ? $poidsTotal : null,
+        );
+        $rations = [];
+        foreach ($categories as $i => $categorie) {
+            $rations[$i] = CalculFicheJournaliere::rationCategorie($this->espece, $i, $service->rationsConfigurees());
+        }
+
         return view('livewire.fiche-espece', [
             'config' => $config,
             'onglets' => count(self::ROUTES[$this->route]) > 1 ? self::ROUTES[$this->route] : [],
@@ -444,6 +611,15 @@ class FicheEspece extends Component
                 ? CalculFicheJournaliere::poidsMoyenGrammes($poidsTotal, $totaux['effectif_total'])
                 : null,
             'bande' => $bande,
+            'controle' => $controle,
+            'provende' => $provende,
+            'rations' => $rations,
+            'joursIncoherents' => $service->joursIncoherents(),
+            'versions' => $service->versionsEnDivergence($this->jour),
+            'modifieeAilleurs' => $service->versionsEnDivergence($this->jour) !== [],
+            'prophylaxieDuJour' => $bande ? $service->prophylaxieDuJour($bande, $this->jour) : [],
+            'prophylaxieBande' => $bande ? $service->prophylaxieDeLaBande($bande) : [],
+            'typesSoin' => \App\Sync\Tables\SoinsCalendrierTable::TYPES,
             'jourDeCycle' => $bande ? FichesElevage::jourDeCycle($bande, $this->jour) : null,
             'peutGerer' => $this->peutGerer(),
             'libelleMois' => self::MOIS[$date->month - 1].' '.$date->year,

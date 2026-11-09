@@ -199,7 +199,7 @@ class RapportsElevageWebTest extends TestCase
         $this->assertSame([
             ['Goliaths', '5', '20 000', '95', 'Vermifuge', '3 sujet(s) — Diarrhée, Boiterie, Fièvre', '6 150'],
             ['Bovins', '0', '—', '10', 'Aucun traitement administré', 'Aucun signe observé', '62 500'],
-            ['Poissons-Chats', '0', '—', '1000', 'Aucun traitement administré', 'Aucun signe observé', '55 000'],
+            ['Poissons-Chats', '0', '—', '1000', 'Aucun traitement administré', 'Aucun signe observé', '3 000'],
             ['Pondeuses', '0', '—', '100', 'Vaccination (Gumboro)', 'Aucun signe observé', '8 900'],
         ], $this->lignes($c, "//table[@data-table='mouvements']/tbody/tr"));
     }

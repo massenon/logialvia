@@ -314,12 +314,12 @@ class FicheEspeceWebTest extends TestCase
         $c->call('basculer', false)->assertSeeHtml('data-table="mensuel"');
     }
 
-    public function test_le_rappel_du_cycle_et_les_ecarts_declares_sont_affiches(): void
+    public function test_le_rappel_du_cycle_le_rationnement_et_le_stock_propre_au_poste_sont_affiches(): void
     {
         $this->fiche($this->animalier())
             ->assertSee('Rappel du Cycle :')->assertSee('Naissance (Couveuse)')->assertSee('Goliathau (0 → 4 mois)')
             ->assertSee('Mature (≥ 4 mois, ≥ 2,8 kg) — Éligible à la Vente')
-            ->assertSeeHtml('data-ecart="rationnement"')->assertSee('disponibles sur le poste');
+            ->assertSeeHtml('data-rationnement')->assertSee('Disponible sur le poste');
     }
 
     public function test_les_libelles_propres_a_la_filiere_viennent_du_dart(): void
@@ -410,11 +410,15 @@ class FicheEspeceWebTest extends TestCase
     {
         $this->journee('goliaths', '2026-11-08', ['effectif' => 5, 'eff_cat1_day' => 5]);
 
-        $this->fiche($this->animalier())->set('morts.0', '9')->call('enregistrer');
+        // Plus de morts (9) que de sujets (5) : IMPOSSIBLE, refuse avec son message d'expert (`47e_`),
+        // rien n'est ecrit (le plancher a 0 de l'ancien calcul masquait l'erreur).
+        $ecran = $this->fiche($this->animalier())->set('morts.0', '9')->call('enregistrer');
 
-        $f = FicheJournee::query()->where('date', '2026-11-09')->sole();
-        $this->assertSame(0, $f->effectif);
-        $this->assertSame(0, $f->eff_cat1_day);
+        $ecran->assertSet('erreur', 'Morts et dons de « Poussins » (9) : supérieurs à l\'effectif disponible (5). Saisissez d\'abord les entrées (achats, naissances) ou corrigez la mortalité.');
+        $this->assertNull(FicheJournee::query()->where('date', '2026-11-09')->first());
+        // Le calcul reste borne a 0 (BR-ELV-001) pour tout autre appelant.
+        $calcul = \App\Support\CalculFicheJournaliere::calculerJour('goliaths', [5, 0, 0], 5, ['morts' => [9, 0, 0]]);
+        $this->assertSame(0, $calcul['effectif_total']);
     }
 
     public function test_la_veille_est_la_derniere_journee_saisie_meme_d_un_autre_mois(): void

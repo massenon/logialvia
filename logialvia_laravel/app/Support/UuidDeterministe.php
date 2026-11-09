@@ -32,6 +32,12 @@ final class UuidDeterministe
         return self::de("fiche_ventes_jour:$espece|$jour|$poste");
     }
 
+    /** UUID du soin engendre par une echeance du calendrier pour une bande (`47e_`) : comme au poste. */
+    public static function soinProphylaxie(string $bandeId, string $echeanceId): string
+    {
+        return self::de("soin_prophylaxie:$bandeId|$echeanceId");
+    }
+
     public static function note(int $annee, int $numero): string
     {
         return self::de("note:$annee-$numero");

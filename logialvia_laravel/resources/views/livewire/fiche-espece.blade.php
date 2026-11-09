@@ -9,7 +9,13 @@
     {{-- En-tête --}}
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
         <h1 class="text-page-title font-bold">Fiche {{ $config['libelle'] }}</h1>
-        <label class="flex items-center gap-sm text-xs font-semibold text-outline">Jour actif :
+        <div class="flex flex-wrap items-center gap-sm print:hidden">
+            <button type="button" onclick="window.print()" data-action="imprimer" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</button>
+            @can('export-elevage')
+                <button type="button" wire:click="exporter" data-action="exporter" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            @endcan
+        </div>
+        <label class="flex items-center gap-sm text-xs font-semibold text-outline print:hidden">Jour actif :
             <input type="date" wire:model.live="jour" aria-label="Jour actif" min="2020-01-01"
                    class="rounded-lg border border-outline-variant bg-surface-card px-sm py-sm text-xs font-normal text-on-surface">
         </label>
@@ -31,6 +37,37 @@
     @endif
     @if ($erreur)
         <p role="alert" class="mb-md rounded-lg bg-error-container p-sm text-xs text-error-deep">{{ $erreur }}</p>
+    @endif
+
+    {{-- Fiche modifiée ailleurs : aucune saisie n'est perdue, la personne choisit --}}
+    @if ($modifieeAilleurs)
+        <div class="mb-md rounded-lg border border-brand-gold bg-brand-gold/10 p-md" data-divergence role="alert">
+            <p class="text-xs font-bold text-brand-navy">Fiche du {{ $date->format('d/m/Y') }} modifiée ailleurs</p>
+            <p class="mb-sm text-caption text-outline">Un autre poste a saisi ce jour sans voir la version courante. Aucune saisie n'est perdue : choisissez la version à garder.</p>
+            <div class="flex flex-col gap-sm">
+                @foreach ($versions as $i => $v)
+                    <div class="flex flex-wrap items-center justify-between gap-sm rounded-lg border border-outline-variant bg-surface-card p-sm" data-version="{{ $i }}">
+                        <div class="text-xs">
+                            <p class="font-bold text-brand-navy">{{ $v['origine'] }} — saisie le {{ \Carbon\CarbonImmutable::parse($v['instant'])->setTimezone(config('logialvia.fuseau'))->format('d/m/Y H:i') }}</p>
+                            <p>Entrées {{ $v['journee']['achat'] + $v['journee']['ne'] }} · morts {{ array_sum($v['journee']['morts']) }} · effectif {{ $v['journee']['effectif'] }}@if ($v['journee']['poids_general_g'] !== null) · pesée {{ $v['journee']['poids_general_g'] }} g @endif @if (trim((string) $v['journee']['traitement_obs']) !== '') · « {{ $v['journee']['traitement_obs'] }} »@endif</p>
+                        </div>
+                        @if ($peutGerer)
+                            <button type="button" wire:click="garderVersion({{ $i }})" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Garder celle-ci</button>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Chaîne d'effectifs incohérente --}}
+    @if (count($joursIncoherents) > 0)
+        <div class="mb-md flex flex-wrap items-center justify-between gap-sm rounded-lg border border-brand-gold bg-brand-gold/10 p-md" data-chaine role="alert">
+            <p class="text-xs">{{ count($joursIncoherents) }} jour{{ count($joursIncoherents) > 1 ? 's' : '' }} dont l'effectif ne découle pas de la veille (fiche d'un autre poste arrivée sans recalcul), à partir du {{ \Carbon\CarbonImmutable::parse($joursIncoherents[0]['jour'])->format('d/m/Y') }}.</p>
+            @if ($peutGerer)
+                <button type="button" wire:click="recalculerChaine" class="rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Recalculer la chaîne</button>
+            @endif
+        </div>
     @endif
 
     {{-- Rappel du cycle --}}
@@ -55,7 +92,10 @@
                     <p class="mt-xs inline-block rounded-full bg-brand-navy px-sm py-xs text-caption font-bold text-white" data-cycle-jour>Jour de cycle J{{ $jourDeCycle }}</p>
                 </div>
                 @if ($peutGerer)
-                    <button type="button" wire:click="demanderCloture" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Clôturer la Bande</button>
+                    <div class="flex flex-wrap gap-sm">
+                        <button type="button" wire:click="ouvrirRecodage" data-action="recoder" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Recoder la Bande</button>
+                        <button type="button" wire:click="demanderCloture" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Clôturer la Bande</button>
+                    </div>
                 @endif
             </div>
             <p class="mt-sm text-caption text-outline">L'effectif mis en place est indicatif : l'effectif réel de la fiche reste calculé jour après jour depuis les saisies.</p>
@@ -87,7 +127,7 @@
             <p class="text-caption uppercase text-outline">{{ $kpi['libelle_immature'] }} (Immatures)</p>
             <p class="text-page-title font-bold" data-kpi="immatures">{{ $kpi['immatures'] }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border-l-4 {{ ['critique' => 'border-error-deep', 'avertissement' => 'border-brand-gold', 'normal' => 'border-success-deep'][$kpi['niveau_mortalite']] }} bg-surface-card p-md shadow-sm" data-niveau-mortalite="{{ $kpi['niveau_mortalite'] }}">
             <p class="text-caption uppercase text-outline">Taux de Mortalité (Cumul)</p>
             <p class="text-page-title font-bold" data-kpi="mortalite">{{ $pct($kpi['mortalite']) }}</p>
         </div>
@@ -140,10 +180,91 @@
                 </div>
             </div>
 
-            {{-- Écart déclaré avec le Dart : rationnement et prophylaxie du jour --}}
-            <p class="mt-md rounded-lg bg-surface-zebra p-sm text-caption text-outline" data-ecart="rationnement">
-                Le rationnement (provende) et la prophylaxie du jour sont disponibles sur le poste : les barèmes de ration et le calendrier de prophylaxie ne sont pas encore synchronisés.
-            </p>
+            {{-- Contrôle de vraisemblance d'expert --}}
+            @if (count($controle['erreurs']) + count($controle['avertissements']) > 0)
+                <div class="mt-md flex flex-col gap-xs text-caption" data-controle>
+                    @foreach ($controle['erreurs'] as $e)
+                        <p role="alert" class="text-error-deep" data-controle-erreur>{{ $e }}</p>
+                    @endforeach
+                    @foreach ($controle['avertissements'] as $a)
+                        <p class="text-brand-gold" data-controle-avertissement>{{ $a }}</p>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Rationnement (provende) : barèmes synchronisés ; le stock reste propre à chaque poste --}}
+            <div class="mt-md rounded-lg border border-outline-variant bg-surface-card p-md" data-rationnement>
+                <p class="mb-sm text-xs font-bold uppercase text-brand-navy">Rationnement du jour</p>
+                <table class="w-full text-xs">
+                    <thead class="text-caption uppercase text-outline"><tr><th class="py-xs text-left">Catégorie</th><th class="py-xs text-right">Effectif</th><th class="py-xs text-right">Ration (g/tête/j)</th><th class="py-xs text-right">Provende (g)</th></tr></thead>
+                    <tbody>
+                        @foreach ($categories as $i => $categorie)
+                            <tr class="border-t border-outline-variant" data-ration="{{ $i }}">
+                                <td class="py-xs">{{ $categorie[0] }}</td>
+                                <td class="py-xs text-right">{{ $totaux['par_categorie'][$i] ?? 0 }}</td>
+                                <td class="py-xs text-right">{{ $rations[$i] }}</td>
+                                <td class="py-xs text-right">{{ ($totaux['par_categorie'][$i] ?? 0) * $rations[$i] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <p class="mt-sm text-xs font-bold" data-provende>Provende du jour : {{ number_format($provende['grammes'], 0, ',', ' ') }} g ({{ number_format($provende['grammes'] / 1000, 1, ',', ' ') }} kg)</p>
+                @if (in_array($espece, \App\Support\FilieresElevage::RATION_AU_POIDS_VIF, true))
+                    <p class="text-caption {{ $provende['sur_poids_vif'] ? 'text-success-deep' : 'text-outline' }}" data-mode-provende>
+                        @if ($provende['sur_poids_vif'])
+                            Poids moyen {{ number_format($provende['poids_moyen_g'], 0, ',', ' ') }} g, taux {{ str_replace('.', ',', (string) $provende['taux_pourcent']) }} % du poids vif : provende calculée sur le poids vif.
+                        @else
+                            Ration indicative par tête : saisissez une pesée pour calculer la provende sur le poids vif.
+                        @endif
+                    </p>
+                @endif
+                {{-- Dépend du STOCK d'intrants : propre à chaque poste (décision du client) --}}
+                <p class="mt-sm rounded-lg bg-surface-zebra p-sm text-caption text-outline opacity-60" data-stock-poste>Provende en stock et autonomie : Disponible sur le poste (le stock d'intrants est propre à chaque poste).</p>
+            </div>
+
+            {{-- Prophylaxie du jour (calendrier indexé sur le jour du cycle) --}}
+            <div class="mt-md rounded-lg border border-outline-variant bg-surface-card p-md" data-prophylaxie>
+                <p class="mb-sm text-xs font-bold uppercase text-brand-navy">Traitements &amp; Prophylaxie du jour</p>
+                @if (! $bande)
+                    <p class="text-caption text-outline">Sans bande, aucune date de traitement n'est calculable : déclarez une mise en bande.</p>
+                @else
+                    @forelse ($prophylaxieDuJour as $p)
+                        <div class="flex flex-wrap items-center justify-between gap-sm border-t border-outline-variant py-xs text-xs" data-echeance="{{ $p['echeance']->id }}">
+                            <p><strong>{{ $p['echeance']->traitement }}</strong> — {{ $p['echeance']->produit }}@if ($p['echeance']->dose) ({{ $p['echeance']->dose }})@endif · J{{ $p['echeance']->jour_cycle }} du cycle</p>
+                            @if ($p['soin'])
+                                <span class="rounded-full bg-success-container px-sm py-xs text-caption font-bold text-success-deep">{{ $p['soin']->statut }}</span>
+                            @elseif ($peutGerer)
+                                <span class="flex flex-wrap gap-xs">
+                                    @foreach ($typesSoin as $type)
+                                        <button type="button" wire:click="planifierEcheance('{{ $p['echeance']->id }}', '{{ $type }}')" class="rounded-lg border border-outline-variant px-sm py-xs text-caption font-semibold hover:bg-surface-zebra">Planifier : {{ $type }}</button>
+                                    @endforeach
+                                </span>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-caption text-outline">Aucun traitement prévu au J{{ $jourDeCycle }} du cycle.</p>
+                    @endforelse
+                    @if (count($prophylaxieBande) > 0)
+                        <details class="mt-sm text-xs" data-calendrier-bande>
+                            <summary class="cursor-pointer font-semibold text-brand-navy">Tout le calendrier de la bande ({{ count($prophylaxieBande) }})</summary>
+                            @foreach ($prophylaxieBande as $p)
+                                <div class="flex flex-wrap items-center justify-between gap-sm border-t border-outline-variant py-xs" data-echeance-bande="{{ $p['echeance']->id }}">
+                                    <p>{{ \Carbon\CarbonImmutable::parse($p['date_prevue'])->format('d/m/Y') }} · J{{ $p['echeance']->jour_cycle }} · {{ $p['echeance']->traitement }} — {{ $p['echeance']->produit }}</p>
+                                    @if ($p['soin'])
+                                        <span class="rounded-full bg-success-container px-sm py-xs text-caption font-bold text-success-deep">{{ $p['soin']->statut }}</span>
+                                    @elseif ($peutGerer)
+                                        <span class="flex flex-wrap gap-xs">
+                                            @foreach ($typesSoin as $type)
+                                                <button type="button" wire:click="planifierEcheance('{{ $p['echeance']->id }}', '{{ $type }}')" class="rounded-lg border border-outline-variant px-sm py-xs text-caption hover:bg-surface-zebra">{{ $type }}</button>
+                                            @endforeach
+                                        </span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </details>
+                    @endif
+                @endif
+            </div>
 
             @if ($oeufs !== null)
                 <div class="mt-md rounded-lg border border-brand-gold/40 bg-surface-card p-md" data-oeufs>
@@ -334,6 +455,25 @@
                 <div class="mt-md flex justify-end gap-sm">
                     <button type="button" wire:click="annuler" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
                     <button type="submit" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Déclarer</button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    {{-- Modale : recoder la bande --}}
+    @if ($formulaireRecodage && $bande)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-recodage">
+            <form wire:submit="recoderBande" class="w-full max-w-sm rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-recodage" class="mb-xs text-modal-title font-bold">Recoder la bande {{ $bande->code }}</h2>
+                <p class="mb-sm text-caption text-outline">Le code est unique par filière ; l'ancien code reste tracé dans les observations de la bande.</p>
+                <label class="block text-xs font-semibold uppercase">Nouveau code *
+                    <input type="text" wire:model="nouveauCode" data-champ="nouveau-code" class="{{ $champ }} normal-case font-normal"></label>
+                @if ($erreurRecodage)
+                    <p role="alert" class="mt-sm text-xs text-error-deep">{{ $erreurRecodage }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="annuler" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Recoder</button>
                 </div>
             </form>
         </div>
