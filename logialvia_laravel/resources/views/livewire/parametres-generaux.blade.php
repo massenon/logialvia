@@ -186,7 +186,8 @@
                 <section class="rounded-lg border border-outline-variant bg-surface-card p-md">
                     <h2 class="mb-sm text-section-title font-bold">Logo / Favicon</h2>
                     <p class="text-xs text-outline">
-                        Le dépôt de logo sera disponible avec le module d'impression (Doc E9), seul consommateur de ces images.
+                        Le poste ne permet pas non plus de déposer le logo ni le favicon (le dépôt viendra avec le module d'impression, Doc E9) :
+                    le web ne l'offre donc pas non plus, et le fichier choisi sur un poste est un chemin propre à cette machine.
                     </p>
                 </section>
             </fieldset>
@@ -268,17 +269,15 @@
         <livewire:corbeille-web />
     @endif
 
-    @if ($onglet === 5 || $onglet === 7)
+    @if ($onglet === 5)
+        <livewire:sauvegardes-web />
+    @endif
+
+    @if ($onglet === 7)
         <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-onglet="au-poste">
             <h2 class="mb-sm text-section-title font-bold">{{ $onglets[$onglet] }}</h2>
             <p class="rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="au-poste">
-                @if ($onglet === 5)
-                    Les sauvegardes sont des copies de la base de chaque poste : elles se créent, se restaurent et se téléchargent sur le poste.
-                @elseif ($onglet === 6)
-                    La corbeille contient les éléments archivés de chaque poste : leur restauration ou leur effacement définitif se gère sur le poste.
-                @else
                     La remise à zéro et la préparation de données d'essai se font uniquement sur le poste, sous son verrou « Données de Test ».
-                @endif
                 Cet onglet se gère sur le poste : rien ne s'y fait depuis le web.
             </p>
         </section>
