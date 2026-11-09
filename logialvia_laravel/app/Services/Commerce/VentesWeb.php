@@ -291,10 +291,11 @@ final class VentesWeb
 
     private function ecrituresEncaissement(Vente $vente, array $panier): ?string
     {
+        $ventilation = Ecritures::ventiler(array_map(fn (array $l) => ['produit_id' => $l['produit_id'], 'montant' => $l['montant']], $panier));
         $lignes = Ecritures::lignesVente(
-            $vente->reference, $vente->mode, $vente->total, $vente->paye,
-            Ecritures::ventiler(array_map(fn (array $l) => ['produit_id' => $l['produit_id'], 'montant' => $l['montant']], $panier)),
+            $vente->reference, $vente->mode, $vente->total, $vente->paye, $ventilation,
             $vente->livraison_mode === 'facturee' ? (float) $vente->livraison_frais : 0.0,
+            Ecritures::tauxLivraison($ventilation),
         );
 
         return (new Ecritures($this->utilisateur))->enregistrer(

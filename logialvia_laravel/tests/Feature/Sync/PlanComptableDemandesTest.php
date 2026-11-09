@@ -35,7 +35,7 @@ class PlanComptableDemandesTest extends TestCase
                 'id' => $id ?? (string) Str::uuid(),
                 'type' => 'compte_comptable',
                 'saisi_le' => $saisi ?? now()->format('Y-m-d\TH:i:s.u\Z'),
-                'donnees' => $compte,
+                'donnees' => $compte + ['plan_version' => 2],
             ]],
         ]);
     }
@@ -62,15 +62,15 @@ class PlanComptableDemandesTest extends TestCase
     public function test_renommer_un_compte_seme_le_decide_et_une_demande_identique_n_y_change_rien(): void
     {
         $a = $this->poste('admin', 'gerante');
-        $identique = $this->compte(['numero_compte' => '624', 'libelle' => 'Transports']);
+        $identique = $this->compte(['numero_compte' => '618', 'libelle' => 'Autres frais de transport']);
 
         $this->demander($a, $identique)->assertJsonPath('rejected', []);
-        $c = PlanComptable::query()->find('624');
+        $c = PlanComptable::query()->find('618');
         $this->assertEquals($c->created_at, $c->updated_at, 'contenu identique : rien n\'est decide');
 
-        $this->demander($a, $this->compte(['numero_compte' => '624', 'libelle' => 'Transports et déplacements']))
+        $this->demander($a, $this->compte(['numero_compte' => '618', 'libelle' => 'Transports et déplacements']))
             ->assertJsonPath('rejected', []);
-        $c = PlanComptable::query()->find('624')->fresh();
+        $c = PlanComptable::query()->find('618')->fresh();
         $this->assertSame('Transports et déplacements', $c->libelle);
         $this->assertGreaterThan($c->created_at, $c->updated_at);
     }
@@ -90,10 +90,10 @@ class PlanComptableDemandesTest extends TestCase
     {
         $a = $this->poste('admin', 'gerante');
 
-        $this->demander($a, $this->compte(['numero_compte' => '613', 'libelle' => 'Locations', 'classe' => '6', 'archive' => true]))
+        $this->demander($a, $this->compte(['numero_compte' => '622', 'libelle' => 'Locations', 'classe' => '6', 'archive' => true]))
             ->assertJsonPath('rejected', []);
 
-        $this->assertTrue(PlanComptable::query()->find('613')->archive);
+        $this->assertTrue(PlanComptable::query()->find('622')->archive);
     }
 
     public function test_numero_libelle_et_classe_sont_controles(): void
@@ -119,14 +119,14 @@ class PlanComptableDemandesTest extends TestCase
         $a = $this->poste('admin', 'gerante');
         $this->pousserTable($a, 'ecriture_comptable', [$this->pieceComptable()]);
 
-        $this->demander($a, $this->compte(['numero_compte' => '624', 'libelle' => 'Transports et déplacements']))
+        $this->demander($a, $this->compte(['numero_compte' => '618', 'libelle' => 'Transports et déplacements']))
             ->assertJsonPath('rejected', []);
 
-        $this->assertSame('Transports et déplacements', PlanComptable::query()->find('624')->libelle);
-        $this->assertSame(1, \App\Models\EcritureComptable::query()->where('numero_compte', '624')->count());
+        $this->assertSame('Transports et déplacements', PlanComptable::query()->find('618')->libelle);
+        $this->assertSame(1, \App\Models\EcritureComptable::query()->where('numero_compte', '618')->count());
         // Sa classe ne peut pas changer : elle EST le premier chiffre de son numero.
-        $this->demander($a, $this->compte(['numero_compte' => '624', 'libelle' => 'X', 'classe' => '7']), now()->addMinute()->format('Y-m-d\TH:i:s.u\Z'))
-            ->assertJsonPath('rejected.0.motif', 'Le numéro 624 ne peut pas appartenir à la classe 7.');
+        $this->demander($a, $this->compte(['numero_compte' => '618', 'libelle' => 'X', 'classe' => '7']), now()->addMinute()->format('Y-m-d\TH:i:s.u\Z'))
+            ->assertJsonPath('rejected.0.motif', 'Le numéro 618 ne peut pas appartenir à la classe 7.');
     }
 
     public function test_sans_gerer_la_comptabilite_la_demande_est_refusee(): void
@@ -160,6 +160,6 @@ class PlanComptableDemandesTest extends TestCase
 
         $this->assertSame('Frais bancaires', $plan['635']['libelle']);
         $this->assertArrayHasKey('saisi_le', $plan['635']);
-        $this->assertSame(25, $plan->count());
+        $this->assertSame(61, $plan->count());
     }
 }

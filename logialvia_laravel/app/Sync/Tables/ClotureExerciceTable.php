@@ -198,6 +198,7 @@ class ClotureExerciceTable extends TableSync
                 'vente_ref' => null,
                 'achat_ref' => null,
                 'contrepasse_de' => null,
+                'plan_version' => \App\Support\PlanSyscohada::VERSION,
                 'updated_at' => CarbonImmutable::now('UTC')->format('Y-m-d\TH:i:s.u\Z'),
                 'lignes' => array_map(fn (array $l) => [
                     'id' => ReportANouveau::idLigne($p['cle'], $l['compte']),

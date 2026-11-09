@@ -2,6 +2,7 @@
 
 namespace App\Services\Comptabilite;
 
+use App\Support\PlanSyscohada;
 use App\Support\UuidDeterministe;
 use Carbon\CarbonImmutable;
 
@@ -27,19 +28,19 @@ final class ReportANouveau
 
     public const TOLERANCE = 0.01;
 
-    public const RESERVE_LEGALE = '111';
+    public const RESERVE_LEGALE = PlanSyscohada::RESERVE_LEGALE;
 
-    public const AUTRES_RESERVES = '118';
+    public const AUTRES_RESERVES = PlanSyscohada::AUTRES_RESERVES;
 
-    public const REPORT_CREDITEUR = '121';
+    public const REPORT_CREDITEUR = PlanSyscohada::REPORT_CREDITEUR;
 
-    public const REPORT_DEBITEUR = '129';
+    public const REPORT_DEBITEUR = PlanSyscohada::REPORT_DEBITEUR;
 
-    public const RESULTAT_BENEFICE = '131';
+    public const RESULTAT_BENEFICE = PlanSyscohada::RESULTAT_BENEFICE;
 
-    public const RESULTAT_PERTE = '139';
+    public const RESULTAT_PERTE = PlanSyscohada::RESULTAT_PERTE;
 
-    public const DIVIDENDES_A_PAYER = '465';
+    public const DIVIDENDES_A_PAYER = PlanSyscohada::DIVIDENDES_A_PAYER;
 
     public const LIBELLES_JOURNAUX = [
         self::A_NOUVEAU => 'À-Nouveaux (Report à Nouveau)',

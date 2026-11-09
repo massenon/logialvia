@@ -633,6 +633,12 @@ class DemandesReferentiel
     {
         $cle = is_string($donnees['numero_compte'] ?? null) ? $donnees['numero_compte'] : null;
 
+        // Garde de version du plan (`47p_`) : un numero propose par un poste d'un autre plan serait cree avec le
+        // mauvais sens (613 « locations » n'existe plus, 622 est la location).
+        if (($donnees['plan_version'] ?? null) !== \App\Support\PlanSyscohada::VERSION) {
+            return "Ce poste utilise l'ancien plan comptable : mettez-le à jour avant de proposer un compte.";
+        }
+
         $v = Validator::make($donnees, [
             'numero_compte' => ['required', 'string', 'regex:/^[1-7]\d{0,19}$/'],
             'libelle' => ['required', 'string', 'max:255'],

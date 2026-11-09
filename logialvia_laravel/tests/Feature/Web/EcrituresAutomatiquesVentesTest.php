@@ -69,7 +69,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
     {
         $p = PieceComptable::query()->with('lignes')->where('numero_piece', $numero)->sole();
         $lignes = $p->lignes->map(fn (EcritureComptable $l) => [$l->numero_compte, $l->debit, $l->credit, $l->axe_analytique])->all();
-        usort($lignes, fn ($a, $b) => [$b[1], $a[0], $b[2]] <=> [$a[1], $b[0], $a[2]]);
+        usort($lignes, fn ($a, $b) => [$b[1], strcmp($a[0], $b[0]), $b[2]] <=> [$a[1], 0, $a[2]]);
 
         return $lignes;
     }
@@ -111,7 +111,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
     {
         $ref = $this->vendre(['mode' => 'Espèces', 'montant_recu' => 12000, 'lignes' => [$this->ligne($this->goliath(), 2, 12000)]]);
 
-        $this->assertSame([['531', 12000.0, 0.0, null], ['701', 0.0, 12000.0, 'Goliaths']], $this->piece($ref));
+        $this->assertSame([['571', 12000.0, 0.0, null], ['702', 0.0, 12000.0, 'Goliaths']], $this->piece($ref));
     }
 
     public function test_B_avance_en_mobile_money_sur_trois_centres(): void
@@ -121,10 +121,10 @@ class EcrituresAutomatiquesVentesTest extends TestCase
 
         $this->assertSame([
             ['411', 11500.0, 0.0, null],
-            ['512', 4000.0, 0.0, null],
-            ['701', 0.0, 6500.0, 'Pintades'],
-            ['701', 0.0, 6000.0, 'Goliaths'],
-            ['707', 0.0, 3000.0, 'Commerce Annexe'],
+            ['552', 4000.0, 0.0, null],
+            ['701', 0.0, 3000.0, 'Commerce Annexe'],
+            ['702', 0.0, 6500.0, 'Pintades'],
+            ['702', 0.0, 6000.0, 'Goliaths'],
         ], $this->piece($ref));
     }
 
@@ -136,7 +136,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         ]);
 
         $this->assertEqualsWithDelta(0, $this->ecart($ref), 0.001);
-        $this->assertSame([['531', 7500.0, 0.0, null], ['701', 0.0, 6000.0, 'Goliaths'], ['707', 0.0, 1500.0, null]], $this->piece($ref));
+        $this->assertSame([['571', 7500.0, 0.0, null], ['702', 0.0, 6000.0, 'Goliaths'], ['7071', 0.0, 1500.0, null]], $this->piece($ref));
     }
 
     public function test_D_un_recouvrement_superieur_au_reste_du_est_refuse(): void
@@ -152,7 +152,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $this->assertSame(0, PieceComptable::query()->where('numero_piece', 'REG-'.$ref)->count());
 
         $this->assertNull($this->caisse->recouvrer($id, 8500, 'Espèces'));
-        $this->assertSame([['531', 8500.0, 0.0, null], ['411', 0.0, 8500.0, null]], $this->piece('REG-'.$ref));
+        $this->assertSame([['571', 8500.0, 0.0, null], ['411', 0.0, 8500.0, null]], $this->piece('REG-'.$ref));
         $this->assertEqualsWithDelta(0, $this->solde('411'), 0.001);
     }
 
@@ -165,13 +165,13 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $this->assertNull($this->caisse->annuler($id, 'Client non honoré'));
 
         $this->assertSame([
-            ['701', 6500.0, 0.0, 'Pintades'],
-            ['701', 6000.0, 0.0, 'Goliaths'],
-            ['707', 3000.0, 0.0, 'Commerce Annexe'],
+            ['702', 6500.0, 0.0, 'Pintades'],
+            ['702', 6000.0, 0.0, 'Goliaths'],
+            ['701', 3000.0, 0.0, 'Commerce Annexe'],
             ['411', 0.0, 9500.0, null],
-            ['512', 0.0, 6000.0, null],
+            ['552', 0.0, 6000.0, null],
         ], $this->piece('ANN-'.$ref));
-        foreach (['411', '512', '701', '707'] as $compte) {
+        foreach (['411', '552', '702', '701'] as $compte) {
             $this->assertEqualsWithDelta(0, $this->solde($compte), 0.001, "compte $compte solde");
         }
     }
@@ -185,7 +185,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $this->assertNull($this->caisse->annuler(\App\Models\Vente::query()->where('reference', $ref)->value('id'), 'Erreur de saisie'));
 
         $this->assertEqualsWithDelta(0, $this->ecart('ANN-'.$ref), 0.001);
-        foreach (['531', '701', '707'] as $compte) {
+        foreach (['571', '702', '701'] as $compte) {
             $this->assertEqualsWithDelta(0, $this->solde($compte), 0.001, "compte $compte solde");
         }
     }
@@ -200,8 +200,8 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $g->update(['cat' => 'Commerce Annexe']);
 
         $this->assertNull($this->caisse->annuler(\App\Models\Vente::query()->where('reference', $ref)->value('id'), 'Autre'));
+        $this->assertEqualsWithDelta(0, $this->solde('702'), 0.001);
         $this->assertEqualsWithDelta(0, $this->solde('701'), 0.001);
-        $this->assertEqualsWithDelta(0, $this->solde('707'), 0.001);
     }
 
     public function test_le_recouvrement_par_un_autre_moyen_que_la_vente_ne_fausse_pas_la_tresorerie_a_l_annulation(): void
@@ -215,32 +215,122 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $this->assertNull($this->caisse->recouvrer($id, 2000, 'Mobile Money')); // paye en Mobile Money
         $this->assertNull($this->caisse->annuler($id, 'Autre'));
 
-        $this->assertEqualsWithDelta(0, $this->solde('531'), 0.001);
-        $this->assertEqualsWithDelta(0, $this->solde('512'), 0.001);
+        $this->assertEqualsWithDelta(0, $this->solde('571'), 0.001);
+        $this->assertEqualsWithDelta(0, $this->solde('552'), 0.001);
     }
 
     // ------------------------------------------------------------- Constructeurs purs
 
     public function test_les_constructeurs_purs_sont_ceux_du_dart(): void
     {
-        $this->assertSame('512', Ecritures::tresoreriePour('Mobile Money'));
-        $this->assertSame('531', Ecritures::tresoreriePour('Espèces'));
-        $this->assertSame('531', Ecritures::tresoreriePour('Non précisé'));
+        $this->assertSame('552', Ecritures::tresoreriePour('Mobile Money'));
+        $this->assertSame('571', Ecritures::tresoreriePour('Espèces'));
+        $this->assertSame('571', Ecritures::tresoreriePour('Non précisé'));
         $this->assertSame([], Ecritures::lignesVente('V', 'Espèces', 0, 0, []));
         $this->assertSame([], Ecritures::lignesReglement('V', 'Espèces', 0));
         // paye > total : jamais de creance negative.
-        $l = Ecritures::lignesVente('V', 'Espèces', 1000, 1500, [['compte' => '701', 'axe' => null, 'montant' => 1000.0]]);
-        $this->assertSame(['531', '701'], array_column($l, 'compte'));
+        $l = Ecritures::lignesVente('V', 'Espèces', 1000, 1500, [['compte' => '702', 'axe' => null, 'taux' => 0.0, 'montant' => 1000.0]]);
+        $this->assertSame(['571', '702'], array_column($l, 'compte'));
         // Un paye negatif (donnee corrompue) ne debite jamais 411 de plus que le total.
-        $l = Ecritures::lignesVente('V', 'Espèces', 1000, -100, [['compte' => '701', 'axe' => null, 'montant' => 1000.0]]);
+        $l = Ecritures::lignesVente('V', 'Espèces', 1000, -100, [['compte' => '702', 'axe' => null, 'taux' => 0.0, 'montant' => 1000.0]]);
         $this->assertSame(1000.0, collect($l)->firstWhere('compte', '411')['debit']);
         // Un centre inconnu ne rattache rien (jamais arbitrairement).
-        $this->assertSame(['701', null], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => 'dragons'])));
-        $this->assertSame(['701', null], Ecritures::cleDeVentilation(null));
-        $this->assertSame(['707', 'Commerce Annexe'], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Commerce Annexe', 'espece' => 'goliaths'])));
+        $this->assertSame(['702', null, 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => 'dragons'])));
+        $this->assertSame(['702', null, 0.0], Ecritures::cleDeVentilation(null));
+        $this->assertSame(['701', 'Commerce Annexe', 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Commerce Annexe', 'espece' => 'goliaths'])));
         foreach (['goliaths' => 'Goliaths', 'pintades' => 'Pintades', 'lapins' => 'Lapins', 'escargots' => 'Escargots', 'bovins' => 'Bovins',
             'poissons-chats' => 'Poissons-Chats', 'poulets' => 'Poulets', 'pondeuses' => 'Pondeuses'] as $espece => $centre) {
-            $this->assertSame(['701', $centre], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => $espece])));
+            $this->assertSame(['702', $centre, 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => $espece])));
         }
+    }
+
+    // ----------------------------------------------------------------------- TVA ventilee (`47p_` §6)
+    //
+    // Memes jeux, memes montants que `ecritures_ventes_commun_test.dart` (G, H, I, J, K) : les prix du catalogue sont
+    // TTC, la TVA s'en extrait au taux du groupe de taxe du produit (A exonere, B 18 %), arrondie au franc.
+
+    private function taxer(ProduitVendable $p, string $groupe): void
+    {
+        \App\Models\GroupeTaxe::query()->firstOrCreate(['code' => 'A'], ['libelle' => 'Exonéré', 'taux' => 0, 'ordre' => 1]);
+        \App\Models\GroupeTaxe::query()->firstOrCreate(['code' => 'B'], ['libelle' => 'Taux normal 18 %', 'taux' => 18, 'ordre' => 2]);
+        $p->forceFill(['groupe_taxe' => $groupe])->save();
+    }
+
+    public function test_G_produit_taxable_a_18_pour_cent_11800_ttc_egale_10000_ht_et_1800_de_tva_collectee(): void
+    {
+        $this->taxer($this->teeShirt(), 'B');
+        $ref = $this->vendre(['mode' => 'Espèces', 'montant_recu' => 11800, 'lignes' => [$this->ligne($this->teeShirt(), 2, 11800)]]);
+
+        $this->assertSame([['571', 11800.0, 0.0, null], ['4431', 0.0, 1800.0, null], ['701', 0.0, 10000.0, 'Commerce Annexe']], $this->piece($ref));
+        $this->assertEqualsWithDelta(0, $this->ecart($ref), 0.001);
+    }
+
+    public function test_H_livraison_facturee_au_taux_unique_du_panier_taxable_4431_et_4432(): void
+    {
+        $this->taxer($this->teeShirt(), 'B');
+        $ref = $this->vendre([
+            'mode' => 'Espèces', 'montant_recu' => 12980, 'lignes' => [$this->ligne($this->teeShirt(), 2, 11800)],
+            'livraison' => ['mode' => 'facturee', 'frais' => 1180],
+        ]);
+
+        $this->assertSame([
+            ['571', 12980.0, 0.0, null], ['4431', 0.0, 1800.0, null], ['4432', 0.0, 180.0, null],
+            ['701', 0.0, 10000.0, 'Commerce Annexe'], ['7071', 0.0, 1000.0, null],
+        ], $this->piece($ref));
+    }
+
+    public function test_I_panier_mixte_la_livraison_est_exoneree_et_la_tva_ne_porte_que_sur_la_ligne_taxable(): void
+    {
+        $this->taxer($this->teeShirt(), 'B');
+        $ref = $this->vendre([
+            'mode' => 'Espèces', 'montant_recu' => 19300,
+            'lignes' => [$this->ligne($this->goliath(), 1, 6000), $this->ligne($this->teeShirt(), 2, 11800)],
+            'livraison' => ['mode' => 'facturee', 'frais' => 1500],
+        ]);
+
+        $this->assertSame([
+            ['571', 19300.0, 0.0, null], ['4431', 0.0, 1800.0, null], ['701', 0.0, 10000.0, 'Commerce Annexe'],
+            ['702', 0.0, 6000.0, 'Goliaths'], ['7071', 0.0, 1500.0, null],
+        ], $this->piece($ref));
+    }
+
+    public function test_J_annulation_d_une_vente_taxable_reprend_la_tva_collectee(): void
+    {
+        $this->taxer($this->teeShirt(), 'B');
+        $ref = $this->vendre(['mode' => 'Espèces', 'montant_recu' => 11800, 'lignes' => [$this->ligne($this->teeShirt(), 2, 11800)]]);
+        $this->assertEqualsWithDelta(-1800, $this->solde('4431'), 0.001);
+        $id = \App\Models\Vente::query()->where('reference', $ref)->value('id');
+
+        $this->assertNull($this->caisse->annuler($id, 'Erreur'));
+
+        $this->assertEqualsWithDelta(0, $this->ecart('ANN-'.$ref), 0.001);
+        foreach (['571', '701', '4431'] as $compte) {
+            $this->assertEqualsWithDelta(0, $this->solde($compte), 0.001, "compte $compte solde");
+        }
+    }
+
+    public function test_K_creance_taxable_le_recouvrement_ne_touche_pas_a_la_tva(): void
+    {
+        $this->taxer($this->teeShirt(), 'B');
+        $ref = $this->vendre([
+            'client' => 'AGOSSOU Prudence', 'mode' => 'Espèces', 'condition' => VentesWeb::AVANCE, 'montant_recu' => 3800,
+            'lignes' => [$this->ligne($this->teeShirt(), 2, 11800)],
+        ]);
+        $this->assertSame([['411', 8000.0, 0.0, null], ['571', 3800.0, 0.0, null], ['4431', 0.0, 1800.0, null], ['701', 0.0, 10000.0, 'Commerce Annexe']], $this->piece($ref));
+        $id = \App\Models\Vente::query()->where('reference', $ref)->value('id');
+
+        $this->assertNull($this->caisse->recouvrer($id, 8000, 'Espèces'));
+
+        $this->assertEqualsWithDelta(0, $this->solde('411'), 0.001);
+        $this->assertEqualsWithDelta(-1800, $this->solde('4431'), 0.001);
+    }
+
+    public function test_la_tva_est_arrondie_au_franc_comme_le_poste(): void
+    {
+        $this->assertSame(1800.0, \App\Support\PlanSyscohada::tvaDuTtc(11800, 18));
+        $this->assertSame(180.0, \App\Support\PlanSyscohada::tvaDuTtc(1180, 18));
+        $this->assertSame(153.0, \App\Support\PlanSyscohada::tvaDuTtc(1000, 18)); // 152,54
+        $this->assertSame(763.0, \App\Support\PlanSyscohada::tvaDuTtc(5000, 18)); // 762,71
+        $this->assertSame(0.0, \App\Support\PlanSyscohada::tvaDuTtc(6000, 0));
     }
 }

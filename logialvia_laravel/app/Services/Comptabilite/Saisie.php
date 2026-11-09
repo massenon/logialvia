@@ -85,6 +85,7 @@ final class Saisie
             'vente_ref' => null,
             'achat_ref' => $achatRef,
             'contrepasse_de' => $contrepasseDe,
+            'plan_version' => \App\Support\PlanSyscohada::VERSION,
             'updated_at' => self::instantMaintenant(),
             'lignes' => array_map(fn (array $l) => [
                 'id' => (string) Str::uuid(),

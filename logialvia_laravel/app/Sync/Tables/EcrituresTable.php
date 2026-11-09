@@ -7,6 +7,7 @@ use App\Models\PieceComptable;
 use App\Models\PlanComptable;
 use App\Models\User;
 use App\Services\Comptabilite\Verrous;
+use App\Support\PlanSyscohada;
 use App\Sync\DroitsPoste;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
@@ -99,12 +100,22 @@ class EcrituresTable extends TableSync
         $donnees['lignes'] = $ligne->lignes()->orderBy('id')->get()
             ->map(fn (EcritureComptable $l) => $l->attributesToArray())
             ->all();
+        // Toute piece du serveur est dans le plan courant (la migration a renumerote l'historique).
+        $donnees['plan_version'] = PlanSyscohada::VERSION;
 
         return $donnees;
     }
 
+    /** Motif de refus d'un lot d'un poste qui n'est pas sur le plan comptable courant (garde de version, `47p_`). */
+    public const MOTIF_ANCIEN_PLAN = "Ce poste utilise l'ancien plan comptable : mettez-le à jour avant d'envoyer des écritures.";
+
     public function absorber(string $deviceId, array $ligne): ?string
     {
+        // GARDE DE VERSION : un poste non migre enverrait d'anciens numeros (601/602 inverses !) qui seraient
+        // silencieusement mal comptabilises. Sans la bonne `plan_version`, le lot est refuse ENTIER.
+        if (($ligne['plan_version'] ?? null) !== PlanSyscohada::VERSION) {
+            return self::MOTIF_ANCIEN_PLAN;
+        }
         $v = Validator::make($ligne, [
             'id' => ['required', 'uuid'],
             'numero_piece' => ['nullable', 'string', 'max:60'],
@@ -114,6 +125,7 @@ class EcrituresTable extends TableSync
             'vente_ref' => ['nullable', 'string', 'max:60'],
             'achat_ref' => ['nullable', 'string', 'max:60'],
             'contrepasse_de' => ['nullable', 'uuid'],
+            'plan_version' => ['required', 'integer'],
             'updated_at' => ['required', 'date'],
             'lignes' => ['required', 'array', 'min:2'],
             'lignes.*.id' => ['required', 'uuid'],

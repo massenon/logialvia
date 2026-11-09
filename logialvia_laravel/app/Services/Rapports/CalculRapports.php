@@ -2,6 +2,7 @@
 
 namespace App\Services\Rapports;
 
+use App\Support\PlanSyscohada;
 use App\Models\Achat;
 use App\Models\Client;
 use App\Models\Fournisseur;
@@ -39,23 +40,23 @@ final class CalculRapports
     /** Centre de profit deduit du numero de compte (Dart : `CentresProfit.pourCompte`). */
     public static function centrePourCompte(string $compte): string
     {
-        if (str_starts_with($compte, '701') || str_starts_with($compte, '601') || str_starts_with($compte, '622')) {
+        if (str_starts_with($compte, PlanSyscohada::VENTES_PRODUITS_FINIS) || str_starts_with($compte, PlanSyscohada::ACHATS_MATIERES) || str_starts_with($compte, PlanSyscohada::FRAIS_VETERINAIRES)) {
             return self::AVICULTURE;
         }
-        if (str_starts_with($compte, '707') || str_starts_with($compte, '602')) {
+        if (str_starts_with($compte, PlanSyscohada::VENTES_MARCHANDISES) || str_starts_with($compte, PlanSyscohada::ACHATS_MARCHANDISES)) {
             return self::COMMERCE_ANNEXE;
         }
 
         return self::CHARGE_GENERALE;
     }
 
-    /** `531` -> « Caisse », `512` -> « Mobile Money », sinon le numero (Dart : `CompteTresorerie.libelleCourt`). */
+    /** `571` -> « Caisse », `552` -> « Mobile Money », sinon le numero (Dart : `CompteTresorerie.libelleCourt`). */
     public static function libelleCourtCompte(string $numero): string
     {
-        if (str_starts_with($numero, '531')) {
+        if (str_starts_with($numero, PlanSyscohada::CAISSE)) {
             return 'Caisse';
         }
-        if (str_starts_with($numero, '512')) {
+        if (str_starts_with($numero, PlanSyscohada::MOBILE_MONEY)) {
             return 'Mobile Money';
         }
 

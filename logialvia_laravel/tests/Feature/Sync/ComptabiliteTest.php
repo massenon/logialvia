@@ -79,7 +79,7 @@ class ComptabiliteTest extends TestCase
 
         // Rejeu, meme avec un contenu DIFFERENT : un fait accepte est immuable.
         $rejeu = $piece;
-        $rejeu['lignes'] = [$this->ligneEcriture('624', 99, 0), $this->ligneEcriture('531', 0, 99)];
+        $rejeu['lignes'] = [$this->ligneEcriture('618', 99, 0), $this->ligneEcriture('571', 0, 99)];
         $bilan = $this->une($a, $rejeu);
 
         $this->assertSame([$piece['id']], $bilan['accepted']);
@@ -93,7 +93,7 @@ class ComptabiliteTest extends TestCase
     {
         $a = $this->poste('admin', 'gerante');
         $piece = $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 3500, 0), $this->ligneEcriture('531', 0, 3000),
+            $this->ligneEcriture('618', 3500, 0), $this->ligneEcriture('571', 0, 3000),
         ]]);
 
         $bilan = $this->une($a, $piece);
@@ -109,10 +109,10 @@ class ComptabiliteTest extends TestCase
         $a = $this->poste('admin', 'gerante');
 
         $ok = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100.004, 0), $this->ligneEcriture('531', 0, 100),
+            $this->ligneEcriture('618', 100.004, 0), $this->ligneEcriture('571', 0, 100),
         ]]));
         $ko = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100.5, 0), $this->ligneEcriture('531', 0, 100),
+            $this->ligneEcriture('618', 100.5, 0), $this->ligneEcriture('571', 0, 100),
         ]]));
 
         $this->assertCount(1, $ok['accepted']);
@@ -124,10 +124,10 @@ class ComptabiliteTest extends TestCase
         $a = $this->poste('admin', 'gerante');
 
         $les_deux = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100, 100), $this->ligneEcriture('531', 0, 0),
+            $this->ligneEcriture('618', 100, 100), $this->ligneEcriture('571', 0, 0),
         ]]));
         $aucun = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100, 0), $this->ligneEcriture('531', 0, 100), $this->ligneEcriture('531', 0, 0),
+            $this->ligneEcriture('618', 100, 0), $this->ligneEcriture('571', 0, 100), $this->ligneEcriture('571', 0, 0),
         ]]));
 
         $this->assertSame('Une écriture porte un débit OU un crédit, jamais les deux.', $this->motif($les_deux));
@@ -140,7 +140,7 @@ class ComptabiliteTest extends TestCase
         $a = $this->poste('admin', 'gerante');
 
         $bilan = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', -100, 0), $this->ligneEcriture('531', 0, -100),
+            $this->ligneEcriture('618', -100, 0), $this->ligneEcriture('571', 0, -100),
         ]]));
 
         $this->assertSame('Les montants ne peuvent être négatifs.', $this->motif($bilan));
@@ -151,9 +151,9 @@ class ComptabiliteTest extends TestCase
         $a = $this->poste('admin', 'gerante');
 
         $inconnu = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100, 0), $this->ligneEcriture('999', 0, 100),
+            $this->ligneEcriture('618', 100, 0), $this->ligneEcriture('999', 0, 100),
         ]]));
-        $seule = $this->une($a, $this->pieceComptable(['lignes' => [$this->ligneEcriture('624', 100, 0)]]));
+        $seule = $this->une($a, $this->pieceComptable(['lignes' => [$this->ligneEcriture('618', 100, 0)]]));
 
         $this->assertSame('Compte inconnu du serveur : « 999 ».', $this->motif($inconnu));
         $this->assertSame('Une pièce comptable doit avoir au moins deux lignes.', $this->motif($seule));
@@ -165,7 +165,7 @@ class ComptabiliteTest extends TestCase
 
         $journal = $this->une($a, $this->pieceComptable(['journal_code' => 'ZZ']));
         $libelle = $this->une($a, $this->pieceComptable(['lignes' => [
-            $this->ligneEcriture('624', 100, 0, ['libelle' => '']), $this->ligneEcriture('531', 0, 100),
+            $this->ligneEcriture('618', 100, 0, ['libelle' => '']), $this->ligneEcriture('571', 0, 100),
         ]]));
         $id = $this->une($a, $this->pieceComptable(['id' => 'pas-un-uuid']));
 
@@ -284,7 +284,7 @@ class ComptabiliteTest extends TestCase
 
         $this->assertCount(1, $r->json('tables.ecriture_comptable'));
         $this->assertCount(2, $r->json('tables.ecriture_comptable.0.lignes'));
-        $this->assertCount(24, $r->json('tables.plan_comptable'));
+        $this->assertCount(60, $r->json('tables.plan_comptable'));
         $this->assertNotEmpty($r->json('tables.exercice_comptable'));
     }
 
@@ -297,8 +297,8 @@ class ComptabiliteTest extends TestCase
             'journal_code' => 'OD',
             'contrepasse_de' => $originale['id'],
             'lignes' => [
-                $this->ligneEcriture('624', 0, 3500),
-                $this->ligneEcriture('531', 3500, 0),
+                $this->ligneEcriture('618', 0, 3500),
+                $this->ligneEcriture('571', 3500, 0),
             ],
         ], $surcharge));
     }
@@ -322,10 +322,10 @@ class ComptabiliteTest extends TestCase
         $this->une($a, $originale);
 
         $autre = $this->une($a, $this->inverse($originale, ['lignes' => [
-            $this->ligneEcriture('622', 0, 3500), $this->ligneEcriture('531', 3500, 0),
+            $this->ligneEcriture('604', 0, 3500), $this->ligneEcriture('571', 3500, 0),
         ]]));
         $montant = $this->une($a, $this->inverse($originale, ['lignes' => [
-            $this->ligneEcriture('624', 0, 3000), $this->ligneEcriture('531', 3000, 0),
+            $this->ligneEcriture('618', 0, 3000), $this->ligneEcriture('571', 3000, 0),
         ]]));
 
         $m = "L'écriture d'annulation ne reprend pas la pièce annulée, ligne pour ligne.";
@@ -344,7 +344,7 @@ class ComptabiliteTest extends TestCase
         $deux = $this->une($a, $this->inverse($originale, ['numero_piece' => 'ANN-bis']));
         $sur = $this->une($a, $this->pieceComptable([
             'contrepasse_de' => $annulation['id'],
-            'lignes' => [$this->ligneEcriture('624', 3500, 0), $this->ligneEcriture('531', 0, 3500)],
+            'lignes' => [$this->ligneEcriture('618', 3500, 0), $this->ligneEcriture('571', 0, 3500)],
         ]));
 
         $this->assertSame('Cette pièce est déjà annulée.', $this->motif($deux));
@@ -464,7 +464,7 @@ class ComptabiliteTest extends TestCase
         $piece = $this->pieceComptable();
         $this->une($a, $piece);
         // Corruption directe (impossible par le fil) : le serveur contrôle quand même.
-        EcritureComptable::query()->where('numero_compte', '531')->update(['credit' => 10]);
+        EcritureComptable::query()->where('numero_compte', '571')->update(['credit' => 10]);
 
         $bilan = $this->pousserTable($a, 'clotures_periodiques', [$this->cloture(3)]);
 
@@ -516,14 +516,14 @@ class ComptabiliteTest extends TestCase
     {
         $a = $this->poste('admin', 'gerante');
         $annee = $this->anneeComptable();
-        $this->une($a, $this->pieceComptable(['lignes' => [$this->ligneEcriture('531', 1000, 0), $this->ligneEcriture('701', 0, 1000)]]));
+        $this->une($a, $this->pieceComptable(['lignes' => [$this->ligneEcriture('571', 1000, 0), $this->ligneEcriture('702', 0, 1000)]]));
 
         $fait = $this->clotureExercice(['affectation' => ['reserve_legale' => 100, 'dividendes' => 400, 'autres_reserves' => 0]]);
         $this->assertCount(1, $this->pousserTable($a, 'clotures_exercice', [$fait])['accepted']);
 
         // Resultat 1 000 : reserve 100, dividendes 400, report a nouveau 500. A-nouveaux : 531 D 1 000 = 111 100 + 465 400 + 121 500.
         $an = EcritureComptable::query()->whereHas('piece', fn ($q) => $q->where('journal_code', 'AN'))->get();
-        $this->assertEqualsCanonicalizing(['531', '111', '465', '121'], $an->pluck('numero_compte')->all());
+        $this->assertEqualsCanonicalizing(['571', '111', '465', '121'], $an->pluck('numero_compte')->all());
         $this->assertEquals(1000.0, (float) $an->sum('debit'));
         $this->assertEquals(1000.0, (float) $an->sum('credit'));
         $this->assertSame(['reserve_legale' => 100, 'autres_reserves' => 0, 'dividendes' => 400], json_decode(ExerciceComptable::query()->find($annee)->affectation, true));
@@ -561,7 +561,7 @@ class ComptabiliteTest extends TestCase
     {
         $a = $this->poste('admin', 'gerante');
         $this->une($a, $this->pieceComptable());
-        EcritureComptable::query()->where('numero_compte', '531')->update(['credit' => 3000]);
+        EcritureComptable::query()->where('numero_compte', '571')->update(['credit' => 3000]);
 
         $bilan = $this->pousserTable($a, 'clotures_exercice', [$this->clotureExercice()]);
 
@@ -751,6 +751,6 @@ class ComptabiliteTest extends TestCase
         $this->assertSame(0, CloturePeriodique::query()->count());
         $this->assertSame(0, ClotureExercice::query()->count());
         $this->assertFalse(ExerciceComptable::query()->find($this->anneeComptable())->is_cloture);
-        $this->assertSame(24, \App\Models\PlanComptable::query()->count());
+        $this->assertSame(60, \App\Models\PlanComptable::query()->count());
     }
 }

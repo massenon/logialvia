@@ -231,8 +231,8 @@ class FideliteEtAdoptionTest extends TestCase
             'numero_piece' => 'V-P1-'.$this->anneeComptable().'-001',
             'vente_ref' => 'V-P1-'.$this->anneeComptable().'-001',
             'lignes' => [
-                $this->ligneEcriture('531', 19500, 0),
-                $this->ligneEcriture('701', 0, 18000),
+                $this->ligneEcriture('571', 19500, 0),
+                $this->ligneEcriture('702', 0, 18000),
             ],
         ]);
 
@@ -250,9 +250,9 @@ class FideliteEtAdoptionTest extends TestCase
             'numero_piece' => 'V-P1-'.$this->anneeComptable().'-002',
             'vente_ref' => 'V-P1-'.$this->anneeComptable().'-002',
             'lignes' => [
-                $this->ligneEcriture('531', 19500.5, 0),
-                $this->ligneEcriture('701', 0, 18000, ['axe_analytique' => 'Goliaths']),
-                $this->ligneEcriture('701', 0, 1500.5),
+                $this->ligneEcriture('571', 19500.5, 0),
+                $this->ligneEcriture('702', 0, 18000, ['axe_analytique' => 'Goliaths']),
+                $this->ligneEcriture('7071', 0, 1500.5),
             ],
         ]);
 

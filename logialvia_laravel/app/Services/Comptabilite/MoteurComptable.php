@@ -2,6 +2,7 @@
 
 namespace App\Services\Comptabilite;
 
+use App\Support\PlanSyscohada;
 use App\Models\PlanComptable;
 use Illuminate\Support\Collection;
 
@@ -122,12 +123,12 @@ final class MoteurComptable
     /** @return array{postes: list<array>, resultat_net: float} */
     public static function compteResultat(Soldes $s): array
     {
-        $ventesMarchandises = -$s->parPrefixe('707');
-        $ventesProduits = -$s->parPrefixe('701');
+        $ventesMarchandises = -$s->parPrefixe(PlanSyscohada::VENTES_MARCHANDISES);
+        $ventesProduits = -$s->parPrefixe(PlanSyscohada::VENTES_PRODUITS_FINIS);
         $ventesTotales = -$s->parPrefixe('70');
 
-        $achatsMarchandises = $s->parPrefixe('602');
-        $achatsMatieres = $s->parPrefixe('601');
+        $achatsMarchandises = $s->parPrefixe(PlanSyscohada::ACHATS_MARCHANDISES);
+        $achatsMatieres = $s->parPrefixe(PlanSyscohada::ACHATS_MATIERES);
 
         $margeCommerciale = $ventesMarchandises - $achatsMarchandises;
         // Toute la classe 60 hors marchandises, puis 61 transports, 62 et 63 services exterieurs.
@@ -162,11 +163,11 @@ final class MoteurComptable
         return [
             'resultat_net' => $resultatNet,
             'postes' => [
-                self::poste('Ventes de Marchandises', $ventesMarchandises, ['detail' => 'Compte 707']),
-                self::poste('Achats de Marchandises Consommés', -$achatsMarchandises, ['detail' => 'Compte 602']),
+                self::poste('Ventes de Marchandises', $ventesMarchandises, ['detail' => 'Compte '.PlanSyscohada::VENTES_MARCHANDISES]),
+                self::poste('Achats de Marchandises Consommés', -$achatsMarchandises, ['detail' => 'Compte '.PlanSyscohada::ACHATS_MARCHANDISES]),
                 self::poste('MARGE COMMERCIALE', $margeCommerciale, ['sous_total' => true]),
-                self::poste('Ventes de Produits Avicoles', $ventesProduits, ['detail' => 'Compte 701']),
-                self::poste('Consommations en Provenance des Tiers', -$consommationsTiers, ['detail' => 'Comptes 60 (hors 602), 61, 62, 63']),
+                self::poste('Ventes de Produits Avicoles', $ventesProduits, ['detail' => 'Compte '.PlanSyscohada::VENTES_PRODUITS_FINIS]),
+                self::poste('Consommations en Provenance des Tiers', -$consommationsTiers, ['detail' => 'Comptes 60 (hors '.PlanSyscohada::ACHATS_MARCHANDISES.'), 61, 62, 63']),
                 self::poste('VALEUR AJOUTÉE', $valeurAjoutee, ['sous_total' => true]),
                 self::poste('Charges de Personnel', -$chargesPersonnel, ['detail' => 'Classe 66']),
                 self::poste('Impôts et Taxes', -$impotsTaxes, ['detail' => 'Classe 64']),
@@ -244,36 +245,36 @@ final class MoteurComptable
         // ferait « sortir » l'argent du bilan.
         $immobilisations = $s->parClasse('2');
         $stocks = $s->parClasse('3');
-        $clients = $s->parPrefixe('411');
-        $banques = $s->parPrefixe('512');
-        $caisse = $s->parPrefixe('531');
+        $clients = $s->parPrefixe(PlanSyscohada::CLIENTS);
+        $banques = $s->parPrefixe(PlanSyscohada::MOBILE_MONEY);
+        $caisse = $s->parPrefixe(PlanSyscohada::CAISSE);
         // Tout autre solde debiteur de tiers ou de tresorerie : l'ecart affiche reste de l'argent d'origine inconnue.
         $autresActifs = $s->parClasse('5') - $banques - $caisse
-            + ($s->debiteursParClasse('4') - $s->debiteursParPrefixe('411') - $s->debiteursParPrefixe('401'));
+            + ($s->debiteursParClasse('4') - $s->debiteursParPrefixe(PlanSyscohada::CLIENTS) - $s->debiteursParPrefixe(PlanSyscohada::FOURNISSEURS));
 
         $actif = [];
         if (abs($immobilisations) >= 0.01) {
             $actif[] = ['libelle' => 'Immobilisations (nettes)', 'compte' => '2', 'montant' => $immobilisations];
         }
         $actif[] = ['libelle' => 'Stocks (Intrants + Marchandises)', 'compte' => '31/32', 'montant' => $stocks];
-        $actif[] = ['libelle' => 'Clients (Solde Restant Dû)', 'compte' => '411', 'montant' => $clients];
-        $actif[] = ['libelle' => 'Banques — Mobile Money', 'compte' => '512', 'montant' => $banques];
-        $actif[] = ['libelle' => 'Caisse', 'compte' => '531', 'montant' => $caisse];
+        $actif[] = ['libelle' => 'Clients (Solde Restant Dû)', 'compte' => PlanSyscohada::CLIENTS, 'montant' => $clients];
+        $actif[] = ['libelle' => 'Monnaie électronique — Mobile Money', 'compte' => PlanSyscohada::MOBILE_MONEY, 'montant' => $banques];
+        $actif[] = ['libelle' => 'Caisse', 'compte' => PlanSyscohada::CAISSE, 'montant' => $caisse];
         if (abs($autresActifs) >= 0.01) {
             $actif[] = ['libelle' => 'Autres comptes débiteurs et trésorerie', 'compte' => '4/5', 'montant' => $autresActifs];
         }
         $totalActif = array_sum(array_column($actif, 'montant'));
 
         // Le capital est LU au compte 101, jamais deduit : l'ecart est affiche en clair.
-        $capital = -$s->parPrefixe('101');
+        $capital = -$s->parPrefixe(PlanSyscohada::CAPITAL);
         $reserves = -($s->parPrefixe('11') + $s->parPrefixe('12') + $s->parPrefixe('13') + $s->parPrefixe('14')
-            + $s->parPrefixe('15') + ($s->parPrefixe('10') - $s->parPrefixe('101')));
+            + $s->parPrefixe('15') + ($s->parPrefixe('10') - $s->parPrefixe(PlanSyscohada::CAPITAL)));
         $emprunts = -($s->parPrefixe('16') + $s->parPrefixe('17') + $s->parPrefixe('18') + $s->parPrefixe('19'));
         $resultatNet = self::resultatNet($s);
-        $fournisseurs = -$s->parPrefixe('401');
-        $autresDettes = $s->crediteursParClasse('4') - $s->crediteursParPrefixe('401') - $s->crediteursParPrefixe('411');
+        $fournisseurs = -$s->parPrefixe(PlanSyscohada::FOURNISSEURS);
+        $autresDettes = $s->crediteursParClasse('4') - $s->crediteursParPrefixe(PlanSyscohada::FOURNISSEURS) - $s->crediteursParPrefixe(PlanSyscohada::CLIENTS);
 
-        $passif = [['libelle' => 'Capital Initial', 'compte' => '101', 'montant' => $capital]];
+        $passif = [['libelle' => 'Capital Initial', 'compte' => PlanSyscohada::CAPITAL, 'montant' => $capital]];
         if (abs($reserves) >= 0.01) {
             $passif[] = ['libelle' => 'Réserves et Report à Nouveau', 'compte' => '11-15', 'montant' => $reserves];
         }
@@ -281,7 +282,7 @@ final class MoteurComptable
         if (abs($emprunts) >= 0.01) {
             $passif[] = ['libelle' => 'Emprunts et Dettes Financières', 'compte' => '16-19', 'montant' => $emprunts];
         }
-        $passif[] = ['libelle' => 'Fournisseurs (Dettes)', 'compte' => '401', 'montant' => $fournisseurs];
+        $passif[] = ['libelle' => 'Fournisseurs (Dettes)', 'compte' => PlanSyscohada::FOURNISSEURS, 'montant' => $fournisseurs];
         if (abs($autresDettes) >= 0.01) {
             $passif[] = ['libelle' => 'Autres dettes (avances, dividendes, État…)', 'compte' => '4', 'montant' => $autresDettes];
         }
@@ -439,10 +440,10 @@ final class MoteurComptable
             }
         }
 
-        $avicoleRevenus = -$soldeNonImpute('701');
-        $avicoleCouts = $soldeNonImpute('601') + $soldeNonImpute('622');
-        $commerceRevenus = -$soldeNonImpute('707');
-        $commerceCouts = $soldeNonImpute('602');
+        $avicoleRevenus = -$soldeNonImpute(PlanSyscohada::VENTES_PRODUITS_FINIS);
+        $avicoleCouts = $soldeNonImpute(PlanSyscohada::ACHATS_MATIERES) + $soldeNonImpute(PlanSyscohada::FRAIS_VETERINAIRES);
+        $commerceRevenus = -$soldeNonImpute(PlanSyscohada::VENTES_MARCHANDISES);
+        $commerceCouts = $soldeNonImpute(PlanSyscohada::ACHATS_MARCHANDISES);
 
         $centres = [];
         $noms = array_keys($parAxe);
@@ -453,7 +454,7 @@ final class MoteurComptable
             $centres[] = [
                 'nom' => $nom,
                 'detail' => $estCommerce && (abs($commerceRevenus) + abs($commerceCouts)) >= 0.01
-                    ? 'Imputation analytique + comptes 707 et 602'
+                    ? 'Imputation analytique + comptes '.PlanSyscohada::VENTES_MARCHANDISES.' et '.PlanSyscohada::ACHATS_MARCHANDISES
                     : 'Imputation analytique',
                 'revenus' => $part['revenus'] + ($estCommerce ? $commerceRevenus : 0.0),
                 'couts' => $part['couts'] + ($estCommerce ? $commerceCouts : 0.0),
@@ -463,7 +464,7 @@ final class MoteurComptable
         if (! array_key_exists('Commerce Annexe', $parAxe)
             && (abs($commerceRevenus) >= 0.01 || abs($commerceCouts) >= 0.01)) {
             $centres[] = [
-                'nom' => 'Commerce Annexe', 'detail' => 'Comptes 707 et 602',
+                'nom' => 'Commerce Annexe', 'detail' => 'Comptes '.PlanSyscohada::VENTES_MARCHANDISES.' et '.PlanSyscohada::ACHATS_MARCHANDISES,
                 'revenus' => $commerceRevenus, 'couts' => $commerceCouts,
             ];
         }
@@ -471,22 +472,22 @@ final class MoteurComptable
         if (abs($avicoleRevenus) >= 0.01 || abs($avicoleCouts) >= 0.01) {
             $centres[] = [
                 'nom' => 'Avicole — filière non précisée',
-                'detail' => 'Comptes 701, 601 et 622 sans imputation analytique',
+                'detail' => 'Comptes '.PlanSyscohada::VENTES_PRODUITS_FINIS.', '.PlanSyscohada::ACHATS_MATIERES.' et '.PlanSyscohada::FRAIS_VETERINAIRES.' sans imputation analytique',
                 'revenus' => $avicoleRevenus, 'couts' => $avicoleCouts,
             ];
         }
 
         return [
             'centres' => $centres,
-            'charges_non_affectees' => $classeNonImputee('6') - $soldeNonImpute('601') - $soldeNonImpute('602') - $soldeNonImpute('622'),
-            'produits_non_affectes' => -($classeNonImputee('7') - $soldeNonImpute('701') - $soldeNonImpute('707')),
+            'charges_non_affectees' => $classeNonImputee('6') - $soldeNonImpute(PlanSyscohada::ACHATS_MATIERES) - $soldeNonImpute(PlanSyscohada::ACHATS_MARCHANDISES) - $soldeNonImpute(PlanSyscohada::FRAIS_VETERINAIRES),
+            'produits_non_affectes' => -($classeNonImputee('7') - $soldeNonImpute(PlanSyscohada::VENTES_PRODUITS_FINIS) - $soldeNonImpute(PlanSyscohada::VENTES_MARCHANDISES)),
         ];
     }
 
     // ----------------------------------------------------------------- Depenses
 
-    /** Comptes de charges FIXES (`saisie-depenses.html`) : locations et assurances. */
-    public const COMPTES_FIXES = ['613', '616'];
+    /** Comptes de charges FIXES : locations (622) et assurances (625), `PlanSyscohada`. */
+    public const COMPTES_FIXES = PlanSyscohada::COMPTES_CHARGES_FIXES;
 
     /**
      * Les depenses d'un exercice, reconstruites depuis leurs ecritures : ligne au debit d'un

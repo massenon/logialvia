@@ -7,6 +7,8 @@ use App\Models\PieceComptable;
 use App\Models\ProduitVendable;
 use App\Models\User;
 use App\Models\Vente;
+use App\Models\GroupeTaxe;
+use App\Support\PlanSyscohada;
 use App\Sync\Tables\EcrituresTable;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -21,18 +23,25 @@ use Illuminate\Support\Str;
  *
  * Vente comptant de 12 000 F (goliaths) :
  * ```
- * 531 Caisse                 D 12 000
- * 701 Ventes Avicoles                C 12 000   (centre Goliaths)
+ * 571 Caisse                 D 12 000
+ * 702 Ventes produits finis          C 12 000   (centre Goliaths)
  * ```
  * Vente a credit (avance) de 15 500 F dont 4 000 F encaisses en Mobile Money :
  * ```
- * 512 Mobile Money           D  4 000
+ * 552 Mobile Money           D  4 000
  * 411 Clients                D 11 500
- * 701 Ventes Avicoles                C  6 000   (Goliaths)
- * 701 Ventes Avicoles                C  6 500   (Pintades)
- * 707 Ventes Marchandises            C  3 000   (Commerce Annexe)
+ * 702 Ventes produits finis          C  6 000   (Goliaths)
+ * 702 Ventes produits finis          C  6 500   (Pintades)
+ * 701 Ventes marchandises            C  3 000   (Commerce Annexe)
  * ```
- * Recouvrement : `531/512 D` / `411 C`, piece `REG-<reference>`, journal `CA`.
+ * Produit taxable a 18 % de 11 800 F TTC (TVA arrondie au franc, comme le poste) :
+ * ```
+ * 571 Caisse                 D 11 800
+ * 701 Ventes marchandises            C 10 000
+ * 4431 TVA facturee sur ventes       C  1 800
+ * ```
+ * Recouvrement : `571/552 D` / `411 C`, piece `REG-<reference>`, journal `CA`.
+ * Plan : `App\Support\PlanSyscohada` (`47p_`).
  *
  * ## Ou le web s'ecarte du poste (a valider : `47a_` §5)
  * - **Annulation** : le poste recalcule l'ecriture inverse depuis la vente (mode, `paye` courant, categorie
@@ -42,26 +51,13 @@ use Illuminate\Support\Str;
  *   fait par un autre moyen que la vente. Et une vente deja contrepassee ne l'est pas deux fois.
  * - **Atomicite** : le poste avale l'echec d'une ecriture (mois cloture) et garde la vente SANS ecriture ;
  *   le web refuse l'operation entiere, avec le motif du serveur.
- * - **Frais de livraison facturee** : credites en 707 (sans centre). Corrige aussi au poste.
+ * - **Frais de livraison facturee** : credites en 7071 (sans centre), TVA au 4432 si le panier est taxable.
  *
  * Les ecritures passent par `EcrituresTable::absorber` (equilibre, plan, verrous de periode, droits) : jamais
  * d'insertion directe. Le droit est `manage-ventes` (piece AUTOMATIQUE : `vente_ref`).
  */
 final class EcrituresAutomatiquesVentes
 {
-    public const CAISSE = '531';
-
-    public const MOBILE_MONEY = '512';
-
-    public const CLIENTS = '411';
-
-    public const VENTES_AVICOLES = '701';
-
-    public const VENTES_MARCHANDISES = '707';
-
-    /** Frais de livraison facturee : produit accessoire, sans centre (le plan n'a que 701 et 707). */
-    public const FRAIS_LIVRAISON = '707';
-
     public const CENTRE_COMMERCE_ANNEXE = 'Commerce Annexe';
 
     /** Filiere (`produits_vendables.espece`) → centre analytique. */
@@ -80,40 +76,64 @@ final class EcrituresAutomatiquesVentes
 
     // ------------------------------------------------------- constructeurs de lignes (purs)
 
-    /** Compte de tresorerie du mode de reglement : Mobile Money → 512, tout le reste → 531. */
+    /** Compte de tresorerie du mode de reglement : Mobile Money → 552, tout le reste → 571. */
     public static function tresoreriePour(string $mode): string
     {
-        return $mode === 'Mobile Money' ? self::MOBILE_MONEY : self::CAISSE;
+        return PlanSyscohada::tresoreriePour($mode);
+    }
+
+    /** Taux de TVA (en %) par groupe de taxe : le prix d'une ligne de vente est TTC (A exonere : 0, B : 18). */
+    private static function tauxParGroupe(): array
+    {
+        return GroupeTaxe::query()->pluck('taux', 'code')->map(fn ($t) => (float) $t)->all();
     }
 
     /**
-     * Cle de ventilation d'un produit : « Commerce Annexe » → 707 ; sinon 701, centre = filiere du produit
-     * (`null` : avicole sans filiere identifiee, jamais rattache arbitrairement).
+     * Cle de ventilation d'un produit : « Commerce Annexe » → 701 ; sinon 702, centre = filiere du produit
+     * (`null` : produit d'elevage sans filiere identifiee, jamais rattache arbitrairement), plus le taux de
+     * TVA (en %) du groupe de taxe du produit.
      *
-     * @return array{0: string, 1: ?string} [compte, centre]
+     * @param  array<string, float>|null  $taux  taux par groupe (charge si omis)
+     * @return array{0: string, 1: ?string, 2: float} [compte, centre, taux]
      */
-    public static function cleDeVentilation(?ProduitVendable $produit): array
+    public static function cleDeVentilation(?ProduitVendable $produit, ?array $taux = null): array
     {
+        $taux ??= self::tauxParGroupe();
+        $tauxProduit = (float) ($taux[$produit?->groupe_taxe ?? 'A'] ?? 0.0);
         if ($produit?->cat === 'Commerce Annexe') {
-            return [self::VENTES_MARCHANDISES, self::CENTRE_COMMERCE_ANNEXE];
+            return [PlanSyscohada::VENTES_MARCHANDISES, self::CENTRE_COMMERCE_ANNEXE, $tauxProduit];
         }
 
-        return [self::VENTES_AVICOLES, self::CENTRES[$produit?->espece] ?? null];
+        return [PlanSyscohada::VENTES_PRODUITS_FINIS, self::CENTRES[$produit?->espece] ?? null, $tauxProduit];
     }
 
     /**
-     * Ventile des lignes `[produit_id, montant]` par (compte, centre), dans l'ordre d'apparition.
+     * Taux des frais de livraison facturee : celui du panier s'il est unique, sinon 0 (exonere). Meme regle
+     * que le poste (`_tauxLivraison`).
+     *
+     * @param  list<array{compte: string, axe: ?string, taux: float, montant: float}>  $ventilation
+     */
+    public static function tauxLivraison(array $ventilation): float
+    {
+        $taux = array_values(array_unique(array_map(fn (array $v) => (float) $v['taux'], $ventilation)));
+
+        return count($taux) === 1 ? $taux[0] : 0.0;
+    }
+
+    /**
+     * Ventile des lignes `[produit_id, montant]` (TTC) par (compte, centre, taux), dans l'ordre d'apparition.
      *
      * @param  iterable<array{produit_id: string, montant: float}>  $lignes
-     * @return list<array{compte: string, axe: ?string, montant: float}>
+     * @return list<array{compte: string, axe: ?string, taux: float, montant: float}>
      */
     public static function ventiler(iterable $lignes): array
     {
         $ventilation = [];
+        $taux = self::tauxParGroupe();
         foreach ($lignes as $ligne) {
-            [$compte, $axe] = self::cleDeVentilation(ProduitVendable::query()->find($ligne['produit_id']));
-            $cle = $compte.'|'.($axe ?? '');
-            $ventilation[$cle] ??= ['compte' => $compte, 'axe' => $axe, 'montant' => 0.0];
+            [$compte, $axe, $t] = self::cleDeVentilation(ProduitVendable::query()->find($ligne['produit_id']), $taux);
+            $cle = $compte.'|'.($axe ?? '').'|'.$t;
+            $ventilation[$cle] ??= ['compte' => $compte, 'axe' => $axe, 'taux' => $t, 'montant' => 0.0];
             $ventilation[$cle]['montant'] += (float) $ligne['montant'];
         }
 
@@ -123,7 +143,7 @@ final class EcrituresAutomatiquesVentes
     /**
      * Lignes de l'ecriture d'une vente. `[]` si le total n'est pas positif (rien a ecrire).
      *
-     * @param  list<array{compte: string, axe: ?string, montant: float}>  $ventilation
+     * @param  list<array{compte: string, axe: ?string, taux: float, montant: float}>  $ventilation  montants TTC
      * @return list<array{compte: string, debit: float, credit: float, libelle: string, axe: ?string}>
      */
     public static function lignesVente(
@@ -133,6 +153,7 @@ final class EcrituresAutomatiquesVentes
         float $paye,
         array $ventilation,
         float $fraisLivraison = 0.0,
+        float $tauxLivraison = 0.0,
     ): array {
         if ($total <= 0) {
             return [];
@@ -145,22 +166,34 @@ final class EcrituresAutomatiquesVentes
             $lignes[] = self::ligne(self::tresoreriePour($mode), $paye, 0, "Encaissement vente $reference");
         }
         if ($resteDu > 0) {
-            $lignes[] = self::ligne(self::CLIENTS, $resteDu, 0, "Créance client — vente $reference");
+            $lignes[] = self::ligne(PlanSyscohada::CLIENTS, $resteDu, 0, "Créance client — vente $reference");
         }
+        // Produits HT ; la TVA collectee est UNE ligne par nature (biens 4431, prestations 4432) : le resultat
+        // ne contient plus de TVA.
+        $tvaBiens = 0.0;
         foreach ($ventilation as $v) {
             if ($v['montant'] <= 0) {
                 continue;
             }
+            $tva = PlanSyscohada::tvaDuTtc($v['montant'], $v['taux']);
+            $tvaBiens += $tva;
             $lignes[] = self::ligne(
-                $v['compte'], 0, $v['montant'],
+                $v['compte'], 0, $v['montant'] - $tva,
                 $v['axe'] === null ? "Vente $reference" : "Vente $reference — {$v['axe']}",
                 $v['axe'],
             );
         }
+        if ($tvaBiens > 0) {
+            $lignes[] = self::ligne(PlanSyscohada::TVA_COLLECTEE, 0, $tvaBiens, "TVA collectée — vente $reference");
+        }
         // Les frais d'une livraison facturee sont DANS le total : sans cette ligne, la piece serait
         // desequilibree de leur montant.
         if ($fraisLivraison > 0) {
-            $lignes[] = self::ligne(self::FRAIS_LIVRAISON, 0, $fraisLivraison, "Frais de livraison facturés — vente $reference");
+            $tvaLivraison = PlanSyscohada::tvaDuTtc($fraisLivraison, $tauxLivraison);
+            $lignes[] = self::ligne(PlanSyscohada::FRAIS_LIVRAISON, 0, $fraisLivraison - $tvaLivraison, "Frais de livraison facturés — vente $reference");
+            if ($tvaLivraison > 0) {
+                $lignes[] = self::ligne(PlanSyscohada::TVA_COLLECTEE_SERVICES, 0, $tvaLivraison, "TVA collectée sur livraison — vente $reference");
+            }
         }
 
         return $lignes;
@@ -175,7 +208,7 @@ final class EcrituresAutomatiquesVentes
 
         return [
             self::ligne(self::tresoreriePour($mode), $montant, 0, "Encaissement créance $reference"),
-            self::ligne(self::CLIENTS, 0, $montant, "Encaissement créance $reference"),
+            self::ligne(PlanSyscohada::CLIENTS, 0, $montant, "Encaissement créance $reference"),
         ];
     }
 
@@ -276,6 +309,7 @@ final class EcrituresAutomatiquesVentes
             'vente_ref' => $venteRef,
             'achat_ref' => null,
             'contrepasse_de' => null,
+            'plan_version' => PlanSyscohada::VERSION,
             'updated_at' => Saisie::instantMaintenant(),
             'lignes' => array_map(fn (array $l) => [
                 'id' => (string) Str::uuid(),

@@ -27,14 +27,14 @@ class ConformiteComptabiliteDartTest extends TestCase
 
     public function test_le_plan_seme_est_celui_du_poste_compte_pour_compte(): void
     {
-        $dart = $this->dart('comptabilite/data/seed/plan_comptable_seeder.dart');
+        $dart = $this->dart('comptabilite/domain/plan_syscohada.dart');
         preg_match_all(
-            "/\\(numero: '(\\d+)', libelle: '((?:[^'\\\\]|\\\\.)*)', classe: '(\\d)'\\)/u",
+            "/\\(\\s*numero: '(\\d+)',\\s*libelle:\\s*'((?:[^'\\\\]|\\\\.)*)',\\s*classe: '(\\d)',?\\s*\\)/u",
             $dart,
             $trouves,
             PREG_SET_ORDER,
         );
-        $this->assertCount(24, $trouves, 'Le poste doit semer 24 comptes.');
+        $this->assertCount(60, $trouves, 'Le poste doit semer 60 comptes.');
 
         $attendu = [];
         foreach ($trouves as [, $numero, $libelle, $classe]) {
@@ -53,13 +53,13 @@ class ConformiteComptabiliteDartTest extends TestCase
     public function test_le_semis_est_idempotent_et_ne_touche_jamais_un_compte_modifie(): void
     {
         $this->seed(PlanComptableSeeder::class);
-        PlanComptable::query()->whereKey('624')->update(['libelle' => 'Déplacements', 'archive' => true]);
+        PlanComptable::query()->whereKey('618')->update(['libelle' => 'Déplacements', 'archive' => true]);
 
         $this->seed(PlanComptableSeeder::class);
 
-        $this->assertSame(24, PlanComptable::query()->count());
-        $this->assertSame('Déplacements', PlanComptable::query()->find('624')->libelle);
-        $this->assertTrue(PlanComptable::query()->find('624')->archive);
+        $this->assertSame(60, PlanComptable::query()->count());
+        $this->assertSame('Déplacements', PlanComptable::query()->find('618')->libelle);
+        $this->assertTrue(PlanComptable::query()->find('618')->archive);
     }
 
     public function test_les_identifiants_deterministes_sont_ceux_du_poste(): void

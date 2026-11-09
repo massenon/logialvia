@@ -98,15 +98,15 @@ trait JeuComptable
             ['libelle' => 'Bâtiments', 'classe' => '2', 'archive' => false],
         );
 
-        $this->poserPiece('OD-P1-'.($n - 1).'-0001', $n - 1, 12, 20, 'OD', [['531', 100000, 0, null], ['101', 0, 100000, null]]);
+        $this->poserPiece('OD-P1-'.($n - 1).'-0001', $n - 1, 12, 20, 'OD', [['571', 100000, 0, null], ['101', 0, 100000, null]]);
 
-        $this->poserPiece('OD-P1-'.$n.'-0001', $n, 1, 2, 'OD', [['531', 500000, 0, null], ['101', 0, 500000, null]]);
-        $this->poserPiece('V-P1-'.$n.'-001', $n, 2, 15, 'VT', [['531', 120000, 0, null], ['701', 0, 120000, 'Goliaths']], ['vente_ref' => 'V-P1-'.$n.'-001']);
-        $this->poserPiece('V-P1-'.$n.'-002', $n, 3, 10, 'VT', [['531', 30000, 0, null], ['411', 50000, 0, null], ['707', 0, 80000, null]], ['vente_ref' => 'V-P1-'.$n.'-002']);
-        $this->poserPiece('ACH-P1-'.$n.'-001', $n, 4, 12, 'AC', [['601', 40000, 0, null], ['531', 0, 10000, null], ['401', 0, 30000, null]], ['achat_ref' => 'ACH-P1-'.$n.'-001']);
-        $this->poserPiece('DEP-P1-'.$n.'-0001', $n, 5, 5, 'CA', [['624', 15000, 0, 'Pintades'], ['531', 0, 15000, null]]);
-        $this->poserPiece('DEP-P1-'.$n.'-0002', $n, 5, 20, 'CA', [['616', 12000, 0, null], ['401', 0, 12000, null]]);
-        $this->poserPiece('REG-V-P1-'.$n.'-002', $n, 6, 15, 'CA', [['531', 20000, 0, null], ['411', 0, 20000, null]], ['vente_ref' => 'V-P1-'.$n.'-002']);
-        $this->poserPiece('OD-P1-'.$n.'-0002', $n, 7, 1, 'OD', [['231', 200000, 0, null], ['531', 0, 200000, null]]);
+        $this->poserPiece('OD-P1-'.$n.'-0001', $n, 1, 2, 'OD', [['571', 500000, 0, null], ['101', 0, 500000, null]]);
+        $this->poserPiece('V-P1-'.$n.'-001', $n, 2, 15, 'VT', [['571', 120000, 0, null], ['702', 0, 120000, 'Goliaths']], ['vente_ref' => 'V-P1-'.$n.'-001']);
+        $this->poserPiece('V-P1-'.$n.'-002', $n, 3, 10, 'VT', [['571', 30000, 0, null], ['411', 50000, 0, null], ['701', 0, 80000, null]], ['vente_ref' => 'V-P1-'.$n.'-002']);
+        $this->poserPiece('ACH-P1-'.$n.'-001', $n, 4, 12, 'AC', [['602', 40000, 0, null], ['571', 0, 10000, null], ['401', 0, 30000, null]], ['achat_ref' => 'ACH-P1-'.$n.'-001']);
+        $this->poserPiece('DEP-P1-'.$n.'-0001', $n, 5, 5, 'CA', [['618', 15000, 0, 'Pintades'], ['571', 0, 15000, null]]);
+        $this->poserPiece('DEP-P1-'.$n.'-0002', $n, 5, 20, 'CA', [['625', 12000, 0, null], ['401', 0, 12000, null]]);
+        $this->poserPiece('REG-V-P1-'.$n.'-002', $n, 6, 15, 'CA', [['571', 20000, 0, null], ['411', 0, 20000, null]], ['vente_ref' => 'V-P1-'.$n.'-002']);
+        $this->poserPiece('OD-P1-'.$n.'-0002', $n, 7, 1, 'OD', [['231', 200000, 0, null], ['571', 0, 200000, null]]);
     }
 }

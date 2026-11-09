@@ -17,6 +17,9 @@ class PlanComptable extends Model
 
     protected $guarded = [];
 
+    /** Un compte cree sans version est du plan SYSCOHADA courant (les anciens comptes sont migres). */
+    protected $attributes = ['plan_version' => \App\Support\PlanSyscohada::VERSION];
+
     protected $dateFormat = 'Y-m-d H:i:s.u';
 
     protected function casts(): array
@@ -34,6 +37,11 @@ class PlanComptable extends Model
             return false;
         }
         $n = (string) $this->numero_compte;
+        // Comptes debiteurs au milieu de classes crediteuses (SYSCOHADA revise) : 409 fournisseurs debiteurs,
+        // 421 personnel avances, 445 Etat TVA recuperable, 4449 credit de TVA a reporter (`47p_`).
+        if (str_starts_with($n, '409') || str_starts_with($n, '421') || str_starts_with($n, '445') || str_starts_with($n, '4449')) {
+            return true;
+        }
         if (str_starts_with($n, '419') || str_starts_with($n, '40')
             || str_starts_with($n, '42') || str_starts_with($n, '43') || str_starts_with($n, '44')) {
             return false;

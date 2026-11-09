@@ -278,10 +278,11 @@ trait PostesDeTest
             'vente_ref' => null,
             'achat_ref' => null,
             'contrepasse_de' => null,
+            'plan_version' => 2,
             'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
             'lignes' => [
-                $this->ligneEcriture('624', $montant, 0),
-                $this->ligneEcriture('531', 0, $montant),
+                $this->ligneEcriture('618', $montant, 0),
+                $this->ligneEcriture('571', 0, $montant),
             ],
         ], $surcharge);
     }

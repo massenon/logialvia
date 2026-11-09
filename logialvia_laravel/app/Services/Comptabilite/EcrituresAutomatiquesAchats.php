@@ -3,6 +3,7 @@
 namespace App\Services\Comptabilite;
 
 use App\Models\PieceComptable;
+use App\Support\PlanSyscohada;
 use Illuminate\Support\Collection;
 
 /**
@@ -13,19 +14,20 @@ use Illuminate\Support\Collection;
  * ## Ce que le Dart fait (et que ce service reproduit a l'identique)
  * ```
  * Achat (journal AC, piece = reference de l'achat, achat_ref = reference)
- *   601|602|622  D  total ventile par categorie d'intrant   « Achat <ref> »
- *   531 ou 512   C  paye                                     « Règlement achat <ref> »
+ *   602|601|604  D  HT ventile par categorie d'intrant        « Achat <ref> »
+ *   4452         D  TVA deductible (si l'achat est taxable)  « TVA déductible — achat <ref> »
+ *   571 ou 552   C  paye                                     « Règlement achat <ref> »
  *   401          C  total − paye                             « Dette fournisseur — achat <ref> »
  * Reglement (journal CA, piece = REG-<ref>, achat_ref = reference)
  *   401          D  montant                                  « Règlement dette <ref> »
- *   531 ou 512   C  montant                                  « Règlement dette <ref> »
+ *   571 ou 552   C  montant                                  « Règlement dette <ref> »
  * ```
  * - **La charge est constatee a la COMMANDE**, pas a la reception : le Dart ecrit la piece dans
  *   `enregistrerAchat` que la commande soit livree ou non, et `receptionnerAchat` n'ecrit rien.
- * - Ventilation : categorie « Vétérinaire » → 622, « Marchandises » → 602, le reste → 601.
- * - Tresorerie : « Mobile Money » → 512, tout le reste (Espèces, Crédit, Non précisé) → 531.
- * - **Pas de TVA** : le Dart n'en genere pas sur les achats (aucun 4452 au plan comptable du poste) ;
- *   le web fait de meme.
+ * - Ventilation : categorie « Vétérinaire » → 604, « Marchandises » → 601, le reste → 602 (plan SYSCOHADA).
+ * - Tresorerie : « Mobile Money » → 552, tout le reste (Espèces, Crédit, Non précisé) → 571.
+ * - **TVA deductible** : un intrant n'a pas encore de groupe de taxe (`47p_` §6) : le taux est 0 et l'achat reste
+ *   en charge ; des qu'un taux est connu, la TVA est extraite du TTC et portee au 4452 (comme le poste).
  *
  * ## Ce que le web ajoute (le Dart ne le fait pas)
  * - **Extourne** (`annuler`) : le Dart n'annule pas un achat. Le web contrepasse chaque piece vivante
@@ -36,24 +38,12 @@ use Illuminate\Support\Collection;
  */
 final class EcrituresAutomatiquesAchats
 {
-    public const CAISSE = '531';
-
-    public const MOBILE_MONEY = '512';
-
-    public const FOURNISSEURS = '401';
-
-    public const ACHATS_MATIERES = '601';
-
-    public const ACHATS_MARCHANDISES = '602';
-
-    public const FRAIS_VETERINAIRES = '622';
-
     public function __construct(private readonly Saisie $saisie) {}
 
     /** Compte de tresorerie du mode de reglement (Dart : `tresoreriePour`). */
     public static function tresoreriePour(?string $mode): string
     {
-        return $mode === 'Mobile Money' ? self::MOBILE_MONEY : self::CAISSE;
+        return PlanSyscohada::tresoreriePour($mode);
     }
 
     /**
@@ -62,16 +52,16 @@ final class EcrituresAutomatiquesAchats
      *
      * @param  iterable<array{intrant_code: string, qte: float|int|string, pu_achat: float|int|string}>  $lignes
      * @param  array<string, string>  $categories  code d'intrant => categorie
-     * @return array<string, float> compte => montant
+     * @return array<string, float> compte => montant TTC (taux 0 : voir l'en-tete)
      */
     public static function ventiler(iterable $lignes, array $categories): array
     {
         $ventilation = [];
         foreach ($lignes as $l) {
             $compte = match ($categories[$l['intrant_code']] ?? null) {
-                'Vétérinaire' => self::FRAIS_VETERINAIRES,
-                'Marchandises' => self::ACHATS_MARCHANDISES,
-                default => self::ACHATS_MATIERES,
+                'Vétérinaire' => PlanSyscohada::FRAIS_VETERINAIRES,
+                'Marchandises' => PlanSyscohada::ACHATS_MARCHANDISES,
+                default => PlanSyscohada::ACHATS_MATIERES,
             };
             $ventilation[$compte] = round(($ventilation[$compte] ?? 0) + (float) $l['qte'] * (float) $l['pu_achat'], 2);
         }
@@ -82,7 +72,8 @@ final class EcrituresAutomatiquesAchats
     /**
      * Piece d'achat (Dart : `pourAchat`). Rien n'est ecrit si le total n'est pas positif.
      *
-     * @param  array<string, float>  $ventilation  compte => montant
+     * @param  array<string, float>  $ventilation  compte => montant TTC
+     * @param  array<string, float>  $taux  compte => taux de TVA en % (absent : 0, exonere)
      * @return string|null Le motif du refus, ou `null` (piece acceptee, ou rien a ecrire).
      */
     public function pourAchat(
@@ -92,17 +83,24 @@ final class EcrituresAutomatiquesAchats
         float $total,
         float $paye,
         array $ventilation,
+        array $taux = [],
     ): ?string {
         if ($total <= 0) {
             return null;
         }
 
         $lignes = [];
+        $tvaDeductible = 0.0;
         foreach ($ventilation as $compte => $montant) {
             if ($montant <= 0) {
                 continue;
             }
-            $lignes[] = ['compte' => (string) $compte, 'debit' => round($montant, 2), 'credit' => 0, 'libelle' => "Achat $reference"];
+            $tva = PlanSyscohada::tvaDuTtc($montant, (float) ($taux[$compte] ?? 0.0));
+            $tvaDeductible += $tva;
+            $lignes[] = ['compte' => (string) $compte, 'debit' => round($montant - $tva, 2), 'credit' => 0, 'libelle' => "Achat $reference"];
+        }
+        if ($tvaDeductible > 0) {
+            $lignes[] = ['compte' => PlanSyscohada::TVA_DEDUCTIBLE, 'debit' => round($tvaDeductible, 2), 'credit' => 0, 'libelle' => "TVA déductible — achat $reference"];
         }
 
         $paye = round($paye, 2);
@@ -111,7 +109,7 @@ final class EcrituresAutomatiquesAchats
             $lignes[] = ['compte' => self::tresoreriePour($mode), 'debit' => 0, 'credit' => $paye, 'libelle' => "Règlement achat $reference"];
         }
         if ($resteDu > 0) {
-            $lignes[] = ['compte' => self::FOURNISSEURS, 'debit' => 0, 'credit' => $resteDu, 'libelle' => "Dette fournisseur — achat $reference"];
+            $lignes[] = ['compte' => PlanSyscohada::FOURNISSEURS, 'debit' => 0, 'credit' => $resteDu, 'libelle' => "Dette fournisseur — achat $reference"];
         }
 
         return $this->saisie->enregistrer($instant, 'AC', $reference, $lignes, null, $reference);
@@ -129,7 +127,7 @@ final class EcrituresAutomatiquesAchats
         $montant = round($montant, 2);
 
         return $this->saisie->enregistrer($instant, 'CA', "REG-$reference", [
-            ['compte' => self::FOURNISSEURS, 'debit' => $montant, 'credit' => 0, 'libelle' => "Règlement dette $reference"],
+            ['compte' => PlanSyscohada::FOURNISSEURS, 'debit' => $montant, 'credit' => 0, 'libelle' => "Règlement dette $reference"],
             ['compte' => self::tresoreriePour($mode), 'debit' => 0, 'credit' => $montant, 'libelle' => "Règlement dette $reference"],
         ], null, $reference);
     }

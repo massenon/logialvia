@@ -6,6 +6,7 @@ use App\Models\PlanComptable;
 use App\Sync\TableSync;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Plan comptable : REFERENTIEL, le serveur gagne. Cle naturelle : le numero de compte
@@ -40,6 +41,15 @@ class PlanComptableTable extends TableSync
     public function droitLecture(): ?string
     {
         return 'view-comptabilite';
+    }
+
+    /** Chaque compte porte la version du plan (garde de version : un poste d'un autre plan ne l'absorbe pas). */
+    public function exporter(Model $ligne): array
+    {
+        $donnees = parent::exporter($ligne);
+        $donnees['plan_version'] = (int) ($ligne->plan_version ?? \App\Support\PlanSyscohada::VERSION);
+
+        return $donnees;
     }
 
     /** L'ordre de tirage d'un referentiel a cle texte : par numero de compte. */
