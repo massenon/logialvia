@@ -139,7 +139,7 @@ class PlanSyscohada {
     (numero: '245', libelle: 'Matériel de transport', classe: '2'),
     (
       numero: '246',
-      libelle: 'Immobilisations animales et agricoles',
+      libelle: 'Actifs biologiques',
       classe: '2',
     ),
     (

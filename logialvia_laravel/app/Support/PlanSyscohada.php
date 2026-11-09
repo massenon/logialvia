@@ -78,7 +78,7 @@ final class PlanSyscohada
         ['242', 'Matériel et outillage agricole', '2'],
         ['244', 'Matériel et mobilier', '2'],
         ['245', 'Matériel de transport', '2'],
-        ['246', 'Immobilisations animales et agricoles', '2'],
+        ['246', 'Actifs biologiques', '2'],
         ['283', 'Amortissements des bâtiments, installations techniques et agencements', '2'],
         ['284', 'Amortissements du matériel', '2'],
         ['31', 'Marchandises', '3'],

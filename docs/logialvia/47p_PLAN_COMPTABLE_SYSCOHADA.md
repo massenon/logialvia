@@ -5,29 +5,20 @@
 > Code : `logialvia_app/lib/comptabilite/domain/plan_syscohada.dart` (poste, source),
 > `logialvia_laravel/app/Support/PlanSyscohada.php` (web, port comparé au Dart par un test).
 
-## 1. Source du plan : ce qui a été (et n'a pas été) obtenu
+## 1. Source du plan : vérifié contre le PDF fourni par le client
 
-**Le texte officiel de l'OHADA n'a PAS pu être téléchargé.** Constat, le 2026-11-09 :
+Le 2026-11-09, le client a fourni le PDF « Plan comptable SYSCOHADA révisé » (31 pages, 1323 comptes, AUDCIF applicable
+depuis le 1er janvier 2018), conservé dans `docs/logialvia/syscohada/`. Ce n'est pas le Journal officiel OHADA lui-même
+(mise en page de plan-comptable-ohada.com d'après l'Acte uniforme). Les 60 comptes du plan retenu ont été comparés
+automatiquement à son texte :
 
-| Tentative | Résultat |
-|---|---|
-| `curl https://www.ohada.org/` depuis l'environnement de développement | échec de connexion (code 000) : le proxy de l'environnement n'autorise pas ce site |
-| `WebFetch` d'un plan comptable SYSCOHADA public tiers : fichier `l10n_syscohada/data/template/account.account-syscohada.csv` du dépôt public Odoo, branche 17.0 (CSV, 131 369 caractères) | **lu** à travers un outil qui renvoie un résumé (les 100 000 premiers caractères, deux passes) ; le fichier brut n'a donc **pas pu être enregistré tel quel** |
-| Téléchargement du même fichier par `curl` | refusé par le garde-fou de l'environnement (sortie du périmètre autorisé) ; **non retenté** |
+- **59 numéros sur 60 confirmés**, libellés conformes (casse et accents près) ;
+- **246** : libellé officiel « Actifs biologiques » repris (Dart + PHP), numéro inchangé ;
+- **611 « Transports sur achats »** : absent du PDF fourni ; compte conservé (aucun code ne l'écrit), à confirmer ou retirer ;
+- aucun numéro n'a changé : la migration v48 et la garde `plan_version = 2` restent valables.
 
-Conséquences, dites sans détour :
-
-1. **Rien n'est « téléchargé et vérifié contre le texte officiel ».** Les numéros et libellés du plan retenu sont
-   **reconstitués de la connaissance du SYSCOHADA révisé** et **recoupés** avec le plan tiers ci-dessus (structure à 2, 3 et
-   4 chiffres : 4431, 4432, 4441, 4449, 4451, 4452, 5711, 5712, 601x, 602x, 604x, 70xx dont 7071, 622x, 624x, 625x, 658x…).
-   Ce plan tiers n'est **pas** le texte de l'OHADA : traduction automatique par endroits (« Produits de soins » pour
-   « Produits d'entretien », « Abandon de créances convenu »…), libellés tronqués ou fautifs ; **il n'a servi qu'à
-   confirmer la numérotation**, jamais à recopier un libellé douteux.
-2. Le dossier `docs/logialvia/syscohada/` contient : `SOURCE.md` (URL, date, format, ce qui a été lu) et
-   `plan_syscohada_revise_ferme.csv` (le plan retenu, marqué **« reconstitué, non vérifié contre le texte officiel »**).
-3. **Décision à valider par l'expert-comptable (§9, V1)** : relire les 60 numéros/libellés contre le Journal officiel
-   de l'OHADA avant la première déclaration fiscale. Les libellés sont isolés dans une seule liste (`PlanSyscohada.comptes`)
-   ; en corriger un est une modification d'une ligne par côté (le test de conformité signale tout écart Dart ↔ web).
+Détail : `docs/logialvia/syscohada/SOURCE.md` et `plan_syscohada_revise_ferme.csv` (colonne `statut`).
+Reste recommandé : relecture par l'expert-comptable avant la première déclaration fiscale (§9, V1).
 
 ## 2. Plan applicable de la ferme
 
@@ -56,7 +47,7 @@ peuvent pas être saisis (limite préexistante, §10).
 | 242 | Matériel et outillage agricole | 2 |
 | 244 | Matériel et mobilier | 2 |
 | 245 | Matériel de transport | 2 |
-| 246 | Immobilisations animales et agricoles | 2 |
+| 246 | Actifs biologiques | 2 |
 | 283 | Amortissements des bâtiments, installations techniques et agencements | 2 |
 | 284 | Amortissements du matériel | 2 |
 | 31 | Marchandises | 3 |
@@ -246,11 +237,11 @@ poste, avec la garde active).
 | V8 | **Ligne 707 sans centre d'une pièce de vente = frais de livraison** (7071) ; une OD manuelle sur 707 sans pièce de vente reste « marchandises » (701). | Revue manuelle des 707 historiques |
 | V9 | Sous-comptes créés à la main : **suivent leur compte** (préfixe), fusion si le numéro cible existe. | Les laisser en place (risque : changent de sens) |
 | V10 | Pas d'écriture automatique de **déclaration de TVA** (4431/4452 → 4441/4449). | OD mensuelle générée |
-| V11 | 36 « Produits finis » et 246 « Immobilisations animales et agricoles » semés pour les stocks d'animaux / reproducteurs, **sans écriture automatique** (valorisation des stocks hors périmètre). | — |
+| V11 | 36 « Produits finis » et 246 « Actifs biologiques » semés pour les stocks d'animaux / reproducteurs, **sans écriture automatique** (valorisation des stocks hors périmètre). | — |
 
 ## 10. Limites
 
-- **Texte officiel non vérifié** (§1) ; libellés reconstitués.
+- Plan vérifié contre un PDF tiers fourni (§1), pas contre le Journal officiel ; 611 non confirmé.
 - **Achats : la TVA déductible est câblée mais le taux est 0** : un intrant n'a pas encore de groupe de taxe (colonne à créer
   sur `intrants` avec sa synchronisation : touche les tables d'achats et le stock, en cours chez d'autres agents). La
   génération (`pourAchat`) extrait déjà la TVA du TTC et la porte au 4452 dès qu'un taux lui est fourni ; testée en direct.
