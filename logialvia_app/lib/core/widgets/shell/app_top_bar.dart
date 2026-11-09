@@ -6,7 +6,10 @@ import 'package:provider/provider.dart';
 import '../../../administration/presentation/viewmodels/auth_view_model.dart';
 import '../../../pilotage/domain/entities/tableau_bord_principal.dart';
 import '../../../pilotage/presentation/viewmodels/alertes_view_model.dart';
+import '../../formatage/formats.dart';
 import '../../router/navigation_model.dart';
+import '../../sync/moteur_synchronisation.dart';
+import '../../sync/planificateur_synchronisation.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
@@ -16,10 +19,11 @@ import 'recherche_globale.dart';
 /// Barre du haut — `<header class="h-16 ...">` commun aux 28 ecrans internes.
 ///
 /// ELEMENTS VOLONTAIREMENT NON REPRODUITS, et pourquoi :
-/// - Badge « 3 en attente » avec icone `sync` animee : aucune synchronisation
-///   n'existe (application hors-ligne par conception, Doc B1 §7) et le nombre
-///   est ecrit en dur dans le HTML. Le reproduire serait un indicateur
-///   mensonger (Master Prompt §2.3).
+/// - Badge « 3 en attente » du prototype : le nombre est ecrit en dur dans le
+///   HTML. Le reproduire serait un indicateur mensonger (Master Prompt §2.3).
+///   Il est REMPLACE par un indicateur reel ([IndicateurSynchro]) : visible
+///   seulement quand le poste est appaire, il dit l'etat de la derniere
+///   synchronisation (en cours, a jour, hors ligne, a verifier).
 /// - Les 2 boutons dont le `title` commence par « Démonstration — forcer
 ///   l'affichage… » : ce sont des outils de test du prototype, pas des
 ///   fonctionnalites de production — meme statut que le selecteur de role RBAC
@@ -60,6 +64,7 @@ class AppTopBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           const SizedBox(width: 256, child: RechercheGlobale()), // `w-64`
           const SizedBox(width: AppSpacing.md),
+          const IndicateurSynchro(),
           const _CloctheNotifications(),
           const SizedBox(width: AppSpacing.sm),
           const _MenuProfil(),
@@ -109,6 +114,69 @@ class _FilDAriane extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// L'état réel de la synchronisation — jamais un compteur écrit en dur.
+///
+/// Absent tant que le poste n'est pas appairé (il fonctionne seul, hors ligne,
+/// par conception : rien à indiquer). `watch<…?>` : sans planificateur dans
+/// l'arbre, rien ne s'affiche au lieu de lever une erreur.
+class IndicateurSynchro extends StatelessWidget {
+  const IndicateurSynchro({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final planificateur = context.watch<PlanificateurSynchronisation?>();
+    if (planificateur == null) return const SizedBox.shrink();
+
+    final rapport = planificateur.dernierRapport;
+    final revoque = rapport?.issue == IssueSynchronisation.revoque;
+    // Suspendu sans révocation = poste jamais appairé : rien à montrer.
+    if (planificateur.suspendu && !revoque) return const SizedBox.shrink();
+
+    final IconData icone;
+    final Color couleur;
+    final String texte;
+    if (planificateur.enCours) {
+      icone = Symbols.sync;
+      couleur = AppColors.brandNavy;
+      texte = 'Synchronisation en cours…';
+    } else if (rapport == null) {
+      icone = Symbols.cloud_sync;
+      couleur = AppColors.outline;
+      texte = 'Synchronisation en attente.';
+    } else if (rapport.issue == IssueSynchronisation.revoque) {
+      icone = Symbols.link_off;
+      couleur = AppColors.errorDeep;
+      texte = 'Poste non appairé : reconnectez-le dans Paramètres > Appairage.';
+    } else if (rapport.issue == IssueSynchronisation.horsLigne) {
+      icone = Symbols.cloud_off;
+      couleur = AppColors.outline;
+      texte =
+          'Hors ligne : vos saisies sont conservées et partiront à la '
+          'reconnexion.';
+    } else if (!rapport.reussie || rapport.refusees > 0) {
+      icone = Symbols.sync_problem;
+      couleur = AppColors.errorDeep;
+      texte = rapport.message;
+    } else {
+      icone = Symbols.cloud_done;
+      couleur = AppColors.successDeep;
+      final quand = planificateur.derniereTentative;
+      texte = quand == null
+          ? 'Synchronisé.'
+          : 'Synchronisé à ${Formats.heure(quand)}.';
+    }
+
+    return IconButton(
+      key: const Key('indicateur-synchro'),
+      tooltip: '$texte\nCliquer pour synchroniser maintenant.',
+      onPressed: planificateur.enCours
+          ? null
+          : () => planificateur.synchroniserMaintenant(),
+      icon: Icon(icone, color: couleur, size: 22),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -31,6 +32,7 @@ class RapportSynchronisation {
     this.refuseesALaReception = 0,
     this.conserveesLocalement = 0,
     this.supplantees = 0,
+    this.referentielsMisAJour = 0,
     this.envoyees = 0,
     this.acceptees = 0,
     this.refusees = 0,
@@ -54,6 +56,9 @@ class RapportSynchronisation {
   /// Saisies locales non envoyées remplacées par une version plus récente.
   final int supplantees;
 
+  /// Lignes de référentiels (modules, paramètres) modifiées d'après le serveur.
+  final int referentielsMisAJour;
+
   final int envoyees;
   final int acceptees;
 
@@ -74,6 +79,7 @@ class RapportSynchronisation {
     int? refuseesALaReception,
     int? conserveesLocalement,
     int? supplantees,
+    int? referentielsMisAJour,
     int? envoyees,
     int? acceptees,
     int? refusees,
@@ -87,6 +93,7 @@ class RapportSynchronisation {
     refuseesALaReception: refuseesALaReception ?? this.refuseesALaReception,
     conserveesLocalement: conserveesLocalement ?? this.conserveesLocalement,
     supplantees: supplantees ?? this.supplantees,
+    referentielsMisAJour: referentielsMisAJour ?? this.referentielsMisAJour,
     envoyees: envoyees ?? this.envoyees,
     acceptees: acceptees ?? this.acceptees,
     refusees: refusees ?? this.refusees,
@@ -129,7 +136,8 @@ class MoteurSynchronisationPoste {
 
   bool _enCours = false;
 
-  Future<RapportSynchronisation> synchroniser() async {
+  /// [complet] : repart d'un tirage COMPLET (« Renvoyer vers ce poste » du web).
+  Future<RapportSynchronisation> synchroniser({bool complet = false}) async {
     // Une seule synchronisation à la fois : deux tirages entrelacés se
     // disputeraient le curseur.
     if (_enCours) {
@@ -140,13 +148,13 @@ class MoteurSynchronisationPoste {
     }
     _enCours = true;
     try {
-      return await _synchroniser();
+      return await _synchroniser(complet: complet);
     } finally {
       _enCours = false;
     }
   }
 
-  Future<RapportSynchronisation> _synchroniser() async {
+  Future<RapportSynchronisation> _synchroniser({required bool complet}) async {
     final adresse = await preferences.adresseServeur();
     final jeton = await depot.lire();
     if (adresse == null || jeton == null || jeton.isEmpty) {
@@ -166,6 +174,10 @@ class MoteurSynchronisationPoste {
       '',
     );
 
+    // Un tirage complet ne se décide pas à moitié : le curseur est effacé AVANT,
+    // et ne reprend qu'à la dernière page.
+    if (complet) await preferences.definirCurseurTirage(null);
+
     final tirage = await _tirer(session, rapport);
     rapport = tirage.rapport;
     if (tirage.arret != null) return tirage.arret!;
@@ -176,6 +188,61 @@ class MoteurSynchronisationPoste {
 
     return rapport.avec(message: _resume(rapport));
   }
+
+  // ------------------------------------------------- Demandes du serveur
+
+  /// Le serveur ne joint jamais un poste (éteint, derrière un NAT) : il dépose un
+  /// drapeau que le poste lit (`GET /api/sync/demande`, blueprint §5).
+  Future<ReponseDemande> interrogerDemande() async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const ReponseDemande(IssueSynchronisation.nonAppairee);
+    }
+    final reponse = await _appeler(
+      (c) => c.get(
+        Uri.parse('$adresse/api/sync/demande'),
+        headers: _entetes(jeton),
+      ),
+    );
+    final arret = await _verifier(reponse);
+    if (arret != null) return ReponseDemande(arret.issue);
+
+    final json = _json(reponse!.body);
+    return ReponseDemande(
+      IssueSynchronisation.terminee,
+      synchroniser: json?['synchroniser'] == true,
+      resynchronisationComplete: json?['resynchronisation_complete'] == true,
+    );
+  }
+
+  /// Le tirage complet demandé est fait : le serveur peut baisser son drapeau.
+  Future<bool> acquitterResynchronisation() async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) return false;
+    final reponse = await _appeler(
+      (c) => c.post(
+        Uri.parse('$adresse/api/sync/resynchronisation/acquittement'),
+        headers: _entetes(jeton),
+      ),
+    );
+    return reponse != null &&
+        reponse.statusCode >= 200 &&
+        reponse.statusCode < 300;
+  }
+
+  /// Une saisie attend-elle d'être envoyée ? (garde « rien à envoyer »)
+  Future<bool> aDesSaisiesAEnvoyer() async {
+    for (final t in tables) {
+      if ((await t.aEnvoyer()).isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  /// Émet à chaque modification locale d'une table synchronisée.
+  Stream<void> get modifications =>
+      StreamGroup.merge(tables.map((t) => t.modifications));
 
   // ------------------------------------------------------------------ Tirage
 
@@ -243,7 +310,9 @@ class MoteurSynchronisationPoste {
           lignes.whereType<Map<String, dynamic>>().toList(),
         );
         rapport = rapport.avec(
-          recues: rapport.recues + r.absorbees,
+          recues: rapport.recues + (t.referentiel ? 0 : r.absorbees),
+          referentielsMisAJour:
+              rapport.referentielsMisAJour + (t.referentiel ? r.absorbees : 0),
           refuseesALaReception: rapport.refuseesALaReception + r.refusees,
           conserveesLocalement: rapport.conserveesLocalement + r.conservees,
           supplantees: rapport.supplantees + r.supplantees,
@@ -398,6 +467,11 @@ class MoteurSynchronisationPoste {
       '${r.recues} reçue(s)',
       '${r.acceptees} envoyée(s)',
     ];
+    if (r.referentielsMisAJour > 0) {
+      morceaux.add(
+        '${r.referentielsMisAJour} réglage(s) mis à jour depuis le serveur',
+      );
+    }
     if (r.refusees > 0) morceaux.add('${r.refusees} refusée(s) par le serveur');
     if (r.conserveesLocalement > 0) {
       morceaux.add(
@@ -421,6 +495,40 @@ class MoteurSynchronisationPoste {
           'synchronisées (${r.saisiesPerdues} saisie(s) non envoyée(s) perdue(s)).';
     }
     return texte;
+  }
+}
+
+/// Réponse à `GET /api/sync/demande`.
+class ReponseDemande {
+  const ReponseDemande(
+    this.issue, {
+    this.synchroniser = false,
+    this.resynchronisationComplete = false,
+  });
+
+  /// `terminee` = le serveur a répondu ; sinon voir [IssueSynchronisation].
+  final IssueSynchronisation issue;
+  final bool synchroniser;
+  final bool resynchronisationComplete;
+}
+
+/// Fusion minimale de flux (évite une dépendance pour une fonction).
+class StreamGroup {
+  static Stream<void> merge(Iterable<Stream<void>> flux) {
+    final controleur = StreamController<void>.broadcast();
+    final abonnements = <StreamSubscription<void>>[];
+    controleur.onListen = () {
+      for (final f in flux) {
+        abonnements.add(f.listen((_) => controleur.add(null)));
+      }
+    };
+    controleur.onCancel = () async {
+      for (final a in abonnements) {
+        await a.cancel();
+      }
+      abonnements.clear();
+    };
+    return controleur.stream;
   }
 }
 

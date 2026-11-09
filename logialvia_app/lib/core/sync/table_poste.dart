@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Une table du poste branchée à la synchronisation (`46_`).
 ///
 /// Chaque palier de la migration UUID (DV-19) branche une table de plus : le
@@ -5,6 +7,14 @@
 abstract class TablePoste {
   /// Nom de la table **côté serveur** (clé de `tables` dans pull et push).
   String get nom;
+
+  /// Référentiel : le **serveur gagne**, le poste ne l'envoie jamais
+  /// (`46_` §2.2). Le moteur le compte à part (« mis à jour depuis le serveur »).
+  bool get referentiel => false;
+
+  /// Émet à chaque modification locale de la table : le planificateur y repère
+  /// « un geste » et lance une synchronisation s'il reste quelque chose à envoyer.
+  Stream<void> get modifications => const Stream<void>.empty();
 
   /// Absorbe une page tirée du serveur, dans UNE transaction locale.
   ///

@@ -96,7 +96,23 @@ temporaire).
 - **Écran** : bouton « Synchroniser maintenant » dans l'onglet Appairage, avec rapport chiffré ; le bandeau dit que seuls les clients sont synchronisés.
 - **Tests** : 52 sur le moteur, contre un faux serveur qui rejoue la **logique** du serveur (arbitrage, curseur, pagination, marque), 13 mutations vérifiées ; **5 essais contre le vrai serveur Laravel** (appairage, deux postes, saisie ancienne en retard, refus avec le vrai motif, révocation) — `test/integration/serveur_reel_test.dart`.
 
-**Limites** : seule `clients` est branchée ; les référentiels tirés par le serveur (`modules_actifs`, `parametres_entreprise`) sont ignorés par le poste (palier suivant) ; pas de synchronisation automatique (déclencheurs, demande du serveur `GET /sync/demande` non interrogée) ; la suppression d'un client n'existe pas au poste ; les ventes retiennent le NOM du client (un homonyme est indiscernable : à traiter au palier des ventes).
+**Limites levées au palier 2 (§6e)** : référentiels et synchronisation automatique. **Limites restantes** : la suppression d'un client n'existe pas au poste ; les ventes retiennent le NOM du client (un homonyme est indiscernable : à traiter au palier des ventes) ; 21 fichiers de tables restent en entiers.
+
+## 6e. Palier 2 : référentiels et synchronisation automatique
+
+**Référentiels** (`modules_actifs`, `parametres_entreprise`) : le serveur gagne, le poste ne les envoie jamais, une remise à zéro les préserve. Trois garde-fous, chacun né d'un risque concret :
+
+- **Valeur de semis ≠ décision.** Une ligne que personne n'a jamais modifiée côté serveur (`updated_at == created_at`) n'est pas absorbée : le web est installé vide, le poste tient les vraies données (IFU, RCCM, modules choisis par la Gérante) et aucun chemin de retour n'existe encore (`POST /sync/demandes`). Une ligne absente du poste est toujours créée.
+- **Un `null` du serveur n'efface jamais** une valeur locale.
+- **Jamais absorbés** : `chemin_logo` / `chemin_favicon` (chemins de CETTE machine), `mode_donnees_test` (le verrou de sécurité de la remise à zéro : un serveur ne doit pas pouvoir le lever), l'identifiant. Un module inconnu du poste, un booléen incohérent, un préfixe vide ou trop long : refusés, jamais devinés.
+
+**Synchronisation automatique** (`PlanificateurSynchronisation`, démarré par `main.dart`) : à l'ouverture ; toutes les 30 s `GET /sync/demande` (« synchronise maintenant » servi une fois, « renvoyer vers ce poste » = tirage **complet** puis acquittement, *uniquement si le tirage a réussi*) ; **après un geste** (saisie locale, temporisée 3 s : une rafale = un envoi ; garde « rien à envoyer » : l'accusé ne relance rien) ; routine toutes les 5 min ; bouton. **Aucun minuteur tant que le poste n'est pas appairé** ; un 401 le **suspend** (plus un seul appel) jusqu'à un nouvel appairage ; hors ligne = on réessaie sans bruit. La barre du haut reçoit un indicateur **réel** (en cours, à jour à HH:MM, hors ligne, à vérifier, non appairé) à la place du badge « 3 en attente » du prototype, écrit en dur ; la barre latérale n'a pas besoin du bouton retiré (Appairage + barre du haut).
+
+*Défaut trouvé par les tests* : l'effacement du curseur avant un tirage complet ne s'était pas appliqué, donc « Renvoyer vers ce poste » ne renvoyait rien.
+
+**Tests** : 88 sur le moteur, les référentiels, le planificateur et l'indicateur (faux serveur à logique réelle) ; **7 essais contre le vrai serveur Laravel** dont les référentiels (décidé appliqué, semis ignoré) et la demande/renvoi/acquittement. Mutations vérifiées sur les gardes ; deux sont *équivalentes* et le restent : ne pas désarmer les minuteurs à la suspension (le garde `_suspendu` les rend inertes) et démarrer un poste non appairé (le moteur répond « non appairé » sans appeler le serveur).
+
+**Limites** : pas de synchronisation à la fermeture (`windowManager.destroy()` ne se retarde pas sur un réseau incertain) ; le poste ne peut toujours pas modifier un référentiel vers le serveur (`POST /sync/demandes`, W4+) ; les modifications faites au web sur les modules ne sont reçues qu'après `updated_at > created_at`, ce que seul un enregistrement par l'écran web garantit.
 
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 

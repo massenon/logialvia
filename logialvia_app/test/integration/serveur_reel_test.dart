@@ -5,6 +5,9 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:logialvia_app/administration/data/repositories/preferences_poste_repository.dart';
+import 'package:logialvia_app/administration/data/seed/modules_actifs_seeder.dart';
+import 'package:logialvia_app/administration/data/sync/table_modules_actifs_poste.dart';
+import 'package:logialvia_app/administration/data/sync/table_parametres_entreprise_poste.dart';
 import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
 import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
@@ -23,6 +26,9 @@ import 'package:logialvia_app/core/sync/service_appairage.dart';
 /// # puis des comptes admin1…admin8 (rôle admin, sans mot de passe temporaire) :
 /// php artisan tinker --execute="foreach (range(1,8) as \$i) { \$u = App\Models\User::query()->create(['name'=>'Admin '.\$i,'username'=>'admin'.\$i,'password'=>'EssaiPoste-2026!','is_active'=>true,'must_change_password'=>false]); \$u->assignRole('admin'); }"
 /// DB_DATABASE=/tmp/lv/essai.sqlite php artisan serve --port=8765
+///
+/// # un réglage DÉCIDÉ sur le serveur (updated_at > created_at) et un module laissé de semis :
+/// php artisan tinker --execute="App\Models\ModuleActif::where('module_id','bovins')->update(['is_actif'=>true]); App\Models\ParametresEntreprise::query()->update(['raison_sociale'=>'ALLMANY SARL (web)','prefixe_bac'=>'BC']);"
 ///
 /// # dans logialvia_app/
 /// LOGIALVIA_SERVEUR=http://127.0.0.1:8765 LOGIALVIA_MDP='EssaiPoste-2026!' \
@@ -46,6 +52,7 @@ void main() {
   /// Un poste complet, HTTP réel.
   Future<_Poste> poste() async {
     final db = AppDatabase.enMemoire();
+    await ModulesActifsSeeder(db).executer();
     final preferences = PreferencesPosteRepository(db);
     final depot = DepotJetonSyncMemoire();
     final appairage = ServiceAppairage(preferences: preferences, depot: depot);
@@ -64,7 +71,11 @@ void main() {
         preferences: preferences,
         depot: depot,
         appairage: appairage,
-        tables: [TableClientsPoste(db)],
+        tables: [
+          TableModulesActifsPoste(db),
+          TableParametresEntreprisePoste(db),
+          TableClientsPoste(db),
+        ],
         tailleLot: 2,
       ),
     );
@@ -166,6 +177,118 @@ void main() {
 
       expect((await a.ligne(c.id)).nom, 'Version récente');
       expect((await b.ligne(c.id)).nom, 'Version récente');
+    },
+    skip: saute,
+  );
+
+  test(
+    'référentiels réels : un réglage décidé descend, une valeur de semis n\'écrase rien',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      // Choix local de la Gérante sur un module que le serveur n'a jamais décidé.
+      await (a.db.update(a.db.modulesActifs)
+            ..where((m) => m.moduleId.equals('cuniculture')))
+          .write(const ModulesActifsCompanion(isActif: Value(true)));
+      await a.db
+          .into(a.db.parametresEntreprise)
+          .insertOnConflictUpdate(
+            const ParametresEntrepriseCompanion(
+              ifu: Value('IFU-LOCAL'),
+              modeDonneesTest: Value(false),
+            ),
+          );
+
+      final r = await a.moteur.synchroniser();
+      expect(r.reussie, isTrue, reason: r.message);
+
+      Future<bool> actif(String id) async => (await (a.db.select(
+        a.db.modulesActifs,
+      )..where((m) => m.moduleId.equals(id))).getSingle()).isActif;
+      expect(
+        await actif('bovins'),
+        isTrue,
+        reason: 'décidé sur le serveur : appliqué',
+      );
+      expect(
+        await actif('cuniculture'),
+        isTrue,
+        reason: 'semis du serveur : le choix local reste',
+      );
+
+      final p = await (a.db.select(
+        a.db.parametresEntreprise,
+      )..where((x) => x.id.equals(1))).getSingle();
+      expect(p.raisonSociale, 'ALLMANY SARL (web)');
+      expect(p.prefixeBac, 'BC');
+      expect(
+        p.ifu,
+        'IFU-LOCAL',
+        reason: 'null du serveur : jamais d\'effacement',
+      );
+      expect(p.modeDonneesTest, isFalse);
+      expect(r.referentielsMisAJour, greaterThanOrEqualTo(2));
+    },
+    skip: saute,
+  );
+
+  test(
+    'demande « synchronise maintenant » puis « renvoyer vers ce poste » : servies et acquittées',
+    () async {
+      final admin = await poste()
+        ..let(postes.add);
+      final b = await poste()
+        ..let(postes.add);
+      Future<http.Response> web(
+        String chemin,
+        Map<String, Object?> corps,
+      ) async => http.post(
+        Uri.parse('$adresse$chemin'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${await admin.depot.lire()}',
+        },
+        body: jsonEncode(corps),
+      );
+
+      // Rien demandé : rien à faire.
+      final repos = await b.moteur.interrogerDemande();
+      expect(repos.issue, IssueSynchronisation.terminee);
+      expect(repos.synchroniser, isFalse);
+
+      final idB = await b.preferences.identifiantPoste();
+      expect(
+        (await web('/api/parametres/postes/synchroniser', {
+          'device_name': idB,
+        })).statusCode,
+        200,
+      );
+      final servie = await b.moteur.interrogerDemande();
+      expect(servie.synchroniser, isTrue);
+      expect(
+        (await b.moteur.interrogerDemande()).synchroniser,
+        isFalse,
+        reason: 'servie une seule fois',
+      );
+
+      expect(
+        (await web('/api/parametres/postes/renvoyer', {
+          'device_name': idB,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await b.moteur.interrogerDemande()).resynchronisationComplete,
+        isTrue,
+      );
+      final complet = await b.moteur.synchroniser(complet: true);
+      expect(complet.reussie, isTrue, reason: complet.message);
+      expect(await b.moteur.acquitterResynchronisation(), isTrue);
+      expect(
+        (await b.moteur.interrogerDemande()).resynchronisationComplete,
+        isFalse,
+      );
     },
     skip: saute,
   );

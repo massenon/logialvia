@@ -25,6 +25,15 @@ class FauxServeurSync {
   int? panneAuTirageDePage;
 
   final Map<String, Map<String, dynamic>> clients = {};
+
+  /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
+  final Map<String, Map<String, dynamic>> modules = {};
+  Map<String, dynamic>? parametres;
+
+  /// Drapeaux déposés par le web (`GET /api/sync/demande`).
+  bool demandeSynchro = false;
+  bool resyncDemandee = false;
+  int acquittements = 0;
   final List<String> journal = []; // « GET pull », « POST push »…
   final List<Map<String, dynamic>> envois = [];
 
@@ -55,6 +64,37 @@ class FauxServeurSync {
   void remettreAZero() {
     clients.clear();
     marque = 'rz-${++_horloge}';
+  }
+
+  /// Un module tel que le serveur le sert. `decide` : le serveur l'a réellement
+  /// modifié (`updated_at` > `created_at`) ; sinon c'est une valeur de semis.
+  void ajouterModule(
+    String id, {
+    required bool actif,
+    bool decide = true,
+    String? espece,
+  }) {
+    final cree = _instant();
+    modules[id] = {
+      'id': 'm-$id',
+      'module_id': id,
+      'is_actif': actif,
+      'espece': espece,
+      'created_at': cree,
+      'updated_at': decide ? _instant() : cree,
+    };
+  }
+
+  /// Les paramètres tels que le serveur les sert.
+  void definirParametres(Map<String, dynamic> valeurs, {bool decide = true}) {
+    final cree = _instant();
+    parametres = {
+      'id': 'p-1',
+      'raison_sociale': 'ALLMANY ET COMPAGNIE',
+      'created_at': cree,
+      'updated_at': decide ? _instant() : cree,
+      ...valeurs,
+    };
   }
 
   /// Une saisie faite par un autre poste, déjà reçue par le serveur.
@@ -91,6 +131,19 @@ class FauxServeurSync {
     journal.add('${r.method} ${r.url.path}');
     if (jetonRevoque) return _json(401, {'message': 'Non authentifié.'});
 
+    if (r.url.path == '/api/sync/demande') {
+      final reponse = _json(200, {
+        'synchroniser': demandeSynchro,
+        'resynchronisation_complete': resyncDemandee,
+      });
+      demandeSynchro = false; // servie une fois
+      return reponse;
+    }
+    if (r.url.path == '/api/sync/resynchronisation/acquittement') {
+      resyncDemandee = false;
+      acquittements++;
+      return _json(200, {'message': 'Resynchronisation acquittée.'});
+    }
     if (r.url.path == '/api/sync/pull') return _pull(r);
     if (r.url.path == '/api/sync/push') return _push(r);
     return _json(404, {'message': 'inconnu'});
@@ -127,11 +180,23 @@ class FauxServeurSync {
       'last_page': derniere,
       'reset_mark': marque,
       'tables': {
-        'modules_actifs': [], // référentiels : pas encore branchés au poste
+        'modules_actifs': [
+          for (final m in modules.values)
+            if (_dans(m['updated_at'] as String, since, jusqua)) m,
+        ],
+        'parametres_entreprise': [
+          if (parametres != null &&
+              _dans(parametres!['updated_at'] as String, since, jusqua))
+            parametres,
+        ],
         'clients': lignes.skip(debut).take(lignesParPage).toList(),
       },
     });
   }
+
+  bool _dans(String instant, String? since, String jusqua) =>
+      (since == null || instant.compareTo(since) > 0) &&
+      instant.compareTo(jusqua) <= 0;
 
   Future<http.Response> _push(http.Request r) async {
     final corps = jsonDecode(r.body) as Map<String, dynamic>;

@@ -20,6 +20,13 @@ class TableClientsPoste implements TablePoste {
   String get nom => 'clients';
 
   @override
+  bool get referentiel => false;
+
+  @override
+  Stream<void> get modifications =>
+      _db.tableUpdates(TableUpdateQuery.onTable(_db.clients)).map((_) {});
+
+  @override
   Future<ResultatAbsorption> absorber(List<Map<String, dynamic>> lignes) {
     return _db.transaction(() async {
       var absorbees = 0;

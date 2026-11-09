@@ -152,3 +152,7 @@ Précisions apportées au §4 :
 ## 8. Règle d'absorption côté poste (précision, 09/11/2026)
 
 Le serveur arbitre par **dernier écrivain gagne, à l'instant de saisie**. Le poste applique la **même règle** quand il absorbe une ligne tirée : une ligne locale `pending` ou `conflict` n'est remplacée que si l'instant de saisie du serveur est **strictement supérieur** ; à instant égal ou plus ancien, la saisie locale est conservée et part à l'envoi. Sinon le poste garderait une saisie que le serveur a ignorée comme trop ancienne, la marquerait `synced`, et ne convergerait jamais (le curseur est déjà passé). Vérifié contre le vrai serveur (`45_` §6d). Le poste dit combien de saisies locales ont été remplacées.
+
+## 9. Référentiels côté poste (précision, 09/11/2026)
+
+« Le serveur gagne » ne vaut que **lorsque le serveur a décidé** : une ligne dont `updated_at` égale `created_at` porte une valeur de semis et n'est pas absorbée (voir `45_` §6e) ; une ligne absente du poste est toujours créée ; une valeur `null` n'efface jamais une valeur locale ; `chemin_logo`, `chemin_favicon`, `mode_donnees_test` et l'identifiant ne sont jamais absorbés. À lever quand `POST /api/sync/demandes` existera : le poste pourra alors proposer ses valeurs au serveur, et la règle du semis deviendra inutile.

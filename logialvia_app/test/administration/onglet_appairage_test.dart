@@ -10,6 +10,7 @@ import 'package:logialvia_app/administration/data/repositories/preferences_poste
 import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
 import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
 import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
+import 'package:logialvia_app/core/sync/planificateur_synchronisation.dart';
 import 'package:logialvia_app/administration/presentation/screens/widgets/onglet_appairage.dart';
 import 'package:logialvia_app/administration/presentation/viewmodels/appairage_view_model.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
@@ -24,6 +25,7 @@ void main() {
   late AppDatabase db;
   late DepotJetonSyncMemoire depot;
   late AppairageViewModel vm;
+  late PlanificateurSynchronisation planificateur;
   late List<http.Request> requetes;
   late Future<http.Response> Function(http.Request) serveur;
   late FauxServeurSync fauxSync;
@@ -59,9 +61,8 @@ void main() {
       depot: depot,
       client: client,
     );
-    vm = AppairageViewModel(
-      appairage,
-      MoteurSynchronisationPoste(
+    planificateur = PlanificateurSynchronisation(
+      moteur: MoteurSynchronisationPoste(
         preferences: preferences,
         depot: depot,
         appairage: appairage,
@@ -69,6 +70,7 @@ void main() {
         client: client,
       ),
     );
+    vm = AppairageViewModel(appairage, planificateur);
     await vm.charger();
   });
 
@@ -76,6 +78,18 @@ void main() {
     vm.dispose();
     await db.close();
   });
+
+  /// `testWidgets` + arrêt des minuteurs du planificateur DANS le corps du test :
+  /// un appairage les arme, et testWidgets refuse toute minuterie en attente.
+  void cas(String nom, Future<void> Function(WidgetTester) corps) {
+    testWidgets(nom, (t) async {
+      try {
+        await corps(t);
+      } finally {
+        planificateur.dispose();
+      }
+    });
+  }
 
   Future<void> afficher(WidgetTester t) async {
     await t.binding.setSurfaceSize(const Size(1200, 1400));
@@ -105,19 +119,18 @@ void main() {
     await t.enterText(find.byKey(const Key('appairage-mot-de-passe')), mdp);
   }
 
-  testWidgets(
-    'poste neuf : non appairé, formulaire visible, identifiant affiché',
-    (t) async {
-      await afficher(t);
+  cas('poste neuf : non appairé, formulaire visible, identifiant affiché', (
+    t,
+  ) async {
+    await afficher(t);
 
-      expect(find.textContaining('Poste non appairé'), findsOneWidget);
-      expect(find.text('Appairer ce poste'), findsOneWidget);
-      expect(find.text(vm.etat!.identifiantPoste), findsOneWidget);
-      expect(find.text('Non attribué'), findsOneWidget);
-    },
-  );
+    expect(find.textContaining('Poste non appairé'), findsOneWidget);
+    expect(find.text('Appairer ce poste'), findsOneWidget);
+    expect(find.text(vm.etat!.identifiantPoste), findsOneWidget);
+    expect(find.text('Non attribué'), findsOneWidget);
+  });
 
-  testWidgets('le mot de passe est masqué', (t) async {
+  cas('le mot de passe est masqué', (t) async {
     await afficher(t);
     final champ = t.widget<TextField>(
       find.byKey(const Key('appairage-mot-de-passe')),
@@ -125,9 +138,7 @@ void main() {
     expect(champ.obscureText, isTrue);
   });
 
-  testWidgets('appairer : bandeau vert, code du poste, formulaire remplacé', (
-    t,
-  ) async {
+  cas('appairer : bandeau vert, code du poste, formulaire remplacé', (t) async {
     await afficher(t);
     await saisir(t);
     await t.tap(find.text('Appairer'));
@@ -145,12 +156,12 @@ void main() {
     expect(find.text('Appairer ce poste'), findsNothing);
     expect(find.text('P3'), findsOneWidget);
     expect(
-      requetes.single.url.toString(),
+      requetes.first.url.toString(),
       'http://192.168.1.5:8000/api/auth/login',
     );
   });
 
-  testWidgets('le champ mot de passe est vidé dès l\'envoi', (t) async {
+  cas('le champ mot de passe est vidé dès l\'envoi', (t) async {
     final attente = Completer<http.Response>();
     serveur = (_) => attente.future;
     await afficher(t);
@@ -174,47 +185,40 @@ void main() {
     await t.pumpAndSettle();
   });
 
-  testWidgets(
-    'refus : le message du serveur est affiché, le formulaire reste',
-    (t) async {
-      serveur = (_) async =>
-          json(401, {'message': 'Identifiant ou mot de passe incorrect.'});
-      await afficher(t);
-      await saisir(t);
-      await t.tap(find.text('Appairer'));
-      await t.pumpAndSettle();
-
-      expect(
-        find.text('Identifiant ou mot de passe incorrect.'),
-        findsOneWidget,
-      );
-      expect(find.text('Appairer ce poste'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'serveur injoignable : message « hors ligne », pas d\'erreur rouge',
-    (t) async {
-      serveur = (_) async => throw http.ClientException('coupé');
-      await afficher(t);
-      await saisir(t);
-      await t.tap(find.text('Appairer'));
-      await t.pumpAndSettle();
-
-      expect(
-        find.descendant(
-          of: find.byKey(const Key('appairage-message')),
-          matching: find.textContaining('hors ligne'),
-        ),
-        findsOneWidget,
-      );
-      expect(t.takeException(), isNull);
-    },
-  );
-
-  testWidgets('déconnecter demande confirmation puis efface l\'appairage', (
+  cas('refus : le message du serveur est affiché, le formulaire reste', (
     t,
   ) async {
+    serveur = (_) async =>
+        json(401, {'message': 'Identifiant ou mot de passe incorrect.'});
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+
+    expect(find.text('Identifiant ou mot de passe incorrect.'), findsOneWidget);
+    expect(find.text('Appairer ce poste'), findsOneWidget);
+  });
+
+  cas('serveur injoignable : message « hors ligne », pas d\'erreur rouge', (
+    t,
+  ) async {
+    serveur = (_) async => throw http.ClientException('coupé');
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('appairage-message')),
+        matching: find.textContaining('hors ligne'),
+      ),
+      findsOneWidget,
+    );
+    expect(t.takeException(), isNull);
+  });
+
+  cas('déconnecter demande confirmation puis efface l\'appairage', (t) async {
     await afficher(t);
     await saisir(t);
     await t.tap(find.text('Appairer'));
@@ -241,45 +245,41 @@ void main() {
     await t.pumpAndSettle();
   });
 
-  testWidgets(
-    'tester la connexion avec un jeton révoqué : repasse non appairé',
-    (t) async {
-      await afficher(t);
-      await saisir(t);
-      await t.tap(find.text('Appairer'));
-      await t.pumpAndSettle();
-
-      serveur = (_) async => json(401, {'message': 'Non authentifié.'});
-      await t.tap(find.text('Tester la connexion'));
-      await t.pumpAndSettle();
-
-      expect(find.textContaining('n\'est plus appairé'), findsOneWidget);
-      expect(find.text('Appairer ce poste'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'Synchroniser maintenant : envoie les clients et dit le résultat',
-    (t) async {
-      await afficher(t);
-      await saisir(t);
-      await t.tap(find.text('Appairer'));
-      await t.pumpAndSettle();
-      await ClientsRepositoryDrift(db).creerClient(nom: 'Mama Rita');
-
-      await t.tap(find.text('Synchroniser maintenant'));
-      await t.pumpAndSettle();
-
-      expect(find.byKey(const Key('synchro-message')), findsOneWidget);
-      expect(find.textContaining('Synchronisation terminée'), findsOneWidget);
-      expect(find.textContaining('1 envoyée(s)'), findsOneWidget);
-      expect(fauxSync.clients, hasLength(1));
-    },
-  );
-
-  testWidgets('hors ligne : la synchronisation le dit sans erreur rouge', (
+  cas('tester la connexion avec un jeton révoqué : repasse non appairé', (
     t,
   ) async {
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+
+    serveur = (_) async => json(401, {'message': 'Non authentifié.'});
+    await t.tap(find.text('Tester la connexion'));
+    await t.pumpAndSettle();
+
+    expect(find.textContaining('n\'est plus appairé'), findsOneWidget);
+    expect(find.text('Appairer ce poste'), findsOneWidget);
+  });
+
+  cas('Synchroniser maintenant : envoie les clients et dit le résultat', (
+    t,
+  ) async {
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+    await ClientsRepositoryDrift(db).creerClient(nom: 'Mama Rita');
+
+    await t.tap(find.text('Synchroniser maintenant'));
+    await t.pumpAndSettle();
+
+    expect(find.byKey(const Key('synchro-message')), findsOneWidget);
+    expect(find.textContaining('Synchronisation terminée'), findsOneWidget);
+    expect(find.textContaining('1 envoyée(s)'), findsOneWidget);
+    expect(fauxSync.clients, hasLength(1));
+  });
+
+  cas('hors ligne : la synchronisation le dit sans erreur rouge', (t) async {
     await afficher(t);
     await saisir(t);
     await t.tap(find.text('Appairer'));

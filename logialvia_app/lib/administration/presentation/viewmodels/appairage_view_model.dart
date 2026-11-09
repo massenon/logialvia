@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/sync/moteur_synchronisation.dart';
+import '../../../core/sync/planificateur_synchronisation.dart';
 import '../../../core/sync/service_appairage.dart';
 
 /// État de l'onglet « Appairage » (Paramètres Généraux).
@@ -8,34 +9,30 @@ import '../../../core/sync/service_appairage.dart';
 /// Le **mot de passe ne passe jamais ici** : l'écran le garde dans son champ de
 /// saisie et le remet au service au moment de se connecter, puis le vide.
 class AppairageViewModel extends ChangeNotifier {
-  AppairageViewModel(this._service, [this._moteur]);
+  AppairageViewModel(this._service, [this._planificateur]) {
+    _planificateur?.addListener(_notifier);
+  }
 
   final ServiceAppairage _service;
-  final MoteurSynchronisationPoste? _moteur;
-  RapportSynchronisation? _dernierRapport;
-  bool _synchronisationEnCours = false;
 
-  /// Dernier rapport de synchronisation (réussie ou non).
-  RapportSynchronisation? get dernierRapport => _dernierRapport;
-  bool get synchronisationEnCours => _synchronisationEnCours;
+  /// Le planificateur **global** (un seul moteur, une seule synchronisation à la
+  /// fois). `null` dans les tests qui n'en ont pas besoin.
+  final PlanificateurSynchronisation? _planificateur;
 
-  /// `true` si ce ViewModel sait synchroniser (moteur fourni).
-  bool get peutSynchroniser => _moteur != null;
+  /// Dernier rapport de synchronisation (réussie ou non), déclencheur quelconque.
+  RapportSynchronisation? get dernierRapport => _planificateur?.dernierRapport;
+  bool get synchronisationEnCours => _planificateur?.enCours ?? false;
+
+  /// `true` si ce ViewModel sait synchroniser.
+  bool get peutSynchroniser => _planificateur != null;
 
   Future<void> synchroniser() async {
-    final moteur = _moteur;
-    if (moteur == null || _synchronisationEnCours) return;
-    _synchronisationEnCours = true;
-    _dernierRapport = null;
+    final planificateur = _planificateur;
+    if (planificateur == null || planificateur.enCours) return;
+    await planificateur.synchroniserMaintenant();
+    // Un 401 a effacé le jeton : l'état affiché doit le refléter.
+    _etat = await _service.etat();
     _notifier();
-    try {
-      _dernierRapport = await moteur.synchroniser();
-      // Un 401 a effacé le jeton : l'état affiché doit le refléter.
-      _etat = await _service.etat();
-    } finally {
-      _synchronisationEnCours = false;
-      _notifier();
-    }
   }
 
   EtatAppairage? _etat;
@@ -82,6 +79,10 @@ class AppairageViewModel extends ChangeNotifier {
     try {
       final resultat = await action();
       _dernierResultat = resultat;
+      // Un poste qui vient de s'appairer reprend sa synchronisation.
+      if (resultat.reussi && resultat.codePoste != null) {
+        _planificateur?.reprendre();
+      }
       _etat = await _service.etat();
       return resultat;
     } finally {
@@ -96,6 +97,7 @@ class AppairageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _planificateur?.removeListener(_notifier);
     _disposed = true;
     super.dispose();
   }

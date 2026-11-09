@@ -19,11 +19,8 @@ import '../../domain/entities/parametres_entreprise.dart';
 import '../../domain/entities/utilisateur.dart';
 import '../../domain/repositories/parametres_repository.dart';
 import '../../../commercial/domain/services/transmission_mecef.dart';
-import '../../../core/sync/depot_jeton_sync.dart';
-import '../../../core/sync/moteur_synchronisation.dart';
+import '../../../core/sync/planificateur_synchronisation.dart';
 import '../../../core/sync/service_appairage.dart';
-import '../../../commercial/data/sync/table_clients_poste.dart';
-import '../../data/repositories/preferences_poste_repository.dart';
 import '../viewmodels/appairage_view_model.dart';
 import '../viewmodels/modules_actifs_view_model.dart';
 import '../viewmodels/parametres_generaux_view_model.dart';
@@ -74,25 +71,10 @@ class PageParametresGeneraux extends StatelessWidget {
         ),
         // Appairage : a son propre ViewModel (reseau + coffre du systeme).
         ChangeNotifierProvider<AppairageViewModel>(
-          create: (context) {
-            final db = context.read<AppDatabase>();
-            final preferences = PreferencesPosteRepository(db);
-            const depot = DepotJetonSyncSecurise();
-            final appairage = ServiceAppairage(
-              preferences: preferences,
-              depot: depot,
-            );
-            return AppairageViewModel(
-              appairage,
-              MoteurSynchronisationPoste(
-                preferences: preferences,
-                depot: depot,
-                appairage: appairage,
-                // Palier 1 de la migration UUID (DV-19) : les clients.
-                tables: [TableClientsPoste(db)],
-              ),
-            )..charger();
-          },
+          create: (context) => AppairageViewModel(
+            context.read<ServiceAppairage>(),
+            context.read<PlanificateurSynchronisation>(),
+          )..charger(),
         ),
       ],
       child: const ParametresGenerauxScreen(),

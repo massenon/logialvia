@@ -26,6 +26,13 @@ import 'pilotage/presentation/viewmodels/alertes_view_model.dart';
 import 'pilotage/presentation/viewmodels/dashboard_elevage_view_model.dart';
 import 'pilotage/presentation/viewmodels/tableau_bord_view_model.dart';
 import 'administration/presentation/viewmodels/splash_view_model.dart';
+import 'administration/data/sync/table_modules_actifs_poste.dart';
+import 'administration/data/sync/table_parametres_entreprise_poste.dart';
+import 'commercial/data/sync/table_clients_poste.dart';
+import 'core/sync/depot_jeton_sync.dart';
+import 'core/sync/moteur_synchronisation.dart';
+import 'core/sync/planificateur_synchronisation.dart';
+import 'core/sync/service_appairage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -143,6 +150,39 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
   late final ModulesActifsViewModel _modulesActifsViewModel =
       ModulesActifsViewModel(ModulesActifsRepositoryDrift(widget.database));
 
+  // --- Appairage et synchronisation (un seul moteur pour toute l'application :
+  // deux tirages entrelaces se disputeraient le curseur) ---
+  late final PreferencesPosteRepository _preferencesPoste =
+      PreferencesPosteRepository(widget.database);
+  late final ServiceAppairage _appairage = ServiceAppairage(
+    preferences: _preferencesPoste,
+    depot: const DepotJetonSyncSecurise(),
+  );
+  late final MoteurSynchronisationPoste
+  _moteurSynchro = MoteurSynchronisationPoste(
+    preferences: _preferencesPoste,
+    depot: const DepotJetonSyncSecurise(),
+    appairage: _appairage,
+    // Referentiels d'abord (le serveur gagne), puis les faits saisis au poste.
+    // Palier 2 de la migration UUID (DV-19) : les ventes, achats… suivront.
+    tables: [
+      TableModulesActifsPoste(widget.database),
+      TableParametresEntreprisePoste(widget.database),
+      TableClientsPoste(widget.database),
+    ],
+  );
+  late final PlanificateurSynchronisation
+  _planificateur = PlanificateurSynchronisation(
+    moteur: _moteurSynchro,
+    // La navigation depend des modules actifs : si le serveur les a changes,
+    // la barre laterale doit suivre sans redemarrage.
+    apresSynchronisation: (rapport) {
+      if (rapport.referentielsMisAJour > 0) {
+        _modulesActifsViewModel.charger();
+      }
+    },
+  );
+
   /// Bus d'evenements de domaine (Doc C1 §4) — instance unique pour toute
   /// l'application.
   final EventBus _bus = EventBus();
@@ -153,7 +193,16 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    // Sans effet (aucun minuteur) tant que le poste n'est pas appaire.
+    _planificateur.demarrer();
+  }
+
+  @override
   void dispose() {
+    // Avant la fermeture de la base : un geste tardif ne doit pas l'ecrire.
+    _planificateur.dispose();
     _authViewModel.dispose();
     _modulesActifsViewModel.dispose();
     _bus.dispose();
@@ -176,6 +225,10 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
         // Gerante n'aurait aucun moyen de savoir si elle a reussi.
         Provider<RapportRestauration?>.value(value: widget.rapportRestauration),
         Provider<EventBus>.value(value: _bus),
+        Provider<ServiceAppairage>.value(value: _appairage),
+        ChangeNotifierProvider<PlanificateurSynchronisation>.value(
+          value: _planificateur,
+        ),
         ChangeNotifierProvider<AuthViewModel>.value(value: _authViewModel),
         ChangeNotifierProvider<ModulesActifsViewModel>.value(
           value: _modulesActifsViewModel,
