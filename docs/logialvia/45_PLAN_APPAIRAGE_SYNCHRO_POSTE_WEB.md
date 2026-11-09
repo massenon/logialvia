@@ -25,15 +25,24 @@ Décidé aussi : le web Laravel vit dans `logialvia_laravel/` de ce dépôt ; **
 lui est conforme (jetons de design, libellés, règles de calcul) ; si `prototype_html` est fourni plus tard, il prime
 (DV-18).
 
-## 3. Blocage actuel
+## 3. Blocage actuel (diagnostic corrigé le 09/11/2026)
 
-`composer create-project` n'a pas pu télécharger les archives : les hôtes GitHub utilisés par Composer
-(`api.github.com`, `codeload.github.com`) répondent **403** dans l'environnement de la session. Composer retombe
-alors sur le clonage git de chaque dépendance (plus de 5 Go de dépôts pour un squelette) : arrêté et supprimé.
+`composer create-project` ne peut pas télécharger les archives de ses dépendances. Les appels à
+`api.github.com` et `codeload.github.com` répondent **403**, avec ce message : « *GitHub access to this repository is
+not enabled for this session* ». **Ce n'est pas une règle de liste d'hôtes** : une passerelle de la session ne sert
+que les dépôts rattachés à la session, et Composer en réclame des centaines (`laravel/framework`, `symfony/*`…).
 
-Les deux hôtes ont été ajoutés à un environnement personnel `logialvia` le 08/11/2026 ; le proxy peut mettre jusqu'à
-une heure à le prendre en compte. Tant que le 403 persiste, **aucune installation Laravel n'est possible**. Les
-travaux qui ne dépendent pas du réseau (migration UUID du poste, contrat de synchronisation) peuvent avancer.
+> Erreur de diagnostic à ne pas répéter : le 08/11 des hôtes ont été ajoutés à un environnement personnel
+> (aujourd'hui nommé « GitHub »). **Cela ne change rien** au 403 ; cet environnement est inutile et peut être
+> supprimé dans les réglages.
+
+**Voie retenue** : installer par **clonage git** (`composer … --prefer-source`), que le proxy autorise pour les dépôts
+publics. C'est lourd (plusieurs Go de dépôts pour un squelette, les historiques complets étant clonés) : un
+garde-fou arrête l'installation si l'espace libre passe sous 6 Go. `vendor/` n'est jamais versionné.
+
+**Si l'installation échoue** : installer sur le poste du client ou une machine avec accès normal à Packagist, puis
+pousser le dossier sans `vendor/`. Les travaux qui ne dépendent pas du réseau (migration UUID du poste, contrat de
+synchronisation) avancent en attendant.
 
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
@@ -66,7 +75,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 
 | # | Étape | Dépend de | État |
 |---|---|---|---|
-| W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | réseau GitHub (§3) | **bloqué** |
+| W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | en cours |
 | W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | en attente |
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | en attente |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2, Q-SYNC-1 | en attente |
