@@ -411,9 +411,15 @@ void main() {
 
   group('Onglet 4 — Dettes Fournisseurs', () {
     setUp(() async {
-      final id = await db
+      const id = 'f0000001-0000-4000-8000-000000000001';
+      await db
           .into(db.fournisseurs)
-          .insert(FournisseursCompanion.insert(nom: 'Fournisseur Maïs Local'));
+          .insert(
+            FournisseursCompanion.insert(
+              id: const Value(id),
+              nom: 'Fournisseur Maïs Local',
+            ),
+          );
       await db
           .into(db.achats)
           .insert(

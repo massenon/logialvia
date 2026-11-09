@@ -10,6 +10,11 @@ import 'package:logialvia_app/administration/data/seed/modules_actifs_seeder.dar
 import 'package:logialvia_app/administration/data/sync/depot_demandes_referentiel.dart';
 import 'package:logialvia_app/administration/data/sync/table_modules_actifs_poste.dart';
 import 'package:logialvia_app/administration/data/sync/table_parametres_entreprise_poste.dart';
+import 'package:logialvia_app/approvisionnement/data/repositories/approvisionnement_repository_drift.dart';
+import 'package:logialvia_app/approvisionnement/data/seed/intrants_seeder.dart';
+import 'package:logialvia_app/approvisionnement/data/sync/table_achats_poste.dart';
+import 'package:logialvia_app/approvisionnement/data/sync/table_fournisseurs_poste.dart';
+import 'package:logialvia_app/approvisionnement/domain/entities/approvisionnement.dart';
 import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
 import 'package:logialvia_app/commercial/data/repositories/ventes_repository_drift.dart';
 import 'package:logialvia_app/commercial/data/seed/catalogue_seeder.dart';
@@ -67,6 +72,9 @@ void main() {
     await CatalogueSeeder(
       db,
     ).executer(); // 14 produits, memes UUID sur tous les postes
+    await IntrantsSeeder(
+      db,
+    ).executer(); // 6 intrants : memes codes sur tous les postes
     final preferences = PreferencesPosteRepository(db);
     final depot = DepotJetonSyncMemoire();
     final appairage = ServiceAppairage(preferences: preferences, depot: depot);
@@ -90,7 +98,9 @@ void main() {
           TableParametresEntreprisePoste(db),
           TableProduitsPoste(db),
           TableClientsPoste(db),
+          TableFournisseursPoste(db),
           TableVentesPoste(db),
+          TableAchatsPoste(db),
         ],
         demandes: DepotDemandesReferentiel(db),
         tailleLot: 2,
@@ -521,6 +531,128 @@ void main() {
         p.prix - 1000,
         reason:
             'solde dérivé calculé par le serveur, jamais envoyé par le poste',
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'achats réels : deux postes achètent, chacun reçoit ceux de l\'autre, références à code de poste, stock inchangé',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      final b = await poste()
+        ..let(postes.add);
+      final appA = ApprovisionnementRepositoryDrift(a.db);
+      final appB = ApprovisionnementRepositoryDrift(b.db);
+
+      Future<String> acheter(
+        ApprovisionnementRepositoryDrift repo,
+        String fournisseur, {
+        bool livree = false,
+      }) async {
+        final f = await repo.creerFournisseur(
+          nom: fournisseur,
+          telephone: '97000001',
+        );
+        final r = await repo.enregistrerAchat(
+          fournisseurId: f.id,
+          mode: ModeReglement.especes,
+          montantPaye: 5000,
+          livree: livree,
+          panier: [
+            const LignePanierAchat(
+              intrantCode: 'INT-001',
+              nom: 'Maïs',
+              quantite: 50,
+              prixUnitaire: 300,
+              unite: 'kg',
+            ),
+          ],
+        );
+        return r.reference;
+      }
+
+      final codeA = (await a.appairage.etat()).codePoste!;
+      final codeB = (await b.appairage.etat()).codePoste!;
+      final refA = await acheter(appA, 'Maïs Local A', livree: true);
+      final refB = await acheter(appB, 'Maïs Local B');
+      expect(refA, startsWith('ACH-$codeA-'));
+      expect(refB, startsWith('ACH-$codeB-'));
+      Future<int> stock(AppDatabase db) async => (await (db.select(
+        db.intrants,
+      )..where((i) => i.code.equals('INT-001'))).getSingle()).stock;
+      final stockB = await stock(b.db);
+
+      final ra = await a.moteur.synchroniser();
+      expect(ra.reussie, isTrue, reason: ra.message);
+      expect(ra.refusees, 0, reason: ra.message);
+      final rb = await b.moteur.synchroniser();
+      expect(rb.refusees, 0, reason: rb.message);
+      await a.moteur.synchroniser();
+
+      for (final p in [a, b]) {
+        final refs = (await p.db.select(p.db.achats).get())
+            .map((x) => x.ref)
+            .toSet();
+        expect(
+          refs,
+          containsAll([refA, refB]),
+          reason: 'chaque poste connaît les deux achats',
+        );
+        expect(
+          (await p.db.select(p.db.lignesAchat).get()).length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(
+          (await p.db.select(p.db.achats).get()).every(
+            (x) => x.syncStatus == 'synced',
+          ),
+          isTrue,
+        );
+      }
+      expect(
+        await stock(b.db),
+        stockB,
+        reason: 'l\'achat livré de A reçu chez B n\'a pas touché son stock',
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'achats réels : un caissier ne voit ni achats ni fournisseurs, et ne peut en écrire',
+    () async {
+      final c = await poste(compteForce: 'caissier1')
+        ..let(postes.add);
+      final app = ApprovisionnementRepositoryDrift(c.db);
+      final f = await app.creerFournisseur(nom: 'Interdit');
+      await app.enregistrerAchat(
+        fournisseurId: f.id,
+        mode: ModeReglement.especes,
+        montantPaye: 0,
+        livree: false,
+        panier: [
+          const LignePanierAchat(
+            intrantCode: 'INT-001',
+            nom: 'Maïs',
+            quantite: 1,
+            prixUnitaire: 300,
+            unite: 'kg',
+          ),
+        ],
+      );
+
+      final r = await c.moteur.synchroniser();
+
+      expect(r.refusees, greaterThanOrEqualTo(2), reason: r.message);
+      final fournisseur = await (c.db.select(
+        c.db.fournisseurs,
+      )..where((x) => x.id.equals(f.id))).getSingle();
+      expect(fournisseur.syncStatus, 'conflict');
+      expect(
+        fournisseur.syncMotif,
+        'Droit insuffisant pour écrire dans « fournisseurs ».',
       );
     },
     skip: saute,

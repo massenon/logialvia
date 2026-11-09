@@ -311,7 +311,9 @@ class MoteurSynchronisationPoste {
           // Remise à zéro du serveur : le poste purge ses tables d'activité,
           // compte ce qu'il perd, puis repart d'un tirage COMPLET.
           var perdues = 0;
-          for (final t in tables) {
+          // Dans l'ordre INVERSE des dependances : les achats avant leur
+          // fournisseur, sinon la cle etrangere refuse la suppression.
+          for (final t in tables.reversed) {
             perdues += await t.purger();
           }
           await preferences.definirCurseurTirage(null);

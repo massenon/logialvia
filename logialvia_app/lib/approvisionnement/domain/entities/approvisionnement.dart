@@ -82,7 +82,7 @@ class Fournisseur {
     this.nombreCommandes = 0,
   });
 
-  final int id;
+  final String id;
   final String nom;
   final String? telephone;
   final String? adresse;
@@ -128,7 +128,7 @@ class Achat {
   });
 
   final String reference;
-  final int fournisseurId;
+  final String fournisseurId;
   final String fournisseurNom;
   final DateTime date;
   final String statut;

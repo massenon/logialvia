@@ -4,6 +4,9 @@ import 'package:drift/drift.dart';
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
 import '../../../core/database/app_database.dart';
+import '../../../commercial/domain/services/numerotation_pieces.dart';
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/approvisionnement.dart';
 import '../../domain/entities/fabrication_provende.dart';
 
@@ -51,7 +54,7 @@ abstract class ApprovisionnementRepository {
   /// incrémenté, leur PMP recalculé, et les mouvements journalisés — le tout
   /// dans une seule transaction.
   Future<Achat> enregistrerAchat({
-    required int fournisseurId,
+    required String fournisseurId,
     required String mode,
     required double montantPaye,
     required List<LignePanierAchat> panier,
@@ -385,10 +388,12 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
     String? adresse,
     String? fournit,
   }) async {
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.fournisseurs)
         .insert(
           FournisseursCompanion.insert(
+            id: Value(id),
             nom: nom,
             telephone: Value(telephone),
             adresse: Value(adresse),
@@ -406,7 +411,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
   @override
   Future<Achat> enregistrerAchat({
-    required int fournisseurId,
+    required String fournisseurId,
     required String mode,
     required double montantPaye,
     required List<LignePanierAchat> panier,
@@ -513,7 +518,15 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       );
 
       await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(const AchatsCompanion(statut: Value(StatutAchat.livre)));
+          .write(
+            AchatsCompanion(
+              statut: const Value(StatutAchat.livre),
+              // Toute modification locale repasse l'achat a envoyer.
+              syncStatus: const Value('pending'),
+              syncMotif: const Value(null),
+              updatedAt: Value(instantSaisie()),
+            ),
+          );
     });
   }
 
@@ -535,7 +548,14 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       // Ne jamais regler plus que le total du.
       final nouveauPaye = (achat.paye + montant).clamp(0.0, achat.total);
       await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(AchatsCompanion(paye: Value(nouveauPaye)));
+          .write(
+            AchatsCompanion(
+              paye: Value(nouveauPaye),
+              syncStatus: const Value('pending'),
+              syncMotif: const Value(null),
+              updatedAt: Value(instantSaisie()),
+            ),
+          );
     });
 
     // Reglement d'une dette : Fournisseurs au debit, Tresorerie au credit.
@@ -628,17 +648,20 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         );
   }
 
+  /// Référence officielle : `ACH-P2-2026-001` pour un poste appairé (DV-21),
+  /// `ACH-2026-001` sinon. Séquence continue par poste et par année.
   Future<String> _prochaineReference(int annee) async {
-    final prefixe = 'ACH-$annee-';
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    final prefixe = NumerotationPieces.prefixeAchat(annee, code);
     final existantes = await (_db.select(
       _db.achats,
     )..where((a) => a.ref.like('$prefixe%'))).get();
 
     var maximum = 0;
     for (final achat in existantes) {
-      final numero = int.tryParse(achat.ref.substring(prefixe.length));
+      final numero = NumerotationPieces.sequence(achat.ref, prefixe);
       if (numero != null && numero > maximum) maximum = numero;
     }
-    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+    return NumerotationPieces.composer(prefixe, maximum + 1);
   }
 }

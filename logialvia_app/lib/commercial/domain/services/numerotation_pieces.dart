@@ -15,6 +15,13 @@ class NumerotationPieces {
       ? 'V-$annee-'
       : 'V-$codePoste-$annee-';
 
+  /// `ACH-P2-2026-` ou, sans code de poste, `ACH-2026-`. (Le contrat parlait de
+  /// `A-…` : le préfixe réel des achats du poste est `ACH`, conservé.)
+  static String prefixeAchat(int annee, String? codePoste) =>
+      codePoste == null || codePoste.isEmpty
+      ? 'ACH-$annee-'
+      : 'ACH-$codePoste-$annee-';
+
   /// Le numéro d'ordre d'une référence qui porte ce [prefixe], ou `null`.
   static int? sequence(String reference, String prefixe) {
     if (!reference.startsWith(prefixe)) return null;

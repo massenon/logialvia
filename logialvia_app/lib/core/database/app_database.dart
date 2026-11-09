@@ -99,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 34;
+  static const int versionSchema = 35;
 
   @override
   int get schemaVersion => versionSchema;
@@ -406,6 +406,11 @@ class AppDatabase extends _$AppDatabase {
         // colonnes de synchronisation. La cle primaire reste `ref`.
         await _ventesEnUuid(m);
       }
+      if (from < 35) {
+        // DV-19, palier 4 : fournisseurs, achats et lignes d'achat en UUID.
+        // `achats.fournisseur_id` suit, chaque achat garde son fournisseur.
+        await _achatsEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -535,6 +540,77 @@ class AppDatabase extends _$AppDatabase {
     }
 
     await customStatement('DROP TABLE IF EXISTS _map_produits');
+  }
+
+  /// Fournisseurs, achats et lignes d'achat en UUID. Idempotent.
+  ///
+  /// Les achats gardent leur fournisseur (table de correspondance ancien entier ->
+  /// UUID le temps de la migration) et leur numero officiel (`ref`, cle primaire,
+  /// ne change JAMAIS). Le fournisseur recoit un UUID ALEATOIRE : ce sont des
+  /// donnees saisies par l'utilisatrice, jamais semees identiquement.
+  Future<void> _achatsEnUuid(Migrator m) async {
+    final colonnes = await customSelect('PRAGMA table_info("fournisseurs")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT') {
+      return;
+    }
+
+    await customStatement('DROP TABLE IF EXISTS _map_fournisseurs');
+    await customStatement(
+      'CREATE TABLE _map_fournisseurs AS '
+      'SELECT id AS ancien, $_uuidSql AS nouveau FROM fournisseurs',
+    );
+
+    await m.alterTable(
+      TableMigration(
+        fournisseurs,
+        columnTransformer: {
+          fournisseurs.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_fournisseurs WHERE ancien = id)',
+          ),
+          // Un fournisseur d'hier a ete saisi AVANT la migration : on ne sait pas
+          // quand ; l'instant de la migration est le seul disponible, et comme
+          // aucun autre poste ne le connait encore, il ne peut battre personne.
+          fournisseurs.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          ),
+        },
+        newColumns: [
+          fournisseurs.syncStatus,
+          fournisseurs.syncMotif,
+          fournisseurs.updatedAt,
+        ],
+      ),
+    );
+    await m.alterTable(
+      TableMigration(
+        achats,
+        columnTransformer: {
+          achats.id: const CustomExpression<String>(_uuidSql),
+          achats.fournisseurId: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_fournisseurs WHERE ancien = fournisseur_id)',
+          ),
+          // Un achat d'hier a ete saisi le jour de son achat.
+          achats.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', date_achat, 'unixepoch')",
+          ),
+        },
+        newColumns: [
+          achats.id,
+          achats.syncStatus,
+          achats.syncMotif,
+          achats.updatedAt,
+        ],
+      ),
+    );
+    await m.alterTable(
+      TableMigration(
+        lignesAchat,
+        columnTransformer: {lignesAchat.id: const CustomExpression<String>(_uuidSql)},
+      ),
+    );
+
+    await customStatement('DROP TABLE IF EXISTS _map_fournisseurs');
   }
 
   /// Donne a `ventes` un UUID, un `client_id` et les colonnes de synchronisation.

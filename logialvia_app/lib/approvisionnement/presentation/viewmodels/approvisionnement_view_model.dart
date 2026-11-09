@@ -147,9 +147,9 @@ class ApprovisionnementViewModel extends ChangeNotifier {
   double get totalPanier => _panier.fold(0, (s, l) => s + l.total);
   bool get panierVide => _panier.isEmpty;
 
-  int? _fournisseurSelectionne;
-  int? get fournisseurSelectionne => _fournisseurSelectionne;
-  set fournisseurSelectionne(int? valeur) {
+  String? _fournisseurSelectionne;
+  String? get fournisseurSelectionne => _fournisseurSelectionne;
+  set fournisseurSelectionne(String? valeur) {
     _fournisseurSelectionne = valeur;
     notifyListeners();
   }

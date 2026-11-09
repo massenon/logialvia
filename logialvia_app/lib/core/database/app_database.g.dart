@@ -11150,16 +11150,13 @@ class $FournisseursTable extends Fournisseurs
   $FournisseursTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _nomMeta = const VerificationMeta('nom');
   @override
@@ -11203,8 +11200,52 @@ class $FournisseursTable extends Fournisseurs
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, nom, telephone, adresse, fournit];
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    nom,
+    telephone,
+    adresse,
+    fournit,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -11246,6 +11287,24 @@ class $FournisseursTable extends Fournisseurs
         fournit.isAcceptableOrUnknown(data['fournit']!, _fournitMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -11256,7 +11315,7 @@ class $FournisseursTable extends Fournisseurs
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FournisseurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       nom: attachedDatabase.typeMapping.read(
@@ -11275,6 +11334,18 @@ class $FournisseursTable extends Fournisseurs
         DriftSqlType.string,
         data['${effectivePrefix}fournit'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -11285,7 +11356,9 @@ class $FournisseursTable extends Fournisseurs
 }
 
 class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
-  final int id;
+  /// UUID genere au poste (DV-19) : un fournisseur cree sur deux postes ne peut pas
+  /// porter le meme entier. Les anciens recoivent le leur a la migration v35.
+  final String id;
   final String nom;
 
   /// Doc D1 nomme cette colonne `contact` ; le tableau reel (`fournisseurs.html`
@@ -11296,17 +11369,27 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
   /// ⚠️ AJOUTEE — colonne « Fournit » du tableau reel (l.136) : ce que le
   /// fournisseur approvisionne. Absente de Doc D1.
   final String? fournit;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const FournisseurRow({
     required this.id,
     required this.nom,
     this.telephone,
     this.adresse,
     this.fournit,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['nom'] = Variable<String>(nom);
     if (!nullToAbsent || telephone != null) {
       map['telephone'] = Variable<String>(telephone);
@@ -11317,6 +11400,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
     if (!nullToAbsent || fournit != null) {
       map['fournit'] = Variable<String>(fournit);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -11333,6 +11421,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
       fournit: fournit == null && nullToAbsent
           ? const Value.absent()
           : Value(fournit),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -11342,37 +11435,49 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FournisseurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       nom: serializer.fromJson<String>(json['nom']),
       telephone: serializer.fromJson<String?>(json['telephone']),
       adresse: serializer.fromJson<String?>(json['adresse']),
       fournit: serializer.fromJson<String?>(json['fournit']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'nom': serializer.toJson<String>(nom),
       'telephone': serializer.toJson<String?>(telephone),
       'adresse': serializer.toJson<String?>(adresse),
       'fournit': serializer.toJson<String?>(fournit),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   FournisseurRow copyWith({
-    int? id,
+    String? id,
     String? nom,
     Value<String?> telephone = const Value.absent(),
     Value<String?> adresse = const Value.absent(),
     Value<String?> fournit = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => FournisseurRow(
     id: id ?? this.id,
     nom: nom ?? this.nom,
     telephone: telephone.present ? telephone.value : this.telephone,
     adresse: adresse.present ? adresse.value : this.adresse,
     fournit: fournit.present ? fournit.value : this.fournit,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   FournisseurRow copyWithCompanion(FournisseursCompanion data) {
     return FournisseurRow(
@@ -11381,6 +11486,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
       telephone: data.telephone.present ? data.telephone.value : this.telephone,
       adresse: data.adresse.present ? data.adresse.value : this.adresse,
       fournit: data.fournit.present ? data.fournit.value : this.fournit,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -11391,13 +11501,25 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
           ..write('nom: $nom, ')
           ..write('telephone: $telephone, ')
           ..write('adresse: $adresse, ')
-          ..write('fournit: $fournit')
+          ..write('fournit: $fournit, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, nom, telephone, adresse, fournit);
+  int get hashCode => Object.hash(
+    id,
+    nom,
+    telephone,
+    adresse,
+    fournit,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -11406,21 +11528,32 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
           other.nom == this.nom &&
           other.telephone == this.telephone &&
           other.adresse == this.adresse &&
-          other.fournit == this.fournit);
+          other.fournit == this.fournit &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> nom;
   final Value<String?> telephone;
   final Value<String?> adresse;
   final Value<String?> fournit;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const FournisseursCompanion({
     this.id = const Value.absent(),
     this.nom = const Value.absent(),
     this.telephone = const Value.absent(),
     this.adresse = const Value.absent(),
     this.fournit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FournisseursCompanion.insert({
     this.id = const Value.absent(),
@@ -11428,13 +11561,21 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
     this.telephone = const Value.absent(),
     this.adresse = const Value.absent(),
     this.fournit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : nom = Value(nom);
   static Insertable<FournisseurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? nom,
     Expression<String>? telephone,
     Expression<String>? adresse,
     Expression<String>? fournit,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -11442,15 +11583,23 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
       if (telephone != null) 'telephone': telephone,
       if (adresse != null) 'adresse': adresse,
       if (fournit != null) 'fournit': fournit,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FournisseursCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? nom,
     Value<String?>? telephone,
     Value<String?>? adresse,
     Value<String?>? fournit,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return FournisseursCompanion(
       id: id ?? this.id,
@@ -11458,6 +11607,10 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
       telephone: telephone ?? this.telephone,
       adresse: adresse ?? this.adresse,
       fournit: fournit ?? this.fournit,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -11465,7 +11618,7 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (nom.present) {
       map['nom'] = Variable<String>(nom.value);
@@ -11479,6 +11632,18 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
     if (fournit.present) {
       map['fournit'] = Variable<String>(fournit.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -11489,7 +11654,11 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
           ..write('nom: $nom, ')
           ..write('telephone: $telephone, ')
           ..write('adresse: $adresse, ')
-          ..write('fournit: $fournit')
+          ..write('fournit: $fournit, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -11500,6 +11669,16 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $AchatsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
   static const VerificationMeta _refMeta = const VerificationMeta('ref');
   @override
   late final GeneratedColumn<String> ref = GeneratedColumn<String>(
@@ -11513,11 +11692,11 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     'fournisseurId',
   );
   @override
-  late final GeneratedColumn<int> fournisseurId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> fournisseurId = GeneratedColumn<String>(
     'fournisseur_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES fournisseurs (id)',
@@ -11582,8 +11761,44 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
     ref,
     fournisseurId,
     dateAchat,
@@ -11592,6 +11807,9 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     paye,
     mode,
     echeance,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11605,6 +11823,9 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('ref')) {
       context.handle(
         _refMeta,
@@ -11666,21 +11887,47 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         echeance.isAcceptableOrUnknown(data['echeance']!, _echeanceMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {ref};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {id},
+  ];
+  @override
   AchatRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AchatRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
       ref: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
       )!,
       fournisseurId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}fournisseur_id'],
       )!,
       dateAchat: attachedDatabase.typeMapping.read(
@@ -11707,6 +11954,18 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}echeance'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -11717,9 +11976,14 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
 }
 
 class AchatRow extends DataClass implements Insertable<AchatRow> {
+  /// UUID de l'achat (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste [ref]
+  /// (les lignes, les ecritures et les mouvements s'y rattachent par texte) ; `ref`
+  /// est le numero OFFICIEL (`ACH-P2-2026-001`, DV-21), jamais renumerote.
+  final String id;
+
   /// Format 'ACH-AAAA-NNN'.
   final String ref;
-  final int fournisseurId;
+  final String fournisseurId;
   final DateTime dateAchat;
 
   /// 'Commandé', 'Livré', 'Annulé'
@@ -11741,7 +12005,15 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
   /// de l'achat. Le prototype fait pire — sa seule dette est datée de la
   /// **veille** de l'achat qu'elle règle. `null` = aucun délai convenu.
   final DateTime? echeance;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const AchatRow({
+    required this.id,
     required this.ref,
     required this.fournisseurId,
     required this.dateAchat,
@@ -11750,12 +12022,16 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     required this.paye,
     this.mode,
     this.echeance,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
     map['ref'] = Variable<String>(ref);
-    map['fournisseur_id'] = Variable<int>(fournisseurId);
+    map['fournisseur_id'] = Variable<String>(fournisseurId);
     map['date_achat'] = Variable<DateTime>(dateAchat);
     map['statut'] = Variable<String>(statut);
     map['total'] = Variable<double>(total);
@@ -11766,11 +12042,17 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     if (!nullToAbsent || echeance != null) {
       map['echeance'] = Variable<DateTime>(echeance);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
   AchatsCompanion toCompanion(bool nullToAbsent) {
     return AchatsCompanion(
+      id: Value(id),
       ref: Value(ref),
       fournisseurId: Value(fournisseurId),
       dateAchat: Value(dateAchat),
@@ -11781,6 +12063,11 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       echeance: echeance == null && nullToAbsent
           ? const Value.absent()
           : Value(echeance),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -11790,41 +12077,54 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AchatRow(
+      id: serializer.fromJson<String>(json['id']),
       ref: serializer.fromJson<String>(json['ref']),
-      fournisseurId: serializer.fromJson<int>(json['fournisseurId']),
+      fournisseurId: serializer.fromJson<String>(json['fournisseurId']),
       dateAchat: serializer.fromJson<DateTime>(json['dateAchat']),
       statut: serializer.fromJson<String>(json['statut']),
       total: serializer.fromJson<double>(json['total']),
       paye: serializer.fromJson<double>(json['paye']),
       mode: serializer.fromJson<String?>(json['mode']),
       echeance: serializer.fromJson<DateTime?>(json['echeance']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
       'ref': serializer.toJson<String>(ref),
-      'fournisseurId': serializer.toJson<int>(fournisseurId),
+      'fournisseurId': serializer.toJson<String>(fournisseurId),
       'dateAchat': serializer.toJson<DateTime>(dateAchat),
       'statut': serializer.toJson<String>(statut),
       'total': serializer.toJson<double>(total),
       'paye': serializer.toJson<double>(paye),
       'mode': serializer.toJson<String?>(mode),
       'echeance': serializer.toJson<DateTime?>(echeance),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   AchatRow copyWith({
+    String? id,
     String? ref,
-    int? fournisseurId,
+    String? fournisseurId,
     DateTime? dateAchat,
     String? statut,
     double? total,
     double? paye,
     Value<String?> mode = const Value.absent(),
     Value<DateTime?> echeance = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => AchatRow(
+    id: id ?? this.id,
     ref: ref ?? this.ref,
     fournisseurId: fournisseurId ?? this.fournisseurId,
     dateAchat: dateAchat ?? this.dateAchat,
@@ -11833,9 +12133,13 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye: paye ?? this.paye,
     mode: mode.present ? mode.value : this.mode,
     echeance: echeance.present ? echeance.value : this.echeance,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   AchatRow copyWithCompanion(AchatsCompanion data) {
     return AchatRow(
+      id: data.id.present ? data.id.value : this.id,
       ref: data.ref.present ? data.ref.value : this.ref,
       fournisseurId: data.fournisseurId.present
           ? data.fournisseurId.value
@@ -11846,12 +12150,18 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       paye: data.paye.present ? data.paye.value : this.paye,
       mode: data.mode.present ? data.mode.value : this.mode,
       echeance: data.echeance.present ? data.echeance.value : this.echeance,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('AchatRow(')
+          ..write('id: $id, ')
           ..write('ref: $ref, ')
           ..write('fournisseurId: $fournisseurId, ')
           ..write('dateAchat: $dateAchat, ')
@@ -11859,13 +12169,17 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           ..write('total: $total, ')
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
-          ..write('echeance: $echeance')
+          ..write('echeance: $echeance, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
+    id,
     ref,
     fournisseurId,
     dateAchat,
@@ -11874,11 +12188,15 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye,
     mode,
     echeance,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AchatRow &&
+          other.id == this.id &&
           other.ref == this.ref &&
           other.fournisseurId == this.fournisseurId &&
           other.dateAchat == this.dateAchat &&
@@ -11886,20 +12204,28 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           other.total == this.total &&
           other.paye == this.paye &&
           other.mode == this.mode &&
-          other.echeance == this.echeance);
+          other.echeance == this.echeance &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class AchatsCompanion extends UpdateCompanion<AchatRow> {
+  final Value<String> id;
   final Value<String> ref;
-  final Value<int> fournisseurId;
+  final Value<String> fournisseurId;
   final Value<DateTime> dateAchat;
   final Value<String> statut;
   final Value<double> total;
   final Value<double> paye;
   final Value<String?> mode;
   final Value<DateTime?> echeance;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<int> rowid;
   const AchatsCompanion({
+    this.id = const Value.absent(),
     this.ref = const Value.absent(),
     this.fournisseurId = const Value.absent(),
     this.dateAchat = const Value.absent(),
@@ -11908,17 +12234,24 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AchatsCompanion.insert({
+    this.id = const Value.absent(),
     required String ref,
-    required int fournisseurId,
+    required String fournisseurId,
     required DateTime dateAchat,
     required String statut,
     required double total,
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : ref = Value(ref),
        fournisseurId = Value(fournisseurId),
@@ -11926,17 +12259,22 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
        statut = Value(statut),
        total = Value(total);
   static Insertable<AchatRow> custom({
+    Expression<String>? id,
     Expression<String>? ref,
-    Expression<int>? fournisseurId,
+    Expression<String>? fournisseurId,
     Expression<DateTime>? dateAchat,
     Expression<String>? statut,
     Expression<double>? total,
     Expression<double>? paye,
     Expression<String>? mode,
     Expression<DateTime>? echeance,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (ref != null) 'ref': ref,
       if (fournisseurId != null) 'fournisseur_id': fournisseurId,
       if (dateAchat != null) 'date_achat': dateAchat,
@@ -11945,22 +12283,30 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       if (paye != null) 'paye': paye,
       if (mode != null) 'mode': mode,
       if (echeance != null) 'echeance': echeance,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   AchatsCompanion copyWith({
+    Value<String>? id,
     Value<String>? ref,
-    Value<int>? fournisseurId,
+    Value<String>? fournisseurId,
     Value<DateTime>? dateAchat,
     Value<String>? statut,
     Value<double>? total,
     Value<double>? paye,
     Value<String?>? mode,
     Value<DateTime?>? echeance,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
     return AchatsCompanion(
+      id: id ?? this.id,
       ref: ref ?? this.ref,
       fournisseurId: fournisseurId ?? this.fournisseurId,
       dateAchat: dateAchat ?? this.dateAchat,
@@ -11969,6 +12315,9 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       paye: paye ?? this.paye,
       mode: mode ?? this.mode,
       echeance: echeance ?? this.echeance,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11976,11 +12325,14 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
     if (fournisseurId.present) {
-      map['fournisseur_id'] = Variable<int>(fournisseurId.value);
+      map['fournisseur_id'] = Variable<String>(fournisseurId.value);
     }
     if (dateAchat.present) {
       map['date_achat'] = Variable<DateTime>(dateAchat.value);
@@ -12000,6 +12352,15 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     if (echeance.present) {
       map['echeance'] = Variable<DateTime>(echeance.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -12009,6 +12370,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
   @override
   String toString() {
     return (StringBuffer('AchatsCompanion(')
+          ..write('id: $id, ')
           ..write('ref: $ref, ')
           ..write('fournisseurId: $fournisseurId, ')
           ..write('dateAchat: $dateAchat, ')
@@ -12017,6 +12379,9 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
           ..write('echeance: $echeance, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12031,16 +12396,13 @@ class $LignesAchatTable extends LignesAchat
   $LignesAchatTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _achatRefMeta = const VerificationMeta(
     'achatRef',
@@ -12176,7 +12538,7 @@ class $LignesAchatTable extends LignesAchat
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneAchatRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       achatRef: attachedDatabase.typeMapping.read(
@@ -12209,7 +12571,8 @@ class $LignesAchatTable extends LignesAchat
 }
 
 class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne d'achat est un fait synchronise.
+  final String id;
   final String achatRef;
   final String intrantCode;
 
@@ -12229,7 +12592,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['achat_ref'] = Variable<String>(achatRef);
     map['intrant_code'] = Variable<String>(intrantCode);
     map['nom'] = Variable<String>(nom);
@@ -12255,7 +12618,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneAchatRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       achatRef: serializer.fromJson<String>(json['achatRef']),
       intrantCode: serializer.fromJson<String>(json['intrantCode']),
       nom: serializer.fromJson<String>(json['nom']),
@@ -12267,7 +12630,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'achatRef': serializer.toJson<String>(achatRef),
       'intrantCode': serializer.toJson<String>(intrantCode),
       'nom': serializer.toJson<String>(nom),
@@ -12277,7 +12640,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   }
 
   LigneAchatRow copyWith({
-    int? id,
+    String? id,
     String? achatRef,
     String? intrantCode,
     String? nom,
@@ -12332,12 +12695,13 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
 }
 
 class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> achatRef;
   final Value<String> intrantCode;
   final Value<String> nom;
   final Value<double> qte;
   final Value<double> puAchat;
+  final Value<int> rowid;
   const LignesAchatCompanion({
     this.id = const Value.absent(),
     this.achatRef = const Value.absent(),
@@ -12345,6 +12709,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     this.nom = const Value.absent(),
     this.qte = const Value.absent(),
     this.puAchat = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesAchatCompanion.insert({
     this.id = const Value.absent(),
@@ -12353,18 +12718,20 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     required String nom,
     required double qte,
     required double puAchat,
+    this.rowid = const Value.absent(),
   }) : achatRef = Value(achatRef),
        intrantCode = Value(intrantCode),
        nom = Value(nom),
        qte = Value(qte),
        puAchat = Value(puAchat);
   static Insertable<LigneAchatRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? achatRef,
     Expression<String>? intrantCode,
     Expression<String>? nom,
     Expression<double>? qte,
     Expression<double>? puAchat,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -12373,16 +12740,18 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
       if (nom != null) 'nom': nom,
       if (qte != null) 'qte': qte,
       if (puAchat != null) 'pu_achat': puAchat,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesAchatCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? achatRef,
     Value<String>? intrantCode,
     Value<String>? nom,
     Value<double>? qte,
     Value<double>? puAchat,
+    Value<int>? rowid,
   }) {
     return LignesAchatCompanion(
       id: id ?? this.id,
@@ -12391,6 +12760,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
       nom: nom ?? this.nom,
       qte: qte ?? this.qte,
       puAchat: puAchat ?? this.puAchat,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -12398,7 +12768,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (achatRef.present) {
       map['achat_ref'] = Variable<String>(achatRef.value);
@@ -12415,6 +12785,9 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     if (puAchat.present) {
       map['pu_achat'] = Variable<double>(puAchat.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -12426,7 +12799,8 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
           ..write('intrantCode: $intrantCode, ')
           ..write('nom: $nom, ')
           ..write('qte: $qte, ')
-          ..write('puAchat: $puAchat')
+          ..write('puAchat: $puAchat, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -28007,19 +28381,27 @@ typedef $$IntrantsTableProcessedTableManager =
     >;
 typedef $$FournisseursTableCreateCompanionBuilder =
     FournisseursCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String nom,
       Value<String?> telephone,
       Value<String?> adresse,
       Value<String?> fournit,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$FournisseursTableUpdateCompanionBuilder =
     FournisseursCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> nom,
       Value<String?> telephone,
       Value<String?> adresse,
       Value<String?> fournit,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$FournisseursTableReferences
@@ -28037,7 +28419,7 @@ final class $$FournisseursTableReferences
     final manager = $$AchatsTableTableManager(
       $_db,
       $_db.achats,
-    ).filter((f) => f.fournisseurId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.fournisseurId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_achatsRefsTable($_db));
     return ProcessedTableManager(
@@ -28055,7 +28437,7 @@ class $$FournisseursTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28077,6 +28459,21 @@ class $$FournisseursTableFilterComposer
 
   ColumnFilters<String> get fournit => $composableBuilder(
     column: $table.fournit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28115,7 +28512,7 @@ class $$FournisseursTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -28139,6 +28536,21 @@ class $$FournisseursTableOrderingComposer
     column: $table.fournit,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FournisseursTableAnnotationComposer
@@ -28150,7 +28562,7 @@ class $$FournisseursTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -28164,6 +28576,17 @@ class $$FournisseursTableAnnotationComposer
 
   GeneratedColumn<String> get fournit =>
       $composableBuilder(column: $table.fournit, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> achatsRefs<T extends Object>(
     Expression<T> Function($$AchatsTableAnnotationComposer a) f,
@@ -28219,31 +28642,47 @@ class $$FournisseursTableTableManager
               $$FournisseursTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<String?> telephone = const Value.absent(),
                 Value<String?> adresse = const Value.absent(),
                 Value<String?> fournit = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FournisseursCompanion(
                 id: id,
                 nom: nom,
                 telephone: telephone,
                 adresse: adresse,
                 fournit: fournit,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String nom,
                 Value<String?> telephone = const Value.absent(),
                 Value<String?> adresse = const Value.absent(),
                 Value<String?> fournit = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FournisseursCompanion.insert(
                 id: id,
                 nom: nom,
                 telephone: telephone,
                 adresse: adresse,
                 fournit: fournit,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -28305,26 +28744,34 @@ typedef $$FournisseursTableProcessedTableManager =
     >;
 typedef $$AchatsTableCreateCompanionBuilder =
     AchatsCompanion Function({
+      Value<String> id,
       required String ref,
-      required int fournisseurId,
+      required String fournisseurId,
       required DateTime dateAchat,
       required String statut,
       required double total,
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 typedef $$AchatsTableUpdateCompanionBuilder =
     AchatsCompanion Function({
+      Value<String> id,
       Value<String> ref,
-      Value<int> fournisseurId,
+      Value<String> fournisseurId,
       Value<DateTime> dateAchat,
       Value<String> statut,
       Value<double> total,
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 
@@ -28336,7 +28783,7 @@ final class $$AchatsTableReferences
       db.fournisseurs.createAlias('achats__fournisseur_id__fournisseurs__id');
 
   $$FournisseursTableProcessedTableManager get fournisseurId {
-    final $_column = $_itemColumn<int>('fournisseur_id')!;
+    final $_column = $_itemColumn<String>('fournisseur_id')!;
 
     final manager = $$FournisseursTableTableManager(
       $_db,
@@ -28377,6 +28824,11 @@ class $$AchatsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnFilters(column),
@@ -28409,6 +28861,21 @@ class $$AchatsTableFilterComposer
 
   ColumnFilters<DateTime> get echeance => $composableBuilder(
     column: $table.echeance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28470,6 +28937,11 @@ class $$AchatsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
@@ -28502,6 +28974,21 @@ class $$AchatsTableOrderingComposer
 
   ColumnOrderings<DateTime> get echeance => $composableBuilder(
     column: $table.echeance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -28538,6 +29025,9 @@ class $$AchatsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
 
@@ -28558,6 +29048,17 @@ class $$AchatsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get echeance =>
       $composableBuilder(column: $table.echeance, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$FournisseursTableAnnotationComposer get fournisseurId {
     final $$FournisseursTableAnnotationComposer composer = $composerBuilder(
@@ -28636,16 +29137,21 @@ class $$AchatsTableTableManager
               $$AchatsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
                 Value<String> ref = const Value.absent(),
-                Value<int> fournisseurId = const Value.absent(),
+                Value<String> fournisseurId = const Value.absent(),
                 Value<DateTime> dateAchat = const Value.absent(),
                 Value<String> statut = const Value.absent(),
                 Value<double> total = const Value.absent(),
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AchatsCompanion(
+                id: id,
                 ref: ref,
                 fournisseurId: fournisseurId,
                 dateAchat: dateAchat,
@@ -28654,20 +29160,28 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
                 required String ref,
-                required int fournisseurId,
+                required String fournisseurId,
                 required DateTime dateAchat,
                 required String statut,
                 required double total,
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AchatsCompanion.insert(
+                id: id,
                 ref: ref,
                 fournisseurId: fournisseurId,
                 dateAchat: dateAchat,
@@ -28676,6 +29190,9 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -28770,21 +29287,23 @@ typedef $$AchatsTableProcessedTableManager =
     >;
 typedef $$LignesAchatTableCreateCompanionBuilder =
     LignesAchatCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String achatRef,
       required String intrantCode,
       required String nom,
       required double qte,
       required double puAchat,
+      Value<int> rowid,
     });
 typedef $$LignesAchatTableUpdateCompanionBuilder =
     LignesAchatCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> achatRef,
       Value<String> intrantCode,
       Value<String> nom,
       Value<double> qte,
       Value<double> puAchat,
+      Value<int> rowid,
     });
 
 final class $$LignesAchatTableReferences
@@ -28835,7 +29354,7 @@ class $$LignesAchatTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28911,7 +29430,7 @@ class $$LignesAchatTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -28987,7 +29506,7 @@ class $$LignesAchatTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -29074,12 +29593,13 @@ class $$LignesAchatTableTableManager
               $$LignesAchatTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> achatRef = const Value.absent(),
                 Value<String> intrantCode = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<double> qte = const Value.absent(),
                 Value<double> puAchat = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesAchatCompanion(
                 id: id,
                 achatRef: achatRef,
@@ -29087,15 +29607,17 @@ class $$LignesAchatTableTableManager
                 nom: nom,
                 qte: qte,
                 puAchat: puAchat,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String achatRef,
                 required String intrantCode,
                 required String nom,
                 required double qte,
                 required double puAchat,
+                Value<int> rowid = const Value.absent(),
               }) => LignesAchatCompanion.insert(
                 id: id,
                 achatRef: achatRef,
@@ -29103,6 +29625,7 @@ class $$LignesAchatTableTableManager
                 nom: nom,
                 qte: qte,
                 puAchat: puAchat,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(

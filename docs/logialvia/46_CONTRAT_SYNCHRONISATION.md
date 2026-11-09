@@ -75,7 +75,7 @@ référence. **Décision du client : le préfixe de poste reste le numéro offic
 renumérotation par le serveur : une pièce déjà remise au client ne change jamais de numéro.
 
 - Format : `<lettre de la pièce>-<code du poste>-<année>-<séquence à 3 chiffres ou plus>`, ex. `V-P2-2026-001`,
-  `A-P2-2026-014` (achat), `D-P2-2026-003` (devis). La séquence est **continue par poste et par année**.
+  `ACH-P2-2026-014` (achat ; le préfixe réel est `ACH`, voir `45_` §6i), `D-P2-2026-003` (devis, à confirmer au palier des devis). La séquence est **continue par poste et par année**.
 - **Code du poste** : attribué à l'appairage, **unique au serveur**, stable (ne change pas à la réinstallation d'un
   poste : un nouveau poste reçoit un nouveau code). Un poste jamais appairé garde le code `P0` (poste seul).
 - Les références **existantes** (`V-2026-001`) restent valides telles quelles ; seules les nouvelles pièces portent le
@@ -171,3 +171,10 @@ Une vente a **deux identifiants** : `id` (UUID, identité synchronisée, immuabl
 - **Ordre d'un cycle du poste** : tirage → `POST /sync/demandes` (dont les produits) → `POST /sync/push` (clients, puis ventes) : un produit doit être connu du serveur avant les ventes qui le portent.
 - **Unicité de la référence** : voir `45_` §6h. **Produits** : demande `produit_vendable` `{id, sku, name, cat, price, price_max, unit, icon, cout_revient, groupe_taxe, threshold, espece}`, jamais `stock`. `id` des produits semés = UUID v5 de `produit:<sku>|<désignation>`.
 - **Une vente reçue d'un autre poste ne produit AUCUN effet** (stock, comptabilité, compteurs d'élevage) : elle est connue, pas rejouée.
+
+## 13. Fournisseurs et achats (implémenté, 09/11/2026)
+
+- **Pull** : `fournisseurs` ; `achats` avec `lignes` imbriquées (jamais un achat sans ses lignes). **Push** : `tables.achats = [ {id, reference, fournisseur_id, date_achat, statut, total, paye, mode, echeance, updated_at, lignes:[{id, intrant_code, nom, qte, pu_achat}]} ]`.
+- **Ordre d'un cycle** : tirage → demandes → faits dans l'ordre des dépendances (clients, fournisseurs, ventes, achats) ; **purge inverse** à la remise à zéro.
+- **Référence** : `ACH-P2-2026-001` (unique pour tous) ou `ACH-2026-001` (unique par poste) ; jamais renumérotée.
+- **Aucun effet à la réception d'un achat d'un autre poste** (stock, PMP, mouvement, écriture) ; le serveur n'a pas de table d'intrants : `intrant_code` est un texte libre de 40 caractères.

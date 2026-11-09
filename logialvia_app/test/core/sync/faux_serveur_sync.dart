@@ -33,6 +33,10 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> produits = {};
   final Map<String, Map<String, dynamic>> ventes = {};
 
+  /// Fournisseurs (fait plat) et achats (avec leurs lignes imbriquées).
+  final Map<String, Map<String, dynamic>> fournisseurs = {};
+  final Map<String, Map<String, dynamic>> achats = {};
+
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
   Map<String, dynamic>? parametres;
@@ -61,27 +65,55 @@ class FauxServeurSync {
 
   int _horloge = 0;
 
+  /// Un instant de réception, STRICTEMENT postérieur à `maintenant` (donc à toute
+  /// ligne déjà détenue) : une ligne émise ne peut jamais être datée avant le curseur
+  /// qu'un poste a reçu.
   String _instant() {
-    final t = DateTime.utc(
+    final depart = DateTime.utc(2026, 11, 9, 10);
+    final suivant = DateTime.parse(
+      maintenant,
+    ).add(const Duration(milliseconds: 1));
+    final ms = suivant.difference(depart).inMilliseconds;
+    if (ms > _horloge) _horloge = ms;
+    return depart.add(Duration(milliseconds: _horloge)).toIso8601String();
+  }
+
+  /// `server_time` courant : l'horloge du faux serveur, **jamais en retard sur une
+  /// ligne qu'il détient** (un serveur ne sert pas une ligne postérieure à sa propre
+  /// heure). Sans cela, un jeu d'essai daté de l'heure RÉELLE (la saisie d'un poste)
+  /// dépasserait une horloge figée et le test dépendrait de l'heure de la journée.
+  String get maintenant {
+    var plusRecent = DateTime.utc(
       2026,
       11,
       9,
       10,
-    ).add(Duration(milliseconds: ++_horloge));
-    return t.toIso8601String();
-  }
+    ).add(Duration(milliseconds: _horloge));
+    void voir(Iterable<Map<String, dynamic>> lignes) {
+      for (final l in lignes) {
+        for (final cle in const ['updated_at', 'serveur_modifie_le']) {
+          final v = l[cle];
+          final t = v is String ? DateTime.tryParse(v)?.toUtc() : null;
+          if (t != null && t.isAfter(plusRecent)) plusRecent = t;
+        }
+      }
+    }
 
-  /// `server_time` courant.
-  String get maintenant => DateTime.utc(
-    2026,
-    11,
-    9,
-    10,
-  ).add(Duration(milliseconds: _horloge)).toIso8601String();
+    voir(modules.values);
+    voir(produits.values);
+    voir(clients.values);
+    voir(ventes.values);
+    voir(fournisseurs.values);
+    voir(achats.values);
+    if (parametres != null) voir([parametres!]);
+    return plusRecent.toIso8601String();
+  }
 
   void remettreAZero() {
     clients.clear();
     ventes.clear(); // les produits (référentiel) sont préservés
+    achats.clear();
+    fournisseurs.clear();
     marque = 'rz-${++_horloge}';
   }
 
@@ -191,13 +223,11 @@ class FauxServeurSync {
 
     final lignes =
         clients.values.where((c) {
-          final recu = c['serveur_modifie_le'] as String;
-          return (since == null || recu.compareTo(since) > 0) &&
-              recu.compareTo(jusqua) <= 0;
+          return _dans(c['serveur_modifie_le'] as String, since, jusqua);
         }).toList()..sort((a, b) {
-          final c = (a['serveur_modifie_le'] as String).compareTo(
-            b['serveur_modifie_le'] as String,
-          );
+          final c = DateTime.parse(
+            a['serveur_modifie_le'] as String,
+          ).compareTo(DateTime.parse(b['serveur_modifie_le'] as String));
           return c != 0 ? c : (a['id'] as String).compareTo(b['id'] as String);
         });
 
@@ -228,6 +258,14 @@ class FauxServeurSync {
         'ventes': [
           for (final v in ventes.values)
             if (_dans(v['serveur_modifie_le'] as String, since, jusqua)) v,
+        ],
+        'fournisseurs': [
+          for (final f in fournisseurs.values)
+            if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
+        ],
+        'achats': [
+          for (final x in achats.values)
+            if (_dans(x['serveur_modifie_le'] as String, since, jusqua)) x,
         ],
       },
     });
@@ -276,9 +314,13 @@ class FauxServeurSync {
     return _json(200, {'accepted': acceptees, 'rejected': refusees});
   }
 
-  bool _dans(String instant, String? since, String jusqua) =>
-      (since == null || instant.compareTo(since) > 0) &&
-      instant.compareTo(jusqua) <= 0;
+  /// Compare des INSTANTS, pas des textes : `…625Z` se range après `…625655Z`
+  /// en ordre lexicographique, alors qu'il lui est antérieur.
+  bool _dans(String instant, String? since, String jusqua) {
+    final t = DateTime.parse(instant);
+    return (since == null || t.isAfter(DateTime.parse(since))) &&
+        !t.isAfter(DateTime.parse(jusqua));
+  }
 
   Future<http.Response> _push(http.Request r) async {
     final corps = jsonDecode(r.body) as Map<String, dynamic>;
@@ -290,9 +332,10 @@ class FauxServeurSync {
         'reset_mark': marque,
       });
     }
-    if (pendantEnvoi != null) {
-      await pendantEnvoi!();
-      pendantEnvoi = null;
+    final crochet = pendantEnvoi;
+    if (crochet != null) {
+      pendantEnvoi = null; // retiré AVANT l'appel : le crochet peut se ré-armer
+      await crochet();
     }
 
     final reponse = <String, dynamic>{};
@@ -341,6 +384,19 @@ class FauxServeurSync {
       'rejected': refusees,
       'ignored': [],
     };
+    final tables = corps['tables'] as Map;
+    if (tables.containsKey('fournisseurs')) {
+      reponse['fournisseurs'] = _fournisseurs(
+        (tables['fournisseurs'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('achats')) {
+      reponse['achats'] = _achats(
+        (tables['achats'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
     if ((corps['tables'] as Map).containsKey('ventes')) {
       reponse['ventes'] = _ventes(
         ((corps['tables'] as Map)['ventes'] as List)
@@ -458,6 +514,116 @@ class FauxServeurSync {
           existante[c] = v[c];
         }
         existante
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  Map<String, dynamic> _fournisseurs(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final f in lot) {
+      final id = f['id'] as String;
+      final nom = f['nom'];
+      if (nom is! String || nom.trim().isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Le nom du fournisseur est obligatoire.',
+        });
+        continue;
+      }
+      final saisie = DateTime.parse(f['updated_at'] as String);
+      final existant = fournisseurs[id];
+      if (existant == null) {
+        fournisseurs[id] = {
+          ...f,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+          'supprime_le': null,
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        for (final c in const ['nom', 'telephone', 'adresse', 'fournit']) {
+          existant[c] = f[c];
+        }
+        existant
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Rejoue les règles du vrai serveur (`AchatsTable`).
+  Map<String, dynamic> _achats(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    bool codee(String ref) => RegExp(r'^ACH-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+
+    for (final a in lot) {
+      final id = a['id'] as String;
+      final lignes = (a['lignes'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      if (lignes.isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Un achat doit avoir au moins une ligne.',
+        });
+        continue;
+      }
+      if (!fournisseurs.containsKey(a['fournisseur_id'])) {
+        refusees.add({'id': id, 'motif': 'Fournisseur inconnu du serveur.'});
+        continue;
+      }
+      final ref = a['reference'] as String;
+      final doublon = achats.values.any(
+        (x) =>
+            x['id'] != id &&
+            x['reference'] == ref &&
+            (codee(ref) || x['device_id'] == deviceId),
+      );
+      if (doublon) {
+        refusees.add({
+          'id': id,
+          'motif': 'Cette référence est déjà utilisée par un autre achat.',
+        });
+        continue;
+      }
+      final saisie = DateTime.parse(a['updated_at'] as String);
+      final existant = achats[id];
+      if (existant == null) {
+        achats[id] = {
+          ...a,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        for (final c in const [
+          'fournisseur_id',
+          'statut',
+          'total',
+          'paye',
+          'mode',
+          'echeance',
+        ]) {
+          existant[c] = a[c];
+        }
+        existant
           ..['updated_at'] = saisie.toUtc().toIso8601String()
           ..['serveur_modifie_le'] = _instant();
       }

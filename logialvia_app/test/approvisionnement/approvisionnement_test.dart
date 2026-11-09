@@ -19,7 +19,7 @@ void main() {
   Future<Intrant> intrant(String code) async =>
       (await repository.chargerIntrants()).firstWhere((i) => i.code == code);
 
-  Future<int> fournisseur() async {
+  Future<String> fournisseur() async {
     final f = await repository.creerFournisseur(
       nom: 'Fournisseur Maïs Local',
       telephone: '+229 97 00 11 22',

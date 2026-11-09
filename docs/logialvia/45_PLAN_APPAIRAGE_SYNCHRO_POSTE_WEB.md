@@ -161,6 +161,21 @@ temporaire).
 
 **Limites** : la comptabilité et le stock du poste ne sont pas synchronisés (autres paliers) — une remise à zéro du serveur vide donc les ventes du poste mais **pas** ses écritures ni ses compteurs ; une ancienne référence sans code déjà prise par une autre vente **de ce poste** ne peut pas coexister localement (la clé primaire est `ref`) : la vente reçue est refusée et comptée, pas écrasée ; la suppression d'un produit (archivage) n'est pas propagée ; **18 fichiers de tables** restent en entiers.
 
+## 6i. Palier 4 : fournisseurs et achats (poste v35, serveur, moteur) — fait
+
+**Même schéma que les ventes** (§6g-§6h), sans les produits à adopter.
+
+- **Poste, schéma v35** : `fournisseurs`, `achats` et `lignes_achat` en UUID ; `achats.fournisseur_id` suit (table de correspondance ancien entier → UUID, supprimée en fin de migration) ; `achats` reçoit `id`, `sync_status`, `sync_motif`, `updated_at` ; **la clé primaire reste `ref`**, le numéro officiel, jamais renuméroté (DV-21). Un achat d'hier est « à envoyer » et son instant de saisie est **sa date d'achat**. Les fournisseurs reçoivent un UUID **aléatoire** (saisis par l'utilisatrice, jamais semés identiquement). Vérifié sur une **vraie base v34** : chaque achat garde son fournisseur (jointure), aucune ligne emportée par `ON DELETE CASCADE`, intégrité référentielle intacte, rejouable sans changer un UUID.
+- **Références** : `ACH-P2-2026-001` (poste appairé) ou `ACH-2026-001` (jamais appairé), séquence par poste et par année, code conservé après déconnexion. **Correction du contrat** : le `46_` §3 annonçait `A-P2-…` ; le préfixe réel des achats du poste est **`ACH`**, conservé.
+- **Serveur** : `fournisseurs` (fait plat, dernier écrivain gagne), `achats` + `lignes_achat` (lot : acceptés ou refusés ensemble, servis ensemble, lignes immuables, référence jamais changée), **même règle d'unicité** que les ventes (globale avec code de poste, par poste sans code). Lecture `view-achats`, écriture `manage-achats` : seul l'administrateur écrit, le comptable consulte, le caissier et l'animalier n'y ont pas accès (conforme à `config/logialvia.php`). 216 tests, 8 mutations.
+- **Moteur du poste** : `TableFournisseursPoste`, `TableAchatsPoste`. **Absorber l'achat d'un autre poste ne produit aucun effet** : ni entrée de stock, ni recalcul du PMP, ni mouvement journalisé, ni écriture comptable (la réception appartient au poste qui a reçu la marchandise). Un achat dont le fournisseur ou un intrant est inconnu du poste est **refusé et compté**, jamais écrasé ; une pierre tombale ne supprime jamais un fournisseur. Réceptionner ou régler un achat le remet à envoyer.
+- **Purge à la remise à zéro dans l'ordre INVERSE des dépendances** (les achats avant leur fournisseur) : sinon la clé étrangère refuse la suppression. Corrigé dans le moteur pour toutes les tables.
+- **Tests** : 26 (poste), 20 (serveur), migration v35 (7) ; **13 essais contre le vrai serveur**, dont deux postes qui achètent (achat livré compris) et un caissier refusé avec le vrai motif.
+
+**Défauts trouvés en chemin (tous dans mon infrastructure de test, pas dans le moteur)** : le faux serveur avait une **horloge figée à 10 h UTC** et comparait des dates **en texte** (`…625Z` après `…625655Z`) : des tests passaient ou échouaient selon l'heure de la journée et la microseconde. L'horloge ne peut plus être en retard sur une ligne détenue, les instants émis lui sont postérieurs, les comparaisons portent sur des instants analysés ; 6 exécutions consécutives stables.
+
+**Limites** : les **intrants** (leur stock, leur PMP) et les **mouvements** ne sont pas synchronisés : deux postes qui achètent le même intrant ont chacun leur stock, l'achat de l'un n'alimente pas celui de l'autre (c'est le sujet « stock partagé », non traité) ; un intrant créé sur un poste est inconnu des autres, qui refusent alors les achats qui le portent ; la remise à zéro du serveur vide achats et fournisseurs du poste mais **pas** son stock, ses mouvements ni ses écritures ; le **règlement d'une dette fournisseur** ne crée aucune écriture chez les autres postes ; **16 fichiers de tables** restent en entiers.
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,
@@ -206,7 +221,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | **fait** (09/11/2026) pour 3 tables (référentiels + clients), 129 tests, mutations vérifiées ; voir `46_` §6. W3b livré aussi (demandes, resynchronisation, remise à zéro ; 144 tests) ; reste `POST /sync/demandes` et les 35 autres tables, voir `46_` §7 |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
-| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1 et 3 (poste) faits** : `clients` (v31), `produits_vendables`, `lignes_vente`, `ventes` (v33-v34), références à préfixe de poste ; voir §6d et §6g. Restent 18 fichiers de tables et la synchronisation des ventes (§6h) |
+| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1, 3 et 4 faits** : `clients` (v31), produits, lignes de vente, ventes (v33-v34), fournisseurs, achats, lignes d'achat (v35), références à préfixe de poste ; voir §6d-§6i. Restent 16 fichiers de tables |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
 | P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait** pour modules, paramètres, produits, clients, ventes (§6d-§6h) ; reste les autres tables |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
