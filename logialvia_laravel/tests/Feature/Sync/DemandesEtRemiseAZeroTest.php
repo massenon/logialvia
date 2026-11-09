@@ -233,4 +233,23 @@ class DemandesEtRemiseAZeroTest extends TestCase
 
         $this->demande($a)->assertJson(['synchroniser' => false, 'resynchronisation_complete' => false]);
     }
+
+    /** 47h D5 : les tables dependantes (achats -> fournisseurs, lignes -> pieces) s'effacent AVANT leur parent. */
+    public function test_la_remise_a_zero_efface_dans_l_ordre_inverse_des_dependances(): void
+    {
+        config(['logialvia.remise_a_zero.activee' => true]);
+        $admin = $this->poste('admin', 'gerante');
+        $this->intrantConnu($admin);
+        $f = $this->ligneFournisseur();
+        $this->pousserTable($admin, 'fournisseurs', [$f]);
+        $achat = $this->ligneAchat($f['id']);
+        $this->assertCount(1, $this->pousserTable($admin, 'achats', [$achat])['accepted']);
+        $this->assertSame(1, \App\Models\Achat::query()->count());
+
+        $this->remettre($admin, 'REMETTRE A ZERO')->assertOk();
+
+        $this->assertSame(0, \App\Models\Achat::query()->count());
+        $this->assertSame(0, \App\Models\LigneAchat::query()->count());
+        $this->assertSame(0, \App\Models\Fournisseur::query()->count());
+    }
 }

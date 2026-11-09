@@ -36,7 +36,10 @@ class RemiseAZeroService
 
         $supprimees = [];
         DB::transaction(function () use ($acteur, &$supprimees) {
-            foreach (app(MoteurSynchronisation::class)->tables() as $table) {
+            // Dans l'ordre INVERSE des dependances (47h D5) : les achats avant leur fournisseur,
+            // les lignes avant leur piece. Dans l'ordre direct, la cle etrangere refusait la
+            // suppression des fournisseurs des qu'un achat existait : erreur 500, rien d'efface.
+            foreach (array_reverse(app(MoteurSynchronisation::class)->tables()) as $table) {
                 if ($table->nature() === TableSync::FAIT) {
                     $supprimees[$table->nom()] = $table->requete()->getModel()->newQuery()->delete();
                 }
