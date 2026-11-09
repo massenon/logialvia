@@ -10,6 +10,7 @@ import 'droits_poste.dart';
 import 'identifiant_poste.dart';
 import 'service_appairage.dart';
 import 'table_poste.dart';
+import 'transport_http.dart';
 import '../resultat/resultat.dart';
 
 enum IssueSynchronisation {
@@ -194,6 +195,12 @@ class MoteurSynchronisationPoste {
     this.client,
     this.delai = const Duration(seconds: 30),
     this.tailleLot = 100,
+    this.octetsMaxEnvoi = 256 * 1024,
+    this.delaisRepetition = const [
+      Duration(milliseconds: 500),
+      Duration(seconds: 2),
+    ],
+    this.pause,
     this.socleDuPlan = const {},
   });
 
@@ -216,6 +223,26 @@ class MoteurSynchronisationPoste {
   /// Lignes par requête d'envoi : un envoi plus gros que la limite du
   /// mandataire (413) est un piège déjà payé (blueprint §10).
   final int tailleLot;
+
+  /// Poids maximal (octets JSON) d'un envoi : un hébergeur plafonne le corps
+  /// (`LimitRequestBody`, `post_max_size`, pare-feu applicatif) et répond 413.
+  /// Le plafond COURANT baisse de moitié à chaque 413 (dichotomie) et ne remonte pas :
+  /// la limite de l'hébergeur est permanente (`47r_`).
+  final int octetsMaxEnvoi;
+
+  /// Pause avant chaque rejeu d'une requête coupée / 502 / 503 / 504 / 429.
+  final List<Duration> delaisRepetition;
+  final Future<void> Function(Duration)? pause;
+
+  late final TransportHttp _transport = TransportHttp(
+    client: client,
+    delai: delai,
+    delaisRepetition: delaisRepetition,
+    pause: pause,
+  );
+
+  int? _lignesMaxCourant;
+  int? _octetsMaxCourant;
 
   bool _enCours = false;
 
@@ -247,7 +274,11 @@ class MoteurSynchronisationPoste {
       );
     }
 
-    var session = _Session(adresse, jeton, await preferences.identifiantPoste());
+    var session = _Session(
+      adresse,
+      jeton,
+      await preferences.identifiantPoste(),
+    );
     // Une seule fois : le catalogue local est propose au serveur.
     await demandes?.adopterCatalogueSiBesoin(preferences);
     await demandes?.adopterIntrantsSiBesoin(preferences);
@@ -312,16 +343,15 @@ class MoteurSynchronisationPoste {
     if (adresse == null || jeton == null || jeton.isEmpty) {
       return const ReponseDemande(IssueSynchronisation.nonAppairee);
     }
-    final reponse = await _appeler(
-      (c) => c.get(
-        Uri.parse('$adresse/api/sync/demande'),
-        headers: _entetes(jeton),
-      ),
+    final resultat = await _appeler(
+      adresse,
+      (c, base) =>
+          c.get(Uri.parse('$base/api/sync/demande'), headers: _entetes(jeton)),
     );
-    final arret = await _verifier(reponse);
+    final arret = await _verifier(resultat);
     if (arret != null) return ReponseDemande(arret.issue);
 
-    final json = _json(reponse!.body);
+    final json = _json(resultat.reponse!.body);
     return ReponseDemande(
       IssueSynchronisation.terminee,
       synchroniser: json?['synchroniser'] == true,
@@ -334,12 +364,13 @@ class MoteurSynchronisationPoste {
     final adresse = await preferences.adresseServeur();
     final jeton = await depot.lire();
     if (adresse == null || jeton == null || jeton.isEmpty) return false;
-    final reponse = await _appeler(
-      (c) => c.post(
-        Uri.parse('$adresse/api/sync/resynchronisation/acquittement'),
+    final reponse = (await _appeler(
+      adresse,
+      (c, base) => c.post(
+        Uri.parse('$base/api/sync/resynchronisation/acquittement'),
         headers: _entetes(jeton),
       ),
-    );
+    )).reponse;
     return reponse != null &&
         reponse.statusCode >= 200 &&
         reponse.statusCode < 300;
@@ -361,23 +392,28 @@ class MoteurSynchronisationPoste {
         'appairez ce poste au serveur.',
       );
     }
-    final reponse = await _appeler(
-      (c) async => c.post(
-        Uri.parse('$adresse/api/sync/factures/reserver'),
+    final idPoste = await preferences.identifiantPoste();
+    final resultat = await _appeler(
+      adresse,
+      (c, base) async => c.post(
+        Uri.parse('$base/api/sync/factures/reserver'),
         headers: _entetes(jeton),
-        body: jsonEncode({
-          'device_id': await preferences.identifiantPoste(),
-          'facture_id': factureId,
-        }),
+        body: jsonEncode({'device_id': idPoste, 'facture_id': factureId}),
       ),
     );
+    final reponse = resultat.reponse;
     if (reponse == null) {
-      return const Echec(
-        'Serveur injoignable : une facture émise au web ne se transmet pas hors '
-        'ligne (le serveur doit réserver sa transmission).',
+      final e = resultat.erreur!;
+      return Echec(
+        e.genre == GenreErreurReseau.horsLigne
+            ? 'Serveur injoignable : une facture émise au web ne se transmet pas '
+                  'hors ligne (le serveur doit réserver sa transmission).'
+            : e.message,
       );
     }
-    if (reponse.statusCode == 401) {
+    final inattendu = messageReponseInattendue(reponse);
+    if (inattendu != null) return Echec(inattendu);
+    if (reponse.statusCode == 401 && _estRefusDeJeton(reponse)) {
       await appairage.oublierLocalement();
       return const Echec(
         'Ce poste n\'est plus appairé : reconnectez-vous (Paramètres > Appairage).',
@@ -466,9 +502,10 @@ class MoteurSynchronisationPoste {
 
     while (true) {
       final avant = horlogePoste();
-      final reponse = await _appeler(
-        (c) => c.get(
-          Uri.parse('${s.adresse}/api/sync/pull').replace(
+      final resultat = await _appelerSession(
+        s,
+        (c, base) => c.get(
+          Uri.parse('$base/api/sync/pull').replace(
             queryParameters: {
               'since': ?since,
               'until': ?borne,
@@ -479,10 +516,10 @@ class MoteurSynchronisationPoste {
         ),
       );
       final apres = horlogePoste();
-      final arret = await _verifier(reponse);
+      final arret = await _verifier(resultat);
       if (arret != null) return _Etape(rapport, arret);
 
-      final json = _json(reponse!.body);
+      final json = _json(resultat.reponse!.body);
       if (json == null || json['tables'] is! Map) {
         return _Etape(
           rapport,
@@ -576,11 +613,13 @@ class MoteurSynchronisationPoste {
       // saisies restent en attente de droit (jamais `conflict`).
       if (!_peutEnvoyer(s.droits, t)) continue;
       final aEnvoyer = await t.aEnvoyer();
-      for (var i = 0; i < aEnvoyer.length; i += tailleLot) {
-        final lot = aEnvoyer.skip(i).take(tailleLot).toList();
-        final reponse = await _appeler(
-          (c) => c.post(
-            Uri.parse('${s.adresse}/api/sync/push'),
+      var i = 0;
+      while (i < aEnvoyer.length) {
+        final lot = _prochainLot(aEnvoyer, i);
+        final resultat = await _appelerSession(
+          s,
+          (c, base) => c.post(
+            Uri.parse('$base/api/sync/push'),
             headers: _entetes(s.jeton),
             body: jsonEncode({
               'device_id': s.idPoste,
@@ -591,10 +630,34 @@ class MoteurSynchronisationPoste {
             }),
           ),
         );
-        final arret = await _verifier(reponse);
+
+        // 413 : le corps dépasse la limite de l'hébergeur (`LimitRequestBody`,
+        // `post_max_size`…). Rien n'a été traité : on coupe le lot en deux et on
+        // recommence, sans perte ni doublon (l'envoi est idempotent de toute façon).
+        if (resultat.reponse?.statusCode == 413) {
+          if (lot.length > 1) {
+            _lignesMaxCourant = (lot.length / 2).ceil();
+            _octetsMaxCourant = ((await _octets(lot)) / 2).ceil();
+            continue;
+          }
+          // Une seule ligne déjà trop grosse : inutile de la renvoyer indéfiniment.
+          await t.marquerConflit(
+            lot.first.id,
+            'Cette saisie est trop volumineuse pour le serveur (limite d\'envoi '
+            'de l\'hébergeur, HTTP 413). Réduisez-la ou faites relever la limite.',
+          );
+          rapport = rapport.avec(
+            envoyees: rapport.envoyees + 1,
+            refusees: rapport.refusees + 1,
+          );
+          i += 1;
+          continue;
+        }
+
+        final arret = await _verifier(resultat);
         if (arret != null) return _Etape(rapport, arret);
 
-        final json = _json(reponse!.body);
+        final json = _json(resultat.reponse!.body);
         final bilan = json?[t.nom];
         if (bilan is! Map) {
           return _Etape(
@@ -644,10 +707,32 @@ class MoteurSynchronisationPoste {
           refuseesPourDroit: rapport.refuseesPourDroit + pourDroit,
           refuseesHorloge: rapport.refuseesHorloge + pourHorloge,
         );
+        i += lot.length;
       }
     }
     return _Etape(rapport, null);
   }
+
+  /// Le prochain envoi : au plus [tailleLot] lignes (ou le plafond appris après un
+  /// 413) et au plus [octetsMaxEnvoi] octets (au moins une ligne, toujours).
+  List<LigneAEnvoyer> _prochainLot(List<LigneAEnvoyer> toutes, int debut) {
+    final maxLignes = _lignesMaxCourant ?? tailleLot;
+    final maxOctets = _octetsMaxCourant ?? octetsMaxEnvoi;
+    final lot = <LigneAEnvoyer>[];
+    var poids = 0;
+    for (var k = debut; k < toutes.length && lot.length < maxLignes; k++) {
+      final p = utf8.encode(jsonEncode(toutes[k].corps)).length;
+      if (lot.isNotEmpty && poids + p > maxOctets) break;
+      lot.add(toutes[k]);
+      poids += p;
+    }
+    return lot;
+  }
+
+  Future<int> _octets(List<LigneAEnvoyer> lot) async => lot.fold<int>(
+    0,
+    (somme, l) => somme + utf8.encode(jsonEncode(l.corps)).length,
+  );
 
   // ------------------------------------------------------------ Demandes
 
@@ -667,9 +752,10 @@ class MoteurSynchronisationPoste {
     ];
     if (aEnvoyer.isEmpty) return _Etape(rapport, null);
 
-    final reponse = await _appeler(
-      (c) => c.post(
-        Uri.parse('${s.adresse}/api/sync/demandes'),
+    final resultat = await _appelerSession(
+      s,
+      (c, base) => c.post(
+        Uri.parse('$base/api/sync/demandes'),
         headers: _entetes(s.jeton),
         body: jsonEncode({
           'device_id': s.idPoste,
@@ -685,10 +771,10 @@ class MoteurSynchronisationPoste {
         }),
       ),
     );
-    final arret = await _verifier(reponse);
+    final arret = await _verifier(resultat);
     if (arret != null) return _Etape(rapport, arret);
 
-    final json = _json(reponse!.body);
+    final json = _json(resultat.reponse!.body);
     if (json == null) {
       return _Etape(
         rapport,
@@ -768,31 +854,56 @@ class MoteurSynchronisationPoste {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $jeton',
+    // Apache en CGI/FastCGI retire parfois `Authorization` : le serveur relit ce double
+    // (`47r_`, RestaurerEnTeteAutorisation). Même secret, même requête.
+    'X-Authorization': 'Bearer $jeton',
   };
 
-  Future<http.Response?> _appeler(
-    Future<http.Response> Function(http.Client) requete,
+  /// Appel HTTP : jamais d'exception, l'adresse corrigée (http → https) est mémorisée.
+  Future<ResultatHttp> _appeler(
+    String adresse,
+    Future<http.Response> Function(http.Client c, String base) requete,
   ) async {
-    final c = client ?? http.Client();
-    try {
-      return await requete(c).timeout(delai);
-    } on Exception {
-      return null;
-    } finally {
-      if (client == null) c.close();
+    final r = await _transport.appeler(requete, adresse: adresse);
+    if (r.adresseCorrigee != null) {
+      await preferences.definirAdresseServeur(r.adresseCorrigee!);
     }
+    return r;
+  }
+
+  Future<ResultatHttp> _appelerSession(
+    _Session s,
+    Future<http.Response> Function(http.Client c, String base) requete,
+  ) async {
+    final r = await _appeler(s.adresse, requete);
+    if (r.adresseCorrigee != null) s.adresse = r.adresseCorrigee!;
+    return r;
+  }
+
+  /// Un 401 JSON de l'application = jeton révoqué ou expiré. Un 401 qui n'est PAS celui
+  /// du serveur (page de l'hébergeur, protection par mot de passe du dossier) ou qui dit
+  /// que l'en-tête `Authorization` n'est jamais arrivé (Apache/CGI le retire) ne doit PAS
+  /// faire oublier un jeton valide.
+  bool _estRefusDeJeton(http.Response reponse) {
+    if (reponseEstHtml(reponse)) return false;
+    return _json(reponse.body)?['code'] != 'jeton_absent';
   }
 
   /// `null` si la réponse est exploitable, sinon le rapport qui arrête tout.
-  Future<RapportSynchronisation?> _verifier(http.Response? reponse) async {
-    if (reponse == null) {
-      return const RapportSynchronisation(
-        IssueSynchronisation.horsLigne,
-        'Serveur injoignable : hors ligne, tout reste à envoyer. '
-        'Le poste continue de fonctionner normalement.',
+  Future<RapportSynchronisation?> _verifier(ResultatHttp resultat) async {
+    final erreur = resultat.erreur;
+    if (erreur != null) {
+      final neutre =
+          erreur.genre == GenreErreurReseau.horsLigne ||
+          erreur.genre == GenreErreurReseau.delai ||
+          erreur.genre == GenreErreurReseau.interrompue;
+      return RapportSynchronisation(
+        neutre ? IssueSynchronisation.horsLigne : IssueSynchronisation.refusee,
+        erreur.message,
       );
     }
-    if (reponse.statusCode == 401) {
+    final reponse = resultat.reponse!;
+    if (reponse.statusCode == 401 && _estRefusDeJeton(reponse)) {
       await appairage.oublierLocalement();
       return const RapportSynchronisation(
         IssueSynchronisation.revoque,
@@ -800,10 +911,31 @@ class MoteurSynchronisationPoste {
         'Reconnectez-vous (Paramètres > Appairage). Vos saisies sont conservées.',
       );
     }
+    if (reponse.statusCode == 401) {
+      return _refus(
+        reponseEstHtml(reponse)
+            ? 'Le serveur a refusé l\'accès avant l\'application (page '
+                  'd\'identification ou protection de l\'hébergeur, HTTP 401). '
+                  'Le poste reste appairé.'
+            : (_json(reponse.body)?['message'] as String? ??
+                  'Le serveur ne reçoit pas le jeton du poste (en-tête '
+                      'Authorization retiré par l\'hébergeur). Le poste reste appairé.'),
+      );
+    }
     if (reponse.statusCode == 409) {
       return _refus(
         _json(reponse.body)?['message'] as String? ??
             'Le serveur a été remis à zéro : tirez d\'abord ses données.',
+      );
+    }
+    final inattendu = messageReponseInattendue(reponse);
+    if (inattendu != null) {
+      final transitoire = [429, 502, 503, 504].contains(reponse.statusCode);
+      return RapportSynchronisation(
+        transitoire
+            ? IssueSynchronisation.horsLigne
+            : IssueSynchronisation.refusee,
+        inattendu,
       );
     }
     if (reponse.statusCode < 200 || reponse.statusCode >= 300) {
@@ -926,14 +1058,16 @@ class StreamGroup {
 }
 
 class _Session {
-  const _Session(
+  _Session(
     this.adresse,
     this.jeton,
     this.idPoste, {
     this.droits,
     this.decalage,
   });
-  final String adresse;
+
+  /// Change si le serveur impose HTTPS (redirection `http` → `https`).
+  String adresse;
   final String jeton;
   final String idPoste;
 

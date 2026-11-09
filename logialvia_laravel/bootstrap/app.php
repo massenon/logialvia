@@ -5,6 +5,8 @@ use App\Http\Middleware\ChangementMotDePasseObligatoireWeb;
 use App\Http\Middleware\CompteActif;
 use App\Http\Middleware\EnregistrerContactPoste;
 use App\Http\Middleware\PosteDuJeton;
+use App\Http\Middleware\RestaurerEnTeteAutorisation;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/sync/*'),
         ]);
 
+        // 47r : l'en-tete Authorization retire par l'hebergeur est rendu depuis X-Authorization.
+        $middleware->api(prepend: [RestaurerEnTeteAutorisation::class]);
+
         $middleware->alias([
             'compte.actif' => CompteActif::class,
             'compte.web' => \App\Http\Middleware\CompteActifWeb::class,
@@ -50,6 +55,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // 401 de l'API : le poste doit savoir si son jeton est MORT (il l'oublie) ou s'il n'est
+        // jamais arrive (hebergeur qui retire Authorization : il le garde et le dit).
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                $sans = $request->bearerToken() === null;
+
+                return response()->json($sans ? [
+                    'message' => "Le serveur ne reçoit pas le jeton du poste : l'hébergeur retire l'en-tête Authorization. Voir 47r_ (.htaccess).",
+                    'code' => 'jeton_absent',
+                ] : [
+                    'message' => 'Ce poste n\'est plus appairé : le jeton a été révoqué ou a expiré.',
+                    'code' => 'jeton_invalide',
+                ], 401);
+            }
+        });
 
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             if ($request->is('api/*')) {

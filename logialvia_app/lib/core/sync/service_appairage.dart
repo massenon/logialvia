@@ -7,6 +7,7 @@ import '../../administration/data/repositories/preferences_poste_repository.dart
 import 'depot_jeton_sync.dart';
 import 'droits_poste.dart';
 import 'identifiant_poste.dart';
+import 'transport_http.dart';
 
 /// Issue d'une tentative d'appairage ou de test de connexion.
 enum IssueAppairage {
@@ -88,12 +89,26 @@ class ServiceAppairage {
     required this.depot,
     this.client,
     this.delai = const Duration(seconds: 15),
+    this.delaisRepetition = const [
+      Duration(milliseconds: 500),
+      Duration(seconds: 2),
+    ],
+    this.pause,
   });
 
   final PreferencesPosteRepository preferences;
   final DepotJetonSync depot;
   final http.Client? client;
   final Duration delai;
+  final List<Duration> delaisRepetition;
+  final Future<void> Function(Duration)? pause;
+
+  late final TransportHttp _transport = TransportHttp(
+    client: client,
+    delai: delai,
+    delaisRepetition: delaisRepetition,
+    pause: pause,
+  );
 
   Future<EtatAppairage> etat() async {
     final jeton = await depot.lire();
@@ -150,9 +165,10 @@ class ServiceAppairage {
 
     final idPoste = await preferences.identifiantPoste();
     final avant = horlogePoste();
-    final reponse = await _appeler(
-      (c) => c.post(
-        Uri.parse('$propre/api/auth/login'),
+    final resultat = await _appeler(
+      propre,
+      (c, base) => c.post(
+        Uri.parse('$base/api/auth/login'),
         headers: _entetes(),
         body: jsonEncode({
           'identifiant': identifiant.trim(),
@@ -161,7 +177,9 @@ class ServiceAppairage {
         }),
       ),
     );
-    if (reponse == null) return _injoignable(propre);
+    final echec = _echecReseau(resultat, propre);
+    if (echec != null) return echec;
+    final reponse = resultat.reponse!;
 
     final apres = horlogePoste();
     final json = _json(reponse.body);
@@ -223,16 +241,19 @@ class ServiceAppairage {
     }
 
     final avant = horlogePoste();
-    final reponse = await _appeler(
-      (c) => c.get(
-        Uri.parse('$adresse/api/auth/me'),
+    final resultat = await _appeler(
+      adresse,
+      (c, base) => c.get(
+        Uri.parse('$base/api/auth/me'),
         headers: _entetes(jeton: jeton),
       ),
     );
     final apres = horlogePoste();
-    if (reponse == null) return _injoignable(adresse);
+    final echec = _echecReseau(resultat, adresse);
+    if (echec != null) return echec;
+    final reponse = resultat.reponse!;
 
-    if (reponse.statusCode == 401) {
+    if (reponse.statusCode == 401 && _estRefusDeJeton(reponse)) {
       // Jeton révoqué ou expiré : on l'oublie, le poste redemande une connexion
       // (blueprint §2). Les saisies locales ne sont pas touchées.
       await oublierLocalement();
@@ -276,12 +297,13 @@ class ServiceAppairage {
 
     var serveurPrevenu = false;
     if (adresse != null && jeton != null && jeton.isNotEmpty) {
-      final reponse = await _appeler(
-        (c) => c.post(
-          Uri.parse('$adresse/api/auth/logout'),
+      final reponse = (await _appeler(
+        adresse,
+        (c, base) => c.post(
+          Uri.parse('$base/api/auth/logout'),
           headers: _entetes(jeton: jeton),
         ),
-      );
+      )).reponse;
       serveurPrevenu = reponse != null && reponse.statusCode < 300;
       // 401 : le jeton était déjà mort, le serveur n'a rien à savoir de plus.
       if (reponse?.statusCode == 401) serveurPrevenu = true;
@@ -306,20 +328,56 @@ class ServiceAppairage {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     if (jeton != null) 'Authorization': 'Bearer $jeton',
+    // Double pour les hébergeurs qui retirent `Authorization` (`47r_`).
+    if (jeton != null) 'X-Authorization': 'Bearer $jeton',
   };
 
-  /// `null` = le serveur n'a pas répondu (réseau, DNS, délai).
-  Future<http.Response?> _appeler(
-    Future<http.Response> Function(http.Client) requete,
+  /// Appel HTTP : jamais d'exception ; l'adresse corrigée (http → https) est mémorisée.
+  Future<ResultatHttp> _appeler(
+    String adresse,
+    Future<http.Response> Function(http.Client c, String base) requete,
   ) async {
-    final c = client ?? http.Client();
-    try {
-      return await requete(c).timeout(delai);
-    } on Exception {
-      return null;
-    } finally {
-      if (client == null) c.close();
+    final r = await _transport.appeler(requete, adresse: adresse);
+    if (r.adresseCorrigee != null) {
+      await preferences.definirAdresseServeur(r.adresseCorrigee!);
     }
+    return r;
+  }
+
+  /// Le résultat d'un échec avant toute réponse, ou d'une réponse qui n'est pas celle de
+  /// l'application (page de l'hébergeur, 502/503, 413…) ; `null` sinon.
+  ResultatAppairage? _echecReseau(ResultatHttp resultat, String adresse) {
+    final erreur = resultat.erreur;
+    if (erreur != null) {
+      return erreur.genre == GenreErreurReseau.horsLigne
+          ? _injoignable(adresse)
+          : ResultatAppairage(
+              erreur.genre == GenreErreurReseau.certificat ||
+                      erreur.genre == GenreErreurReseau.securite
+                  ? IssueAppairage.refuse
+                  : IssueAppairage.injoignable,
+              erreur.message,
+            );
+    }
+    final inattendu = messageReponseInattendue(resultat.reponse!);
+    if (inattendu == null) return null;
+    final transitoire = [
+      429,
+      502,
+      503,
+      504,
+    ].contains(resultat.reponse!.statusCode);
+    return ResultatAppairage(
+      transitoire ? IssueAppairage.injoignable : IssueAppairage.refuse,
+      inattendu,
+    );
+  }
+
+  /// 401 JSON de l'application seulement (cf. moteur) : une page de l'hébergeur ou un
+  /// en-tête `Authorization` jamais arrivé ne fait pas oublier un jeton valide.
+  bool _estRefusDeJeton(http.Response reponse) {
+    if (reponseEstHtml(reponse)) return false;
+    return _json(reponse.body)?['code'] != 'jeton_absent';
   }
 
   ResultatAppairage _injoignable(String adresse) => ResultatAppairage(

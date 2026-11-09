@@ -63,6 +63,44 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
+# --- Reseau reel (47r_) : ESSAI_RESEAU=1 lance, devant le MEME serveur, le mandataire de test
+# (outils/mandataire_reseau.py : 413, coupures, lenteurs, 5xx, redirection, TLS auto-signe /
+# autorite maison / expire / mauvais nom) et un second serveur a post_max_size=3K (vrai 413 PHP),
+# puis test/integration/reseau_reel_test.dart au lieu de l'essai complet.
+if [ "${ESSAI_RESEAU:-0}" = "1" ]; then
+  PM=$((PORT + 10)); CERTS="$LV_DOSSIER/certs"; PETIT=$((PORT + 1))
+  python3 "$RACINE/logialvia_app/outils/mandataire_reseau.py" --generer-seulement "$CERTS" > /dev/null \
+    || { echo "openssl indisponible : certificats d'essai non generes."; exit 1; }
+  PIDS=()
+  python3 "$RACINE/logialvia_app/outils/mandataire_reseau.py" --amont "http://127.0.0.1:$PORT" \
+    --port "$PM" --controle $((PM + 1)) > "$LV_DOSSIER/mandataire.log" 2>&1 &
+  PIDS+=($!)
+  TLS=""
+  i=2
+  for c in autosigne expire mauvais_nom valide; do
+    python3 "$RACINE/logialvia_app/outils/mandataire_reseau.py" --amont "http://127.0.0.1:$PORT" \
+      --port $((PM + i)) --controle $((PM + 20 + i)) --tls "$CERTS" --certificat "$c" \
+      > "$LV_DOSSIER/mandataire_$c.log" 2>&1 &
+    PIDS+=($!)
+    TLS="$TLS$c=$((PM + i)),"
+    i=$((i + 1))
+  done
+  (cd public && PHP_CLI_SERVER_WORKERS=2 exec php -d post_max_size=3K \
+    -S "127.0.0.1:$PETIT" ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php \
+    > "$LV_DOSSIER/petit.log" 2>&1) &
+  PIDS+=($!)
+  trap 'kill $SERVEUR "${PIDS[@]}" 2>/dev/null; pkill -f "artisan serve --port=$PORT" 2>/dev/null; pkill -f "S 127.0.0.1:$PETIT" 2>/dev/null' EXIT
+  for _ in $(seq 1 30); do
+    curl -s -o /dev/null "http://127.0.0.1:$((PM + 1))/sante" && curl -s -o /dev/null "http://127.0.0.1:$PETIT/up" && break
+    sleep 1
+  done
+  cd "$RACINE/logialvia_app" || exit 1
+  LOGIALVIA_MANDATAIRE="127.0.0.1:$PM" LOGIALVIA_MANDATAIRE_CTL=$((PM + 1)) LOGIALVIA_CERTS="$CERTS" \
+    LOGIALVIA_TLS="${TLS%,}" LOGIALVIA_SERVEUR_PETIT="http://127.0.0.1:$PETIT" LOGIALVIA_MDP="$MDP" \
+    "$FLUTTER" test test/integration/reseau_reel_test.dart "$@"
+  exit $?
+fi
+
 cd "$RACINE/logialvia_app" || exit 1
 LOGIALVIA_SERVEUR="http://127.0.0.1:$PORT" LOGIALVIA_MDP="$MDP" \
   LOGIALVIA_LARAVEL="$RACINE/logialvia_laravel" LOGIALVIA_DB="$BASE_ESSAI" \
