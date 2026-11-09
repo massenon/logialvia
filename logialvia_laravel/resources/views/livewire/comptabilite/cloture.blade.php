@@ -63,8 +63,8 @@
                 {{ $tousMoisClos ? 'Les 12 mois de l\'exercice sont clôturés.' : 'Étape manuelle : clôturez les mois traités dans la grille ci-dessus au fur et à mesure.' }}</p>
         </li>
         <li class="rounded-lg border border-outline-variant bg-surface-card p-md" data-etape="2">
-            <p class="font-bold">2. Solde des Comptes de Gestion (Classes 6 &amp; 7)</p>
-            <p class="text-xs text-outline">Calcul du résultat net (Produits − Charges) et écriture de solde vers le compte 131 (Bénéfice) ou 139 (Perte).</p>
+            <p class="font-bold">2. Solde des Comptes de Gestion (Classes 6, 7 &amp; 8)</p>
+            <p class="text-xs text-outline">Calcul du résultat net (Produits − Charges) et écriture de solde vers le compte 131 (Bénéfice) ou 139 (Perte), journal CL au 31/12/{{ $annee }}. Les états de l'exercice se lisent « avant affectation » : cette écriture ne les modifie pas.</p>
             <p class="mt-sm text-xs font-bold {{ $equilibree ? 'text-success-deep' : 'text-outline' }}" data-statut>
                 @if ($equilibree)
                     Résultat net calculé : {{ $f::montant($resultat) }} (Produits {{ $f::montant($produits) }} − Charges {{ $f::montant($charges) }}).
@@ -74,10 +74,28 @@
             </p>
         </li>
         <li class="rounded-lg border border-outline-variant bg-surface-card p-md" data-etape="3">
-            <p class="font-bold">3. Génération des Écritures d'À-Nouveaux (RAN)</p>
-            <p class="text-xs text-outline">Création de l'exercice {{ $annee + 1 }} et report des soldes de bilan (Classes 1 à 5) au 1ᵉʳ janvier {{ $annee + 1 }}. Verrouillage définitif de l'exercice {{ $annee }}.</p>
+            <p class="font-bold">3. Affectation du Résultat</p>
+            <p class="text-xs text-outline">Bénéfice : réserves (111 légale, 118 autres), dividendes à payer (465), le reste en report à nouveau créditeur (121). Perte : report à nouveau débiteur (129). Décision de l'Assemblée, saisie dans la fenêtre de clôture.</p>
+            <p class="mt-sm text-xs font-bold {{ $cloture ? 'text-success-deep' : 'text-outline' }}" data-statut>
+                @if ($cloture && $resultat < 0)
+                    Perte de {{ $f::montant(-$resultat) }} portée au report à nouveau débiteur (129).
+                @elseif ($cloture)
+                    Bénéfice de {{ $f::montant($resultat) }} affecté : réserve légale {{ $f::montant($affectationCloture['reserve_legale']) }}, autres réserves {{ $f::montant($affectationCloture['autres_reserves']) }}, dividendes {{ $f::montant($affectationCloture['dividendes']) }}, report à nouveau {{ $f::montant($resultat - array_sum($affectationCloture)) }}.
+                @else
+                    Par défaut, tout le résultat est reporté à nouveau ({{ $resultat < 0 ? '129' : '121' }}).
+                @endif
+            </p>
+        </li>
+        <li class="rounded-lg border border-outline-variant bg-surface-card p-md" data-etape="4">
+            <p class="font-bold">4. Génération des Écritures d'À-Nouveaux (RAN)</p>
+            <p class="text-xs text-outline">Création de l'exercice {{ $annee + 1 }} et report des soldes de bilan (Classes 1 à 5) au 1ᵉʳ janvier {{ $annee + 1 }}, journal AN. Les classes 6, 7 et 8 ne sont jamais reportées. Verrouillage définitif de l'exercice {{ $annee }}.</p>
             @if ($cloture)
                 <p class="mt-sm text-xs font-bold text-success-deep" data-statut>Exercice {{ $annee }} clôturé et verrouillé.</p>
+                <p class="mt-xs text-xs text-outline" data-ouverture>{{ $ouvertureParANouveaux ? 'À-nouveaux de l\'exercice '.$annee.' écrits (journal AN).' : 'Cet exercice a été clôturé avant la génération des à-nouveaux : son ouverture est reconstituée par une clôture virtuelle de l\'exercice précédent.' }}</p>
+                @if ($peutClore)
+                    <button type="button" wire:click="demanderReouverture" data-action="rouvrir-exercice"
+                            class="mt-sm rounded-lg border border-outline-variant px-md py-sm text-xs font-bold hover:bg-surface-zebra">Rouvrir l'Exercice {{ $annee }}</button>
+                @endif
             @elseif ($peutClore)
                 <button type="button" wire:click="demanderCloture" @disabled(! $equilibree) data-action="cloturer-exercice"
                         class="mt-sm rounded-lg bg-brand-navy px-md py-sm text-xs font-bold text-white disabled:opacity-50">Clôturer l'Exercice {{ $annee }}</button>
@@ -98,10 +116,41 @@
                     <li>le résultat net arrêté est de {{ $f::montant($resultat) }} ;</li>
                     <li>une écriture saisie hors ligne sur un poste pour {{ $annee }} sera refusée, avec son motif, quand ce poste se reconnectera.</li>
                 </ul>
+                <p class="mb-sm text-xs">Les comptes de gestion sont soldés vers le compte {{ $resultat < 0 ? '139 (perte)' : '131 (bénéfice)' }} ; l'exercice {{ $annee + 1 }} s'ouvre avec ses à-nouveaux ({{ count($apercu['reportes']) }} compte(s) de bilan reporté(s)).</p>
+                @if ($resultat > 0.01)
+                    <p class="mb-sm text-xs font-bold">Affectation du bénéfice (décision de l'Assemblée)</p>
+                    <div class="mb-sm grid grid-cols-1 gap-sm sm:grid-cols-3">
+                        @foreach (['reserveLegale' => 'Réserve légale (111)', 'autresReserves' => 'Autres réserves (118)', 'dividendes' => 'Dividendes à payer (465)'] as $champ => $libelle)
+                            <label class="text-xs">{{ $libelle }}
+                                <input type="text" inputmode="numeric" wire:model.live="{{ $champ }}" data-champ="{{ $champ }}"
+                                       class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-xs text-xs">
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mb-sm text-xs font-bold" data-report>Report à nouveau créditeur (121) : {{ $f::montant($resultat - array_sum($affectationSaisie)) }}</p>
+                @elseif ($resultat < -0.01)
+                    <p class="mb-sm text-xs">Perte : aucun dividende ; elle est portée au report à nouveau débiteur (129).</p>
+                @endif
+                @if ($apercu['anomalies'] !== [])
+                    <p class="mb-sm rounded-lg bg-error-container p-sm text-xs font-bold text-error-deep" role="alert" data-anomalies>{{ implode(' ', $apercu['anomalies']) }}</p>
+                @endif
                 <p class="mb-md rounded-lg bg-error-container p-sm text-xs font-bold text-error-deep">Cette action ne peut pas être annulée depuis l'application.</p>
                 <div class="flex justify-end gap-sm">
                     <button type="button" wire:click="annuler" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-bold">Annuler</button>
                     <button type="button" wire:click="cloturerExercice" data-action="confirmer-cloture-exercice" class="rounded-lg bg-error-deep px-md py-sm text-xs font-bold text-white">Clôturer l'exercice {{ $annee }}</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($confirmationReouverture)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-md" role="dialog" aria-modal="true" data-modale="reouverture">
+            <div class="w-full max-w-lg rounded-lg bg-surface-card p-lg shadow-lg">
+                <h2 class="mb-md text-modal-title font-bold">Rouvrir l'exercice {{ $annee }} ?</h2>
+                <p class="mb-md text-xs">Les écritures de clôture (journal CL) de {{ $annee }} et les à-nouveaux (journal AN) de {{ $annee + 1 }} seront retirés, et l'exercice {{ $annee }} redeviendra modifiable. Vous pourrez le clôturer de nouveau : les à-nouveaux seront régénérés. L'action est tracée dans le journal d'audit.</p>
+                <div class="flex justify-end gap-sm">
+                    <button type="button" wire:click="annulerReouverture" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-bold">Annuler</button>
+                    <button type="button" wire:click="rouvrirExercice" data-action="confirmer-reouverture" class="rounded-lg bg-error-deep px-md py-sm text-xs font-bold text-white">Rouvrir l'exercice {{ $annee }}</button>
                 </div>
             </div>
         </div>

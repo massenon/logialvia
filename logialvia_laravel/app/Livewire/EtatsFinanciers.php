@@ -108,18 +108,21 @@ class EtatsFinanciers extends Component
         $this->message = "Note $numero enregistrée.";
     }
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $annee = $this->annee();
-        [$ecritures, $anterieures] = $this->ecritures($annee);
-        $soldes = Soldes::depuis($ecritures);
-        $ouverture = Soldes::depuis($anterieures);
+        [, $ouvertureNette] = $this->ecritures($annee);
+        // Etats de l'exercice : ouverture (a-nouveaux) CUMULEE aux mouvements, cloture exclue.
+        $soldes = $this->soldesFin($annee);
+        $ouverture = new Soldes($ouvertureNette);
         $plan = LivreComptable::plan();
-        $balance = MoteurComptable::balance($plan, $anterieures, $ecritures);
+        $balance = MoteurComptable::balanceDepuis($plan, $ouvertureNette, $this->duLivre($annee));
 
         $bilan = MoteurComptable::bilan($soldes);
         $tafire = MoteurComptable::tafire($soldes, $ouverture);
-        $tresorerieBilan = $soldes->debiteursParClasse('5');
+        // Tresorerie NETTE (classe 5, decouverts deduits) : le TAFIRE part de l'ouverture et la retrouve.
+        $tresorerieBilan = $soldes->parClasse('5');
         $ecartTafire = $tafire['tresorerie_cloture'] - $tresorerieBilan;
 
         // Notes 2, 3 et 4 : calculees depuis la balance, jamais saisies.
@@ -147,7 +150,7 @@ class EtatsFinanciers extends Component
             fn ($l) => str_starts_with($l['numero'], '4') && (abs($l['final_debit']) >= 0.01 || abs($l['final_credit']) >= 0.01),
         ));
 
-        return view('livewire.comptabilite.etats-financiers', $this->communes($annee) + [
+        return $this->communes($annee) + [
             'titre' => 'États Financiers',
             'description' => 'Bilan, Compte de Résultat, Tableau des Flux de Trésorerie et Notes Annexes — conformité SYSCOHADA.',
             'onglets' => self::ONGLETS,
@@ -166,6 +169,40 @@ class EtatsFinanciers extends Component
             'tiers' => $tiers,
             'aujourdhui' => now(config('logialvia.fuseau'))->format('d/m/Y'),
             'peutGerer' => (bool) Auth::user()?->can('manage-comptabilite'),
-        ])->title('États Financiers');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.etats-financiers', $this->donnees())->title('États Financiers');
+    }
+
+    /** Export XLSX du tableau affiche : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $postes = fn (array $liste) => array_map(fn ($p) => [$p['libelle'], (string) $p['detail'], (int) round($p['montant'])], $liste);
+        $onglet = $this->onglet;
+        $lignes = [['États Financiers — exercice '.$d['annee'].' — '.($d['onglets'][$onglet] ?? $onglet)]];
+        if ($onglet === 'resultat') {
+            $lignes[] = ['Poste', 'Comptes', 'Montant'];
+            $lignes = array_merge($lignes, $postes($d['resultat']['postes']));
+        } elseif ($onglet === 'flux') {
+            $lignes[] = ['Poste', 'Comptes', 'Montant'];
+            $lignes = array_merge($lignes, $postes($d['tafire']['postes']));
+            $lignes[] = ['Trésorerie d\'ouverture', '', (int) round($d['tafire']['tresorerie_ouverture'])];
+            $lignes[] = ['Trésorerie de clôture', '', (int) round($d['tafire']['tresorerie_cloture'])];
+        } else {
+            $lignes[] = ['ACTIF', 'Comptes', 'Montant'];
+            $lignes = array_merge($lignes, $postes($d['bilan']['actif']));
+            $lignes[] = ['PASSIF', 'Comptes', 'Montant'];
+            $lignes = array_merge($lignes, $postes($d['bilan']['passif']));
+        }
+
+        $annee = $this->annee();
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'etats-financiers-'.$annee.'.xlsx', 'États Financiers');
     }
 }

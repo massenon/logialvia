@@ -5,7 +5,7 @@
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="faits-immuables">
         Une dépense enregistrée est une pièce comptable partagée entre tous les postes : elle ne se modifie pas, elle s'annule par une
         écriture inverse. « Corriger » annule la pièce puis passe la pièce corrigée (en une seule opération). Pas de pièce justificative
-        (le poste n'en stocke pas non plus).
+        au web (le poste n'en stocke pas non plus). Export : XLSX (bouton « Exporter ») et vue imprimable (« Imprimer / PDF ») ; le PDF généré du poste n'est pas reproduit.
     </p>
 
     @if ($message)

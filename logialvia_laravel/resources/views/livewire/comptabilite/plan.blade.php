@@ -1,15 +1,21 @@
 <div>
     <div class="mb-xs flex flex-wrap items-center justify-between gap-sm">
         <h1 class="text-page-title font-bold">Plan Comptable</h1>
-        @if ($peutGerer)
-            <button type="button" wire:click="nouveau" data-action="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-bold text-white">Nouveau Compte</button>
-        @endif
+        <div class="flex items-center gap-sm print:hidden">
+            <button type="button" wire:click="exporter" data-action="exporter"
+                    class="rounded-lg border border-outline-variant px-sm py-xs text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            <button type="button" onclick="window.print()" data-action="imprimer"
+                    class="rounded-lg border border-outline-variant px-sm py-xs text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</button>
+            @if ($peutGerer)
+                <button type="button" wire:click="nouveau" data-action="nouveau"
+                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-bold text-white">Nouveau Compte</button>
+            @endif
+        </div>
     </div>
     <p class="mb-md text-xs text-outline">Comptes SYSCOHADA Révisée utilisés par le moteur d'écritures automatiques.</p>
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="referentiel">
-        Référentiel : le serveur fait foi. Chaque modification est une demande, soumise aux mêmes règles que celles d'un poste. Export PDF : au poste.
+        Référentiel : le serveur fait foi. Chaque modification est une demande, soumise aux mêmes règles que celles d'un poste.
     </p>
 
     @if ($message)

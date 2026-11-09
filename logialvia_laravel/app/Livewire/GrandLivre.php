@@ -57,10 +57,12 @@ class GrandLivre extends Component
         return $d !== false && $d->format('Y-m-d') === $valeur ? $d : null;
     }
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $annee = $this->annee();
-        [$ecritures, $anterieures] = $this->ecritures($annee);
+        $ecritures = $this->duLivre($annee);
+        [, $ouvertureNette] = $this->ecritures($annee);
         $plan = LivreComptable::plan();
         $compte = $this->compte !== '' ? $plan->get($this->compte) : null;
 
@@ -80,7 +82,7 @@ class GrandLivre extends Component
             };
 
             $duCompte = fn (LigneEcriture $e) => $e->compte === $compte->numero_compte;
-            $net = $anterieures->filter($duCompte)->sum(fn ($e) => $e->debit - $e->credit)
+            $net = (float) ($ouvertureNette[$compte->numero_compte] ?? 0.0)
                 + $ecritures->filter(fn ($e) => $duCompte($e) && $avant($e))->sum(fn ($e) => $e->debit - $e->credit);
             $ouverture = $compte->estDebiteurParNature() ? $net : -$net;
 
@@ -108,10 +110,37 @@ class GrandLivre extends Component
             ];
         }
 
-        return view('livewire.comptabilite.grand-livre', $this->communes($annee) + $donnees + [
+        return $this->communes($annee) + $donnees + [
             'titre' => 'Grand Livre',
             'description' => 'Liste chronologique des écritures d\'un compte, avec solde progressif.',
             'comptesActifs' => $plan->where('archive', false),
-        ])->title('Grand Livre');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.grand-livre', $this->donnees())->title('Grand Livre');
+    }
+
+    /** Export XLSX du tableau affiche (memes filtres) : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $compte = $d['compte_choisi'];
+        $lignes = [['Grand Livre — '.($compte ? $compte->numero_compte.' '.$compte->libelle : 'aucun compte choisi').' — exercice '.$d['annee']], ['Date', 'Pièce', 'Libellé', 'Débit', 'Crédit', 'Solde progressif']];
+        if ($compte !== null) {
+            $lignes[] = ['Solde d\'ouverture', '', '', '', '', (int) round($d['ouverture'])];
+            foreach ($d['lignes'] as $l) {
+                $e = $l['ecriture'];
+                $lignes[] = [$e->date->format('d/m/Y'), (string) $e->numeroPiece, $e->libelle, (int) round($e->debit), (int) round($e->credit), (int) round($l['solde'])];
+            }
+            $lignes[] = ['Total période', '', '', (int) round($d['debit']), (int) round($d['credit']), (int) round($d['solde_final'])];
+        }
+
+        $annee = $this->annee();
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'grand-livre-'.$annee.'.xlsx', 'Grand Livre');
     }
 }

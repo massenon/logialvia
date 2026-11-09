@@ -14,7 +14,7 @@
 <body class="min-h-screen">
     <div class="flex min-h-screen flex-col md:flex-row">
         {{-- Barre laterale : transcrite du Dart (`navigation_model.dart`), filtree par droits et modules. --}}
-        <aside class="bg-brand-navy text-white md:w-64 md:shrink-0" aria-label="Navigation">
+        <aside class="bg-brand-navy text-white md:w-64 md:shrink-0 print:hidden" aria-label="Navigation">
             <div class="px-md py-md">
                 <a href="/dashboard" class="text-section-title font-bold">Logi<span class="text-brand-gold-light">ALVIA</span></a>
                 <p class="text-xs text-white/70">ALLMANY ET COMPAGNIE</p>
@@ -50,7 +50,7 @@
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="flex items-center justify-between border-b border-outline-variant bg-surface-card px-md py-sm">
+            <header class="flex items-center justify-between border-b border-outline-variant bg-surface-card px-md py-sm print:hidden">
                 <span class="text-sm text-outline">{{ $titre }}</span>
                 @auth
                     {{-- Menu du compte : Profil, Aide, Contact, deconnexion (sans JS : <details>). --}}
@@ -71,7 +71,7 @@
                     </details>
                 @endauth
             </header>
-            <main class="min-w-0 flex-1 p-md md:p-lg">
+            <main class="min-w-0 flex-1 p-md md:p-lg print:p-0">
                 {{ $slot }}
             </main>
         </div>

@@ -3,7 +3,7 @@
     @include('livewire.comptabilite._entete')
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="lecture">
-        Lecture : somme des écritures de tous les postes ; seules les notes 1 et 5 sont rédigées ici. Export PDF : au poste.
+        Lecture : somme des écritures de tous les postes ; seules les notes 1 et 5 sont rédigées ici. Export : XLSX (bouton « Exporter ») et vue imprimable (« Imprimer / PDF ») ; le PDF généré du poste n'est pas reproduit.
     </p>
 
     @if ($message)
@@ -61,12 +61,12 @@
                 <header class="bg-brand-navy px-md py-sm font-bold text-white">TABLEAU DES FLUX DE TRÉSORERIE (TAFIRE simplifié)</header>
                 @include('livewire.comptabilite._postes', ['postes' => $tafire['postes']])
             </section>
-            <p class="my-sm text-caption text-outline">La Trésorerie à la Clôture doit être égale à la Trésorerie-Actif du Bilan (onglet Bilan) — vérification automatique ci-dessous.</p>
+            <p class="my-sm text-caption text-outline">La Trésorerie à la Clôture doit être égale à la Trésorerie nette du Bilan (Trésorerie-Actif − Trésorerie-Passif) — vérification automatique ci-dessous. Elle part de la trésorerie d'ouverture : les soldes 5xx reportés par la clôture de l'exercice précédent.</p>
             <p class="rounded-lg border p-md text-xs font-bold {{ $tafireCoherent ? 'border-success-deep bg-success-container text-success-deep' : 'border-error-deep bg-error-container text-error-deep' }}" data-coherence>
                 @if ($tafireCoherent)
-                    Trésorerie de clôture (TAFIRE) = Trésorerie-Actif (Bilan) = {{ $f::montant($tresorerieBilan) }}.
+                    Trésorerie de clôture (TAFIRE) = Trésorerie nette (Bilan) = {{ $f::montant($tresorerieBilan) }}.
                 @else
-                    Incohérence de {{ $f::montant(abs($ecartTafire)) }} entre la Trésorerie de clôture du TAFIRE ({{ $f::montant($tafire['tresorerie_cloture']) }}) et la Trésorerie-Actif du Bilan ({{ $f::montant($tresorerieBilan) }}).
+                    Incohérence de {{ $f::montant(abs($ecartTafire)) }} entre la Trésorerie de clôture du TAFIRE ({{ $f::montant($tafire['tresorerie_cloture']) }}) et la Trésorerie nette du Bilan ({{ $f::montant($tresorerieBilan) }}).
                 @endif
             </p>
         </div>

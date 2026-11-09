@@ -23,7 +23,8 @@ class Analytique extends Component
 {
     use LitLeLivre;
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $annee = $this->annee();
         [$ecritures] = $this->ecritures($annee);
@@ -34,7 +35,7 @@ class Analytique extends Component
         $couts = array_sum(array_column($centres, 'couts'));
         $marge = $revenus - $couts;
 
-        return view('livewire.comptabilite.analytique', $this->communes($annee) + [
+        return $this->communes($annee) + [
             'titre' => 'Comptabilité Analytique',
             'description' => "Marges réelles par activité, calculées sur les écritures de l'exercice $annee.",
             'centres' => $centres,
@@ -44,6 +45,29 @@ class Analytique extends Component
             'tauxTotal' => abs($revenus) < 0.01 ? null : $marge / $revenus * 100,
             'chargesNonAffectees' => $a['charges_non_affectees'],
             'revenuMaximum' => $centres === [] ? 0.0 : max(0.0, ...array_column($centres, 'revenus')),
-        ])->title('Comptabilité Analytique');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.analytique', $this->donnees())->title('Comptabilité Analytique');
+    }
+
+    /** Export XLSX du tableau affiche (memes filtres) : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $lignes = [['Comptabilité Analytique — exercice '.$d['annee']], ['Centre', 'Revenus', 'Coûts', 'Marge']];
+        foreach ($d['centres'] as $c) {
+            $lignes[] = [$c['nom'], (int) round($c['revenus']), (int) round($c['couts']), (int) round($c['revenus'] - $c['couts'])];
+        }
+        $lignes[] = ['Total', (int) round($d['totalRevenus']), (int) round($d['totalCouts']), (int) round($d['totalMarge'])];
+        $lignes[] = ['Charges non affectées', '', (int) round($d['chargesNonAffectees'])];
+
+        $annee = $this->annee();
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'comptabilite-analytique-'.$annee.'.xlsx', 'Comptabilité Analytique');
     }
 }

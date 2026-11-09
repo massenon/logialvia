@@ -6,6 +6,7 @@ use App\Livewire\Concerns\LitLeLivre;
 use App\Models\CloturePeriodique;
 use App\Services\Comptabilite\LivreComptable;
 use App\Services\Comptabilite\MoteurComptable;
+use App\Services\Comptabilite\ReportANouveau;
 use App\Services\Comptabilite\Saisie;
 use App\Services\Comptabilite\Soldes;
 use App\Support\Audit;
@@ -43,6 +44,44 @@ class Cloture extends Component
     /** La confirmation de la cloture annuelle est ouverte. */
     public bool $confirmation = false;
 
+    /** La confirmation de la reouverture est ouverte. */
+    public bool $confirmationReouverture = false;
+
+    /** Affectation du benefice (decision de l'Assemblee), saisie en FCFA ; le reste va au report a nouveau (121). */
+    public string $reserveLegale = '';
+
+    public string $autresReserves = '';
+
+    public string $dividendes = '';
+
+    private function lireMontant(string $texte): float
+    {
+        $propre = str_replace([' ', "\u{202f}", "\u{a0}"], '', $texte);
+
+        return is_numeric(str_replace(',', '.', $propre)) ? max(0.0, (float) str_replace(',', '.', $propre)) : 0.0;
+    }
+
+    /** @return array{reserve_legale: float, autres_reserves: float, dividendes: float} */
+    private function affectationSaisie(): array
+    {
+        return ReportANouveau::affectation([
+            'reserve_legale' => $this->lireMontant($this->reserveLegale),
+            'autres_reserves' => $this->lireMontant($this->autresReserves),
+            'dividendes' => $this->lireMontant($this->dividendes),
+        ]);
+    }
+
+    /** Apercu de la cloture (rien n'est ecrit) : resultat, pieces, a-nouveaux, anomalies. */
+    private function apercu(int $annee): array
+    {
+        return ReportANouveau::calculer(
+            LivreComptable::toutes()->all(),
+            $annee,
+            $this->affectationSaisie(),
+            LivreComptable::plan()->keys()->map(fn ($k) => (string) $k)->all(),
+        );
+    }
+
     private function nomDuMois(int $mois): string
     {
         return ucfirst(self::MOIS[$mois - 1]);
@@ -51,9 +90,9 @@ class Cloture extends Component
     /** La balance de l'exercice est-elle equilibree ? Ecart debit − credit sinon. */
     private function ecartBalance(int $annee): float
     {
-        [$ecritures, $anterieures] = $this->ecritures($annee);
+        [, $ouverture] = $this->ecritures($annee);
 
-        return MoteurComptable::ecartBalance(MoteurComptable::balance(LivreComptable::plan(), $anterieures, $ecritures));
+        return MoteurComptable::ecartBalance(MoteurComptable::balanceDepuis(LivreComptable::plan(), $ouverture, $this->duLivre($annee)));
     }
 
     private function refuserSiDesequilibre(int $annee, string $suite): bool
@@ -148,12 +187,20 @@ class Cloture extends Component
             return;
         }
 
+        $apercu = $this->apercu($annee);
+        if ($apercu['anomalies'] !== []) {
+            $this->erreur = implode(' ', $apercu['anomalies']);
+
+            return;
+        }
+
         $instant = Saisie::instantMaintenant();
         $motif = DB::transaction(fn () => (new ClotureExerciceTable)->pourUtilisateur($utilisateur)->absorber(Catalogue::POSTE_WEB, [
             'id' => UuidDeterministe::clotureExercice($annee),
             'annee' => $annee,
             'date_cloture' => $instant,
             'updated_at' => $instant,
+            'affectation' => $this->affectationSaisie(),
         ]));
         if ($motif !== null) {
             $this->erreur = $motif;
@@ -164,12 +211,44 @@ class Cloture extends Component
         $this->message = "Exercice $annee clôturé. L'exercice ".($annee + 1).' est ouvert.';
     }
 
+    public function demanderReouverture(): void
+    {
+        abort_unless(Auth::user()?->can('close-fiscal-year'), 403);
+        $this->message = null;
+        $this->erreur = null;
+        $this->confirmationReouverture = true;
+    }
+
+    public function annulerReouverture(): void
+    {
+        $this->confirmationReouverture = false;
+    }
+
+    /** Rouvre l'exercice : retire la cloture (CL) et les a-nouveaux (AN) de l'exercice suivant. Administratrice seule. */
+    public function rouvrirExercice(): void
+    {
+        $utilisateur = Auth::user();
+        abort_unless($utilisateur?->can('close-fiscal-year'), 403);
+        $this->confirmationReouverture = false;
+        $this->message = null;
+        $this->erreur = null;
+
+        $annee = $this->annee();
+        $motif = (new ClotureExerciceTable)->pourUtilisateur($utilisateur)->rouvrir($annee);
+        if ($motif !== null) {
+            $this->erreur = $motif;
+
+            return;
+        }
+        $this->message = "Exercice $annee rouvert : écritures de clôture et à-nouveaux retirés.";
+    }
+
     public function render()
     {
         $annee = $this->annee();
-        [$ecritures, $anterieures] = $this->ecritures($annee);
-        $soldes = Soldes::depuis($ecritures);
-        $balance = MoteurComptable::balance(LivreComptable::plan(), $anterieures, $ecritures);
+        [, $ouverture] = $this->ecritures($annee);
+        $soldes = $this->soldesFin($annee);
+        $balance = MoteurComptable::balanceDepuis(LivreComptable::plan(), $ouverture, $this->duLivre($annee));
         $cloture = $this->exerciceEstCloture($annee);
         $mois = CloturePeriodique::query()->where('annee', $annee)->pluck('is_cloture', 'mois')->map(fn ($v) => (bool) $v);
         $ecart = MoteurComptable::ecartBalance($balance);
@@ -194,6 +273,10 @@ class Cloture extends Component
             'tousMoisClos' => $mois->filter()->count() === 12,
             'peutGerer' => (bool) $utilisateur?->can('manage-comptabilite'),
             'peutClore' => (bool) $utilisateur?->can('close-fiscal-year'),
+            'apercu' => $this->apercu($annee),
+            'affectationSaisie' => $this->affectationSaisie(),
+            'ouvertureParANouveaux' => collect(LivreComptable::toutes())->contains(fn ($e) => $e->exercice === $annee && $e->journal === ReportANouveau::A_NOUVEAU),
+            'affectationCloture' => ($brut = \App\Models\ExerciceComptable::query()->whereKey($annee)->value('affectation')) ? ReportANouveau::affectation(json_decode($brut, true)) : ReportANouveau::affectation(null),
         ])->title('Clôture d\'Exercice');
     }
 }

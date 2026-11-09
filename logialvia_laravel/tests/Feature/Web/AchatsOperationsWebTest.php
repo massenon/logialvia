@@ -627,8 +627,10 @@ class AchatsOperationsWebTest extends TestCase
         $this->poserLeJeuCommun();
         $d = Livewire::actingAs($this->utilisateurAvecRole('comptable', 'paul'))->test(\App\Livewire\Depenses::class)->call('exporter');
         $lignes = $this->lignesXlsx(base64_decode($d->effects['download']['content']));
-        $this->assertSame('N° Pièce', $lignes[0][0]);
-        $this->assertCount(3, $lignes, 'deux depenses du jeu commun');
+        // Titre, en-tete, une ligne par depense affichee, puis le total affiche.
+        $this->assertStringStartsWith('Dépenses', $lignes[0][0]);
+        $this->assertSame(['Date', 'Pièce', 'Libellé', 'Compte', 'Montant', 'Statut', 'Centre'], $lignes[1]);
+        $this->assertCount(5, $lignes, 'deux depenses du jeu commun + titre, en-tete et total');
         Livewire::actingAs($this->utilisateurAvecRole('caissier', 'amina'))->test(\App\Livewire\Depenses::class)->call('exporter')->assertForbidden();
     }
 

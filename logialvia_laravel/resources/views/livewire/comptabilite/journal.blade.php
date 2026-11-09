@@ -5,7 +5,7 @@
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="faits-immuables">
         Une pièce enregistrée est un fait partagé entre tous les postes : elle ne se supprime pas, elle s'annule par une
-        écriture inverse (ANN-…). Export PDF : au poste.
+        écriture inverse (ANN-…). Export : XLSX (bouton « Exporter ») et vue imprimable (« Imprimer / PDF ») ; le PDF généré du poste n'est pas reproduit.
     </p>
 
     @if ($message)

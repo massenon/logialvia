@@ -200,29 +200,6 @@ class Depenses extends Component
         $this->jour = now(config('logialvia.fuseau'))->format('Y-m-d');
     }
 
-    /** Export XLSX des depenses filtrees. Droit de lecture de la comptabilite verifie ICI. */
-    public function exporter(): StreamedResponse
-    {
-        abort_unless(Auth::user()?->can('view-comptabilite'), 403);
-        [$ecritures] = $this->ecritures($this->annee());
-        $plan = LivreComptable::plan();
-        $terme = mb_strtolower(trim($this->recherche));
-        $lignes = [['N° Pièce', 'Date', 'Libellé', 'Compte', 'Catégorie', 'Montant', 'Statut', 'Centre analytique']];
-        foreach (MoteurComptable::depenses($ecritures, $plan) as $d) {
-            if (($this->statut === 'payee' && ! $d['payee']) || ($this->statut === 'attente' && $d['payee'])) {
-                continue;
-            }
-            if ($terme !== '' && ! str_contains(mb_strtolower($d['libelle']), $terme) && ! str_contains(mb_strtolower($d['libelle_compte']), $terme)
-                && ! str_contains($d['compte'], $terme) && ! str_contains(mb_strtolower($d['numero_piece']), $terme)) {
-                continue;
-            }
-            $lignes[] = [$d['numero_piece'], $d['date']->format('d/m/Y'), $d['libelle'], $d['compte'], $d['libelle_compte'],
-                (float) $d['montant'], $d['payee'] ? 'Payée' : 'En attente', $d['centre'] ?? ''];
-        }
-
-        return ExportXlsx::telecharger($lignes, 'depenses.xlsx', 'Dépenses');
-    }
-
     public function demanderAnnulation(string $pieceId): void
     {
         $this->verifierDroitDeGerer();
@@ -266,7 +243,8 @@ class Depenses extends Component
         return $plan->filter(fn ($c) => $c->classe === '5' || str_starts_with($c->numero_compte, '40'));
     }
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $annee = $this->annee();
         [$ecritures] = $this->ecritures($annee);
@@ -300,7 +278,7 @@ class Depenses extends Component
         $comptesTresorerie = $actifs->filter(fn ($c) => $c->classe === '5');
         $comptesFournisseurs = $actifs->filter(fn ($c) => str_starts_with($c->numero_compte, '40'));
 
-        return view('livewire.comptabilite.depenses', $this->communes($annee) + [
+        return $this->communes($annee) + [
             'titre' => 'Saisie des Dépenses',
             'description' => 'Charges d\'exploitation courantes de la ferme (SYSCOHADA Classe 6) — hors achats d\'intrants, déjà couverts par Achats & Commandes.',
             'depenses' => $filtrees,
@@ -315,6 +293,28 @@ class Depenses extends Component
             'planIncomplet' => $comptesCharge->isEmpty() || $comptesTresorerie->isEmpty(),
             'centres' => self::CENTRES,
             'peutGerer' => (bool) Auth::user()?->can('manage-comptabilite'),
-        ])->title('Saisie des Dépenses');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.depenses', $this->donnees())->title('Saisie des Dépenses');
+    }
+
+    /** Export XLSX du tableau affiche (memes filtres) : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $lignes = [['Dépenses — exercice '.$d['annee']], ['Date', 'Pièce', 'Libellé', 'Compte', 'Montant', 'Statut', 'Centre']];
+        foreach ($d['depenses'] as $x) {
+            $lignes[] = [$x['date']->format('d/m/Y'), $x['numero_piece'], $x['libelle'], $x['compte'], (int) round($x['montant']), $x['payee'] ? 'Payée' : 'En attente', (string) $x['centre']];
+        }
+        $lignes[] = ['Total affiché', '', '', '', (int) round($d['totalAffiche'])];
+
+        $annee = $this->annee();
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'depenses-'.$annee.'.xlsx', 'Saisie des Dépenses');
     }
 }

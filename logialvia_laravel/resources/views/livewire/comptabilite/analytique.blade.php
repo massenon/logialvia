@@ -3,7 +3,7 @@
     @include('livewire.comptabilite._entete')
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="lecture-seule">
-        Lecture seule : somme des écritures de tous les postes. Export PDF : au poste.
+        Lecture seule : somme des écritures de tous les postes. Export : XLSX (bouton « Exporter ») et vue imprimable (« Imprimer / PDF ») ; le PDF généré du poste n'est pas reproduit.
     </p>
 
     <h2 class="mb-sm text-section-title font-bold">Marges par centre de profit</h2>

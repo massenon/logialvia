@@ -109,9 +109,9 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('admin', 'gerante'));
 
         Livewire::test(Comptabilite::class)
-            ->assertSeeHtmlInOrder(['data-kpi="total-actif"', '675 000'])
+            ->assertSeeHtmlInOrder(['data-kpi="total-actif"', '775 000'])
             ->assertSeeHtml('data-kpi="tresorerie"')
-            ->assertSee('445 000')
+            ->assertSee('545 000')                // tresorerie CUMULEE : ouverture 100 000 + 445 000
             ->assertSee('133 000')                // resultat cumule
             ->assertSeeHtmlInOrder(['data-kpi="marge"', '67']);   // marge nette = 133 000 / 200 000, arrondie
     }
@@ -511,13 +511,13 @@ class ComptabiliteWebTest extends TestCase
 
     // -------------------------------------------------------------------- Plan
 
-    public function test_le_plan_liste_les_19_comptes_filtre_et_masque_les_archives(): void
+    public function test_le_plan_liste_les_24_comptes_filtre_et_masque_les_archives(): void
     {
         PlanComptable::query()->whereKey('613')->update(['archive' => true]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = Livewire::test(PlanComptableEcran::class)->assertSee('18 compte(s)')->assertDontSeeHtml('data-compte="613"');
-        $c->set('archives', true)->assertSee('19 compte(s)')->assertSeeHtml('data-compte="613"')->assertSeeHtml('data-archive');
+        $c = Livewire::test(PlanComptableEcran::class)->assertSee('23 compte(s)')->assertDontSeeHtml('data-compte="613"');
+        $c->set('archives', true)->assertSee('24 compte(s)')->assertSeeHtml('data-compte="613"')->assertSeeHtml('data-archive');
         $c->set('classe', '7')->assertSee('2 compte(s)')->assertSee('Ventes de Produits Avicoles')->assertDontSee('Caisse');
         $c->set('classe', '')->set('recherche', 'vétéri')->assertSee('Frais Vétérinaires');
         $c->set('recherche', '531')->assertSee('1 compte(s)')->assertSee('Débiteur');
@@ -650,12 +650,13 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         Livewire::test(EtatsFinanciers::class)->assertSee('Actif = Passif')->assertSee('non clôturé')
-            ->assertSeeHtmlInOrder(['data-total="actif"', '675 000'])
-            ->assertSeeHtmlInOrder(['data-total="passif"', '675 000'])
+            // Ouverture CUMULEE : immobilisation 200 000 + creances 30 000 + tresorerie 545 000 = capital 600 000 + resultat 133 000 + dettes 42 000.
+            ->assertSeeHtmlInOrder(['data-total="actif"', '775 000'])
+            ->assertSeeHtmlInOrder(['data-total="passif"', '775 000'])
             ->assertSeeHtmlInOrder(['data-poste="Immobilisations Corporelles"', '200 000'])
             ->assertSeeHtmlInOrder(['data-poste="Créances et Emplois Assimilés"', '30 000'])
-            ->assertSeeHtmlInOrder(['data-poste="Trésorerie-Actif"', '445 000'])
-            ->assertSeeHtmlInOrder(['data-poste="Capital"', '500 000'])
+            ->assertSeeHtmlInOrder(['data-poste="Trésorerie-Actif"', '545 000'])
+            ->assertSeeHtmlInOrder(['data-poste="Capital"', '600 000'])
             ->assertSeeHtmlInOrder(['data-poste="Résultat Net de l\'Exercice"', '133 000'])
             ->assertSeeHtmlInOrder(['data-poste="Dettes Circulantes"', '42 000']);
     }
@@ -680,15 +681,16 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        // Chiffres du Dart sur le jeu commun (voir jeu_commun_chiffres_test.dart) : flux d'exploitation 145 000,
-        // investissement −200 000, financement 267 000, variation 212 000, tresorerie de cloture 312 000.
-        // Le bilan, lui, lit la tresorerie de l'exercice seul (445 000) : le poste le DIT (incoherence).
+        // Chiffres du Dart sur le jeu commun (voir jeu_commun_chiffres_test.dart), calcules a la main :
+        // exploitation 145 000, investissement −200 000, financement 500 000 (l'apport), variation 445 000,
+        // tresorerie d'ouverture 100 000 → de cloture 545 000 = tresorerie nette du bilan : plus d'incoherence.
         Livewire::test(EtatsFinanciers::class)->call('choisir', 'flux')
             ->assertSeeHtmlInOrder(['data-poste="FLUX NET DE TRÉSORERIE D\'EXPLOITATION"', '145 000'])
             ->assertSeeHtmlInOrder(['data-poste="FLUX NET DE TRÉSORERIE D\'INVESTISSEMENT"', '-200 000'])
-            ->assertSeeHtmlInOrder(['data-poste="FLUX NET DE TRÉSORERIE DE FINANCEMENT"', '267 000'])
-            ->assertSeeHtmlInOrder(['data-poste="VARIATION DE TRÉSORERIE DE LA PÉRIODE"', '212 000'])
-            ->assertSee('Incohérence de 133 000 FCFA entre la Trésorerie de clôture du TAFIRE (312 000 FCFA) et la Trésorerie-Actif du Bilan (445 000 FCFA).');
+            ->assertSeeHtmlInOrder(['data-poste="FLUX NET DE TRÉSORERIE DE FINANCEMENT"', '500 000'])
+            ->assertSeeHtmlInOrder(['data-poste="VARIATION DE TRÉSORERIE DE LA PÉRIODE"', '445 000'])
+            ->assertSee('Trésorerie de clôture (TAFIRE) = Trésorerie nette (Bilan) = 545 000 FCFA.')
+            ->assertDontSee('Incohérence');
     }
 
     public function test_un_tafire_sans_ouverture_est_coherent(): void
@@ -697,7 +699,7 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         Livewire::test(EtatsFinanciers::class)->call('choisir', 'flux')
-            ->assertSee('Trésorerie de clôture (TAFIRE) = Trésorerie-Actif (Bilan) = 1 000 FCFA.');
+            ->assertSee('Trésorerie de clôture (TAFIRE) = Trésorerie nette (Bilan) = 1 000 FCFA.');
     }
 
     public function test_les_notes_2_3_et_4_sont_calculees_depuis_la_balance(): void
@@ -761,19 +763,18 @@ class ComptabiliteWebTest extends TestCase
 
     // ------------------------------------------------------- Bilan de l'entreprise
 
-    public function test_le_bilan_de_l_entreprise_lit_le_capital_au_101_et_montre_l_ecart(): void
+    public function test_le_bilan_de_l_entreprise_lit_le_capital_au_101_et_ne_perd_pas_les_immobilisations(): void
     {
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        // Actif : 0 + 30 000 + 0 + 445 000 = 475 000 ; passif : 500 000 + 133 000 + 42 000 = 675 000.
+        // Ouverture cumulee. Actif : immobilisation 200 000 + creances 30 000 + tresorerie 545 000 = 775 000 ;
+        // passif : 600 000 + 133 000 + 42 000 = 775 000. L'ancien ecart de −200 000 etait l'immobilisation (231),
+        // absente de l'ecran.
         Livewire::test(BilanEntreprise::class)
-            ->assertSeeHtmlInOrder(['data-carte="actif"', 'data-poste="411"', '30 000', 'data-poste="531"', '445 000', 'data-total="actif"', '475 000'])
-            ->assertSeeHtmlInOrder(['data-carte="passif"', 'data-poste="101"', '500 000', 'data-poste="13"', '133 000', 'data-poste="401"', '42 000', 'data-total="passif"', '675 000'])
-            ->assertSeeHtmlInOrder(['data-ligne="ecart"', 'Origine non enregistrée — à saisir au compte 101', '-200 000'])
-            ->assertSeeHtml('data-bandeau="ecart"')
-            ->assertSee('Écart de 200 000 FCFA entre l\'actif et le passif.', false)
-            ->assertSee('Le passif dépasse l\'actif', false);
+            ->assertSeeHtmlInOrder(['data-carte="actif"', 'data-poste="2"', '200 000', 'data-poste="411"', '30 000', 'data-poste="531"', '545 000', 'data-total="actif"', '775 000'])
+            ->assertSeeHtmlInOrder(['data-carte="passif"', 'data-poste="101"', '600 000', 'data-poste="13"', '133 000', 'data-poste="401"', '42 000', 'data-total="passif"', '775 000'])
+            ->assertDontSeeHtml('data-ligne="ecart"');
     }
 
     public function test_un_actif_superieur_au_passif_renvoie_au_compte_101(): void
@@ -781,8 +782,9 @@ class ComptabiliteWebTest extends TestCase
         $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['531', 1000, 0, null], ['701', 0, 1000, null]]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        // Actif 1 000 ; passif : resultat 1 000 → equilibre. On force un actif sans origine :
-        $this->poserPiece('OD-P1-'.$this->annee().'-0002', $this->annee(), 1, 3, 'OD', [['531', 500, 0, null], ['121', 0, 500, null]]);
+        // Actif 1 000 ; passif : resultat 1 000 → equilibre. Tous les comptes etant desormais portes par une
+        // ligne du bilan, seule une ecriture DESEQUILIBREE (un debit sans contrepartie) laisse un ecart :
+        $this->poserPiece('OD-P1-'.$this->annee().'-0002', $this->annee(), 1, 3, 'OD', [['531', 500, 0, null]]);
 
         Livewire::test(BilanEntreprise::class)
             ->assertSee('Écart de 500 FCFA entre l\'actif et le passif.', false)

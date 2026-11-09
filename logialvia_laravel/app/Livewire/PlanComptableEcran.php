@@ -190,7 +190,8 @@ class PlanComptableEcran extends Component
         return $bilan['rejected'][0]['motif'] ?? null;
     }
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $terme = mb_strtolower(trim($this->recherche));
         $comptes = PlanComptable::query()->orderBy('numero_compte')->get()
@@ -207,12 +208,31 @@ class PlanComptableEcran extends Component
                     || str_contains($c->numero_compte, $terme);
             })->values();
 
-        return view('livewire.comptabilite.plan', [
+        return [
             'comptes' => $comptes,
             'classes' => self::CLASSES,
             'peutGerer' => (bool) Auth::user()?->can('manage-comptabilite'),
             'mouvements' => EcritureComptable::query()->selectRaw('numero_compte, count(*) as n')->groupBy('numero_compte')->pluck('n', 'numero_compte'),
             'exercices' => LivreComptable::exercices(),
-        ])->title('Plan Comptable');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.plan', $this->donnees())->title('Plan Comptable');
+    }
+
+    /** Export XLSX du tableau affiche (memes filtres) : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $lignes = [['Plan Comptable SYSCOHADA'], ['Compte', 'Libellé', 'Classe', 'Statut']];
+        foreach ($d['comptes'] as $c) {
+            $lignes[] = [$c->numero_compte, $c->libelle, $c->classe, $c->archive ? 'Archivé' : 'Actif'];
+        }
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'plan-comptable.xlsx', 'Plan Comptable');
     }
 }

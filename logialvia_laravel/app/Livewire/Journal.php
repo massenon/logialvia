@@ -142,10 +142,11 @@ class Journal extends Component
         $this->message = $motif ?? 'Pièce annulée (écriture inverse passée).';
     }
 
-    public function render()
+    /** Donnees de l'ecran : la vue ET l'export XLSX lisent la meme source. */
+    private function donnees(): array
     {
         $annee = $this->annee();
-        [$ecritures] = $this->ecritures($annee);
+        $ecritures = $this->duJournal($annee);
         $plan = LivreComptable::plan();
         $terme = mb_strtolower(trim($this->recherche));
         $codes = Saisie::codesDesPostes();
@@ -176,7 +177,7 @@ class Journal extends Component
         $debit = $lignes->sum(fn ($l) => $l['ecriture']->debit);
         $credit = $lignes->sum(fn ($l) => $l['ecriture']->credit);
 
-        return view('livewire.comptabilite.journal', $this->communes($annee) + [
+        return $this->communes($annee) + [
             'titre' => 'Journal Comptable',
             'description' => 'Écritures automatiques (ventes, achats) et saisie manuelle d\'opérations diverses.',
             'lignes' => $lignes,
@@ -188,8 +189,32 @@ class Journal extends Component
             'annulees' => $annulees,
             'codes' => $codes,
             'aucuneEcriture' => $ecritures->isEmpty(),
-            'journaux' => ['VT' => 'Journal des Ventes', 'AC' => 'Journal des Achats', 'CA' => 'Journal de Caisse', 'OD' => 'Opérations Diverses'],
+            'journaux' => ['VT' => 'Journal des Ventes', 'AC' => 'Journal des Achats', 'CA' => 'Journal de Caisse', 'OD' => 'Opérations Diverses']
+                + \App\Services\Comptabilite\ReportANouveau::LIBELLES_JOURNAUX,
             'peutGerer' => (bool) Auth::user()?->can('manage-comptabilite'),
-        ])->title('Journal Comptable');
+        ];
+    }
+
+    public function render()
+    {
+        return view('livewire.comptabilite.journal', $this->donnees())->title('Journal Comptable');
+    }
+
+    /** Export XLSX du tableau affiche (memes filtres) : `view-comptabilite`, verifie ici. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(\Illuminate\Support\Facades\Auth::user()?->can('view-comptabilite'), 403);
+
+        $d = $this->donnees();
+        $lignes = [['Journal Comptable — exercice '.$d['annee']], ['Date', 'Journal', 'Pièce', 'Compte', 'Libellé', 'Débit', 'Crédit']];
+        foreach ($d['lignes'] as $l) {
+            $e = $l['ecriture'];
+            $lignes[] = [$e->date->format('d/m/Y'), $e->journal, (string) $e->numeroPiece, $e->compte, $e->libelle, (int) round($e->debit), (int) round($e->credit)];
+        }
+        $lignes[] = ['Total', '', '', '', '', (int) round($d['totalDebit']), (int) round($d['totalCredit'])];
+
+        $annee = $this->annee();
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'journal-comptable-'.$annee.'.xlsx', 'Journal');
     }
 }

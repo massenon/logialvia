@@ -39,8 +39,7 @@ class Comptabilite extends Component
     public function render()
     {
         $annee = $this->annee();
-        [$ecritures] = $this->ecritures($annee);
-        $soldes = $this->soldes($ecritures);
+        $soldes = $this->soldesFin($annee);
 
         $produits = MoteurComptable::produits($soldes);
         $resultat = MoteurComptable::resultatNet($soldes);
