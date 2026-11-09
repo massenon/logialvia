@@ -68,20 +68,22 @@ comptable** que le poste, ces 5 tables restent **hors synchronisation** (le post
 > la liste réelle). Le test de couverture de l'implémentation vérifiera que **chaque table figure dans exactement
 > une catégorie** : une table oubliée, ou ajoutée plus tard sans être classée, fait échouer le test.
 
-## 3. Numéros et références — Q-SYNC-1 **[À TRANCHER]**
+## 3. Numéros et références — Q-SYNC-1 **TRANCHÉE : option B (DV-21, 09/11/2026)**
 
-Ventes (`V-AAAA-NNN`), achats, devis, factures (`FV-`/`FA-`) et pièces comptables sont **numérotés au poste**
-aujourd'hui : deux postes produiraient la même référence. Règle du blueprint : un numéro officiel est **attribué par
-le serveur**. Deux options :
+Ventes (`V-AAAA-NNN`), achats, devis et pièces étaient numérotés au poste : deux postes produiraient la même
+référence. **Décision du client : le préfixe de poste reste le numéro officiel** (`V-P2-2026-001`), sans
+renumérotation par le serveur : une pièce déjà remise au client ne change jamais de numéro.
 
-- **A — référence provisoire, numéro définitif au serveur.** Le poste émet `V-P2-2026-001` (préfixe du poste) ; à
-  l'accusé, le serveur renvoie le numéro définitif `V-2026-0148` et le poste remplace la référence (les pièces déjà
-  imprimées portent l'ancien numéro : à garder en « ancienne référence »).
-- **B — préfixe de poste définitif.** `V-P2-2026-001` reste la référence officielle : aucune réécriture, aucun
-  trou, mais un numéro par poste (acceptable en comptabilité si la séquence reste continue **par poste**).
-
-Recommandation : **B** pour les ventes, achats et devis (pas de renumérotation d'une pièce déjà remise au client) ;
-la numérotation **fiscale** e-MECeF reste celle de la machine/du serveur.
+- Format : `<lettre de la pièce>-<code du poste>-<année>-<séquence à 3 chiffres ou plus>`, ex. `V-P2-2026-001`,
+  `A-P2-2026-014` (achat), `D-P2-2026-003` (devis). La séquence est **continue par poste et par année**.
+- **Code du poste** : attribué à l'appairage, **unique au serveur**, stable (ne change pas à la réinstallation d'un
+  poste : un nouveau poste reçoit un nouveau code). Un poste jamais appairé garde le code `P0` (poste seul).
+- Les références **existantes** (`V-2026-001`) restent valides telles quelles ; seules les nouvelles pièces portent le
+  code du poste. Aucune réécriture rétroactive.
+- Unicité garantie au serveur par `UNIQUE(reference)` ; un doublon au push est refusé avec son motif (`conflict`).
+- **Hors du champ de B** : la numérotation **fiscale** des factures normalisées (`FV-`/`FA-`) reste celle de
+  la machine e-MECeF/du serveur ; les **pièces comptables** sont numérotées par le serveur (la comptabilité reste
+  une demande, §2.5).
 
 ## 4. Format des échanges
 
@@ -114,7 +116,7 @@ silencieux ; hors ligne n'est pas une erreur.
 ## 5. Critères d'acceptation du contrat
 
 - [ ] Chaque table de `AppDatabase` est dans **exactement une** catégorie du §2 (test automatique).
-- [ ] Q-SYNC-1 tranchée avant toute migration des tables de ventes, achats et devis.
+- [x] Q-SYNC-1 tranchée (option B, DV-21) : la migration des tables de ventes, achats et devis peut démarrer.
 - [ ] Le serveur et le poste passent le **même jeu de cas** : essai à deux postes qui vendent hors ligne, se
       reconnectent dans le désordre, et obtiennent la même base ; renvoi d'un lot déjà reçu sans effet ; vente d'un
       poste révoqué refusée ; remise à zéro d'un côté, purge de l'autre.

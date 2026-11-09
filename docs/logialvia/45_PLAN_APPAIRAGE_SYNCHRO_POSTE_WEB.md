@@ -20,6 +20,7 @@ poste ne peut pas être achevé avant que le serveur existe, puisqu'il n'a perso
 |---|---|---|
 | **DV-19** | Le poste migre **entièrement en UUID** (clés générées au poste). | Migration du schéma poste (v31) : chaque table reçoit un UUID, les clés étrangères sont réécrites. Voir §4. |
 | **DV-20** | Le poste **conserve ses comptes locaux**. L'appairage ne sert qu'à la synchronisation. | Les étapes A5 (PIN local) et A6 (remplacer `ConnecterUtilisateurUseCase`) de `43_` §1.2 **ne sont pas appliquées**. Deux référentiels de comptes à tenir alignés (§5). |
+| **DV-21** | **Q-SYNC-1 : option B.** Le préfixe de poste reste le numéro officiel des ventes, achats et devis (`V-P2-2026-001`), sans renumérotation par le serveur. | Code de poste attribué à l'appairage ; format et règles : `46_` §3. Les anciennes références restent valides. |
 
 Décidé aussi : le web Laravel vit dans `logialvia_laravel/` de ce dépôt ; **le code Dart est la base**, le Laravel
 lui est conforme (jetons de design, libellés, règles de calcul) ; si `prototype_html` est fourni plus tard, il prime
@@ -57,13 +58,22 @@ synchronisation) avancent en attendant.
 2. **Les numéros de pièces sont fabriqués au poste** : ventes `V-AAAA-NNN`, achats, devis, factures `FV-`/`FA-`,
    pièces comptables (`prochainNumeroPiece`). Avec deux postes, **deux ventes recevraient la même référence**.
    Le blueprint exige que les compteurs soient **attribués par le serveur** (jamais inventés au poste).
-   **Question ouverte Q-SYNC-1** : référence provisoire locale (ex. `V-P2-2026-001`, préfixe du poste) remplacée
-   par le numéro définitif à la synchronisation, ou référence à préfixe de poste définitive ? À trancher avant de
-   toucher aux tables de ventes.
+   **Q-SYNC-1 tranchée (DV-21, option B)** : le préfixe de poste reste le numéro officiel, voir `46_` §3.
 3. **Les écritures comptables et les clôtures** sont calculées au poste : le blueprint veut que le poste envoie une
    **demande** que le serveur rejoue par son point de passage unique. Cela suppose d'abord que le web ait le même
    moteur comptable que le poste.
 4. La route d'authentification locale (`ConnecterUtilisateurUseCase`) reste inchangée (DV-20).
+
+## 4b. Écarts connus entre le poste et les décisions validées (à corriger au poste)
+
+Le serveur suit les **décisions validées** ; le poste doit s'y aligner. Ces écarts sont **déclarés** dans le test de
+conformité des droits (`tests/Feature/ConformiteDroitsDartTest.php`), qui échoue à tout autre écart :
+
+| Écart | Décision | Poste actuel | À faire au poste |
+|---|---|---|---|
+| Le caissier n'a plus accès à `/inventaire` | DV-06 | `permission_service.dart` l'autorise (« arbitrage de la Gérante », annulé) | retirer `/inventaire` du caissier et de sa barre latérale |
+| Le caissier consulte et réimprime les factures, sans annuler ni créer d'avoir | DV-06 | accès complet à `/factures-mecef` | limiter les gestes de l'écran au rôle |
+| 4 rôles dont `comptable` | DV-07 | 3 rôles (`role_utilisateur.dart`) | ajouter le rôle `comptable` et ses routes |
 
 ## 5. Risque lié à DV-20 : deux référentiels de comptes
 
@@ -81,9 +91,9 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | **fait** (09/11/2026) : Laravel 12.71, Livewire 3.8, Sanctum 4.3, Spatie Permission 7.4, DomPDF 3.1, Tailwind 3.4 ; test de conformité vérifié par mutation |
 | W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | en attente |
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | en attente |
-| W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2, Q-SYNC-1 | en attente |
+| W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | en attente |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
-| P1 | Poste : migration UUID par paliers (DV-19) | Q-SYNC-1 pour les ventes | à faire, sans réseau |
+| P1 | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |
 | P2 | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | en attente |
 | P3 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | en attente |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
