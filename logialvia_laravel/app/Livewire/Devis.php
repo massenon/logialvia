@@ -342,13 +342,9 @@ class Devis extends Component
     private function devisFiltres()
     {
         $terme = trim($this->recherche);
-        $echappe = addcslashes($terme, '%_\\');
 
         return DevisModele::query()->whereNull('supprime_le')
-            ->when($terme !== '', fn ($q) => $q->where(fn ($w) => $w
-                ->whereRaw("reference like ? escape '\\'", ["%$echappe%"])
-                ->orWhereRaw("client like ? escape '\\'", ["%$echappe%"])
-                ->orWhereRaw("objet like ? escape '\\'", ["%$echappe%"])))
+            ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client', 'objet'], $terme))
             ->orderByDesc('date_emission')->orderByDesc('reference')->get()
             ->filter(fn (DevisModele $d) => match ($this->filtre) {
                 'expire' => $this->estExpire($d),

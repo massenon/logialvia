@@ -33,6 +33,6 @@ class Facture extends Model
 
     public function lignes(): HasMany
     {
-        return $this->hasMany(LigneFacture::class, 'facture_id');
+        return $this->hasMany(LigneFacture::class, 'facture_id')->orderBy('ordre');
     }
 }

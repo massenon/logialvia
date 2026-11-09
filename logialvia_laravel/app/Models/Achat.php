@@ -31,6 +31,6 @@ class Achat extends Model
 
     public function lignes(): HasMany
     {
-        return $this->hasMany(LigneAchat::class, 'achat_id');
+        return $this->hasMany(LigneAchat::class, 'achat_id')->orderBy('ordre');
     }
 }

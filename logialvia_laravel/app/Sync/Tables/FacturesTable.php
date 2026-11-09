@@ -284,8 +284,9 @@ class FacturesTable extends TableSync
         ] + $this->champsDgi($ligne));
         $facture->save();
 
-        foreach ($ligne['lignes'] as $l) {
+        foreach (array_values($ligne['lignes']) as $rang => $l) {
             (new LigneFacture)->forceFill([
+                'ordre' => $rang,
                 'id' => $l['id'],
                 'facture_id' => $facture->id,
                 'designation' => trim($l['designation']),

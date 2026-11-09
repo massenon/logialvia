@@ -143,7 +143,7 @@ class FacturesMecefEmissionWebTest extends TestCase
         $this->assertSame(25000.0, $f->total_ht);
         $this->assertSame(3600.0, $f->total_taxe);
         $this->assertSame(28600.0, $f->total_ttc);
-        $lignes = $f->lignes()->orderBy('designation')->get();
+        $lignes = $f->lignes()->reorder('designation')->get();
         $this->assertCount(2, $lignes);
         $this->assertSame(['B', 18.0, 10000.0, 20000.0, 3600.0], [$lignes[0]->groupe_taxe, $lignes[0]->taux_taxe, $lignes[0]->prix_unitaire_ht, $lignes[0]->montant_ht, $lignes[0]->montant_taxe]);
         $this->assertSame(['A', 0.0, 1000.0, 5000.0, 0.0, 'plateau'], [$lignes[1]->groupe_taxe, $lignes[1]->taux_taxe, $lignes[1]->prix_unitaire_ht, $lignes[1]->montant_ht, $lignes[1]->montant_taxe, $lignes[1]->unite]);
@@ -156,7 +156,7 @@ class FacturesMecefEmissionWebTest extends TestCase
         $this->emettre($this->compta(), $v);
 
         $f = $this->laFacture();
-        $l = $f->lignes()->orderBy('designation')->get();
+        $l = $f->lignes()->reorder('designation')->get();
         $this->assertEqualsWithDelta(2824.576271186441, $l[0]->prix_unitaire_ht, 1e-8);
         $this->assertEqualsWithDelta(8473.728813559323, $l[0]->montant_ht, 1e-8);
         $this->assertEqualsWithDelta(1525.271186440678, $l[0]->montant_taxe, 1e-8);
@@ -174,7 +174,7 @@ class FacturesMecefEmissionWebTest extends TestCase
     {
         $v = $this->vente([[$this->produit('Poisson', 'B', 'kg'), 2.5, 777], [$this->produit('Divers', 'Z'), 1, 500]]);
         $this->emettre($this->compta(), $v);
-        $l = $this->laFacture()->lignes()->orderBy('designation')->get();
+        $l = $this->laFacture()->lignes()->reorder('designation')->get();
         $this->assertSame(['Divers', 'A', 0.0, 500.0], [$l[0]->designation, $l[0]->groupe_taxe, $l[0]->taux_taxe, $l[0]->montant_ht], 'groupe absent de la grille : exonéré');
         $this->assertEqualsWithDelta(1646.1864406779662, $l[1]->montant_ht, 1e-8);
         $this->assertEqualsWithDelta(296.3135593220339, $l[1]->montant_taxe, 1e-8);

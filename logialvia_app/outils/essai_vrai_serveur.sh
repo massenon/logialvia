@@ -21,9 +21,25 @@ FLUTTER="${FLUTTER:-flutter}"
 MDP='EssaiPoste-2026!'
 mkdir -p "$LV_DOSSIER"
 
-export DB_CONNECTION=sqlite DB_DATABASE="$LV_DOSSIER/essai.sqlite" \
-  ADMIN_INITIAL_PASSWORD="$MDP" REMISE_A_ZERO_ACTIVEE=true BCRYPT_ROUNDS=4
-rm -f "$DB_DATABASE" && touch "$DB_DATABASE"
+# Base : sqlite (defaut, fichier jetable) ou mysql / mariadb (47r_). Pour MySQL/MariaDB :
+#   LV_BASE=mariadb LV_MYSQL_USER=lv LV_MYSQL_PASSWORD=lv bash logialvia_app/outils/essai_vrai_serveur.sh
+# (LV_MYSQL_HOST=127.0.0.1, LV_MYSQL_PORT=3306, LV_MYSQL_BASE=lv_essai ; la base est RECREEE : jamais
+# celle de l'exploitation). Le serveur doit deja tourner ; le client `mysql` doit etre installe.
+LV_BASE="${LV_BASE:-sqlite}"
+export ADMIN_INITIAL_PASSWORD="$MDP" REMISE_A_ZERO_ACTIVEE=true BCRYPT_ROUNDS=4
+if [ "$LV_BASE" = "sqlite" ]; then
+  export DB_CONNECTION=sqlite DB_DATABASE="$LV_DOSSIER/essai.sqlite"
+  rm -f "$DB_DATABASE" && touch "$DB_DATABASE"
+  BASE_ESSAI="$DB_DATABASE"
+else
+  export DB_CONNECTION="$LV_BASE" DB_HOST="${LV_MYSQL_HOST:-127.0.0.1}" DB_PORT="${LV_MYSQL_PORT:-3306}" \
+    DB_DATABASE="${LV_MYSQL_BASE:-lv_essai}" DB_USERNAME="${LV_MYSQL_USER:-root}" DB_PASSWORD="${LV_MYSQL_PASSWORD:-}"
+  MYSQL_CLI=(mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME")
+  [ -n "$DB_PASSWORD" ] && MYSQL_CLI+=("-p$DB_PASSWORD")
+  "${MYSQL_CLI[@]}" -e "DROP DATABASE IF EXISTS \`$DB_DATABASE\`; CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" \
+    || { echo "Impossible de recreer la base $DB_DATABASE sur $DB_HOST:$DB_PORT."; exit 1; }
+  BASE_ESSAI="mysql"
+fi
 
 cd "$RACINE/logialvia_laravel" || exit 1
 php artisan migrate:fresh --seed --force > "$LV_DOSSIER/migrate.log" 2>&1 \
@@ -49,5 +65,5 @@ done
 
 cd "$RACINE/logialvia_app" || exit 1
 LOGIALVIA_SERVEUR="http://127.0.0.1:$PORT" LOGIALVIA_MDP="$MDP" \
-  LOGIALVIA_LARAVEL="$RACINE/logialvia_laravel" LOGIALVIA_DB="$DB_DATABASE" \
+  LOGIALVIA_LARAVEL="$RACINE/logialvia_laravel" LOGIALVIA_DB="$BASE_ESSAI" \
   "$FLUTTER" test test/integration/serveur_reel_test.dart "$@"

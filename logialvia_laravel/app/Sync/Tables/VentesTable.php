@@ -186,8 +186,9 @@ class VentesTable extends TableSync
             ]);
             $vente->save();
 
-            foreach ($ligne['lignes'] as $l) {
+            foreach (array_values($ligne['lignes']) as $rang => $l) {
                 (new LigneVente)->forceFill([
+                    'ordre' => $rang,
                     'id' => $l['id'],
                     'vente_id' => $vente->id,
                     'produit_id' => $l['produit_id'],

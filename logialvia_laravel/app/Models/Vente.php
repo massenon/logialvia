@@ -32,6 +32,6 @@ class Vente extends Model
 
     public function lignes(): HasMany
     {
-        return $this->hasMany(LigneVente::class, 'vente_id');
+        return $this->hasMany(LigneVente::class, 'vente_id')->orderBy('ordre');
     }
 }

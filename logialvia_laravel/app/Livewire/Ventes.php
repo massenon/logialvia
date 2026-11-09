@@ -393,13 +393,10 @@ class Ventes extends Component
     public function ventesFiltrees()
     {
         $terme = trim($this->recherche);
-        $echappe = addcslashes($terme, '%_\\');
 
         return Vente::query()
             ->when(in_array($this->statut, self::STATUTS, true), fn ($q) => $q->where('status', $this->statut))
-            ->when($terme !== '', fn ($q) => $q->where(fn ($w) => $w
-                ->whereRaw("reference like ? escape '\\'", ["%$echappe%"])
-                ->orWhereRaw("client like ? escape '\\'", ["%$echappe%"])))
+            ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client'], $terme))
             ->orderByDesc('date_vente')->orderBy('reference')->get();
     }
 

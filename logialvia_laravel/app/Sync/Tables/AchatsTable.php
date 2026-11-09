@@ -173,8 +173,9 @@ class AchatsTable extends TableSync
             ]);
             $achat->save();
 
-            foreach ($ligne['lignes'] as $l) {
+            foreach (array_values($ligne['lignes']) as $rang => $l) {
                 (new LigneAchat)->forceFill([
+                    'ordre' => $rang,
                     'id' => $l['id'],
                     'achat_id' => $achat->id,
                     'intrant_code' => $l['intrant_code'],
@@ -206,12 +207,13 @@ class AchatsTable extends TableSync
         $gardees = array_column($lignes, 'id');
         LigneAchat::query()->where('achat_id', $achat->id)->whereNotIn('id', $gardees)->delete();
 
-        foreach ($lignes as $l) {
+        foreach (array_values($lignes) as $rang => $l) {
             $existante = LigneAchat::query()->find($l['id']);
             if ($existante !== null && $existante->achat_id !== $achat->id) {
                 continue; // un UUID de ligne appartient a un seul achat : jamais deplace
             }
             ($existante ?? new LigneAchat)->forceFill([
+                'ordre' => $rang,
                 'id' => $l['id'],
                 'achat_id' => $achat->id,
                 'intrant_code' => $l['intrant_code'],

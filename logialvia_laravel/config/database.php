@@ -58,6 +58,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // 47r_ : session en UTC. Les colonnes TIMESTAMP sont converties selon le fuseau de la
+            // session ; un serveur en Europe/Paris refuserait les heures du saut d'heure (« Incorrect
+            // datetime value »). Tout le projet ecrit et lit en UTC.
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
@@ -78,6 +82,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // 47r_ : session en UTC. Les colonnes TIMESTAMP sont converties selon le fuseau de la
+            // session ; un serveur en Europe/Paris refuserait les heures du saut d'heure (« Incorrect
+            // datetime value »). Tout le projet ecrit et lit en UTC.
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),

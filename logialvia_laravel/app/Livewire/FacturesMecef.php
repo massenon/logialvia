@@ -372,13 +372,10 @@ class FacturesMecef extends Component
     private function facturesFiltrees(): Collection
     {
         $terme = trim($this->recherche);
-        $echappe = addcslashes($terme, '%_\\');
 
         return Facture::query()
             ->when(in_array($this->statut, FacturesTable::STATUTS, true), fn ($q) => $q->where('statut', $this->statut))
-            ->when($terme !== '', fn ($q) => $q->where(fn ($w) => $w
-                ->whereRaw("reference like ? escape '\\'", ["%$echappe%"])
-                ->orWhereRaw("client like ? escape '\\'", ["%$echappe%"])))
+            ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client'], $terme))
             ->orderByDesc('date_facture')->orderByDesc('reference')->get();
     }
 

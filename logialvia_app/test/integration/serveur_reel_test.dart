@@ -2666,7 +2666,11 @@ void main() {
       'php',
       ['artisan', 'tinker', '--execute=$php'],
       workingDirectory: dossierLaravel,
-      environment: {'DB_CONNECTION': 'sqlite', 'DB_DATABASE': baseServeur!},
+      // `LOGIALVIA_DB=mysql` : base MySQL/MariaDB, DB_* hérités de l'environnement
+      // (`essai_vrai_serveur.sh` avec `LV_BASE=mysql|mariadb`, `47r_`).
+      environment: baseServeur == 'mysql'
+          ? const {}
+          : {'DB_CONNECTION': 'sqlite', 'DB_DATABASE': baseServeur!},
     );
     return '${r.stdout}${r.stderr}'.trim();
   }

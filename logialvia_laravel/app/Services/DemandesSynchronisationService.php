@@ -63,7 +63,10 @@ class DemandesSynchronisationService
     /** Memorise le curseur rendu au poste (a la dernière page d'un tirage). */
     public function memoriserCurseur(string $deviceId, string $curseur): void
     {
-        Poste::query()->where('device_id', $deviceId)->update(['curseur_tirage' => $curseur]);
+        Poste::query()->where('device_id', $deviceId)->update([
+            // MySQL/MariaDB refusent « …Z » dans un datetime(6) (SQLite l'acceptait comme texte).
+            'curseur_tirage' => \Carbon\CarbonImmutable::parse($curseur)->utc()->format('Y-m-d H:i:s.u'),
+        ]);
     }
 
     /** « Renvoyer vers ce poste ». Null si le poste est inconnu. */

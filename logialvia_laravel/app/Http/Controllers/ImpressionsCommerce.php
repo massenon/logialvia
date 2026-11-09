@@ -35,13 +35,10 @@ class ImpressionsCommerce extends Controller
         $statuts = ['Payée', 'Avance', 'Annulée'];
         $statut = request()->query('statut', '');
         $terme = trim((string) request()->query('recherche', ''));
-        $echappe = addcslashes($terme, '%_\\');
 
         $ventes = Vente::query()
             ->when(in_array($statut, $statuts, true), fn ($q) => $q->where('status', $statut))
-            ->when($terme !== '', fn ($q) => $q->where(fn ($w) => $w
-                ->whereRaw("reference like ? escape '\\'", ["%$echappe%"])
-                ->orWhereRaw("client like ? escape '\\'", ["%$echappe%"])))
+            ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client'], $terme))
             ->orderByDesc('date_vente')->orderBy('reference')->get();
 
         $valides = $ventes->where('status', '!=', 'Annulée');
