@@ -35,6 +35,7 @@ class FicheJournee extends Model
             'poids_general_g' => 'integer',
             'traitement_valide' => 'boolean',
             'is_recorded' => 'boolean',
+            'variantes' => 'array',
             'updated_at' => 'datetime',
             'serveur_modifie_le' => 'datetime',
         ];

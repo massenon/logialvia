@@ -365,7 +365,8 @@ class ElevageTest extends TestCase
         $recu = collect($this->tirer($b, 'soins_calendrier'))->firstWhere('id', $s['id']);
         $this->assertSame('Vaccination', $recu['type_soin']);
         $this->assertSame('2026-11-05', $recu['date_prevue']);
-        $this->assertArrayNotHasKey('bande_id', $recu);
+        $this->assertArrayHasKey('bande_id', $recu);
+        $this->assertNull($recu['bande_id'], 'soin libre : pas de bande');
     }
 
     public static function soinsInvalides(): array

@@ -2,6 +2,7 @@
 
 namespace App\Sync\Tables;
 
+use App\Models\Bande;
 use App\Models\EcheanceProphylaxie;
 use App\Models\SoinCalendrier;
 use App\Sync\TableSync;
@@ -11,8 +12,8 @@ use Illuminate\Validation\Rule;
  * Soins du calendrier : FAIT saisi au poste, dernier ecrivain gagne, par UUID
  * (`46_` §2.3, `46c_`).
  *
- * Aucune bande : les bandes ne sont pas encore synchronisees, un entier de bande n'aurait
- * aucun sens ici. L'echeance de prophylaxie qui a engendre un soin doit etre CONNUE du
+ * `bande_id` (UUID) voyage (`47e_`) : la bande doit etre CONNUE du serveur (les bandes partent
+ * avant les soins). L'echeance de prophylaxie qui a engendre un soin doit etre CONNUE du
  * serveur (les demandes partent avant les faits). Absorber un soin n'a aucun effet de
  * bord : le serveur l'enregistre et le redistribue.
  */
@@ -61,7 +62,7 @@ class SoinsCalendrierTable extends TableSync
     {
         return [
             'espece', 'date_prevue', 'type_soin', 'statut', 'observations', 'produit', 'dose',
-            'remanence_jours', 'veterinaire', 'symptomes', 'cout_fcfa', 'echeance_prophylaxie_id',
+            'remanence_jours', 'veterinaire', 'symptomes', 'cout_fcfa', 'echeance_prophylaxie_id', 'bande_id',
         ];
     }
 
@@ -80,6 +81,7 @@ class SoinsCalendrierTable extends TableSync
             'symptomes' => ['nullable', 'string', 'max:2000'],
             'cout_fcfa' => ['required', 'integer', 'min:0'],
             'echeance_prophylaxie_id' => ['nullable', 'uuid'],
+            'bande_id' => ['nullable', 'uuid'],
         ];
     }
 
@@ -102,6 +104,7 @@ class SoinsCalendrierTable extends TableSync
             'cout_fcfa.integer' => 'Le coût ne peut pas être négatif.',
             'cout_fcfa.min' => 'Le coût ne peut pas être négatif.',
             'echeance_prophylaxie_id.uuid' => "L'identifiant de l'échéance doit être un UUID.",
+            'bande_id.uuid' => "L'identifiant de la bande doit être un UUID.",
         ];
     }
 
@@ -110,6 +113,10 @@ class SoinsCalendrierTable extends TableSync
         $echeance = $ligne['echeance_prophylaxie_id'] ?? null;
         if ($echeance !== null && ! EcheanceProphylaxie::query()->whereKey($echeance)->exists()) {
             return 'Échéance de prophylaxie inconnue du serveur.';
+        }
+        $bande = $ligne['bande_id'] ?? null;
+        if ($bande !== null && ! Bande::query()->whereKey($bande)->exists()) {
+            return 'Bande inconnue du serveur.';
         }
 
         return null;
