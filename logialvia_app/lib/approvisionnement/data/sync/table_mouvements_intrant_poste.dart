@@ -16,6 +16,11 @@ import '../../domain/entities/approvisionnement.dart';
 ///   qu'aucun calcul local — inventaire, valorisation — ne le prenne pour le sien.
 ///
 /// Un mouvement ne se modifie jamais : rejoué, il est accepté sans rien changer.
+///
+/// `poste_cible` (`47s_`) est **informatif** ici : il dit quel poste le web a désigné pour
+/// la réception ou l'annulation qui a produit la ligne. L'effet de stock et de PMP est
+/// porté par l'ACHAT (il connaît le prix) ; le journal ne l'applique jamais, sinon il
+/// serait appliqué deux fois.
 class TableMouvementsIntrantPoste implements TablePoste {
   const TableMouvementsIntrantPoste(this._db);
 
@@ -65,7 +70,10 @@ class TableMouvementsIntrantPoste implements TablePoste {
             !_types.contains(l['type']) ||
             _texte(l['motif']) == null ||
             quantite is! num ||
-            quantite == 0) {
+            quantite == 0 ||
+            (l['poste_cible'] != null &&
+                (l['poste_cible'] is! String ||
+                    !_uuid.hasMatch(l['poste_cible'] as String)))) {
           refusees++;
           continue;
         }
@@ -105,6 +113,7 @@ class TableMouvementsIntrantPoste implements TablePoste {
                 reference: Value(_texte(l['reference'])),
                 // Le mouvement d'un autre poste : de l'historique, pas du stock.
                 origine: Value(_texte(l['device_id']) ?? 'autre-poste'),
+                posteCible: Value(_texte(l['poste_cible'])),
                 syncStatus: const Value('synced'),
               ),
             );

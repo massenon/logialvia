@@ -65,6 +65,10 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> mouvements = {};
   final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
+  /// `47s_` : trace des effets de stock appliqués par les postes désignés (faits
+  /// immuables, clé : l'identifiant déterministe de l'effet).
+  final Map<String, Map<String, dynamic>> effetsStock = {};
+
   // --- P8 : comptabilité (rejoue `EcrituresTable` & co du vrai serveur) ---
 
   /// Plan comptable (référentiel, clé : le numéro de compte).
@@ -471,6 +475,10 @@ class FauxServeurSync {
           for (final m in mouvementsProduit.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
         ],
+        'effets_stock': [
+          for (final e in effetsStock.values)
+            if (_dans(e['serveur_modifie_le'] as String, since, jusqua)) e,
+        ],
         'groupes_taxe': [
           for (final g in groupesTaxe.values)
             if (_dans(g['updated_at'] as String, since, jusqua)) g,
@@ -733,6 +741,12 @@ class FauxServeurSync {
     if (tables.containsKey('fournisseurs')) {
       reponse['fournisseurs'] = _fournisseurs(
         (tables['fournisseurs'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('effets_stock')) {
+      reponse['effets_stock'] = _effetsStockPush(
+        (tables['effets_stock'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -2073,6 +2087,11 @@ class FauxServeurSync {
       )) {
         // Les lignes ne se remplacent que tant que l'achat est « Commandé ».
         if (existant['statut'] == 'Commandé') existant['lignes'] = lignes;
+        // `47s_` : le poste de stock se pose une seule fois, tant que rien n'est livré.
+        if (existant['poste_cible'] == null &&
+            existant['statut'] == 'Commandé') {
+          existant['poste_cible'] = a['poste_cible'];
+        }
         for (final c in const [
           'fournisseur_id',
           'statut',
@@ -2151,6 +2170,27 @@ class FauxServeurSync {
       if (!mouvements.containsKey(id)) {
         mouvements[id] = {
           ...m,
+          'device_id': deviceId,
+          'serveur_modifie_le': _instant(),
+        };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// `47s_` : effets de stock appliqués par un poste désigné : faits IMMUABLES.
+  Map<String, dynamic> _effetsStockPush(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final e in lot) {
+      final id = e['id'] as String;
+      if (!effetsStock.containsKey(id)) {
+        effetsStock[id] = {
+          ...e,
           'device_id': deviceId,
           'serveur_modifie_le': _instant(),
         };

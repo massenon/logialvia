@@ -25,10 +25,14 @@ class ApprovisionnementViewModel extends ChangeNotifier {
 
   List<Intrant> _intrants = const [];
   List<MouvementIntrant> _mouvements = const [];
+  List<EffetStockWeb> _effetsWeb = const [];
   List<Fournisseur> _fournisseurs = const [];
   List<Achat> _achats = const [];
 
   List<MouvementIntrant> get mouvements => _mouvements;
+
+  /// Effets de stock reçus du web et appliqués à CE poste (`47s_`), avec leurs avertissements.
+  List<EffetStockWeb> get effetsWeb => _effetsWeb;
   List<Fournisseur> get fournisseurs => _fournisseurs;
   List<Achat> get achats => _achats;
 
@@ -72,6 +76,7 @@ class ApprovisionnementViewModel extends ChangeNotifier {
   Future<void> _rafraichir() async {
     _intrants = await _repository.chargerIntrants();
     _mouvements = await _repository.chargerMouvements();
+    _effetsWeb = await _repository.chargerEffetsWeb();
     _fournisseurs = await _repository.chargerFournisseurs();
     _achats = await _repository.chargerAchats();
   }
@@ -79,8 +84,7 @@ class ApprovisionnementViewModel extends ChangeNotifier {
   // -------------------------------------------------- KPI Gestion des Stocks
   // Libellés réels de `gestion-stocks.html` l.102-114.
 
-  double get valeurTotaleStock =>
-      _intrants.fold(0, (s, i) => s + i.valeur);
+  double get valeurTotaleStock => _intrants.fold(0, (s, i) => s + i.valeur);
 
   int get intrantsSousSeuil => _intrants.where((i) => i.estCritique).length;
 
@@ -358,9 +362,8 @@ class ApprovisionnementViewModel extends ChangeNotifier {
   // ------------------------------------------- Fabrication de provende
 
   /// Les 5 intrants de provende, seuls candidats à une fabrication.
-  List<Intrant> get intrantsDeProvende => _intrants
-      .where((i) => i.categorie == 'Intrants Provende')
-      .toList();
+  List<Intrant> get intrantsDeProvende =>
+      _intrants.where((i) => i.categorie == 'Intrants Provende').toList();
 
   /// Lance une fabrication. Voir [FabricationProvende] pour ce que le prototype
   /// annonce sans le faire.

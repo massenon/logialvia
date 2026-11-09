@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/effets_stock_poste.dart';
 import '../../../core/sync/table_poste.dart';
 import '../../domain/entities/vente.dart';
 
@@ -21,6 +22,14 @@ import '../../domain/entities/vente.dart';
 ///
 /// Les lignes sont **immuables** après création : seul l'entête (statut, montant
 /// payé, annulation…) suit « dernier écrivain gagne ».
+///
+/// ## Exception à la règle d'or : le poste désigné par le web (`47s_`)
+///
+/// Une vente saisie au web porte `poste_cible` (UUID d'un poste, **immuable**). Le poste
+/// désigné — et lui seul — décrémente alors SON stock, **une fois** (plancher à 0 et
+/// avertissement tracé si le stock manquait), et le réintègre si la vente est annulée
+/// ([EffetsStockPoste]). Une vente déjà annulée à son arrivée n'a jamais d'effet. Le
+/// compteur du jour de la fiche d'élevage reste celui du web (`46a_`), inchangé ici.
 class TableVentesPoste implements TablePoste {
   const TableVentesPoste(this._db);
 
@@ -70,6 +79,9 @@ class TableVentesPoste implements TablePoste {
         DateTime.tryParse(l['date_vente'] as String) == null ||
         l['updated_at'] is! String ||
         DateTime.tryParse(l['updated_at'] as String) == null ||
+        (l['poste_cible'] != null &&
+            (l['poste_cible'] is! String ||
+                !_uuid.hasMatch(l['poste_cible'] as String))) ||
         !_modes.contains(l['mode']) ||
         !_statuts.contains(l['status']) ||
         l['total'] is! num ||
@@ -171,6 +183,7 @@ class TableVentesPoste implements TablePoste {
                   livraisonContact: Value(_texte(l['livraison_contact'])),
                   echeance: Value(_date(l['echeance'])),
                   ligneMobileMoney: Value(_texte(l['ligne_mobile_money'])),
+                  posteCible: Value(_texte(l['poste_cible'])),
                   syncStatus: const Value('synced'),
                   updatedAt: Value(instant.toUtc().toIso8601String()),
                 ),
@@ -190,6 +203,13 @@ class TableVentesPoste implements TablePoste {
                   ),
                 );
           }
+          await _effetsDeStock(
+            venteId: id,
+            reference: reference,
+            posteLie: _texte(l['poste_cible']),
+            statutAvant: null,
+            statutRecu: l['status'] as String,
+          );
           absorbees++;
           continue;
         }
@@ -236,6 +256,14 @@ class TableVentesPoste implements TablePoste {
             updatedAt: Value(instant.toUtc().toIso8601String()),
           ),
         );
+        // Le poste de stock est celui posé à la création : jamais celui du message (6).
+        await _effetsDeStock(
+          venteId: id,
+          reference: locale.ref,
+          posteLie: locale.posteCible,
+          statutAvant: locale.status,
+          statutRecu: l['status'] as String,
+        );
         absorbees++;
       }
       return ResultatAbsorption(
@@ -245,6 +273,56 @@ class TableVentesPoste implements TablePoste {
         supplantees: supplantees,
       );
     });
+  }
+
+  /// L'effet de stock d'une vente reçue du web, **si ce poste est le poste désigné**.
+  ///
+  /// Vente non annulée : décrément (une fois). Vente annulée : réintégration, seulement si
+  /// le décrément avait eu lieu ici — une vente annulée avant d'arriver n'a jamais d'effet.
+  Future<void> _effetsDeStock({
+    required String venteId,
+    required String reference,
+    required String? posteLie,
+    required String? statutAvant,
+    required String statutRecu,
+  }) async {
+    final effets = EffetsStockPoste(_db);
+    if (!await effets.estCible(posteLie)) return;
+    final lignes = [
+      for (final x in await (_db.select(
+        _db.lignesVente,
+      )..where((x) => x.venteRef.equals(reference))).get())
+        LigneEffetProduit(produitId: x.produitId, nom: x.name, quantite: x.qte),
+    ];
+    if (statutRecu == StatutVente.annulee) {
+      // Déjà annulée SUR CE POSTE (l'annulation locale a restitué le stock elle-même) : une
+      // seconde réintégration doublerait la restitution.
+      if (statutAvant == StatutVente.annulee) {
+        if (await effets.aToucheLeStock(venteId, EffetsStockPoste.vente)) {
+          await effets.ignorer(
+            faitType: EffetsStockPoste.faitVente,
+            faitId: venteId,
+            nature: EffetsStockPoste.annulationVente,
+            reference: reference,
+            motif:
+                'la vente $reference était déjà annulée sur ce poste : stock déjà '
+                'restitué, rien de plus',
+          );
+        }
+        return;
+      }
+      await effets.annulerVente(
+        venteId: venteId,
+        reference: reference,
+        lignes: lignes,
+      );
+    } else {
+      await effets.appliquerVente(
+        venteId: venteId,
+        reference: reference,
+        lignes: lignes,
+      );
+    }
   }
 
   @override
@@ -280,6 +358,7 @@ class TableVentesPoste implements TablePoste {
             'livraison_contact': v.livraisonContact,
             'echeance': v.echeance?.toUtc().toIso8601String(),
             'ligne_mobile_money': v.ligneMobileMoney,
+            'poste_cible': v.posteCible,
             'updated_at': v.updatedAt,
             'lignes': [
               for (final x in lignes)

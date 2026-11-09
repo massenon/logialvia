@@ -56,6 +56,7 @@ import 'comptabilite/data/sync/table_ecritures_poste.dart';
 import 'comptabilite/data/sync/table_exercices_poste.dart';
 import 'comptabilite/data/sync/table_notes_annexes_poste.dart';
 import 'comptabilite/data/sync/table_plan_comptable_poste.dart';
+import 'core/sync/table_effets_stock_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
@@ -215,6 +216,8 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableAchatsPoste(widget.database),
       TableMouvementsIntrantPoste(widget.database),
       TableMouvementsProduitPoste(widget.database),
+      // `47s_` : trace des effets de stock appliqués ici sur ordre du web (APRÈS les faits).
+      TableEffetsStockPoste(widget.database),
       // Palier 7a : fiches journalieres, compteurs de ventes du jour (une ligne par
       // poste) et bandes (`46a_`).
       TableFichesJourneePoste(widget.database),

@@ -44,6 +44,13 @@ class MouvementsIntrant extends Table {
   /// client : « stock propre a chaque poste + journal partage »).
   TextColumn get origine => text().nullable()();
 
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun.
+  /// **Informatif** pour un mouvement d'intrant : l'effet de stock d'une réception web
+  /// est porté par l'ACHAT, jamais par ces lignes (sinon il serait appliqué deux fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  TextColumn get posteCible => text().nullable()();
+
   // --- Synchronisation (`46_` §1) ---
 
   /// `pending` · `synced` · `conflict`. Un mouvement est IMMUABLE : pas d'`updated_at`.

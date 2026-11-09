@@ -16,6 +16,12 @@ class Ventes extends Table {
   /// on ne devine pas qui a achete.
   TextColumn get clientId => text().nullable()();
 
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun effet de stock
+  /// délégué. Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  TextColumn get posteCible => text().nullable()();
+
   // --- Synchronisation (`46_` §1) ---
 
   /// `pending` · `synced` · `conflict`.

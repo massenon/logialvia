@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/effets_stock_poste.dart';
 import '../../../core/sync/table_poste.dart';
 import '../../../commercial/domain/entities/vente.dart';
 import '../../domain/entities/approvisionnement.dart';
@@ -17,6 +18,16 @@ import '../../domain/entities/approvisionnement.dart';
 ///   l'est, une saisie plus récente (la commande modifiée au web) **remplace** ses
 ///   lignes ; l'entête (statut, montant payé) suit « dernier écrivain gagne » ; la
 ///   référence ne change jamais.
+///
+/// ## Exception à la règle d'or : le poste désigné par le web (`47s_`)
+///
+/// Un achat saisi au web peut porter `poste_cible` (UUID d'un poste, **immuable** une fois
+/// posé ; posé une seule fois, tant que la commande est « Commandé »). Le poste désigné — et
+/// lui seul — applique alors, **une fois**, l'effet de stock et de PMP : entrée à la
+/// réception (statut « Livré »), sortie inverse à l'annulation d'une commande livrée
+/// ([EffetsStockPoste], journal `effets_appliques`). Les autres postes l'absorbent comme
+/// aujourd'hui : connu, sans effet. Une commande déjà livrée ou annulée localement n'est
+/// jamais réappliquée (« non appliqué », tracé).
 class TableAchatsPoste implements TablePoste {
   const TableAchatsPoste(this._db);
 
@@ -70,6 +81,9 @@ class TableAchatsPoste implements TablePoste {
         DateTime.tryParse(l['date_achat'] as String) == null ||
         l['updated_at'] is! String ||
         DateTime.tryParse(l['updated_at'] as String) == null ||
+        (l['poste_cible'] != null &&
+            (l['poste_cible'] is! String ||
+                !_uuid.hasMatch(l['poste_cible'] as String))) ||
         !_statuts.contains(l['statut']) ||
         (l['mode'] != null && !_modes.contains(l['mode'])) ||
         l['total'] is! num ||
@@ -163,6 +177,7 @@ class TableAchatsPoste implements TablePoste {
                   paye: Value((l['paye'] as num).toDouble()),
                   mode: Value(_texte(l['mode'])),
                   echeance: Value(_date(l['echeance'])),
+                  posteCible: Value(_texte(l['poste_cible'])),
                   syncStatus: const Value('synced'),
                   updatedAt: Value(instant.toUtc().toIso8601String()),
                 ),
@@ -181,6 +196,14 @@ class TableAchatsPoste implements TablePoste {
                   ),
                 );
           }
+          await _effetsDeStock(
+            achatId: id,
+            reference: reference,
+            posteRecu: _texte(l['poste_cible']),
+            posteLie: _texte(l['poste_cible']),
+            statutAvant: null,
+            statutRecu: l['statut'] as String,
+          );
           absorbees++;
           continue;
         }
@@ -221,8 +244,15 @@ class TableAchatsPoste implements TablePoste {
             continue;
           }
         }
+        // Le poste de stock est lié au fait : posé une seule fois, tant que rien n'est
+        // livré ; ensuite le web ne peut plus le changer (6).
+        final posteRecu = _texte(l['poste_cible']);
+        final posteLie =
+            locale.posteCible ??
+            (locale.statut == StatutAchat.commande ? posteRecu : null);
         final identique =
             !remplacerLignes &&
+            posteLie == locale.posteCible &&
             locale.statut == l['statut'] &&
             locale.paye == (l['paye'] as num).toDouble() &&
             locale.total == (l['total'] as num).toDouble() &&
@@ -236,6 +266,7 @@ class TableAchatsPoste implements TablePoste {
             paye: Value((l['paye'] as num).toDouble()),
             mode: Value(_texte(l['mode'])),
             echeance: Value(_date(l['echeance'])),
+            posteCible: Value(posteLie),
             syncStatus: const Value('synced'),
             syncMotif: const Value(null),
             updatedAt: Value(instant.toUtc().toIso8601String()),
@@ -260,6 +291,14 @@ class TableAchatsPoste implements TablePoste {
                 );
           }
         }
+        await _effetsDeStock(
+          achatId: id,
+          reference: locale.ref,
+          posteRecu: posteRecu,
+          posteLie: posteLie,
+          statutAvant: locale.statut,
+          statutRecu: l['statut'] as String,
+        );
         absorbees++;
       }
       return ResultatAbsorption(
@@ -269,6 +308,70 @@ class TableAchatsPoste implements TablePoste {
         supplantees: supplantees,
       );
     });
+  }
+
+  /// L'effet de stock d'un achat reçu du web, **si ce poste est le poste désigné** (`47s_`).
+  ///
+  /// - « Livré » : entrée + PMP, une fois. Si la commande n'était plus « Commandé » ici
+  ///   (réceptionnée au poste), ou si la désignation est arrivée trop tard, l'effet n'est
+  ///   PAS appliqué (sinon double entrée) et la trace le dit ;
+  /// - « Annulé » : sortie inverse, seulement si la réception avait été appliquée ici.
+  Future<void> _effetsDeStock({
+    required String achatId,
+    required String reference,
+    required String? posteRecu,
+    required String? posteLie,
+    required String? statutAvant,
+    required String statutRecu,
+  }) async {
+    final effets = EffetsStockPoste(_db);
+    // Le LIEN d'origine décide ; le poste reçu ne sert qu'à signaler une désignation
+    // tardive ou contradictoire adressée à CE poste.
+    final lieAMoi = await effets.estCible(posteLie);
+    final designeMoi = await effets.estCible(posteRecu);
+    if (!lieAMoi && !designeMoi) return;
+    final lignes = [
+      for (final x in await (_db.select(
+        _db.lignesAchat,
+      )..where((x) => x.achatRef.equals(reference))).get())
+        LigneEffetIntrant(
+          code: x.intrantCode,
+          nom: x.nom,
+          quantite: x.qte,
+          prixUnitaire: x.puAchat,
+        ),
+    ];
+    if (statutRecu == StatutAchat.livre) {
+      if (await effets.dejaApplique(achatId, EffetsStockPoste.reception)) {
+        return;
+      }
+      if (lieAMoi &&
+          (statutAvant == null || statutAvant == StatutAchat.commande)) {
+        await effets.appliquerReception(
+          achatId: achatId,
+          reference: reference,
+          lignes: lignes,
+        );
+      } else {
+        await effets.ignorer(
+          faitType: EffetsStockPoste.faitAchat,
+          faitId: achatId,
+          nature: EffetsStockPoste.reception,
+          reference: reference,
+          motif: lieAMoi
+              ? 'la commande $reference n\'était plus « Commandé » sur ce poste : '
+                    'stock inchangé'
+              : 'la commande $reference est liée à un autre poste ou était déjà '
+                    'livrée ici quand le web l\'a désignée : stock inchangé',
+        );
+      }
+    } else if (statutRecu == StatutAchat.annule && lieAMoi) {
+      await effets.annulerReception(
+        achatId: achatId,
+        reference: reference,
+        lignes: lignes,
+      );
+    }
   }
 
   @override
@@ -297,6 +400,7 @@ class TableAchatsPoste implements TablePoste {
             'paye': a.paye,
             'mode': a.mode,
             'echeance': a.echeance?.toUtc().toIso8601String(),
+            'poste_cible': a.posteCible,
             'updated_at': a.updatedAt,
             'lignes': [
               for (final x in lignes)

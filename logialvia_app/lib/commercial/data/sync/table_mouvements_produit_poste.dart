@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/effets_stock_poste.dart';
 import '../../../core/sync/table_poste.dart';
 
 /// `mouvements_produit` — journal des corrections de stock des produits vendables,
@@ -10,6 +11,12 @@ import '../../../core/sync/table_poste.dart';
 /// la correction d'un autre poste **ne change pas le stock de CE poste** : la ligne est
 /// stockée avec son `origine`, comme un historique. Rejoué, un mouvement est accepté
 /// sans rien changer. Le produit doit exister ici (il arrive AVANT, référentiel).
+///
+/// ## Exception à la règle d'or (`47s_`)
+///
+/// Une correction saisie au web peut porter `poste_cible` : le poste désigné — et lui
+/// seul — ajoute la variation à SON stock, **une fois** (plancher à 0 et avertissement tracé).
+/// Pour tous les autres postes, la ligne reste de l'historique pur.
 class TableMouvementsProduitPoste implements TablePoste {
   const TableMouvementsProduitPoste(this._db);
 
@@ -55,7 +62,10 @@ class TableMouvementsProduitPoste implements TablePoste {
             _texte(l['article']) == null ||
             _texte(l['motif']) == null ||
             quantite is! num ||
-            quantite == 0) {
+            quantite == 0 ||
+            (l['poste_cible'] != null &&
+                (l['poste_cible'] is! String ||
+                    !_uuid.hasMatch(l['poste_cible'] as String)))) {
           refusees++;
           continue;
         }
@@ -91,9 +101,22 @@ class TableMouvementsProduitPoste implements TablePoste {
                 quantite: quantite.toDouble(),
                 // Historique d'un autre poste : AUCUNE écriture dans le stock.
                 origine: Value(_texte(l['device_id']) ?? 'autre-poste'),
+                posteCible: Value(_texte(l['poste_cible'])),
                 syncStatus: const Value('synced'),
               ),
             );
+        // Sauf si CE poste est le poste désigné : alors, et alors seulement, la
+        // variation s'applique à son stock (une fois : journal `effets_appliques`).
+        final effets = EffetsStockPoste(_db);
+        if (await effets.estCible(_texte(l['poste_cible']))) {
+          await effets.appliquerCorrection(
+            mouvementId: id,
+            produitId: produitId,
+            article: (l['article'] as String).trim(),
+            motif: (l['motif'] as String).trim(),
+            variation: quantite.toDouble(),
+          );
+        }
         absorbees++;
       }
       return ResultatAbsorption(absorbees: absorbees, refusees: refusees);

@@ -5368,6 +5368,739 @@ class DemandesReferentielCompanion
   }
 }
 
+class $EffetsAppliquesTable extends EffetsAppliques
+    with TableInfo<$EffetsAppliquesTable, EffetAppliqueRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EffetsAppliquesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _faitTypeMeta = const VerificationMeta(
+    'faitType',
+  );
+  @override
+  late final GeneratedColumn<String> faitType = GeneratedColumn<String>(
+    'fait_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _faitIdMeta = const VerificationMeta('faitId');
+  @override
+  late final GeneratedColumn<String> faitId = GeneratedColumn<String>(
+    'fait_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _natureMeta = const VerificationMeta('nature');
+  @override
+  late final GeneratedColumn<String> nature = GeneratedColumn<String>(
+    'nature',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _referenceMeta = const VerificationMeta(
+    'reference',
+  );
+  @override
+  late final GeneratedColumn<String> reference = GeneratedColumn<String>(
+    'reference',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _libelleMeta = const VerificationMeta(
+    'libelle',
+  );
+  @override
+  late final GeneratedColumn<String> libelle = GeneratedColumn<String>(
+    'libelle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _etatMeta = const VerificationMeta('etat');
+  @override
+  late final GeneratedColumn<String> etat = GeneratedColumn<String>(
+    'etat',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _avertissementMeta = const VerificationMeta(
+    'avertissement',
+  );
+  @override
+  late final GeneratedColumn<String> avertissement = GeneratedColumn<String>(
+    'avertissement',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _appliqueLeMeta = const VerificationMeta(
+    'appliqueLe',
+  );
+  @override
+  late final GeneratedColumn<String> appliqueLe = GeneratedColumn<String>(
+    'applique_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    faitType,
+    faitId,
+    nature,
+    reference,
+    libelle,
+    etat,
+    avertissement,
+    appliqueLe,
+    origine,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'effets_appliques';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EffetAppliqueRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('fait_type')) {
+      context.handle(
+        _faitTypeMeta,
+        faitType.isAcceptableOrUnknown(data['fait_type']!, _faitTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_faitTypeMeta);
+    }
+    if (data.containsKey('fait_id')) {
+      context.handle(
+        _faitIdMeta,
+        faitId.isAcceptableOrUnknown(data['fait_id']!, _faitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_faitIdMeta);
+    }
+    if (data.containsKey('nature')) {
+      context.handle(
+        _natureMeta,
+        nature.isAcceptableOrUnknown(data['nature']!, _natureMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_natureMeta);
+    }
+    if (data.containsKey('reference')) {
+      context.handle(
+        _referenceMeta,
+        reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
+      );
+    }
+    if (data.containsKey('libelle')) {
+      context.handle(
+        _libelleMeta,
+        libelle.isAcceptableOrUnknown(data['libelle']!, _libelleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_libelleMeta);
+    }
+    if (data.containsKey('etat')) {
+      context.handle(
+        _etatMeta,
+        etat.isAcceptableOrUnknown(data['etat']!, _etatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_etatMeta);
+    }
+    if (data.containsKey('avertissement')) {
+      context.handle(
+        _avertissementMeta,
+        avertissement.isAcceptableOrUnknown(
+          data['avertissement']!,
+          _avertissementMeta,
+        ),
+      );
+    }
+    if (data.containsKey('applique_le')) {
+      context.handle(
+        _appliqueLeMeta,
+        appliqueLe.isAcceptableOrUnknown(data['applique_le']!, _appliqueLeMeta),
+      );
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {faitId, nature},
+  ];
+  @override
+  EffetAppliqueRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EffetAppliqueRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      faitType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fait_type'],
+      )!,
+      faitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fait_id'],
+      )!,
+      nature: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nature'],
+      )!,
+      reference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference'],
+      ),
+      libelle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}libelle'],
+      )!,
+      etat: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etat'],
+      )!,
+      avertissement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avertissement'],
+      ),
+      appliqueLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}applique_le'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $EffetsAppliquesTable createAlias(String alias) {
+    return $EffetsAppliquesTable(attachedDatabase, alias);
+  }
+}
+
+class EffetAppliqueRow extends DataClass
+    implements Insertable<EffetAppliqueRow> {
+  /// UUID v5 de `effet:<nature>:<fait_id>`.
+  final String id;
+
+  /// `achat` · `vente` · `mouvement_produit`.
+  final String faitType;
+
+  /// Identifiant (UUID) du fait web qui a produit l'effet.
+  final String faitId;
+
+  /// `reception` · `annulation_reception` · `vente` · `annulation_vente` · `correction`.
+  final String nature;
+
+  /// Référence lisible du fait (`ACH-WEB-2026-001`, `V-WEB-2026-004`), si elle existe.
+  final String? reference;
+
+  /// Résumé en français de ce qui a été fait au stock.
+  final String libelle;
+
+  /// `applique` · `avertissement` (appliqué avec plancher à 0) · `ignore` (non appliqué).
+  final String etat;
+
+  /// Motif de l'avertissement ou de l'abstention (« Stock insuffisant au poste… »).
+  final String? avertissement;
+
+  /// Instant (UTC, ISO 8601) où ce poste a appliqué l'effet.
+  final String appliqueLe;
+
+  /// `null` = CE poste ; sinon le poste qui a appliqué l'effet (historique).
+  final String? origine;
+  final String syncStatus;
+  final String? syncMotif;
+  const EffetAppliqueRow({
+    required this.id,
+    required this.faitType,
+    required this.faitId,
+    required this.nature,
+    this.reference,
+    required this.libelle,
+    required this.etat,
+    this.avertissement,
+    required this.appliqueLe,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['fait_type'] = Variable<String>(faitType);
+    map['fait_id'] = Variable<String>(faitId);
+    map['nature'] = Variable<String>(nature);
+    if (!nullToAbsent || reference != null) {
+      map['reference'] = Variable<String>(reference);
+    }
+    map['libelle'] = Variable<String>(libelle);
+    map['etat'] = Variable<String>(etat);
+    if (!nullToAbsent || avertissement != null) {
+      map['avertissement'] = Variable<String>(avertissement);
+    }
+    map['applique_le'] = Variable<String>(appliqueLe);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  EffetsAppliquesCompanion toCompanion(bool nullToAbsent) {
+    return EffetsAppliquesCompanion(
+      id: Value(id),
+      faitType: Value(faitType),
+      faitId: Value(faitId),
+      nature: Value(nature),
+      reference: reference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reference),
+      libelle: Value(libelle),
+      etat: Value(etat),
+      avertissement: avertissement == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avertissement),
+      appliqueLe: Value(appliqueLe),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory EffetAppliqueRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EffetAppliqueRow(
+      id: serializer.fromJson<String>(json['id']),
+      faitType: serializer.fromJson<String>(json['faitType']),
+      faitId: serializer.fromJson<String>(json['faitId']),
+      nature: serializer.fromJson<String>(json['nature']),
+      reference: serializer.fromJson<String?>(json['reference']),
+      libelle: serializer.fromJson<String>(json['libelle']),
+      etat: serializer.fromJson<String>(json['etat']),
+      avertissement: serializer.fromJson<String?>(json['avertissement']),
+      appliqueLe: serializer.fromJson<String>(json['appliqueLe']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'faitType': serializer.toJson<String>(faitType),
+      'faitId': serializer.toJson<String>(faitId),
+      'nature': serializer.toJson<String>(nature),
+      'reference': serializer.toJson<String?>(reference),
+      'libelle': serializer.toJson<String>(libelle),
+      'etat': serializer.toJson<String>(etat),
+      'avertissement': serializer.toJson<String?>(avertissement),
+      'appliqueLe': serializer.toJson<String>(appliqueLe),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  EffetAppliqueRow copyWith({
+    String? id,
+    String? faitType,
+    String? faitId,
+    String? nature,
+    Value<String?> reference = const Value.absent(),
+    String? libelle,
+    String? etat,
+    Value<String?> avertissement = const Value.absent(),
+    String? appliqueLe,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => EffetAppliqueRow(
+    id: id ?? this.id,
+    faitType: faitType ?? this.faitType,
+    faitId: faitId ?? this.faitId,
+    nature: nature ?? this.nature,
+    reference: reference.present ? reference.value : this.reference,
+    libelle: libelle ?? this.libelle,
+    etat: etat ?? this.etat,
+    avertissement: avertissement.present
+        ? avertissement.value
+        : this.avertissement,
+    appliqueLe: appliqueLe ?? this.appliqueLe,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  EffetAppliqueRow copyWithCompanion(EffetsAppliquesCompanion data) {
+    return EffetAppliqueRow(
+      id: data.id.present ? data.id.value : this.id,
+      faitType: data.faitType.present ? data.faitType.value : this.faitType,
+      faitId: data.faitId.present ? data.faitId.value : this.faitId,
+      nature: data.nature.present ? data.nature.value : this.nature,
+      reference: data.reference.present ? data.reference.value : this.reference,
+      libelle: data.libelle.present ? data.libelle.value : this.libelle,
+      etat: data.etat.present ? data.etat.value : this.etat,
+      avertissement: data.avertissement.present
+          ? data.avertissement.value
+          : this.avertissement,
+      appliqueLe: data.appliqueLe.present
+          ? data.appliqueLe.value
+          : this.appliqueLe,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EffetAppliqueRow(')
+          ..write('id: $id, ')
+          ..write('faitType: $faitType, ')
+          ..write('faitId: $faitId, ')
+          ..write('nature: $nature, ')
+          ..write('reference: $reference, ')
+          ..write('libelle: $libelle, ')
+          ..write('etat: $etat, ')
+          ..write('avertissement: $avertissement, ')
+          ..write('appliqueLe: $appliqueLe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    faitType,
+    faitId,
+    nature,
+    reference,
+    libelle,
+    etat,
+    avertissement,
+    appliqueLe,
+    origine,
+    syncStatus,
+    syncMotif,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EffetAppliqueRow &&
+          other.id == this.id &&
+          other.faitType == this.faitType &&
+          other.faitId == this.faitId &&
+          other.nature == this.nature &&
+          other.reference == this.reference &&
+          other.libelle == this.libelle &&
+          other.etat == this.etat &&
+          other.avertissement == this.avertissement &&
+          other.appliqueLe == this.appliqueLe &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class EffetsAppliquesCompanion extends UpdateCompanion<EffetAppliqueRow> {
+  final Value<String> id;
+  final Value<String> faitType;
+  final Value<String> faitId;
+  final Value<String> nature;
+  final Value<String?> reference;
+  final Value<String> libelle;
+  final Value<String> etat;
+  final Value<String?> avertissement;
+  final Value<String> appliqueLe;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const EffetsAppliquesCompanion({
+    this.id = const Value.absent(),
+    this.faitType = const Value.absent(),
+    this.faitId = const Value.absent(),
+    this.nature = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.libelle = const Value.absent(),
+    this.etat = const Value.absent(),
+    this.avertissement = const Value.absent(),
+    this.appliqueLe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EffetsAppliquesCompanion.insert({
+    required String id,
+    required String faitType,
+    required String faitId,
+    required String nature,
+    this.reference = const Value.absent(),
+    required String libelle,
+    required String etat,
+    this.avertissement = const Value.absent(),
+    this.appliqueLe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       faitType = Value(faitType),
+       faitId = Value(faitId),
+       nature = Value(nature),
+       libelle = Value(libelle),
+       etat = Value(etat);
+  static Insertable<EffetAppliqueRow> custom({
+    Expression<String>? id,
+    Expression<String>? faitType,
+    Expression<String>? faitId,
+    Expression<String>? nature,
+    Expression<String>? reference,
+    Expression<String>? libelle,
+    Expression<String>? etat,
+    Expression<String>? avertissement,
+    Expression<String>? appliqueLe,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (faitType != null) 'fait_type': faitType,
+      if (faitId != null) 'fait_id': faitId,
+      if (nature != null) 'nature': nature,
+      if (reference != null) 'reference': reference,
+      if (libelle != null) 'libelle': libelle,
+      if (etat != null) 'etat': etat,
+      if (avertissement != null) 'avertissement': avertissement,
+      if (appliqueLe != null) 'applique_le': appliqueLe,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EffetsAppliquesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? faitType,
+    Value<String>? faitId,
+    Value<String>? nature,
+    Value<String?>? reference,
+    Value<String>? libelle,
+    Value<String>? etat,
+    Value<String?>? avertissement,
+    Value<String>? appliqueLe,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return EffetsAppliquesCompanion(
+      id: id ?? this.id,
+      faitType: faitType ?? this.faitType,
+      faitId: faitId ?? this.faitId,
+      nature: nature ?? this.nature,
+      reference: reference ?? this.reference,
+      libelle: libelle ?? this.libelle,
+      etat: etat ?? this.etat,
+      avertissement: avertissement ?? this.avertissement,
+      appliqueLe: appliqueLe ?? this.appliqueLe,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (faitType.present) {
+      map['fait_type'] = Variable<String>(faitType.value);
+    }
+    if (faitId.present) {
+      map['fait_id'] = Variable<String>(faitId.value);
+    }
+    if (nature.present) {
+      map['nature'] = Variable<String>(nature.value);
+    }
+    if (reference.present) {
+      map['reference'] = Variable<String>(reference.value);
+    }
+    if (libelle.present) {
+      map['libelle'] = Variable<String>(libelle.value);
+    }
+    if (etat.present) {
+      map['etat'] = Variable<String>(etat.value);
+    }
+    if (avertissement.present) {
+      map['avertissement'] = Variable<String>(avertissement.value);
+    }
+    if (appliqueLe.present) {
+      map['applique_le'] = Variable<String>(appliqueLe.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EffetsAppliquesCompanion(')
+          ..write('id: $id, ')
+          ..write('faitType: $faitType, ')
+          ..write('faitId: $faitId, ')
+          ..write('nature: $nature, ')
+          ..write('reference: $reference, ')
+          ..write('libelle: $libelle, ')
+          ..write('etat: $etat, ')
+          ..write('avertissement: $avertissement, ')
+          ..write('appliqueLe: $appliqueLe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ProduitsVendablesTable extends ProduitsVendables
     with TableInfo<$ProduitsVendablesTable, ProduitVendableRow> {
   @override
@@ -6230,6 +6963,17 @@ class $MouvementsProduitTable extends MouvementsProduit
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -6262,6 +7006,7 @@ class $MouvementsProduitTable extends MouvementsProduit
     motif,
     quantite,
     origine,
+    posteCible,
     syncStatus,
     syncMotif,
   ];
@@ -6326,6 +7071,12 @@ class $MouvementsProduitTable extends MouvementsProduit
         origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
       );
     }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -6375,6 +7126,10 @@ class $MouvementsProduitTable extends MouvementsProduit
         DriftSqlType.string,
         data['${effectivePrefix}origine'],
       ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -6407,6 +7162,11 @@ class MouvementProduitRow extends DataClass
 
   /// `null` = CE poste ; sinon l'identifiant du poste d'origine (historique pur).
   final String? origine;
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun. Sur une
+  /// correction saisie au web, le poste désigné applique la variation à SON stock (une fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
   final String syncStatus;
   final String? syncMotif;
   const MouvementProduitRow({
@@ -6417,6 +7177,7 @@ class MouvementProduitRow extends DataClass
     required this.motif,
     required this.quantite,
     this.origine,
+    this.posteCible,
     required this.syncStatus,
     this.syncMotif,
   });
@@ -6431,6 +7192,9 @@ class MouvementProduitRow extends DataClass
     map['quantite'] = Variable<double>(quantite);
     if (!nullToAbsent || origine != null) {
       map['origine'] = Variable<String>(origine);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || syncMotif != null) {
@@ -6450,6 +7214,9 @@ class MouvementProduitRow extends DataClass
       origine: origine == null && nullToAbsent
           ? const Value.absent()
           : Value(origine),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
       syncStatus: Value(syncStatus),
       syncMotif: syncMotif == null && nullToAbsent
           ? const Value.absent()
@@ -6470,6 +7237,7 @@ class MouvementProduitRow extends DataClass
       motif: serializer.fromJson<String>(json['motif']),
       quantite: serializer.fromJson<double>(json['quantite']),
       origine: serializer.fromJson<String?>(json['origine']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
     );
@@ -6485,6 +7253,7 @@ class MouvementProduitRow extends DataClass
       'motif': serializer.toJson<String>(motif),
       'quantite': serializer.toJson<double>(quantite),
       'origine': serializer.toJson<String?>(origine),
+      'posteCible': serializer.toJson<String?>(posteCible),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
     };
@@ -6498,6 +7267,7 @@ class MouvementProduitRow extends DataClass
     String? motif,
     double? quantite,
     Value<String?> origine = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
   }) => MouvementProduitRow(
@@ -6508,6 +7278,7 @@ class MouvementProduitRow extends DataClass
     motif: motif ?? this.motif,
     quantite: quantite ?? this.quantite,
     origine: origine.present ? origine.value : this.origine,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
   );
@@ -6522,6 +7293,9 @@ class MouvementProduitRow extends DataClass
       motif: data.motif.present ? data.motif.value : this.motif,
       quantite: data.quantite.present ? data.quantite.value : this.quantite,
       origine: data.origine.present ? data.origine.value : this.origine,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -6539,6 +7313,7 @@ class MouvementProduitRow extends DataClass
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
           ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif')
           ..write(')'))
@@ -6554,6 +7329,7 @@ class MouvementProduitRow extends DataClass
     motif,
     quantite,
     origine,
+    posteCible,
     syncStatus,
     syncMotif,
   );
@@ -6568,6 +7344,7 @@ class MouvementProduitRow extends DataClass
           other.motif == this.motif &&
           other.quantite == this.quantite &&
           other.origine == this.origine &&
+          other.posteCible == this.posteCible &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif);
 }
@@ -6580,6 +7357,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
   final Value<String> motif;
   final Value<double> quantite;
   final Value<String?> origine;
+  final Value<String?> posteCible;
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<int> rowid;
@@ -6591,6 +7369,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
     this.motif = const Value.absent(),
     this.quantite = const Value.absent(),
     this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6603,6 +7382,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
     required String motif,
     required double quantite,
     this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6619,6 +7399,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
     Expression<String>? motif,
     Expression<double>? quantite,
     Expression<String>? origine,
+    Expression<String>? posteCible,
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<int>? rowid,
@@ -6631,6 +7412,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
       if (motif != null) 'motif': motif,
       if (quantite != null) 'quantite': quantite,
       if (origine != null) 'origine': origine,
+      if (posteCible != null) 'poste_cible': posteCible,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (rowid != null) 'rowid': rowid,
@@ -6645,6 +7427,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
     Value<String>? motif,
     Value<double>? quantite,
     Value<String?>? origine,
+    Value<String?>? posteCible,
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<int>? rowid,
@@ -6657,6 +7440,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
       motif: motif ?? this.motif,
       quantite: quantite ?? this.quantite,
       origine: origine ?? this.origine,
+      posteCible: posteCible ?? this.posteCible,
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       rowid: rowid ?? this.rowid,
@@ -6687,6 +7471,9 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
     if (origine.present) {
       map['origine'] = Variable<String>(origine.value);
     }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -6709,6 +7496,7 @@ class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
           ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('rowid: $rowid')
@@ -7342,6 +8130,17 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -7523,6 +8322,7 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
   List<GeneratedColumn> get $columns => [
     id,
     clientId,
+    posteCible,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -7560,6 +8360,12 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
       context.handle(
         _clientIdMeta,
         clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
       );
     }
     if (data.containsKey('sync_status')) {
@@ -7717,6 +8523,10 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
         DriftSqlType.string,
         data['${effectivePrefix}client_id'],
       ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -7806,6 +8616,11 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   /// on ne devine pas qui a achete.
   final String? clientId;
 
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun effet de stock
+  /// délégué. Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
   /// `pending` · `synced` · `conflict`.
   final String syncStatus;
   final String? syncMotif;
@@ -7878,6 +8693,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   const VenteRow({
     required this.id,
     this.clientId,
+    this.posteCible,
     required this.syncStatus,
     this.syncMotif,
     required this.updatedAt,
@@ -7902,6 +8718,9 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     map['id'] = Variable<String>(id);
     if (!nullToAbsent || clientId != null) {
       map['client_id'] = Variable<String>(clientId);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || syncMotif != null) {
@@ -7945,6 +8764,9 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
       clientId: clientId == null && nullToAbsent
           ? const Value.absent()
           : Value(clientId),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
       syncStatus: Value(syncStatus),
       syncMotif: syncMotif == null && nullToAbsent
           ? const Value.absent()
@@ -7989,6 +8811,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     return VenteRow(
       id: serializer.fromJson<String>(json['id']),
       clientId: serializer.fromJson<String?>(json['clientId']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
@@ -8014,6 +8837,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'clientId': serializer.toJson<String?>(clientId),
+      'posteCible': serializer.toJson<String?>(posteCible),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
       'updatedAt': serializer.toJson<String>(updatedAt),
@@ -8037,6 +8861,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   VenteRow copyWith({
     String? id,
     Value<String?> clientId = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
     String? updatedAt,
@@ -8057,6 +8882,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   }) => VenteRow(
     id: id ?? this.id,
     clientId: clientId.present ? clientId.value : this.clientId,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -8091,6 +8917,9 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     return VenteRow(
       id: data.id.present ? data.id.value : this.id,
       clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -8130,6 +8959,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     return (StringBuffer('VenteRow(')
           ..write('id: $id, ')
           ..write('clientId: $clientId, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt, ')
@@ -8155,6 +8985,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   int get hashCode => Object.hash(
     id,
     clientId,
+    posteCible,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -8179,6 +9010,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
       (other is VenteRow &&
           other.id == this.id &&
           other.clientId == this.clientId &&
+          other.posteCible == this.posteCible &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif &&
           other.updatedAt == this.updatedAt &&
@@ -8201,6 +9033,7 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
 class VentesCompanion extends UpdateCompanion<VenteRow> {
   final Value<String> id;
   final Value<String?> clientId;
+  final Value<String?> posteCible;
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<String> updatedAt;
@@ -8222,6 +9055,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   const VentesCompanion({
     this.id = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -8244,6 +9078,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   VentesCompanion.insert({
     this.id = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -8272,6 +9107,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   static Insertable<VenteRow> custom({
     Expression<String>? id,
     Expression<String>? clientId,
+    Expression<String>? posteCible,
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<String>? updatedAt,
@@ -8294,6 +9130,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (clientId != null) 'client_id': clientId,
+      if (posteCible != null) 'poste_cible': posteCible,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -8318,6 +9155,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   VentesCompanion copyWith({
     Value<String>? id,
     Value<String?>? clientId,
+    Value<String?>? posteCible,
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<String>? updatedAt,
@@ -8340,6 +9178,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     return VentesCompanion(
       id: id ?? this.id,
       clientId: clientId ?? this.clientId,
+      posteCible: posteCible ?? this.posteCible,
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -8369,6 +9208,9 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     }
     if (clientId.present) {
       map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
@@ -8432,6 +9274,7 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     return (StringBuffer('VentesCompanion(')
           ..write('id: $id, ')
           ..write('clientId: $clientId, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt, ')
@@ -13067,6 +13910,17 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -13113,6 +13967,7 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     paye,
     mode,
     echeance,
+    posteCible,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -13193,6 +14048,12 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         echeance.isAcceptableOrUnknown(data['echeance']!, _echeanceMeta),
       );
     }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -13260,6 +14121,10 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}echeance'],
       ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -13312,6 +14177,11 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
   /// **veille** de l'achat qu'elle règle. `null` = aucun délai convenu.
   final DateTime? echeance;
 
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun effet de stock
+  /// délégué. Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
   /// `pending` · `synced` · `conflict`.
   final String syncStatus;
   final String? syncMotif;
@@ -13328,6 +14198,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     required this.paye,
     this.mode,
     this.echeance,
+    this.posteCible,
     required this.syncStatus,
     this.syncMotif,
     required this.updatedAt,
@@ -13347,6 +14218,9 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     }
     if (!nullToAbsent || echeance != null) {
       map['echeance'] = Variable<DateTime>(echeance);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || syncMotif != null) {
@@ -13369,6 +14243,9 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       echeance: echeance == null && nullToAbsent
           ? const Value.absent()
           : Value(echeance),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
       syncStatus: Value(syncStatus),
       syncMotif: syncMotif == null && nullToAbsent
           ? const Value.absent()
@@ -13392,6 +14269,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       paye: serializer.fromJson<double>(json['paye']),
       mode: serializer.fromJson<String?>(json['mode']),
       echeance: serializer.fromJson<DateTime?>(json['echeance']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
@@ -13410,6 +14288,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       'paye': serializer.toJson<double>(paye),
       'mode': serializer.toJson<String?>(mode),
       'echeance': serializer.toJson<DateTime?>(echeance),
+      'posteCible': serializer.toJson<String?>(posteCible),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
       'updatedAt': serializer.toJson<String>(updatedAt),
@@ -13426,6 +14305,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     double? paye,
     Value<String?> mode = const Value.absent(),
     Value<DateTime?> echeance = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
     String? updatedAt,
@@ -13439,6 +14319,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye: paye ?? this.paye,
     mode: mode.present ? mode.value : this.mode,
     echeance: echeance.present ? echeance.value : this.echeance,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -13456,6 +14337,9 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       paye: data.paye.present ? data.paye.value : this.paye,
       mode: data.mode.present ? data.mode.value : this.mode,
       echeance: data.echeance.present ? data.echeance.value : this.echeance,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -13476,6 +14360,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
           ..write('echeance: $echeance, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt')
@@ -13494,6 +14379,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye,
     mode,
     echeance,
+    posteCible,
     syncStatus,
     syncMotif,
     updatedAt,
@@ -13511,6 +14397,7 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           other.paye == this.paye &&
           other.mode == this.mode &&
           other.echeance == this.echeance &&
+          other.posteCible == this.posteCible &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif &&
           other.updatedAt == this.updatedAt);
@@ -13526,6 +14413,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
   final Value<double> paye;
   final Value<String?> mode;
   final Value<DateTime?> echeance;
+  final Value<String?> posteCible;
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<String> updatedAt;
@@ -13540,6 +14428,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -13555,6 +14444,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -13574,6 +14464,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     Expression<double>? paye,
     Expression<String>? mode,
     Expression<DateTime>? echeance,
+    Expression<String>? posteCible,
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<String>? updatedAt,
@@ -13589,6 +14480,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       if (paye != null) 'paye': paye,
       if (mode != null) 'mode': mode,
       if (echeance != null) 'echeance': echeance,
+      if (posteCible != null) 'poste_cible': posteCible,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -13606,6 +14498,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     Value<double>? paye,
     Value<String?>? mode,
     Value<DateTime?>? echeance,
+    Value<String?>? posteCible,
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<String>? updatedAt,
@@ -13621,6 +14514,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       paye: paye ?? this.paye,
       mode: mode ?? this.mode,
       echeance: echeance ?? this.echeance,
+      posteCible: posteCible ?? this.posteCible,
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -13658,6 +14552,9 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     if (echeance.present) {
       map['echeance'] = Variable<DateTime>(echeance.value);
     }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -13685,6 +14582,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
           ..write('echeance: $echeance, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt, ')
@@ -14215,6 +15113,17 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -14249,6 +15158,7 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     quantite,
     reference,
     origine,
+    posteCible,
     syncStatus,
     syncMotif,
   ];
@@ -14330,6 +15240,12 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
       );
     }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -14387,6 +15303,10 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         DriftSqlType.string,
         data['${effectivePrefix}origine'],
       ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -14433,6 +15353,12 @@ class MouvementIntrantRow extends DataClass
   /// client : « stock propre a chaque poste + journal partage »).
   final String? origine;
 
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun.
+  /// **Informatif** pour un mouvement d'intrant : l'effet de stock d'une réception web
+  /// est porté par l'ACHAT, jamais par ces lignes (sinon il serait appliqué deux fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
   /// `pending` · `synced` · `conflict`. Un mouvement est IMMUABLE : pas d'`updated_at`.
   final String syncStatus;
   final String? syncMotif;
@@ -14446,6 +15372,7 @@ class MouvementIntrantRow extends DataClass
     required this.quantite,
     this.reference,
     this.origine,
+    this.posteCible,
     required this.syncStatus,
     this.syncMotif,
   });
@@ -14464,6 +15391,9 @@ class MouvementIntrantRow extends DataClass
     }
     if (!nullToAbsent || origine != null) {
       map['origine'] = Variable<String>(origine);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || syncMotif != null) {
@@ -14487,6 +15417,9 @@ class MouvementIntrantRow extends DataClass
       origine: origine == null && nullToAbsent
           ? const Value.absent()
           : Value(origine),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
       syncStatus: Value(syncStatus),
       syncMotif: syncMotif == null && nullToAbsent
           ? const Value.absent()
@@ -14509,6 +15442,7 @@ class MouvementIntrantRow extends DataClass
       quantite: serializer.fromJson<double>(json['quantite']),
       reference: serializer.fromJson<String?>(json['reference']),
       origine: serializer.fromJson<String?>(json['origine']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
     );
@@ -14526,6 +15460,7 @@ class MouvementIntrantRow extends DataClass
       'quantite': serializer.toJson<double>(quantite),
       'reference': serializer.toJson<String?>(reference),
       'origine': serializer.toJson<String?>(origine),
+      'posteCible': serializer.toJson<String?>(posteCible),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
     };
@@ -14541,6 +15476,7 @@ class MouvementIntrantRow extends DataClass
     double? quantite,
     Value<String?> reference = const Value.absent(),
     Value<String?> origine = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
   }) => MouvementIntrantRow(
@@ -14553,6 +15489,7 @@ class MouvementIntrantRow extends DataClass
     quantite: quantite ?? this.quantite,
     reference: reference.present ? reference.value : this.reference,
     origine: origine.present ? origine.value : this.origine,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
   );
@@ -14571,6 +15508,9 @@ class MouvementIntrantRow extends DataClass
       quantite: data.quantite.present ? data.quantite.value : this.quantite,
       reference: data.reference.present ? data.reference.value : this.reference,
       origine: data.origine.present ? data.origine.value : this.origine,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -14590,6 +15530,7 @@ class MouvementIntrantRow extends DataClass
           ..write('quantite: $quantite, ')
           ..write('reference: $reference, ')
           ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif')
           ..write(')'))
@@ -14607,6 +15548,7 @@ class MouvementIntrantRow extends DataClass
     quantite,
     reference,
     origine,
+    posteCible,
     syncStatus,
     syncMotif,
   );
@@ -14623,6 +15565,7 @@ class MouvementIntrantRow extends DataClass
           other.quantite == this.quantite &&
           other.reference == this.reference &&
           other.origine == this.origine &&
+          other.posteCible == this.posteCible &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif);
 }
@@ -14637,6 +15580,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
   final Value<double> quantite;
   final Value<String?> reference;
   final Value<String?> origine;
+  final Value<String?> posteCible;
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<int> rowid;
@@ -14650,6 +15594,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     this.quantite = const Value.absent(),
     this.reference = const Value.absent(),
     this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -14664,6 +15609,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     required double quantite,
     this.reference = const Value.absent(),
     this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -14683,6 +15629,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Expression<double>? quantite,
     Expression<String>? reference,
     Expression<String>? origine,
+    Expression<String>? posteCible,
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<int>? rowid,
@@ -14697,6 +15644,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       if (quantite != null) 'quantite': quantite,
       if (reference != null) 'reference': reference,
       if (origine != null) 'origine': origine,
+      if (posteCible != null) 'poste_cible': posteCible,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (rowid != null) 'rowid': rowid,
@@ -14713,6 +15661,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Value<double>? quantite,
     Value<String?>? reference,
     Value<String?>? origine,
+    Value<String?>? posteCible,
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<int>? rowid,
@@ -14727,6 +15676,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       quantite: quantite ?? this.quantite,
       reference: reference ?? this.reference,
       origine: origine ?? this.origine,
+      posteCible: posteCible ?? this.posteCible,
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       rowid: rowid ?? this.rowid,
@@ -14763,6 +15713,9 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     if (origine.present) {
       map['origine'] = Variable<String>(origine.value);
     }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -14787,6 +15740,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
           ..write('quantite: $quantite, ')
           ..write('reference: $reference, ')
           ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('rowid: $rowid')
@@ -25400,6 +26354,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CorbeilleTable corbeille = $CorbeilleTable(this);
   late final $DemandesReferentielTable demandesReferentiel =
       $DemandesReferentielTable(this);
+  late final $EffetsAppliquesTable effetsAppliques = $EffetsAppliquesTable(
+    this,
+  );
   late final $ProduitsVendablesTable produitsVendables =
       $ProduitsVendablesTable(this);
   late final $MouvementsProduitTable mouvementsProduit =
@@ -25459,6 +26416,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     preferencesPoste,
     corbeille,
     demandesReferentiel,
+    effetsAppliques,
     produitsVendables,
     mouvementsProduit,
     clients,
@@ -28699,6 +29657,351 @@ typedef $$DemandesReferentielTableProcessedTableManager =
       DemandeReferentielRow,
       PrefetchHooks Function()
     >;
+typedef $$EffetsAppliquesTableCreateCompanionBuilder =
+    EffetsAppliquesCompanion Function({
+      required String id,
+      required String faitType,
+      required String faitId,
+      required String nature,
+      Value<String?> reference,
+      required String libelle,
+      required String etat,
+      Value<String?> avertissement,
+      Value<String> appliqueLe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$EffetsAppliquesTableUpdateCompanionBuilder =
+    EffetsAppliquesCompanion Function({
+      Value<String> id,
+      Value<String> faitType,
+      Value<String> faitId,
+      Value<String> nature,
+      Value<String?> reference,
+      Value<String> libelle,
+      Value<String> etat,
+      Value<String?> avertissement,
+      Value<String> appliqueLe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+class $$EffetsAppliquesTableFilterComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get faitType => $composableBuilder(
+    column: $table.faitType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get faitId => $composableBuilder(
+    column: $table.faitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nature => $composableBuilder(
+    column: $table.nature,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get libelle => $composableBuilder(
+    column: $table.libelle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etat => $composableBuilder(
+    column: $table.etat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EffetsAppliquesTableOrderingComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get faitType => $composableBuilder(
+    column: $table.faitType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get faitId => $composableBuilder(
+    column: $table.faitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nature => $composableBuilder(
+    column: $table.nature,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get libelle => $composableBuilder(
+    column: $table.libelle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etat => $composableBuilder(
+    column: $table.etat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EffetsAppliquesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get faitType =>
+      $composableBuilder(column: $table.faitType, builder: (column) => column);
+
+  GeneratedColumn<String> get faitId =>
+      $composableBuilder(column: $table.faitId, builder: (column) => column);
+
+  GeneratedColumn<String> get nature =>
+      $composableBuilder(column: $table.nature, builder: (column) => column);
+
+  GeneratedColumn<String> get reference =>
+      $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get libelle =>
+      $composableBuilder(column: $table.libelle, builder: (column) => column);
+
+  GeneratedColumn<String> get etat =>
+      $composableBuilder(column: $table.etat, builder: (column) => column);
+
+  GeneratedColumn<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+}
+
+class $$EffetsAppliquesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EffetsAppliquesTable,
+          EffetAppliqueRow,
+          $$EffetsAppliquesTableFilterComposer,
+          $$EffetsAppliquesTableOrderingComposer,
+          $$EffetsAppliquesTableAnnotationComposer,
+          $$EffetsAppliquesTableCreateCompanionBuilder,
+          $$EffetsAppliquesTableUpdateCompanionBuilder,
+          (
+            EffetAppliqueRow,
+            BaseReferences<
+              _$AppDatabase,
+              $EffetsAppliquesTable,
+              EffetAppliqueRow
+            >,
+          ),
+          EffetAppliqueRow,
+          PrefetchHooks Function()
+        > {
+  $$EffetsAppliquesTableTableManager(
+    _$AppDatabase db,
+    $EffetsAppliquesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EffetsAppliquesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EffetsAppliquesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EffetsAppliquesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> faitType = const Value.absent(),
+                Value<String> faitId = const Value.absent(),
+                Value<String> nature = const Value.absent(),
+                Value<String?> reference = const Value.absent(),
+                Value<String> libelle = const Value.absent(),
+                Value<String> etat = const Value.absent(),
+                Value<String?> avertissement = const Value.absent(),
+                Value<String> appliqueLe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EffetsAppliquesCompanion(
+                id: id,
+                faitType: faitType,
+                faitId: faitId,
+                nature: nature,
+                reference: reference,
+                libelle: libelle,
+                etat: etat,
+                avertissement: avertissement,
+                appliqueLe: appliqueLe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String faitType,
+                required String faitId,
+                required String nature,
+                Value<String?> reference = const Value.absent(),
+                required String libelle,
+                required String etat,
+                Value<String?> avertissement = const Value.absent(),
+                Value<String> appliqueLe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EffetsAppliquesCompanion.insert(
+                id: id,
+                faitType: faitType,
+                faitId: faitId,
+                nature: nature,
+                reference: reference,
+                libelle: libelle,
+                etat: etat,
+                avertissement: avertissement,
+                appliqueLe: appliqueLe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EffetsAppliquesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EffetsAppliquesTable,
+      EffetAppliqueRow,
+      $$EffetsAppliquesTableFilterComposer,
+      $$EffetsAppliquesTableOrderingComposer,
+      $$EffetsAppliquesTableAnnotationComposer,
+      $$EffetsAppliquesTableCreateCompanionBuilder,
+      $$EffetsAppliquesTableUpdateCompanionBuilder,
+      (
+        EffetAppliqueRow,
+        BaseReferences<_$AppDatabase, $EffetsAppliquesTable, EffetAppliqueRow>,
+      ),
+      EffetAppliqueRow,
+      PrefetchHooks Function()
+    >;
 typedef $$ProduitsVendablesTableCreateCompanionBuilder =
     ProduitsVendablesCompanion Function({
       Value<String> id,
@@ -29281,6 +30584,7 @@ typedef $$MouvementsProduitTableCreateCompanionBuilder =
       required String motif,
       required double quantite,
       Value<String?> origine,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<int> rowid,
@@ -29294,6 +30598,7 @@ typedef $$MouvementsProduitTableUpdateCompanionBuilder =
       Value<String> motif,
       Value<double> quantite,
       Value<String?> origine,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<int> rowid,
@@ -29370,6 +30675,11 @@ class $$MouvementsProduitTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
@@ -29443,6 +30753,11 @@ class $$MouvementsProduitTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -29505,6 +30820,11 @@ class $$MouvementsProduitTableAnnotationComposer
 
   GeneratedColumn<String> get origine =>
       $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -29579,6 +30899,7 @@ class $$MouvementsProduitTableTableManager
                 Value<String> motif = const Value.absent(),
                 Value<double> quantite = const Value.absent(),
                 Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -29590,6 +30911,7 @@ class $$MouvementsProduitTableTableManager
                 motif: motif,
                 quantite: quantite,
                 origine: origine,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 rowid: rowid,
@@ -29603,6 +30925,7 @@ class $$MouvementsProduitTableTableManager
                 required String motif,
                 required double quantite,
                 Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -29614,6 +30937,7 @@ class $$MouvementsProduitTableTableManager
                 motif: motif,
                 quantite: quantite,
                 origine: origine,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 rowid: rowid,
@@ -29969,6 +31293,7 @@ typedef $$VentesTableCreateCompanionBuilder =
     VentesCompanion Function({
       Value<String> id,
       Value<String?> clientId,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -29992,6 +31317,7 @@ typedef $$VentesTableUpdateCompanionBuilder =
     VentesCompanion Function({
       Value<String> id,
       Value<String?> clientId,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -30051,6 +31377,11 @@ class $$VentesTableFilterComposer
 
   ColumnFilters<String> get clientId => $composableBuilder(
     column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -30184,6 +31515,11 @@ class $$VentesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -30284,6 +31620,11 @@ class $$VentesTableAnnotationComposer
 
   GeneratedColumn<String> get clientId =>
       $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -30406,6 +31747,7 @@ class $$VentesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -30427,6 +31769,7 @@ class $$VentesTableTableManager
               }) => VentesCompanion(
                 id: id,
                 clientId: clientId,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
@@ -30450,6 +31793,7 @@ class $$VentesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -30471,6 +31815,7 @@ class $$VentesTableTableManager
               }) => VentesCompanion.insert(
                 id: id,
                 clientId: clientId,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
@@ -33217,6 +34562,7 @@ typedef $$AchatsTableCreateCompanionBuilder =
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -33233,6 +34579,7 @@ typedef $$AchatsTableUpdateCompanionBuilder =
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
@@ -33325,6 +34672,11 @@ class $$AchatsTableFilterComposer
 
   ColumnFilters<DateTime> get echeance => $composableBuilder(
     column: $table.echeance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33441,6 +34793,11 @@ class $$AchatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -33512,6 +34869,11 @@ class $$AchatsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get echeance =>
       $composableBuilder(column: $table.echeance, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -33610,6 +34972,7 @@ class $$AchatsTableTableManager
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -33624,6 +34987,7 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
@@ -33640,6 +35004,7 @@ class $$AchatsTableTableManager
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -33654,6 +35019,7 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
@@ -34182,6 +35548,7 @@ typedef $$MouvementsIntrantTableCreateCompanionBuilder =
       required double quantite,
       Value<String?> reference,
       Value<String?> origine,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<int> rowid,
@@ -34197,6 +35564,7 @@ typedef $$MouvementsIntrantTableUpdateCompanionBuilder =
       Value<double> quantite,
       Value<String?> reference,
       Value<String?> origine,
+      Value<String?> posteCible,
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<int> rowid,
@@ -34279,6 +35647,11 @@ class $$MouvementsIntrantTableFilterComposer
 
   ColumnFilters<String> get origine => $composableBuilder(
     column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -34365,6 +35738,11 @@ class $$MouvementsIntrantTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -34433,6 +35811,11 @@ class $$MouvementsIntrantTableAnnotationComposer
 
   GeneratedColumn<String> get origine =>
       $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -34508,6 +35891,7 @@ class $$MouvementsIntrantTableTableManager
                 Value<double> quantite = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
                 Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -34521,6 +35905,7 @@ class $$MouvementsIntrantTableTableManager
                 quantite: quantite,
                 reference: reference,
                 origine: origine,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 rowid: rowid,
@@ -34536,6 +35921,7 @@ class $$MouvementsIntrantTableTableManager
                 required double quantite,
                 Value<String?> reference = const Value.absent(),
                 Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -34549,6 +35935,7 @@ class $$MouvementsIntrantTableTableManager
                 quantite: quantite,
                 reference: reference,
                 origine: origine,
+                posteCible: posteCible,
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 rowid: rowid,
@@ -40544,6 +41931,8 @@ class $AppDatabaseManager {
       $$CorbeilleTableTableManager(_db, _db.corbeille);
   $$DemandesReferentielTableTableManager get demandesReferentiel =>
       $$DemandesReferentielTableTableManager(_db, _db.demandesReferentiel);
+  $$EffetsAppliquesTableTableManager get effetsAppliques =>
+      $$EffetsAppliquesTableTableManager(_db, _db.effetsAppliques);
   $$ProduitsVendablesTableTableManager get produitsVendables =>
       $$ProduitsVendablesTableTableManager(_db, _db.produitsVendables);
   $$MouvementsProduitTableTableManager get mouvementsProduit =>

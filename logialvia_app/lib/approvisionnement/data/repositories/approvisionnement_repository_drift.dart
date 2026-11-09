@@ -10,12 +10,17 @@ import '../../../administration/data/repositories/preferences_poste_repository.d
 import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/approvisionnement.dart';
 import '../../domain/entities/fabrication_provende.dart';
+import '../../domain/services/calcul_pmp.dart';
 
 /// Dépôt du contexte Approvisionnement — intrants, mouvements, achats,
 /// fournisseurs.
 abstract class ApprovisionnementRepository {
   Future<List<Intrant>> chargerIntrants();
   Future<List<MouvementIntrant>> chargerMouvements({int limite = 100});
+
+  /// Effets de stock appliqués à CE poste sur ordre du web (`47s_`), du plus récent au
+  /// plus ancien : ce qui a été fait, avec les avertissements (« Stock insuffisant… »).
+  Future<List<EffetStockWeb>> chargerEffetsWeb({int limite = 30});
   Future<List<Fournisseur>> chargerFournisseurs();
   Future<List<Achat>> chargerAchats({int limite = 200});
 
@@ -133,6 +138,19 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
               ..orderBy([(m) => OrderingTerm.desc(m.horodatage)])
               ..limit(limite))
             .get();
+    // Les références dont l'effet a réellement touché CE stock (`47s_`).
+    final moi = await PreferencesPosteRepository(_db).identifiantPoste();
+    final appliquees = {
+      for (final e
+          in await (_db.select(_db.effetsAppliques)..where(
+                (e) =>
+                    e.faitType.equals('achat') &
+                    e.origine.isNull() &
+                    e.etat.isNotValue('ignore'),
+              ))
+              .get())
+        if (e.reference != null) e.reference!,
+    };
     return [
       for (final m in lignes)
         MouvementIntrant(
@@ -143,6 +161,33 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
           quantite: m.quantite,
           reference: m.reference,
           origine: m.origine,
+          posteCible: m.posteCible,
+          appliqueIci:
+              m.origine != null &&
+              m.posteCible == moi &&
+              m.reference != null &&
+              appliquees.contains(m.reference),
+        ),
+    ];
+  }
+
+  @override
+  Future<List<EffetStockWeb>> chargerEffetsWeb({int limite = 30}) async {
+    final lignes =
+        await (_db.select(_db.effetsAppliques)
+              ..where((e) => e.origine.isNull())
+              ..orderBy([(e) => OrderingTerm.desc(e.appliqueLe)])
+              ..limit(limite))
+            .get();
+    return [
+      for (final e in lignes)
+        EffetStockWeb(
+          libelle: e.libelle,
+          etat: e.etat,
+          appliqueLe:
+              DateTime.tryParse(e.appliqueLe)?.toLocal() ?? DateTime.now(),
+          reference: e.reference,
+          avertissement: e.avertissement,
         ),
     ];
   }
@@ -611,11 +656,12 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
       final quantite = ligne.quantite.round();
       final nouveauStock = intrant.stock + quantite;
-      final nouveauPmp = nouveauStock <= 0
-          ? intrant.pmp
-          : ((intrant.stock * intrant.pmp + quantite * ligne.prixUnitaire) /
-                    nouveauStock)
-                .round();
+      final nouveauPmp = CalculPmp.apresReception(
+        stock: intrant.stock,
+        pmp: intrant.pmp,
+        quantite: quantite,
+        prixUnitaire: ligne.prixUnitaire,
+      );
 
       await (_db.update(
         _db.intrants,

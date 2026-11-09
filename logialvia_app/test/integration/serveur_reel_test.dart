@@ -25,6 +25,7 @@ import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
 import 'package:logialvia_app/core/sync/droits_poste.dart';
 import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
+import 'package:logialvia_app/core/sync/table_effets_stock_poste.dart';
 import 'package:logialvia_app/core/sync/table_poste.dart';
 import 'package:logialvia_app/administration/data/repositories/parametres_repository_drift.dart';
 import 'package:logialvia_app/commercial/data/repositories/factures_mecef_repository_drift.dart';
@@ -4252,6 +4253,7 @@ List<TablePoste> tablesDuPoste(AppDatabase db) => [
   TableAchatsPoste(db),
   TableMouvementsIntrantPoste(db),
   TableMouvementsProduitPoste(db),
+  TableEffetsStockPoste(db),
   TableFichesJourneePoste(db),
   TableVentesJourPoste(db),
   TableBandesPoste(db),

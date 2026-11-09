@@ -21,6 +21,7 @@ import '../../administration/data/tables/roles_table.dart';
 import '../../administration/data/tables/security_logs_table.dart';
 import '../../administration/data/tables/utilisateurs_table.dart';
 import '../../approvisionnement/data/tables/achats_table.dart';
+import '../sync/effets_appliques_table.dart';
 import '../../approvisionnement/data/tables/fournisseurs_table.dart';
 import '../../approvisionnement/data/tables/intrants_table.dart';
 import '../../approvisionnement/data/tables/mouvements_intrant_table.dart';
@@ -72,6 +73,8 @@ part 'app_database.g.dart';
     Roles, Utilisateurs, PermissionsRole, AuditLogs, SecurityLogs, ModulesActifs,
     ParametresEntreprise, MessagesEditeur, PreferencesPoste, Corbeille,
     DemandesReferentiel,
+    // Effets de stock délégués par le web (`47s_`)
+    EffetsAppliques,
     // Commercial
     ProduitsVendables, MouvementsProduit, Clients, Ventes, LignesVente, Devis,
     GroupesTaxe, Factures, LignesFacture,
@@ -481,6 +484,17 @@ class AppDatabase extends _$AppDatabase {
         await _ajouterColonne(m, ficheJournee, ficheJournee.variantes);
         await _ajouterColonne(m, ficheJournee, ficheJournee.resolution);
       }
+      if (from < 49) {
+        // `47s_` : stock ciblé. Une opération web désigne le poste dont le stock subit son
+        // effet (`poste_cible`, immuable) ; le journal `effets_appliques` garde ce que CE poste
+        // a appliqué (idempotence + trace). Additif, idempotent ; aucune ligne existante n'est
+        // touchée : sans poste cible, aucun effet n'a jamais lieu (comportement d'hier).
+        await _ajouterColonne(m, achats, achats.posteCible);
+        await _ajouterColonne(m, ventes, ventes.posteCible);
+        await _ajouterColonne(m, mouvementsIntrant, mouvementsIntrant.posteCible);
+        await _ajouterColonne(m, mouvementsProduit, mouvementsProduit.posteCible);
+        await _creerTable(m, effetsAppliques);
+      }
       if (from < 50) {
         // Droits et horloge (`47g_`) : un refus « Droit insuffisant » n'est JAMAIS définitif.
         // Les demandes et saisies que d'anciennes versions ont laissées en `conflict` pour ce
@@ -812,6 +826,8 @@ class AppDatabase extends _$AppDatabase {
         },
         newColumns: [
           mouvementsIntrant.origine,
+          // Colonne de la v49 : la reconstruction copie le schéma COURANT, elle doit la créer.
+          mouvementsIntrant.posteCible,
           mouvementsIntrant.syncStatus,
           mouvementsIntrant.syncMotif,
         ],
@@ -874,6 +890,8 @@ class AppDatabase extends _$AppDatabase {
         },
         newColumns: [
           achats.id,
+          // Colonne de la v49 : la reconstruction copie le schéma COURANT, elle doit la créer.
+          achats.posteCible,
           achats.syncStatus,
           achats.syncMotif,
           achats.updatedAt,
@@ -1030,6 +1048,8 @@ class AppDatabase extends _$AppDatabase {
         newColumns: [
           ventes.id,
           ventes.clientId,
+          // Colonne de la v49 : la reconstruction copie le schéma COURANT, elle doit la créer.
+          ventes.posteCible,
           ventes.syncStatus,
           ventes.syncMotif,
           ventes.updatedAt,

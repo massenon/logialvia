@@ -29,6 +29,12 @@ class MouvementsProduit extends Table {
   /// `null` = CE poste ; sinon l'identifiant du poste d'origine (historique pur).
   TextColumn get origine => text().nullable()();
 
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun. Sur une
+  /// correction saisie au web, le poste désigné applique la variation à SON stock (une fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  TextColumn get posteCible => text().nullable()();
+
   TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
   TextColumn get syncMotif => text().nullable()();
 
