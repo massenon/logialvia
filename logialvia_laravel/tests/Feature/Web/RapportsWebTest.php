@@ -9,16 +9,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\Concerns\JeuRapports;
+use App\Support\ExportXlsx;
+use Tests\Concerns\LitXlsx;
 use Tests\TestCase;
 
 /**
- * Ecran web « Rapports & États » : acces par role, onglets, periode, encart Stocks sans chiffre, export CSV
+ * Ecran web « Rapports & États » : acces par role, onglets, periode, encart Stocks sans chiffre, export XLSX
  * protege par `export-rapports`, ecarts declares. Les chiffres de chaque rapport sont verifies dans
  * `RapportsFinancesWebTest`, `RapportsTiersWebTest` et `RapportsElevageWebTest`.
  */
 class RapportsWebTest extends TestCase
 {
-    use JeuRapports, RefreshDatabase;
+    use JeuRapports, LitXlsx, RefreshDatabase;
 
     private const ONGLETS = ['recettes', 'tresorerie', 'creances', 'dettes', 'elevage', 'stocks'];
 
@@ -35,17 +37,10 @@ class RapportsWebTest extends TestCase
         return Livewire::test(Rapports::class)->set('onglet', $onglet);
     }
 
-    /** CSV telecharge : cellules, BOM retire. @return list<list<string>> */
-    private function csv(Testable $c): array
+    /** Classeur xlsx telecharge : lignes de cellules (nombre ou texte, en chaine). @return list<list<string>> */
+    private function xlsx(Testable $c): array
     {
-        $contenu = base64_decode($c->effects['download']['content']);
-        $this->assertStringStartsWith("\xEF\xBB\xBF", $contenu, 'BOM UTF-8 pour Excel');
-        $out = [];
-        foreach (explode("\n", rtrim(substr($contenu, 3), "\n")) as $ligne) {
-            $out[] = $ligne === '' ? [] : str_getcsv($ligne, ';', '"', '');
-        }
-
-        return $out;
+        return $this->lignesXlsx(base64_decode($c->effects['download']['content']));
     }
 
     // ------------------------------------------------------------------ Acces
@@ -151,7 +146,7 @@ class RapportsWebTest extends TestCase
         $this->rapport('comptable', 'stocks')->call('exporter')->assertNoFileDownloaded();
     }
 
-    // ------------------------------------------------------------------ Export CSV
+    // ------------------------------------------------------------------ Export XLSX
 
     private function poserPetitJeu(): void
     {
@@ -159,12 +154,12 @@ class RapportsWebTest extends TestCase
         $this->piece('2026-11-06 09:00:00', [['624', 400, 0], ['531', 0, 400]], 'D-1');
     }
 
-    public function test_export_csv_des_recettes_avec_les_memes_chiffres_que_l_ecran(): void
+    public function test_export_xlsx_des_recettes_avec_les_memes_chiffres_que_l_ecran(): void
     {
         $this->poserPetitJeu();
         $c = $this->rapport('comptable', 'recettes')->call('exporter');
 
-        $c->assertFileDownloaded('rapport-recettes-20261101-20261118.csv', null, 'text/csv; charset=UTF-8');
+        $c->assertFileDownloaded('rapport-recettes-20261101-20261118.xlsx', null, ExportXlsx::TYPE);
         $this->assertSame([
             ['Recettes et Dépenses'],
             ['Période', 'du 01/11/2026 au 18/11/2026'],
@@ -177,7 +172,7 @@ class RapportsWebTest extends TestCase
             ['Période', 'N° Pièce', 'Catégorie SYSCOHADA', 'Centre de Profit', 'Encaissement', 'Décaissement', 'Solde Cumulé'],
             ['Novembre 2026', 'D-1', '624 - Transports', 'Charge Générale', '0', '400', '-400'],
             ['Novembre 2026', 'V-1', '701 - Ventes de Produits Avicoles', 'Aviculture', '1000', '0', '600'],
-        ], $this->csv($c));
+        ], $this->xlsx($c));
     }
 
     public function test_l_export_suit_les_filtres_et_la_periode_de_l_ecran(): void
@@ -185,8 +180,8 @@ class RapportsWebTest extends TestCase
         $this->poserPetitJeu();
         $c = $this->rapport('comptable', 'recettes')->set('filtreCentre', 'Aviculture')->set('debut', '2026-11-05')->set('fin', '2026-11-05')->call('exporter');
 
-        $c->assertFileDownloaded('rapport-recettes-20261105-20261105.csv');
-        $lignes = $this->csv($c);
+        $c->assertFileDownloaded('rapport-recettes-20261105-20261105.xlsx');
+        $lignes = $this->xlsx($c);
         $this->assertSame(['Total Recettes', '1000'], $lignes[3]);
         $this->assertSame(['Total Dépenses', '0'], $lignes[4]);
         // Une seule ligne de detail : le centre Aviculture ce jour-la.
@@ -194,13 +189,13 @@ class RapportsWebTest extends TestCase
         $this->assertCount(10, $lignes);
     }
 
-    public function test_export_csv_de_la_tresorerie(): void
+    public function test_export_xlsx_de_la_tresorerie(): void
     {
         $this->poserPetitJeu();
         $this->piece('2026-10-01 10:00:00', [['531', 5000, 0], ['101', 0, 5000]], 'OD-1');
         $c = $this->rapport('comptable', 'tresorerie')->call('exporter');
 
-        $lignes = $this->csv($c);
+        $lignes = $this->xlsx($c);
         $this->assertSame(['État de Trésorerie'], $lignes[0]);
         $this->assertSame(['Mobile Money', '0'], $lignes[3]);
         $this->assertSame(['Caisse', '5600'], $lignes[4]);                 // 5 000 + 1 000 - 400
@@ -212,7 +207,7 @@ class RapportsWebTest extends TestCase
         $this->assertSame(['06/11/2026', 'Caisse', 'Décaissement Divers', 'Libelle D-1', '0', '400', '5600'], $lignes[11]);
     }
 
-    public function test_export_csv_des_creances_des_dettes_et_de_l_elevage(): void
+    public function test_export_xlsx_des_creances_des_dettes_et_de_l_elevage(): void
     {
         $this->client('Amina Bako', 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa');
         $this->vente(['reference' => 'V-C1', 'client' => 'Amina Bako', 'client_id' => 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa', 'status' => 'Avance',
@@ -225,34 +220,50 @@ class RapportsWebTest extends TestCase
             'updated_at' => now(), 'serveur_modifie_le' => now(),
         ])->save();
 
-        $creances = $this->csv($this->rapport('comptable', 'creances')->call('exporter'));
+        $creances = $this->xlsx($this->rapport('comptable', 'creances')->call('exporter'));
         $this->assertSame(['Créances En Cours', '30000'], $creances[3]);
         $this->assertSame(['Créances en Retard', '30000'], $creances[4]);
         $this->assertSame(['Taux de Recouvrement', '40,0 %'], $creances[6]);
         $this->assertSame(['CLI-AAAAAAAA', 'Amina Bako', 'V-C1', '02/11/2026', '10/11/2026', '50000', '20000', '30000', '8j', 'En Retard'], $creances[9]);
 
-        $dettes = $this->csv($this->rapport('comptable', 'dettes')->call('exporter'));
+        $dettes = $this->xlsx($this->rapport('comptable', 'dettes')->call('exporter'));
         $this->assertSame(['Total Dettes Fournisseurs', '50000'], $dettes[3]);
         $this->assertSame(['FRN-F1F1F1F1', 'Provenderie', 'A1', '02/11/2026', '—', '80000', '30000', '50000', 'Sans échéance'], $dettes[8]);
 
-        $elevage = $this->csv($this->rapport('comptable', 'elevage')->call('exporter'));
+        $elevage = $this->xlsx($this->rapport('comptable', 'elevage')->call('exporter'));
         $this->assertContains(['Taux Éclosion Moyen', '75,0 %'], $elevage);
         // Pintade : 01/11 + 28 jours = 29/11.
         $this->assertContains(['LOT-A', '01/11/2026', '29/11/2026', '40', '30', '75,0 %', '10', 'Éclosion Effectuée'], $elevage);
     }
 
-    public function test_le_csv_neutralise_les_formules_de_tableur(): void
+    public function test_l_export_ne_produit_jamais_de_formule_de_tableur(): void
     {
         $this->vente(['reference' => 'V-F', 'client' => '=HYPERLINK("http://x")', 'status' => 'Avance', 'total' => 100, 'paye' => 0]);
         $this->vente(['reference' => 'V-G', 'client' => '-2+3', 'status' => 'Avance', 'total' => 100, 'paye' => 0, 'date_vente' => $this->loc('2026-11-11 10:00:00')]);
-        $csv = $this->csv($this->rapport('comptable', 'creances')->call('exporter'));
+        $c = $this->rapport('comptable', 'creances')->call('exporter');
+        $octets = base64_decode($c->effects['download']['content']);
+        $lignes = $this->lignesXlsx($octets);
 
-        $clients = array_column(array_slice($csv, 9), 1);
-        $this->assertContains("'=HYPERLINK(\"http://x\")", $clients);
-        $this->assertContains("'-2+3", $clients);
-        // Les nombres negatifs restent des nombres.
+        // Texte INTACT (pas d'apostrophe) : une cellule texte n'est jamais evaluee.
+        $clients = array_column(array_slice($lignes, 9), 1);
+        $this->assertContains('=HYPERLINK("http://x")', $clients);
+        $this->assertContains('-2+3', $clients);
+        $ligne = array_search('=HYPERLINK("http://x")', array_column($lignes, 1), true);
+        $this->assertSame('inlineStr', $this->natureCellule($octets, 'B'.($ligne + 1)));
+        $zip = new \ZipArchive;
+        $chemin = tempnam(sys_get_temp_dir(), 't');
+        file_put_contents($chemin, $octets);
+        $zip->open($chemin);
+        $this->assertStringNotContainsString('<f>', (string) $zip->getFromName('xl/worksheets/sheet1.xml'));
+        $zip->close();
+        @unlink($chemin);
+
+        // Les montants negatifs sont de vrais nombres.
         $this->piece('2026-11-05 09:00:00', [['624', 400, 0], ['531', 0, 400]], 'D-1');
-        $this->assertContains('-400', $this->csv($this->rapport('comptable', 'recettes')->call('exporter'))[9]);
+        $recettes = $this->rapport('comptable', 'recettes')->call('exporter');
+        $octetsR = base64_decode($recettes->effects['download']['content']);
+        $this->assertContains('-400', $this->lignesXlsx($octetsR)[9]);
+        $this->assertSame('n', $this->natureCellule($octetsR, 'G10'));
     }
 
     public function test_l_export_exige_le_droit_export_rapports_dans_la_methode(): void
@@ -320,7 +331,7 @@ class RapportsWebTest extends TestCase
             }
         }
         $this->rapport('comptable', 'dettes')->assertSee('Annulé')->assertSee('correction à faire au poste');
-        $this->rapport('comptable', 'recettes')->assertSee('CSV')->assertSee('PDF');
+        $this->rapport('comptable', 'recettes')->assertSee('XLSX')->assertDontSee('CSV')->assertSee('PDF');
     }
 
     public function test_les_vues_n_ont_aucune_couleur_en_dur_et_n_utilisent_que_les_jetons(): void

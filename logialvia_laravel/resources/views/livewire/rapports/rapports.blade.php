@@ -1,4 +1,4 @@
-{{-- Rapports & États (Dart : `rapports_exports_screen.dart`). Lecture seule ; export CSV protégé par `export-rapports`. --}}
+{{-- Rapports & États (Dart : `rapports_exports_screen.dart`). Lecture seule ; export XLSX protégé par `export-rapports`. --}}
 @php
     $f = \App\Support\FormatComptable::class;
     // « — » pour un montant nul (Dart : `MontantRapport`).
@@ -19,7 +19,7 @@
             </div>
             @if ($peutExporter && $onglet !== 'stocks')
                 <button type="button" wire:click="exporter" data-action="exporter"
-                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Exporter (CSV)</button>
+                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Exporter (XLSX)</button>
             @endif
         </div>
     </div>

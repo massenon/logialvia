@@ -6,6 +6,7 @@ use App\Livewire\Rapports;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Concerns\JeuRapports;
+use Tests\Concerns\LitXlsx;
 use Tests\TestCase;
 
 /**
@@ -20,7 +21,7 @@ use Tests\TestCase;
  */
 class RapportsFinancesWebTest extends TestCase
 {
-    use JeuRapports, RefreshDatabase;
+    use JeuRapports, LitXlsx, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -146,8 +147,8 @@ class RapportsFinancesWebTest extends TestCase
     {
         $this->piece('2026-11-05 10:00:00', [['531', 1000.4, 0], ['701', 0, 1000.4]], 'V-1');
         $c = $this->rapport()->call('exporter');
-        $csv = explode("\n", base64_decode($c->effects['download']['content']));
-        $this->assertStringContainsString(';1000;0;1000', implode("\n", $csv));
+        $lignes = $this->lignesXlsx(base64_decode($c->effects['download']['content']));
+        $this->assertContains(['Novembre 2026', 'V-1', '701 - Ventes de Produits Avicoles', 'Aviculture', '1000', '0', '1000'], $lignes);
     }
 
     public function test_la_periode_inversee_est_remise_d_aplomb_comme_au_poste(): void

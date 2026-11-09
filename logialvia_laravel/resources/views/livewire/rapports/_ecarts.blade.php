@@ -2,7 +2,7 @@
 <aside class="rounded-lg bg-surface-zebra p-md text-xs text-outline" data-ecart="{{ $onglet }}" aria-label="Écarts avec le poste">
     <p class="mb-xs font-bold text-on-surface">Écarts avec le poste</p>
     <ul class="list-disc space-y-xs pl-md">
-        <li data-ecart-point="lecture">Lecture seule : somme des données de tous les postes. L'export est un CSV de l'onglet affiché (le poste produit un PDF).</li>
+        <li data-ecart-point="lecture">Lecture seule : somme des données de tous les postes. L'export est un classeur XLSX de l'onglet affiché (le poste produit un PDF).</li>
         @switch ($onglet)
             @case ('recettes')
                 <li data-ecart-point="piece">« N° Pièce » : première pièce de la période pour le compte (au poste, la première enregistrée localement).</li>

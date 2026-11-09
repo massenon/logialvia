@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Services\Comptabilite\LivreComptable;
 use App\Services\Rapports\CalculRapports;
 use App\Services\Rapports\RapportElevage;
+use App\Support\ExportXlsx;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -23,7 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Le STOCK et le PMP sont propres a chaque poste (decision du client, `46_` §14-§15) : l'onglet Stocks est un
  * encart grise « Disponible sur le poste », jamais un chiffre invente.
  *
- * Export : CSV de l'onglet affiche avec ses filtres (le poste produit un PDF), protege par `export-rapports`.
+ * Export : XLSX de l'onglet affiche avec ses filtres (le poste produit un PDF), protege par `export-rapports`.
  */
 #[Layout('components.layouts.app')]
 class Rapports extends Component
@@ -207,7 +208,7 @@ class Rapports extends Component
         }
     }
 
-    /** Export CSV de l'onglet affiche, avec ses filtres (le poste exporte un PDF du meme panneau). */
+    /** Export XLSX de l'onglet affiche, avec ses filtres (le poste exporte un PDF du meme panneau). */
     public function exporter(): ?StreamedResponse
     {
         abort_unless($this->peut('view-rapports') && $this->peut('export-rapports'), 403);
@@ -219,17 +220,10 @@ class Rapports extends Component
 
         [$debut, $fin] = $this->periode();
         $donnees = $this->donnees($onglet, $debut, $fin);
-        $lignes = $this->lignesCsv($onglet, $donnees, $debut, $fin);
-        $nom = 'rapport-'.$onglet.'-'.$debut->format('Ymd').'-'.$fin->format('Ymd').'.csv';
+        $lignes = $this->lignesExport($onglet, $donnees, $debut, $fin);
+        $nom = 'rapport-'.$onglet.'-'.$debut->format('Ymd').'-'.$fin->format('Ymd').'.xlsx';
 
-        return response()->streamDownload(function () use ($lignes) {
-            $sortie = fopen('php://output', 'w');
-            fwrite($sortie, "\xEF\xBB\xBF"); // BOM : Excel lit l'UTF-8
-            foreach ($lignes as $ligne) {
-                fputcsv($sortie, $ligne, ';', '"', '');
-            }
-            fclose($sortie);
-        }, $nom, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return ExportXlsx::telecharger($lignes, $nom, self::ONGLETS[$onglet]);
     }
 
     private static function n(float $v): string
@@ -248,12 +242,12 @@ class Rapports extends Component
     }
 
     /**
-     * Cellules du CSV : titre, periode, indicateurs, puis chaque tableau avec son en-tete (memes colonnes que l'ecran).
+     * Cellules de l'export : titre, periode, indicateurs, puis chaque tableau avec son en-tete (memes colonnes que l'ecran).
      *
      * @param  array<string, mixed>  $x
-     * @return list<list<string>>
+     * @return list<list<string|int>>
      */
-    private function lignesCsv(string $onglet, array $x, CarbonImmutable $debut, CarbonImmutable $fin): array
+    private function lignesExport(string $onglet, array $x, CarbonImmutable $debut, CarbonImmutable $fin): array
     {
         $n = self::n(...);
         $p = self::p(...);
@@ -338,20 +332,8 @@ class Rapports extends Component
                 break;
         }
 
-        return array_map(fn (array $ligne) => array_map(self::neutraliser(...), $ligne), $out);
-    }
-
-    /**
-     * Anti injection de formule (tableur) : un texte saisi (client, libelle, motif…) qui commence par `=`, `+`, `@`
-     * ou `-` serait evalue par Excel ; une apostrophe le rend inerte. Les nombres (`-5000`, `-3,5 %`) restent intacts.
-     */
-    private static function neutraliser(string $cellule): string
-    {
-        if ($cellule === '' || preg_match('/^-?[0-9]+(,[0-9]+)?( %)?$/', $cellule) === 1) {
-            return $cellule;
-        }
-
-        return in_array($cellule[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$cellule : $cellule;
+        // Les entiers deviennent des cellules numeriques ; le texte reste du texte (jamais evalue : pas de formule).
+        return array_map(fn (array $ligne) => array_map(ExportXlsx::typer(...), $ligne), $out);
     }
 
     public function render()
