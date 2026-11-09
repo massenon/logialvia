@@ -50,5 +50,10 @@ Route::middleware(['auth', 'compte.web'])->group(function () {
         Route::get('/parametres/postes', PostesAppairage::class)
             ->middleware('can:manage-users')
             ->name('postes');
+
+        // Journal d'audit du serveur (lecture seule, droit `manage-users`) : doc 47u §2.
+        Route::get('/parametres/audit', \App\Livewire\JournalAudit::class)
+            ->middleware('can:manage-users')
+            ->name('audit');
     });
 });

@@ -23,3 +23,58 @@
         @apply bg-surface-bg font-sans text-body text-on-surface;
     }
 }
+
+/* Vues imprimables (doc 47u §6) : « Imprimer / PDF » ouvre la boite d'impression du navigateur.
+   Menu, barre du haut, boutons et filtres (`no-print`) disparaissent ; le contenu prend la page. */
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    .no-print,
+    aside[aria-label='Navigation'],
+    body > div > div > header {
+        display: none !important;
+    }
+
+    body {
+        background: #fff !important;
+    }
+
+    main {
+        padding: 0 !important;
+    }
+
+    /* Un tableau tient dans la largeur de la page, sans defilement cache. */
+    .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr,
+    article {
+        break-inside: avoid;
+    }
+
+    /* Le tableau (>= 640 px) est imprime ; les cartes de petit ecran non. */
+    [data-vue='cartes'] {
+        display: none !important;
+    }
+
+    .hidden.sm\:block {
+        display: block !important;
+    }
+
+    a {
+        color: inherit !important;
+        text-decoration: none !important;
+    }
+}

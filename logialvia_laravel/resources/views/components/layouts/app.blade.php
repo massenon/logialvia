@@ -41,6 +41,10 @@
                        class="block rounded-lg px-sm py-xs text-sm {{ $chemin === '/parametres/postes' ? 'bg-brand-navy-dark font-bold text-brand-gold-light' : 'text-white/90 hover:bg-brand-navy-dark' }}">
                         Postes &amp; Appairage
                     </a>
+                    <a href="{{ route('audit') }}"
+                       class="block rounded-lg px-sm py-xs text-sm {{ $chemin === '/parametres/audit' ? 'bg-brand-navy-dark font-bold text-brand-gold-light' : 'text-white/90 hover:bg-brand-navy-dark' }}">
+                        Journal d'Audit
+                    </a>
                 @endcan
             </nav>
         </aside>

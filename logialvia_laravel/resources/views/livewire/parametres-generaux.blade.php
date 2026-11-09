@@ -2,9 +2,14 @@
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
         <h1 class="text-page-title font-bold">Paramètres Généraux</h1>
         @can('manage-users')
-            <a href="{{ route('postes') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
-                Postes &amp; Appairage
-            </a>
+            <div class="flex gap-sm">
+                <a href="{{ route('audit') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
+                    Journal d'Audit
+                </a>
+                <a href="{{ route('postes') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
+                    Postes &amp; Appairage
+                </a>
+            </div>
         @endcan
     </div>
 
