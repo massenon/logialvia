@@ -194,8 +194,7 @@ class ServiceAppairage {
     if (reponse.statusCode == 401) {
       // Jeton révoqué ou expiré : on l'oublie, le poste redemande une connexion
       // (blueprint §2). Les saisies locales ne sont pas touchées.
-      await depot.effacer();
-      await preferences.oublierAppairage();
+      await oublierLocalement();
       return const ResultatAppairage(
         IssueAppairage.revoque,
         'Ce poste n\'est plus appairé : le jeton a été révoqué ou a expiré. '
@@ -217,6 +216,13 @@ class ServiceAppairage {
       'Connexion réussie — poste $code.',
       codePoste: code is String ? code : null,
     );
+  }
+
+  /// Le serveur a répondu 401 : le jeton est mort. Le poste l'oublie et redemande
+  /// une connexion ; ses saisies locales ne sont pas touchées.
+  Future<void> oublierLocalement() async {
+    await depot.effacer();
+    await preferences.oublierAppairage();
   }
 
   /// Rompt l'appairage. Le jeton local est **toujours** effacé ; le serveur est

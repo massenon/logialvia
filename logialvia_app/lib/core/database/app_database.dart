@@ -36,6 +36,7 @@ import '../../elevage/data/tables/fiche_ventes_jour_table.dart';
 import '../../elevage/data/tables/infirmerie_table.dart';
 import '../../elevage/data/tables/parametres_elevage_tables.dart';
 import '../../elevage/data/tables/soins_calendrier_table.dart';
+import '../sync/identifiant_poste.dart';
 
 part 'app_database.g.dart';
 
@@ -95,7 +96,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 30;
+  static const int versionSchema = 31;
 
   @override
   int get schemaVersion => versionSchema;
@@ -378,6 +379,14 @@ class AppDatabase extends _$AppDatabase {
         // classes pour cette filiere n'est pas touchee.
         await ParametresElevageSeeder.ajouterTauxPoidsParDefaut(this);
       }
+      if (from < 31) {
+        // DV-19, palier 1 : `clients` passe en UUID et recoit les colonnes de
+        // synchronisation. Aucune autre table ne reference `clients.id`
+        // (les ventes retiennent le NOM du client), la reconstruction est donc
+        // sans cascade. Les clients existants deviennent `pending` : le serveur
+        // ne les a jamais vus, ils partent au premier envoi.
+        await _clientsEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -417,6 +426,38 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _creerTable(Migrator m, TableInfo table) async {
     if (await _tableExiste(table.actualTableName)) return;
     await m.createTable(table);
+  }
+
+  /// Reconstruit `clients` en UUID. Idempotent : une base dont `clients.id` est
+  /// deja du texte (version estampillee a tort, restauration) est laissee telle
+  /// quelle.
+  Future<void> _clientsEnUuid(Migrator m) async {
+    final colonnes = await customSelect('PRAGMA table_info("clients")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT') {
+      return;
+    }
+
+    // UUID v4 calcule par SQLite : une ligne = un UUID distinct.
+    const uuidSql =
+        "lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || "
+        "'-4' || substr(lower(hex(randomblob(2))), 2) || '-' || "
+        "substr('89ab', abs(random()) % 4 + 1, 1) || "
+        "substr(lower(hex(randomblob(2))), 2) || '-' || "
+        "lower(hex(randomblob(6)))";
+
+    await m.alterTable(
+      TableMigration(
+        clients,
+        columnTransformer: {
+          clients.id: const CustomExpression<String>(uuidSql),
+          clients.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+          ),
+        },
+        newColumns: [clients.syncStatus, clients.syncMotif, clients.updatedAt],
+      ),
+    );
   }
 
   Future<bool> _colonneExiste(String table, String colonne) async {

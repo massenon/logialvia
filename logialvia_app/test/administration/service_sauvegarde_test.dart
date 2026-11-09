@@ -156,7 +156,7 @@ void main() {
 
     test('une valeur contenant un point-virgule est échappée', () async {
       await db.customStatement(
-        "INSERT INTO clients (nom, telephone) VALUES ('DUPONT; Marie', '97')",
+        "INSERT INTO clients (id, nom, telephone, updated_at) VALUES ('11111111-1111-4111-8111-111111111111', 'DUPONT; Marie', '97', '2026-11-09T09:00:00.000Z')",
       );
       final export = await service.exporterTable('clients');
       final contenu = await File(export.chemin).readAsString();

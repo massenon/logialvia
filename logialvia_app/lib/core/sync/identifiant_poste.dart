@@ -13,3 +13,15 @@ String genererUuidV4([Random? alea]) {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
+
+/// `clientDefault` de Drift : un UUID neuf par ligne créée au poste (DV-19).
+String nouvelUuid() => genererUuidV4();
+
+/// Instant de **saisie** (UTC, microsecondes) : `updated_at` des tables
+/// synchronisées. Jamais l'instant d'envoi (`46_` §1) : un poste hors ligne
+/// trois jours ne doit pas battre une saisie plus récente faite ailleurs.
+///
+/// Texte ISO 8601 et non `DateTimeColumn` : Drift stocke les dates à la
+/// seconde, trop grossier pour « dernier écrivain gagne ».
+String instantSaisie([DateTime? maintenant]) =>
+    (maintenant ?? DateTime.now()).toUtc().toIso8601String();

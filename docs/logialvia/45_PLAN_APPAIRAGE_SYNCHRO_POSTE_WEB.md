@@ -86,6 +86,18 @@ temporaire).
 
 **Limites connues** : testé contre un **faux serveur** qui rejoue les réponses de `AuthController` ; l'essai contre le vrai serveur Laravel reste à faire (dernière étape). Restaurer une sauvegarde sur une **autre machine** copie l'identifiant du poste : il faudra proposer de le régénérer (`TODO(dette)`). Le manuel utilisateur ne décrit pas encore l'onglet.
 
+## 6d. Palier 1 de la migration UUID et premier moteur de synchronisation du poste
+
+**Fait (09/11/2026)** — table `clients`, de bout en bout :
+
+- **Schéma v31** : `clients.id` passe en UUID (texte) ; colonnes `sync_status` (`pending`/`synced`/`conflict`), `sync_motif`, `updated_at` (instant de **saisie**, texte ISO 8601 UTC à la microseconde : Drift stocke les dates à la seconde, trop grossier pour « dernier écrivain gagne »). `device_id` n'est pas stocké : le serveur le déduit du jeton. Migration testée sur une **vraie base v30** (UUID distincts, données conservées, clients existants `pending`, rejouable sans changer un UUID). Aucune autre table ne référence `clients.id` (les ventes retiennent le nom du client) : la reconstruction est sans cascade.
+- **Moteur** (`lib/core/sync/moteur_synchronisation.dart`) : pull puis push, curseur du serveur avancé à la dernière page seulement, tirage paginé à borne `until`, lots d'envoi de 100, accusé qui ne marque `synced` que si la ligne n'a pas bougé depuis l'envoi, refus → `conflict` avec le motif du serveur, 401 → jeton oublié (saisies conservées), hors ligne ≠ erreur, remise à zéro du serveur → purge et décompte des saisies non envoyées perdues, une seule synchronisation à la fois. Brancher une table = écrire une `TablePoste`.
+- **Règle d'absorption** : une ligne locale non envoyée n'est écrasée que si la version du serveur est **strictement plus récente** (même règle que le serveur). *Défaut trouvé et corrigé en écrivant les tests* : avec « jamais écrasée », un poste gardait une saisie que le serveur avait ignorée comme trop ancienne, la croyait synchronisée, et ne convergeait jamais.
+- **Écran** : bouton « Synchroniser maintenant » dans l'onglet Appairage, avec rapport chiffré ; le bandeau dit que seuls les clients sont synchronisés.
+- **Tests** : 52 sur le moteur, contre un faux serveur qui rejoue la **logique** du serveur (arbitrage, curseur, pagination, marque), 13 mutations vérifiées ; **5 essais contre le vrai serveur Laravel** (appairage, deux postes, saisie ancienne en retard, refus avec le vrai motif, révocation) — `test/integration/serveur_reel_test.dart`.
+
+**Limites** : seule `clients` est branchée ; les référentiels tirés par le serveur (`modules_actifs`, `parametres_entreprise`) sont ignorés par le poste (palier suivant) ; pas de synchronisation automatique (déclencheurs, demande du serveur `GET /sync/demande` non interrogée) ; la suppression d'un client n'existe pas au poste ; les ventes retiennent le NOM du client (un homonyme est indiscernable : à traiter au palier des ventes).
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,
@@ -131,9 +143,9 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | **fait** (09/11/2026) pour 3 tables (référentiels + clients), 129 tests, mutations vérifiées ; voir `46_` §6. W3b livré aussi (demandes, resynchronisation, remise à zéro ; 144 tests) ; reste `POST /sync/demandes` et les 35 autres tables, voir `46_` §7 |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
-| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |
+| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **palier 1 fait** (`clients`, schéma v31, 09/11/2026) ; voir §6d. Restent 21 fichiers de tables |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
-| P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | en attente |
+| P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait pour `clients`** (§6d) ; reste les autres tables, la synchronisation automatique et la modale |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait

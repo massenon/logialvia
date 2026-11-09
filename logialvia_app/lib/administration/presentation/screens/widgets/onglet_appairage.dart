@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/formatage/formats.dart';
+import '../../../../core/sync/moteur_synchronisation.dart';
 import '../../../../core/sync/service_appairage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -75,6 +76,10 @@ class OngletAppairage extends StatelessWidget {
           _CarteAppaire(vm: vm)
         else
           _FormulaireAppairage(vm: vm, adresseInitiale: etat.adresse ?? ''),
+        if (vm.dernierRapport != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          _MessageSynchro(rapport: vm.dernierRapport!),
+        ],
         if (vm.dernierResultat != null) ...[
           const SizedBox(height: AppSpacing.md),
           _Message(resultat: vm.dernierResultat!),
@@ -96,9 +101,9 @@ class _BandeauEtat extends StatelessWidget {
             AppColors.successContainer,
             AppColors.successDeep,
             Symbols.link,
-            'Poste appairé au serveur (code ${etat.codePoste}). La '
-                'synchronisation des données n\'est pas encore active sur ce '
-                'poste : l\'appairage prépare seulement la liaison.',
+            'Poste appairé au serveur (code ${etat.codePoste}). Pour '
+                'l\'instant, seuls les CLIENTS sont synchronisés ; les autres '
+                'données restent sur ce poste, branchées une à une.',
           )
         : (
             AppColors.surfaceZebra,
@@ -200,6 +205,44 @@ class _Message extends StatelessWidget {
       ),
       child: Text(
         resultat.message,
+        style: _texte.copyWith(
+          color: teinte,
+          height: 1.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageSynchro extends StatelessWidget {
+  const _MessageSynchro({required this.rapport});
+
+  final RapportSynchronisation rapport;
+
+  @override
+  Widget build(BuildContext context) {
+    final bon = rapport.reussie && rapport.refusees == 0;
+    final neutre = rapport.issue == IssueSynchronisation.horsLigne;
+    final teinte = bon
+        ? AppColors.successDeep
+        : neutre
+        ? AppColors.onSurface
+        : AppColors.errorDeep;
+    final fond = bon
+        ? AppColors.successContainer
+        : neutre
+        ? AppColors.surfaceZebra
+        : AppColors.errorContainer;
+    return Container(
+      key: const Key('synchro-message'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: fond,
+        borderRadius: AppRadius.cardRadius,
+      ),
+      child: Text(
+        rapport.message,
         style: _texte.copyWith(
           color: teinte,
           height: 1.5,
@@ -401,6 +444,16 @@ class _CarteAppaire extends StatelessWidget {
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,
         children: [
+          if (vm.peutSynchroniser)
+            AppButton(
+              label: vm.synchronisationEnCours
+                  ? 'Synchronisation…'
+                  : 'Synchroniser maintenant',
+              icon: Symbols.sync,
+              onPressed: vm.occupe || vm.synchronisationEnCours
+                  ? null
+                  : vm.synchroniser,
+            ),
           AppButton(
             label: vm.occupe ? 'Test en cours…' : 'Tester la connexion',
             icon: Symbols.wifi_find,

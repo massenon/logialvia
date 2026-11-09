@@ -20,6 +20,8 @@ class PreferencesPosteRepository {
   static const String _cleCodePoste = 'sync.code_poste';
   static const String _cleCompteAppaire = 'sync.compte';
   static const String _cleAppaireLe = 'sync.appaire_le';
+  static const String _cleCurseurTirage = 'sync.curseur';
+  static const String _cleMarqueRemiseAZero = 'sync.marque_remise_a_zero';
 
   Future<String?> _lire(String cle) async {
     final ligne = await (_db.select(
@@ -142,4 +144,22 @@ class PreferencesPosteRepository {
     await _ecrire(_cleCompteAppaire, null);
     await _ecrire(_cleAppaireLe, null);
   }
+
+  // ---------------------------------------------------------- Synchronisation
+
+  /// `server_time` de la **dernière page** du dernier tirage complet — rendu par
+  /// le SERVEUR, jamais l'horloge du poste (trop lente : on re-reçoit tout ;
+  /// trop rapide : on saute des lignes). `null` : le prochain tirage est complet.
+  Future<String?> curseurTirage() => _lire(_cleCurseurTirage);
+
+  Future<void> definirCurseurTirage(String? curseur) =>
+      _ecrire(_cleCurseurTirage, curseur);
+
+  /// Marque de remise à zéro connue du poste (`46_` §4.2). `null` jusqu'au
+  /// premier tirage ; un envoi la porte, le serveur refuse (409) toute marque
+  /// qu'il ne reconnaît pas.
+  Future<String?> marqueRemiseAZero() => _lire(_cleMarqueRemiseAZero);
+
+  Future<void> definirMarqueRemiseAZero(String marque) =>
+      _ecrire(_cleMarqueRemiseAZero, marque);
 }

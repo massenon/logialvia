@@ -148,3 +148,7 @@ Précisions apportées au §4 :
 - Tests : `DemandesEtRemiseAZeroTest` (15), six gardes vérifiés par mutation.
 
 **Reste côté serveur** : `POST /api/sync/demandes` (modification d'un référentiel faite au poste, rejouée par le serveur) — non fait, car il suppose les règles métier des référentiels côté web (W4+) ; en attendant le poste ne modifie ses référentiels que via le serveur ou les ignore. Les 35 autres tables sont à brancher une par une. Écran web « Synchroniser / Renvoyer » : à ajouter à la page Postes.
+
+## 8. Règle d'absorption côté poste (précision, 09/11/2026)
+
+Le serveur arbitre par **dernier écrivain gagne, à l'instant de saisie**. Le poste applique la **même règle** quand il absorbe une ligne tirée : une ligne locale `pending` ou `conflict` n'est remplacée que si l'instant de saisie du serveur est **strictement supérieur** ; à instant égal ou plus ancien, la saisie locale est conservée et part à l'envoi. Sinon le poste garderait une saisie que le serveur a ignorée comme trop ancienne, la marquerait `synced`, et ne convergerait jamais (le curseur est déjà passé). Vérifié contre le vrai serveur (`45_` §6d). Le poste dit combien de saisies locales ont été remplacées.

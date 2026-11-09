@@ -7,12 +7,17 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:logialvia_app/administration/data/repositories/preferences_poste_repository.dart';
+import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
+import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
+import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
 import 'package:logialvia_app/administration/presentation/screens/widgets/onglet_appairage.dart';
 import 'package:logialvia_app/administration/presentation/viewmodels/appairage_view_model.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
 import 'package:provider/provider.dart';
+
+import '../core/sync/faux_serveur_sync.dart';
 
 /// L'onglet Appairage, de la saisie à l'état affiché, contre un faux serveur.
 void main() {
@@ -21,6 +26,7 @@ void main() {
   late AppairageViewModel vm;
   late List<http.Request> requetes;
   late Future<http.Response> Function(http.Request) serveur;
+  late FauxServeurSync fauxSync;
 
   http.Response json(int s, Map<String, dynamic> c) => http.Response(
     jsonEncode(c),
@@ -34,19 +40,33 @@ void main() {
     db = AppDatabase.enMemoire();
     depot = DepotJetonSyncMemoire();
     requetes = [];
+    fauxSync = FauxServeurSync();
     serveur = (_) async => json(200, {
       'token': '1|jeton',
       'must_change_password': false,
       'poste': {'id': 'x', 'code': 'P3'},
     });
+    final preferences = PreferencesPosteRepository(db);
+    final client = MockClient((r) {
+      requetes.add(r);
+      if (r.url.path.startsWith('/api/sync/')) {
+        return fauxSync.repondre(r);
+      }
+      return serveur(r);
+    });
+    final appairage = ServiceAppairage(
+      preferences: preferences,
+      depot: depot,
+      client: client,
+    );
     vm = AppairageViewModel(
-      ServiceAppairage(
-        preferences: PreferencesPosteRepository(db),
+      appairage,
+      MoteurSynchronisationPoste(
+        preferences: preferences,
         depot: depot,
-        client: MockClient((r) {
-          requetes.add(r);
-          return serveur(r);
-        }),
+        appairage: appairage,
+        tables: [TableClientsPoste(db)],
+        client: client,
       ),
     );
     await vm.charger();
@@ -118,7 +138,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('n\'est pas encore active'),
+      find.textContaining('seuls les CLIENTS sont synchronisés'),
       findsOneWidget,
       reason: 'appairé ne doit pas être pris pour synchronisé',
     );
@@ -237,4 +257,42 @@ void main() {
       expect(find.text('Appairer ce poste'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Synchroniser maintenant : envoie les clients et dit le résultat',
+    (t) async {
+      await afficher(t);
+      await saisir(t);
+      await t.tap(find.text('Appairer'));
+      await t.pumpAndSettle();
+      await ClientsRepositoryDrift(db).creerClient(nom: 'Mama Rita');
+
+      await t.tap(find.text('Synchroniser maintenant'));
+      await t.pumpAndSettle();
+
+      expect(find.byKey(const Key('synchro-message')), findsOneWidget);
+      expect(find.textContaining('Synchronisation terminée'), findsOneWidget);
+      expect(find.textContaining('1 envoyée(s)'), findsOneWidget);
+      expect(fauxSync.clients, hasLength(1));
+    },
+  );
+
+  testWidgets('hors ligne : la synchronisation le dit sans erreur rouge', (
+    t,
+  ) async {
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+    fauxSync.horsLigne = true;
+
+    await t.tap(find.text('Synchroniser maintenant'));
+    await t.pumpAndSettle();
+
+    expect(
+      find.textContaining('hors ligne, tout reste à envoyer'),
+      findsOneWidget,
+    );
+    expect(t.takeException(), isNull);
+  });
 }

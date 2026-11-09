@@ -50,7 +50,7 @@ void main() {
     await db.customSelect('SELECT 1').get();
     if (marque != null) {
       await db.customStatement(
-        "INSERT INTO clients (nom, telephone) VALUES ('$marque', '97')",
+        "INSERT INTO clients (id, nom, telephone, updated_at) VALUES ('22222222-2222-4222-8222-222222222222', '$marque', '97', '2026-11-09T09:00:00.000Z')",
       );
     }
     await db.close();

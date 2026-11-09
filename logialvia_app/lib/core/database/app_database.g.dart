@@ -5467,16 +5467,13 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
   $ClientsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _nomMeta = const VerificationMeta('nom');
   @override
@@ -5534,6 +5531,41 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5542,6 +5574,9 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
     soldeCreance,
     dateNaissance,
     dernierContact,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5599,6 +5634,24 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -5609,7 +5662,7 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ClientRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       nom: attachedDatabase.typeMapping.read(
@@ -5632,6 +5685,18 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}dernier_contact'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -5642,7 +5707,10 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
 }
 
 class ClientRow extends DataClass implements Insertable<ClientRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46_`) : jamais un entier auto-incremente,
+  /// que deux postes attribueraient chacun de leur cote. Les anciennes lignes
+  /// recoivent le leur a la migration v31.
+  final String id;
   final String nom;
   final String? telephone;
 
@@ -5662,6 +5730,15 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
 
   /// ⚠️ AJOUTEE — colonne « Dernier Contact » du tableau CRM (l.251).
   final DateTime? dernierContact;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const ClientRow({
     required this.id,
     required this.nom,
@@ -5669,11 +5746,14 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     required this.soldeCreance,
     this.dateNaissance,
     this.dernierContact,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['nom'] = Variable<String>(nom);
     if (!nullToAbsent || telephone != null) {
       map['telephone'] = Variable<String>(telephone);
@@ -5685,6 +5765,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     if (!nullToAbsent || dernierContact != null) {
       map['dernier_contact'] = Variable<DateTime>(dernierContact);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -5702,6 +5787,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
       dernierContact: dernierContact == null && nullToAbsent
           ? const Value.absent()
           : Value(dernierContact),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -5711,34 +5801,43 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ClientRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       nom: serializer.fromJson<String>(json['nom']),
       telephone: serializer.fromJson<String?>(json['telephone']),
       soldeCreance: serializer.fromJson<double>(json['soldeCreance']),
       dateNaissance: serializer.fromJson<DateTime?>(json['dateNaissance']),
       dernierContact: serializer.fromJson<DateTime?>(json['dernierContact']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'nom': serializer.toJson<String>(nom),
       'telephone': serializer.toJson<String?>(telephone),
       'soldeCreance': serializer.toJson<double>(soldeCreance),
       'dateNaissance': serializer.toJson<DateTime?>(dateNaissance),
       'dernierContact': serializer.toJson<DateTime?>(dernierContact),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   ClientRow copyWith({
-    int? id,
+    String? id,
     String? nom,
     Value<String?> telephone = const Value.absent(),
     double? soldeCreance,
     Value<DateTime?> dateNaissance = const Value.absent(),
     Value<DateTime?> dernierContact = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => ClientRow(
     id: id ?? this.id,
     nom: nom ?? this.nom,
@@ -5750,6 +5849,9 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     dernierContact: dernierContact.present
         ? dernierContact.value
         : this.dernierContact,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   ClientRow copyWithCompanion(ClientsCompanion data) {
     return ClientRow(
@@ -5765,6 +5867,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
       dernierContact: data.dernierContact.present
           ? data.dernierContact.value
           : this.dernierContact,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -5776,7 +5883,10 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
           ..write('telephone: $telephone, ')
           ..write('soldeCreance: $soldeCreance, ')
           ..write('dateNaissance: $dateNaissance, ')
-          ..write('dernierContact: $dernierContact')
+          ..write('dernierContact: $dernierContact, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -5789,6 +5899,9 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     soldeCreance,
     dateNaissance,
     dernierContact,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -5799,16 +5912,23 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
           other.telephone == this.telephone &&
           other.soldeCreance == this.soldeCreance &&
           other.dateNaissance == this.dateNaissance &&
-          other.dernierContact == this.dernierContact);
+          other.dernierContact == this.dernierContact &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ClientsCompanion extends UpdateCompanion<ClientRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> nom;
   final Value<String?> telephone;
   final Value<double> soldeCreance;
   final Value<DateTime?> dateNaissance;
   final Value<DateTime?> dernierContact;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const ClientsCompanion({
     this.id = const Value.absent(),
     this.nom = const Value.absent(),
@@ -5816,6 +5936,10 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     this.soldeCreance = const Value.absent(),
     this.dateNaissance = const Value.absent(),
     this.dernierContact = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ClientsCompanion.insert({
     this.id = const Value.absent(),
@@ -5824,14 +5948,22 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     this.soldeCreance = const Value.absent(),
     this.dateNaissance = const Value.absent(),
     this.dernierContact = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : nom = Value(nom);
   static Insertable<ClientRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? nom,
     Expression<String>? telephone,
     Expression<double>? soldeCreance,
     Expression<DateTime>? dateNaissance,
     Expression<DateTime>? dernierContact,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5840,16 +5972,24 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
       if (soldeCreance != null) 'solde_creance': soldeCreance,
       if (dateNaissance != null) 'date_naissance': dateNaissance,
       if (dernierContact != null) 'dernier_contact': dernierContact,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ClientsCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? nom,
     Value<String?>? telephone,
     Value<double>? soldeCreance,
     Value<DateTime?>? dateNaissance,
     Value<DateTime?>? dernierContact,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return ClientsCompanion(
       id: id ?? this.id,
@@ -5858,6 +5998,10 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
       soldeCreance: soldeCreance ?? this.soldeCreance,
       dateNaissance: dateNaissance ?? this.dateNaissance,
       dernierContact: dernierContact ?? this.dernierContact,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -5865,7 +6009,7 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (nom.present) {
       map['nom'] = Variable<String>(nom.value);
@@ -5882,6 +6026,18 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     if (dernierContact.present) {
       map['dernier_contact'] = Variable<DateTime>(dernierContact.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -5893,7 +6049,11 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
           ..write('telephone: $telephone, ')
           ..write('soldeCreance: $soldeCreance, ')
           ..write('dateNaissance: $dateNaissance, ')
-          ..write('dernierContact: $dernierContact')
+          ..write('dernierContact: $dernierContact, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -23901,21 +24061,29 @@ typedef $$ProduitsVendablesTableProcessedTableManager =
     >;
 typedef $$ClientsTableCreateCompanionBuilder =
     ClientsCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String nom,
       Value<String?> telephone,
       Value<double> soldeCreance,
       Value<DateTime?> dateNaissance,
       Value<DateTime?> dernierContact,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$ClientsTableUpdateCompanionBuilder =
     ClientsCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> nom,
       Value<String?> telephone,
       Value<double> soldeCreance,
       Value<DateTime?> dateNaissance,
       Value<DateTime?> dernierContact,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$ClientsTableFilterComposer
@@ -23927,7 +24095,7 @@ class $$ClientsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -23956,6 +24124,21 @@ class $$ClientsTableFilterComposer
     column: $table.dernierContact,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ClientsTableOrderingComposer
@@ -23967,7 +24150,7 @@ class $$ClientsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -23996,6 +24179,21 @@ class $$ClientsTableOrderingComposer
     column: $table.dernierContact,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClientsTableAnnotationComposer
@@ -24007,7 +24205,7 @@ class $$ClientsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -24030,6 +24228,17 @@ class $$ClientsTableAnnotationComposer
     column: $table.dernierContact,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$ClientsTableTableManager
@@ -24060,12 +24269,16 @@ class $$ClientsTableTableManager
               $$ClientsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<String?> telephone = const Value.absent(),
                 Value<double> soldeCreance = const Value.absent(),
                 Value<DateTime?> dateNaissance = const Value.absent(),
                 Value<DateTime?> dernierContact = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ClientsCompanion(
                 id: id,
                 nom: nom,
@@ -24073,15 +24286,23 @@ class $$ClientsTableTableManager
                 soldeCreance: soldeCreance,
                 dateNaissance: dateNaissance,
                 dernierContact: dernierContact,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String nom,
                 Value<String?> telephone = const Value.absent(),
                 Value<double> soldeCreance = const Value.absent(),
                 Value<DateTime?> dateNaissance = const Value.absent(),
                 Value<DateTime?> dernierContact = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ClientsCompanion.insert(
                 id: id,
                 nom: nom,
@@ -24089,6 +24310,10 @@ class $$ClientsTableTableManager
                 soldeCreance: soldeCreance,
                 dateNaissance: dateNaissance,
                 dernierContact: dernierContact,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

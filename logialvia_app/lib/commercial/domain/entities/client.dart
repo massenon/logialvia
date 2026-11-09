@@ -10,7 +10,8 @@ class Client {
     this.soldeActuel = 0,
   });
 
-  final int id;
+  /// UUID (DV-19).
+  final String id;
   final String nom;
   final String? telephone;
   final DateTime? dateNaissance;

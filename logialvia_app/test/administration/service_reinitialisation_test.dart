@@ -57,8 +57,13 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO clients (nom, telephone) VALUES (?, ?)',
-      ['AGOSSOU Prudence', '97000000'],
+      'INSERT INTO clients (id, nom, telephone, updated_at) VALUES (?, ?, ?, ?)',
+      [
+        '44444444-4444-4444-8444-444444444444',
+        'AGOSSOU Prudence',
+        '97000000',
+        '2026-11-09T09:00:00.000Z',
+      ],
     );
   }
 
