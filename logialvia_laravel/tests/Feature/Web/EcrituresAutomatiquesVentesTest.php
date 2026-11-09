@@ -231,6 +231,9 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         // paye > total : jamais de creance negative.
         $l = Ecritures::lignesVente('V', 'Espèces', 1000, 1500, [['compte' => '701', 'axe' => null, 'montant' => 1000.0]]);
         $this->assertSame(['531', '701'], array_column($l, 'compte'));
+        // Un paye negatif (donnee corrompue) ne debite jamais 411 de plus que le total.
+        $l = Ecritures::lignesVente('V', 'Espèces', 1000, -100, [['compte' => '701', 'axe' => null, 'montant' => 1000.0]]);
+        $this->assertSame(1000.0, collect($l)->firstWhere('compte', '411')['debit']);
         // Un centre inconnu ne rattache rien (jamais arbitrairement).
         $this->assertSame(['701', null], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => 'dragons'])));
         $this->assertSame(['701', null], Ecritures::cleDeVentilation(null));

@@ -241,6 +241,19 @@ class CommerceWebTest extends TestCase
         $this->assertSame(0, Vente::query()->count());
     }
 
+    public function test_un_produit_archive_n_est_plus_vendable_meme_par_un_appel_direct(): void
+    {
+        $p = $this->produit();
+        $p->update(['archive_le' => now()]);
+        $service = new \App\Services\Commerce\VentesWeb($this->caissier());
+
+        $this->assertSame('Ce produit n\'est plus au catalogue.', $service->encaisser([
+            'mode' => 'Espèces', 'condition' => 'Comptant', 'montant_recu' => 100,
+            'lignes' => [['produit_id' => $p->id, 'qte' => 1, 'montant' => 100]],
+        ])['motif']);
+        $this->assertSame(0, Vente::query()->count());
+    }
+
     public function test_encaissement_comptant_ecrit_la_vente_ses_lignes_ses_ecritures_et_aucun_stock(): void
     {
         $p = $this->produit('Goliath mature', 6000, ['price_max' => 7500]);
@@ -397,6 +410,14 @@ class CommerceWebTest extends TestCase
 
         $this->assertSame(1, FicheVentesJour::query()->where('device_id', Catalogue::POSTE_WEB)->sole()->qte);
         $this->assertSame(5, FicheVentesJour::query()->where('device_id', $poste)->sole()->qte);
+    }
+
+    public function test_annuler_une_vente_du_web_sans_ligne_de_compteur_n_en_cree_pas(): void
+    {
+        $this->vendre($this->caisse());
+        FicheVentesJour::query()->delete(); // compteur remis a zero ailleurs
+        $this->assertNull((new \App\Services\Commerce\VentesWeb($this->caissier()))->annuler(Vente::query()->value('id'), 'Autre'));
+        $this->assertSame(0, FicheVentesJour::query()->count());
     }
 
     public function test_le_compteur_ne_descend_jamais_sous_zero(): void
@@ -639,6 +660,22 @@ class CommerceWebTest extends TestCase
         $this->assertSame('Cette vente est déjà soldée : il n\'y a rien à recouvrer.', $service->recouvrer($v->id, 100, 'Espèces'));
         $annulee = $this->venteDePoste(['reference' => 'V-P1-2026-050', 'status' => 'Annulée', 'total' => 100, 'paye' => 0], false);
         $this->assertSame('Une vente annulée ne peut pas être encaissée.', $service->recouvrer($annulee->id, 10, 'Espèces'));
+    }
+
+    public function test_une_vente_payee_n_est_pas_une_creance_meme_si_ses_montants_sont_incoherents(): void
+    {
+        $v = $this->venteDePoste(['status' => 'Payée', 'total' => 6000, 'paye' => 0]);
+        $this->assertSame('Cette vente est déjà soldée : il n\'y a rien à recouvrer.',
+            (new \App\Services\Commerce\VentesWeb($this->caissier()))->recouvrer($v->id, 100, 'Espèces'));
+        $this->assertSame(0.0, $v->fresh()->paye);
+    }
+
+    public function test_solder_ecrit_exactement_le_total_meme_quand_la_somme_flottante_differe(): void
+    {
+        $v = $this->venteDePoste(['status' => 'Avance', 'total' => 0.3, 'paye' => 0.1]);
+        $this->assertNull((new \App\Services\Commerce\VentesWeb($this->caissier()))->recouvrer($v->id, 0.2, 'Espèces'));
+        $v->refresh();
+        $this->assertSame([0.3, 'Payée'], [$v->paye, $v->status]); // 0.1 + 0.2 = 0.30000000000000004
     }
 
     public function test_le_montant_exact_du_reste_du_solde_sans_reste_flottant(): void
