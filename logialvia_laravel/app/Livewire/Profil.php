@@ -11,7 +11,7 @@ use Livewire\Attributes\Layout;
  * et changement de mot de passe. Ouvert a TOUT compte connecte.
  *
  * Le changement de mot de passe est celui de `ChangerMotDePasse` (heritage) : AUCUNE regle reecrite
- * (mot de passe actuel verifie, 10 caracteres minimum, confirmation, jetons des postes revoques, audit).
+ * (mot de passe actuel verifie, regle du Dart : 8 caracteres, 1 majuscule, 1 chiffre, confirmation, jetons des postes revoques, audit).
  * Ecarts declares : ni journal d'audit personnel, ni « derniere connexion » / nombre de connexions
  * (le serveur ne garde que la connexion en cours : il n'a pas l'historique que tient le poste).
  */

@@ -28,7 +28,7 @@
                                class="w-full rounded-lg border border-outline-variant bg-surface-card px-sm py-sm text-xs">
                     </div>
                 @endforeach
-                <p class="text-caption text-outline">10 caractères minimum.</p>
+                <p class="text-caption text-outline">{{ \App\Support\RegleMotDePasse::INDICATION }}.</p>
 
                 @if ($erreur)
                     <p role="alert" class="rounded-lg bg-error-container p-sm text-xs text-error-deep">{{ $erreur }}</p>

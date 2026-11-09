@@ -120,9 +120,41 @@ class ProfilWebTest extends TestCase
         Livewire::actingAs($u)->test(Profil::class)
             ->set('actuel', 'Ancien-mot-de-passe-1')->set('nouveau', 'court')->set('confirmation', 'court')
             ->call('enregistrer')
-            ->assertSet('erreur', 'Le nouveau mot de passe doit comporter au moins 10 caractères.');
+            ->assertSet('erreur', 'Le mot de passe doit compter au moins 8 caractères.');
 
         $this->assertTrue(Hash::check('Ancien-mot-de-passe-1', $u->fresh()->password));
+    }
+
+    /** @dataProvider reglesDuDart */
+    public function test_la_complexite_est_celle_du_dart(string $nouveau, string $message): void
+    {
+        $u = $this->utilisateur('caissier');
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->set('actuel', 'Ancien-mot-de-passe-1')->set('nouveau', $nouveau)->set('confirmation', $nouveau)
+            ->call('enregistrer')->assertSet('erreur', $message);
+
+        $this->assertTrue(Hash::check('Ancien-mot-de-passe-1', $u->fresh()->password));
+    }
+
+    public static function reglesDuDart(): array
+    {
+        return [
+            '7 caractères' => ['Abcdef1', 'Le mot de passe doit compter au moins 8 caractères.'],
+            'sans majuscule' => ['abcdefg1', 'Le mot de passe doit contenir au moins une majuscule.'],
+            'sans chiffre' => ['Abcdefgh', 'Le mot de passe doit contenir au moins un chiffre.'],
+        ];
+    }
+
+    public function test_huit_caracteres_avec_majuscule_et_chiffre_suffisent(): void
+    {
+        $u = $this->utilisateur('caissier');
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->set('actuel', 'Ancien-mot-de-passe-1')->set('nouveau', 'Abcdefg1')->set('confirmation', 'Abcdefg1')
+            ->call('enregistrer')->assertSet('erreur', null);
+
+        $this->assertTrue(Hash::check('Abcdefg1', $u->fresh()->password));
     }
 
     public function test_une_confirmation_differente_est_refusee(): void

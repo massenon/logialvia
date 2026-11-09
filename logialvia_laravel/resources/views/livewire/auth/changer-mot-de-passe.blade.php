@@ -1,6 +1,6 @@
 <form wire:submit="enregistrer" class="flex flex-col gap-md" novalidate>
     <p class="text-xs text-outline">
-        Votre mot de passe est temporaire : choisissez-en un nouveau (10 caractères minimum) pour continuer.
+        Votre mot de passe est temporaire : choisissez-en un nouveau (8 caractères minimum, 1 majuscule, 1 chiffre) pour continuer.
     </p>
 
     @foreach ([['actuel', 'Mot de passe actuel', 'current-password'], ['nouveau', 'Nouveau mot de passe', 'new-password'], ['confirmation', 'Confirmer le nouveau mot de passe', 'new-password']] as [$champ, $libelle, $auto])

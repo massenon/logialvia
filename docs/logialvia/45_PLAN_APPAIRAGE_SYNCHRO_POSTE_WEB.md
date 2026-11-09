@@ -289,7 +289,10 @@ Chaque écran : un fichier `routes/ecrans/`, tests d'accès/contenu/validation/d
 | Aide & À Propos | `/aide` | Vignettes selon droits et modules, FAQ avec recherche | — |
 | Contact | `/contact` | Coordonnées de l'éditeur | Pas de formulaire ni d'envoi (pas de table de messages) |
 
-À traiter : `/stocks` n'est ouvert qu'à l'administrateur (matrice `view-stocks`) ; aucun lien vers Profil/Aide/Contact dans la barre latérale (le layout ne le prévoyait pas).
+Décisions du client (09/11/2026) : la suppression d'un fournisseur ayant une dette ouverte reste **refusée** ; `/stocks` reste réservé à
+l'**administrateur** (pas de compte acheteur : seuls existent les comptes créés par l'administrateur) ; Profil, Aide et Contact sont dans le
+**menu du compte** de la barre du haut ; le mot de passe suit **la règle du Dart** (8 caractères, 1 majuscule, 1 chiffre, mêmes messages) au web
+(`App\Support\RegleMotDePasse`), à l'API et au seeder de l'administrateur.
 
 ### 7.2 Écrans restant à convertir — bloqués par des données absentes du serveur
 

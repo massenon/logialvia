@@ -291,13 +291,13 @@ class AppairageTest extends TestCase
 
         $this->avecJeton($jeton)->postJson('/api/auth/mot-de-passe', [
             'mot_de_passe_actuel' => self::MOT_DE_PASSE,
-            'nouveau_mot_de_passe' => 'nouveau-mot-de-passe-2',
-            'nouveau_mot_de_passe_confirmation' => 'nouveau-mot-de-passe-2',
+            'nouveau_mot_de_passe' => 'Nouveau-mot-de-passe-2',
+            'nouveau_mot_de_passe_confirmation' => 'Nouveau-mot-de-passe-2',
         ])->assertOk();
 
         $utilisateur->refresh();
         $this->assertFalse($utilisateur->must_change_password);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('nouveau-mot-de-passe-2', $utilisateur->password));
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('Nouveau-mot-de-passe-2', $utilisateur->password));
         $this->assertNotNull(PersonalAccessToken::findToken($jeton), 'Le poste courant garde son jeton.');
         $this->assertNull(PersonalAccessToken::findToken($autre), 'Les autres postes doivent se reconnecter.');
         $this->assertSame(1, AuditLog::query()->where('action', 'api.mot_de_passe_change')->count());
@@ -315,6 +315,30 @@ class AppairageTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors('nouveau_mot_de_passe');
 
         $this->assertTrue(User::query()->where('username', 'marie')->value('must_change_password'));
+    }
+
+    public function test_l_api_applique_la_regle_du_dart_avec_ses_messages(): void
+    {
+        $this->compte(['must_change_password' => true]);
+        $jeton = $this->connexion('marie')->json('token');
+
+        foreach ([
+            'Abcdef1' => 'Le mot de passe doit compter au moins 8 caractères.',
+            'abcdefg1' => 'Le mot de passe doit contenir au moins une majuscule.',
+            'Abcdefgh' => 'Le mot de passe doit contenir au moins un chiffre.',
+        ] as $mot => $message) {
+            $this->avecJeton($jeton)->postJson('/api/auth/mot-de-passe', [
+                'mot_de_passe_actuel' => self::MOT_DE_PASSE,
+                'nouveau_mot_de_passe' => $mot,
+                'nouveau_mot_de_passe_confirmation' => $mot,
+            ])->assertStatus(422)->assertJsonPath('errors.nouveau_mot_de_passe.0', $message);
+        }
+
+        $this->avecJeton($jeton)->postJson('/api/auth/mot-de-passe', [
+            'mot_de_passe_actuel' => self::MOT_DE_PASSE,
+            'nouveau_mot_de_passe' => 'Abcdefg1',
+            'nouveau_mot_de_passe_confirmation' => 'Abcdefg1',
+        ])->assertOk();
     }
 
     // ------------------------------------------------------------- Le jeton dit qui parle

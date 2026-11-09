@@ -19,9 +19,9 @@ class AdminSeeder extends Seeder
     {
         $motDePasse = config('logialvia.admin.password');
 
-        if (! is_string($motDePasse) || strlen($motDePasse) < 10) {
+        if (! is_string($motDePasse) || \App\Support\RegleMotDePasse::erreur($motDePasse) !== null) {
             $this->command?->warn(
-                'ADMIN_INITIAL_PASSWORD absent ou trop court (10 caracteres minimum) : aucun administrateur cree.',
+                'ADMIN_INITIAL_PASSWORD absent ou trop faible (8 caracteres, 1 majuscule, 1 chiffre) : aucun administrateur cree.',
             );
 
             return;

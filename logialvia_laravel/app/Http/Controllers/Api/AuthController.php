@@ -89,12 +89,14 @@ class AuthController extends Controller
     {
         $donnees = $request->validate([
             'mot_de_passe_actuel' => ['required', 'string'],
-            'nouveau_mot_de_passe' => ['required', 'string', 'confirmed', Password::min(10)],
+            'nouveau_mot_de_passe' => [
+                'required', 'string', 'confirmed',
+                fn (string $attribut, mixed $valeur, \Closure $echec) => ($m = \App\Support\RegleMotDePasse::erreur((string) $valeur)) !== null ? $echec($m) : null,
+            ],
         ], [
             'mot_de_passe_actuel.required' => 'Le mot de passe actuel est obligatoire.',
             'nouveau_mot_de_passe.required' => 'Le nouveau mot de passe est obligatoire.',
             'nouveau_mot_de_passe.confirmed' => 'La confirmation ne correspond pas.',
-            'nouveau_mot_de_passe.min' => 'Le nouveau mot de passe doit comporter au moins 10 caractères.',
         ]);
 
         $utilisateur = $request->user();

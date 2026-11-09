@@ -130,4 +130,26 @@ class CoqueNavigationTest extends TestCase
 
         $this->get('/ventes')->assertSee('aria-current="page"', false);
     }
+
+    public function test_le_menu_du_compte_mene_au_profil_a_l_aide_et_au_contact_pour_tous_les_roles(): void
+    {
+        foreach (['admin', 'comptable', 'caissier', 'animalier'] as $role) {
+            $this->connecte($role);
+
+            $this->get('/dashboard')->assertOk()
+                ->assertSeeHtml('data-menu="compte"')
+                ->assertSee('Mon Profil')->assertSee('Aide &amp; À Propos', false)->assertSee('Contact éditeur')
+                ->assertSeeHtml('href="/profil"')->assertSeeHtml('href="/aide"')->assertSeeHtml('href="/contact"');
+
+            foreach (['/profil', '/aide', '/contact'] as $page) {
+                $this->get($page)->assertOk();
+            }
+            auth()->logout();
+        }
+    }
+
+    public function test_un_visiteur_n_a_pas_de_menu_de_compte(): void
+    {
+        $this->get('/login')->assertDontSeeHtml('data-menu="compte"');
+    }
 }

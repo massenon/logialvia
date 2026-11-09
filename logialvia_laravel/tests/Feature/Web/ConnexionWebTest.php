@@ -141,14 +141,14 @@ class ConnexionWebTest extends TestCase
 
         Livewire::actingAs($utilisateur)->test(ChangerMotDePasse::class)
             ->set('actuel', self::MOT_DE_PASSE)
-            ->set('nouveau', 'nouveau-mot-de-passe-2')
-            ->set('confirmation', 'nouveau-mot-de-passe-2')
+            ->set('nouveau', 'Nouveau-mot-de-passe-2')
+            ->set('confirmation', 'Nouveau-mot-de-passe-2')
             ->call('enregistrer')
             ->assertRedirect('/');
 
         $utilisateur->refresh();
         $this->assertFalse($utilisateur->must_change_password);
-        $this->assertTrue(Hash::check('nouveau-mot-de-passe-2', $utilisateur->password));
+        $this->assertTrue(Hash::check('Nouveau-mot-de-passe-2', $utilisateur->password));
         $this->assertSame(0, $utilisateur->tokens()->count(), 'Les postes doivent se reconnecter.');
     }
 
@@ -161,9 +161,9 @@ class ConnexionWebTest extends TestCase
             ->set('nouveau', 'court')
             ->set('confirmation', 'court')
             ->call('enregistrer')
-            ->assertSet('erreur', 'Le nouveau mot de passe doit comporter au moins 10 caractères.');
+            ->assertSet('erreur', 'Le mot de passe doit compter au moins 8 caractères.');
 
-        $page->set('nouveau', 'nouveau-mot-de-passe-2')
+        $page->set('nouveau', 'Nouveau-mot-de-passe-2')
             ->set('confirmation', 'autre-chose-vraiment')
             ->call('enregistrer')
             ->assertSet('erreur', 'La confirmation ne correspond pas.');

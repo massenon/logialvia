@@ -49,15 +49,22 @@
             <header class="flex items-center justify-between border-b border-outline-variant bg-surface-card px-md py-sm">
                 <span class="text-sm text-outline">{{ $titre }}</span>
                 @auth
-                    <div class="flex items-center gap-md text-xs">
-                        <span>{{ auth()->user()->name }}</span>
-                        <form method="POST" action="{{ route('deconnexion') }}">
-                            @csrf
-                            <button type="submit" class="rounded-lg border border-outline-variant px-sm py-xs hover:bg-surface-zebra">
-                                Se déconnecter
-                            </button>
-                        </form>
-                    </div>
+                    {{-- Menu du compte : Profil, Aide, Contact, deconnexion (sans JS : <details>). --}}
+                    <details class="relative text-xs" data-menu="compte">
+                        <summary class="flex cursor-pointer list-none items-center gap-sm rounded-lg border border-outline-variant px-sm py-xs hover:bg-surface-zebra">
+                            <span class="font-semibold">{{ auth()->user()->name }}</span>
+                            <span aria-hidden="true">▾</span>
+                        </summary>
+                        <div class="absolute right-0 z-40 mt-xs w-56 rounded-lg border border-outline-variant bg-surface-card py-xs shadow-lg">
+                            <a href="/profil" class="block px-md py-sm hover:bg-surface-zebra">Mon Profil</a>
+                            <a href="/aide" class="block px-md py-sm hover:bg-surface-zebra">Aide &amp; À Propos</a>
+                            <a href="/contact" class="block px-md py-sm hover:bg-surface-zebra">Contact éditeur</a>
+                            <form method="POST" action="{{ route('deconnexion') }}" class="border-t border-outline-variant">
+                                @csrf
+                                <button type="submit" class="block w-full px-md py-sm text-left text-error-deep hover:bg-error-container">Se déconnecter</button>
+                            </form>
+                        </div>
+                    </details>
                 @endauth
             </header>
             <main class="min-w-0 flex-1 p-md md:p-lg">

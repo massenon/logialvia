@@ -213,7 +213,7 @@ class ModeleDonneesTest extends TestCase
 
     public function test_l_administrateur_initial_doit_changer_son_mot_de_passe(): void
     {
-        config(['logialvia.admin.password' => 'motdepasse-initial-1', 'logialvia.admin.username' => 'gerante']);
+        config(['logialvia.admin.password' => 'Motdepasse-initial-1', 'logialvia.admin.username' => 'gerante']);
         $this->amorcer();
 
         $this->seed(AdminSeeder::class);
@@ -224,7 +224,7 @@ class ModeleDonneesTest extends TestCase
         $this->assertTrue($admin->hasRole('admin'));
         $this->assertTrue($admin->must_change_password);
         $this->assertTrue($admin->is_active);
-        $this->assertNotSame('motdepasse-initial-1', $admin->password, 'Jamais en clair.');
-        $this->assertTrue(Hash::check('motdepasse-initial-1', $admin->password));
+        $this->assertNotSame('Motdepasse-initial-1', $admin->password, 'Jamais en clair.');
+        $this->assertTrue(Hash::check('Motdepasse-initial-1', $admin->password));
     }
 }

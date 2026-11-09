@@ -32,8 +32,8 @@ class ChangerMotDePasse extends Component
 
             return;
         }
-        if (mb_strlen($this->nouveau) < 10) {
-            $this->erreur = 'Le nouveau mot de passe doit comporter au moins 10 caractères.';
+        if (($complexite = \App\Support\RegleMotDePasse::erreur($this->nouveau)) !== null) {
+            $this->erreur = $complexite;
 
             return;
         }
