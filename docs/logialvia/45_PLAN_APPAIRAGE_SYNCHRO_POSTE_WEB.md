@@ -352,3 +352,19 @@ Demande du client : tout ce qui se voit et se fait au poste doit exister au web,
 Règles transversales : **export de tableaux = XLSX** (`App\Support\ExportXlsx`), documents = vues imprimables ; **stock propre à chaque poste**
 (aucune écriture web ne touche un stock ou un PMP) ; la transmission e-MECeF et ses secrets restent au poste.
 Les décisions métier prises sans le client sont dans les sections « Décisions à valider » de chaque doc `47*_` et dans `46f_`.
+
+## 10. Limites levées (09/11/2026, 2e vague)
+
+| Limite | Chantier | Doc | Schéma poste |
+|---|---|---|---|
+| Plan comptable non conforme au SYSCOHADA révisé | Plan renuméroté, TVA ventilée, garde de version `plan_version` | `47p_` | 48 |
+| Poste sans droits : demandes refusées à vie | Droits annoncés au poste, « en attente de droit », codes de refus stables | `47g_` | 50 |
+| Horloge d'un poste en avance | Garde serveur 5 min (`horloge_en_avance`), décalage mesuré et affiché, envoi suspendu | `47g_` | 50 |
+| MySQL non éprouvé | Suite PHP et essai réel sur MariaDB 10.11 et MySQL 8.0 ; 7 divergences corrigées | `47r_` | — |
+| Réseau réel non reproduit | Couche HTTP unique du poste : TLS strict, 413 par dichotomie, rejeu des coupures, `X-Authorization`, mandataire d'essai, vrai Apache | `47r_` | — |
+| Composants web jamais vus dans un navigateur | 52 scénarios Playwright ; 8 défauts réels corrigés (caisse, menu mobile, modales, réseau/session) | `47n_` | — |
+| Réception d'achat au web sans effet de stock | Poste de stock désigné ; seul ce poste applique stock et PMP, une fois (`effets_appliques`) | `47s_` | 49 |
+
+**À l'honneur du doute — ce qui reste NON prouvé** : le texte officiel de l'OHADA n'a pas pu être téléchargé (le plan de 60 comptes est reconstitué de
+mémoire, marqué « non vérifié » dans `docs/logialvia/syscohada/SOURCE.md`) ; aucun hébergeur mutualisé réel ; MySQL 5.7 ; charge au-delà de 4 postes ;
+Safari/Firefox ; transmission e-MECeF réelle.

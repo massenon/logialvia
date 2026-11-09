@@ -20,7 +20,7 @@ administration. Interface et code métier **entièrement en français**.
 ```bash
 flutter pub get
 flutter analyze                     # doit rester à "No issues found!"
-flutter test                        # ~1900 tests (+55 d'intégration ignorés sans serveur), ~2 min
+flutter test                        # ~2000 tests (+90 d'intégration ignorés sans serveur), ~2 min
 flutter test test/elevage/          # un dossier / un fichier
 dart run build_runner build --delete-conflicting-outputs   # après toute modif de table Drift
 flutter build windows --release
@@ -33,9 +33,11 @@ JSON, dépendants de la date du jour) que si `GENERER_MANUEL=1` ; sinon la sorti
 dossier temporaire. Régénération volontaire du manuel :
 `GENERER_MANUEL=1 flutter test test/manuel/captures_test.dart`.
 
-⚠️ `test/integration/serveur_reel_test.dart` (55 essais contre le **vrai** serveur Laravel) est ignoré sans
+⚠️ `test/integration/serveur_reel_test.dart` (74 essais contre le **vrai** serveur Laravel ; +20 via un mandataire réseau) est ignoré sans
 `LOGIALVIA_SERVEUR` ; lancement complet (base SQLite jetable, comptes, serveur) : `bash logialvia_app/outils/essai_vrai_serveur.sh`
-(voir `docs/logialvia/47h_PREUVE_VRAI_SERVEUR.md`).
+(voir `docs/logialvia/47h_PREUVE_VRAI_SERVEUR.md`, `47r_MYSQL_ET_RESEAU_REEL.md`).
+
+Web : suite navigateur (Playwright, 52 scénarios) : `bash logialvia_laravel/e2e/lancer.sh` (`47n_TESTS_NAVIGATEUR.md`).
 
 ## Web (`logialvia_laravel/`)
 
@@ -78,7 +80,7 @@ Chaque contexte suit `data/` (tables Drift, repositories `*_drift.dart`, seeders
 - **État** : `provider`. Tout ViewModel partagé entre écrans/modales est enregistré
   globalement dans `main.dart` (Doc K4 §5).
 - **Persistance** : Drift/SQLite, une seule `AppDatabase` (`core/database/app_database.dart`,
-  `versionSchema = 47`, migrations idempotentes testées). `app_database.g.dart` est généré
+  `versionSchema = 50`, migrations idempotentes testées). `app_database.g.dart` est généré
   et versionné.
 - **Navigation** : `go_router`, 3 routes publiques (`/`, `/welcome`, `/login`) puis un
   `ShellRoute` (sidebar/topbar) ; accès contrôlé par `PermissionService` (RBAC 3 rôles, Doc I1)

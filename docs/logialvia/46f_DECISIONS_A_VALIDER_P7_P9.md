@@ -38,3 +38,16 @@ Chaque doc `47*_` porte sa propre section de décisions à valider. À arbitrer 
 - **Transmission des factures web** (`47a2_` A3) : n'importe quel poste avec `manage-facturation` peut transmettre, un seul à la fois (réservation 15 min).
 - **Rôles** (`47u_` D1) : le web attribue aussi Administrateur et Comptable, le Dart seulement agent de vente et d'élevage.
 - **Poste appairé à un compte sans droits** (`47h_` D6) : il propose tout son semis, ~74 demandes refusées restent en conflit.
+
+## 2e vague (docs 47g_, 47n_, 47p_, 47r_, 47s_)
+
+- **PLAN COMPTABLE (priorité absolue, `47p_` §9)** : renuméroté mais **NON vérifié contre le texte officiel** (voir `syscohada/SOURCE.md`). À faire relire
+  par l'expert-comptable contre le Journal officiel OHADA AVANT toute déclaration : mobile money en 552, produits des filières en 702, soins
+  vétérinaires en 604, TVA de la livraison, arrondi de TVA par ligne, ventes historiques conservées TTC.
+- **TVA des achats** : câblée à taux 0 tant que les intrants n'ont pas de groupe de taxe (colonne à créer, touche achats et stock).
+- **Droits** (`47g_`) : compte sans droits → le semis reste en file et l'écran le dit ; tolérance d'horloge 5 min, avertissement dès 2 min ;
+  à la reprise les instants sont bornés à l'heure du serveur (l'ordre relatif des saisies faites pendant l'avance est perdu).
+- **Stock ciblé** (`47s_`) : poste de stock facultatif par défaut (`STOCK_CIBLE_OBLIGATOIRE`), vente sur stock insuffisant appliquée avec plancher à 0
+  et avertissement, annulation d'une réception avec PMP inverse, poste révoqué : l'effet ne s'applique jamais.
+- **Réseau/MySQL** (`47r_`) : le job CI `mysql.yml` n'a jamais tourné sur GitHub ; à surveiller à son premier passage ; configuration d'hébergement
+  recommandée au §5 (`.htaccess`, `php.ini`, `DB_TIMEZONE=+00:00`).

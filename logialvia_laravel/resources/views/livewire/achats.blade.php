@@ -72,17 +72,17 @@
         <table class="w-full text-left text-xs" data-table="achats">
             <thead class="bg-surface-zebra text-caption uppercase text-outline">
                 <tr>
-                    <th class="px-md py-sm">Référence</th>
-                    <th class="px-md py-sm">Date</th>
-                    <th class="px-md py-sm">Fournisseur</th>
-                    <th class="px-md py-sm">Mode</th>
-                    <th class="px-md py-sm text-center">Statut</th>
-                    <th class="px-md py-sm">Poste de stock</th>
-                    <th class="px-md py-sm text-right">Montant</th>
-                    <th class="px-md py-sm text-right">Payé</th>
-                    <th class="px-md py-sm text-right">Solde Dû</th>
-                    <th class="px-md py-sm text-center">Ancienneté</th>
-                    <th class="px-md py-sm text-right">Actions</th>
+                    <th class="px-sm py-sm">Référence</th>
+                    <th class="px-sm py-sm">Date</th>
+                    <th class="px-sm py-sm">Fournisseur</th>
+                    <th class="px-sm py-sm">Mode</th>
+                    <th class="px-sm py-sm text-center">Statut</th>
+                    <th class="px-sm py-sm">Poste de stock</th>
+                    <th class="px-sm py-sm text-right">Montant</th>
+                    <th class="px-sm py-sm text-right">Payé</th>
+                    <th class="px-sm py-sm text-right">Solde Dû</th>
+                    <th class="px-sm py-sm text-center">Ancienneté</th>
+                    <th class="px-sm py-sm text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -92,30 +92,30 @@
                         $jours = max(0, (int) $a->date_achat->diffInDays($maintenant, true));
                     @endphp
                     <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-achat="{{ $a->reference }}">
-                        <td class="px-md py-sm font-bold font-mono text-brand-navy">{{ $a->reference }}</td>
-                        <td class="px-md py-sm">{{ $a->date_achat->timezone($fuseau)->format('d/m/Y') }}</td>
-                        <td class="px-md py-sm">{{ $noms[$a->fournisseur_id] ?? '—' }}</td>
-                        <td class="px-md py-sm">{{ $a->mode ?: '—' }}</td>
-                        <td class="px-md py-sm text-center">
+                        <td class="px-sm py-sm font-bold font-mono text-brand-navy">{{ $a->reference }}</td>
+                        <td class="px-sm py-sm">{{ $a->date_achat->timezone($fuseau)->format('d/m/Y') }}</td>
+                        <td class="px-sm py-sm">{{ $noms[$a->fournisseur_id] ?? '—' }}</td>
+                        <td class="px-sm py-sm">{{ $a->mode ?: '—' }}</td>
+                        <td class="px-sm py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : ($a->statut === 'Annulé' ? 'bg-error-container text-error-deep' : 'bg-brand-gold/20 text-brand-navy') }}" data-statut>{{ $a->statut }}</span>
                         </td>
                         @php $sv = $suiviStock[$a->id]; @endphp
-                        <td class="px-md py-sm" data-poste-stock="{{ $sv['etat'] }}">
+                        <td class="px-sm py-sm" data-poste-stock="{{ $sv['etat'] }}">
                             <span class="rounded-full px-sm py-xs font-semibold {{ in_array($sv['etat'], ['applique'], true) ? 'bg-success-container text-success-deep' : (in_array($sv['etat'], ['avertissement', 'ignore', 'revoque'], true) ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline') }}">{{ $sv['libelle'] }}</span>
                             @if ($sv['avertissement'])<br><span class="text-caption text-error-deep" data-avertissement-stock>{{ $sv['avertissement'] }}</span>@endif
                         </td>
-                        <td class="px-md py-sm text-right">{{ $nombre($a->total) }}</td>
-                        <td class="px-md py-sm text-right">{{ $nombre($a->paye) }}</td>
-                        <td class="px-md py-sm text-right {{ $solde > 0 ? 'font-bold text-error-deep' : 'text-outline' }}" data-solde>
+                        <td class="px-sm py-sm text-right">{{ $nombre($a->total) }}</td>
+                        <td class="px-sm py-sm text-right">{{ $nombre($a->paye) }}</td>
+                        <td class="px-sm py-sm text-right {{ $solde > 0 ? 'font-bold text-error-deep' : 'text-outline' }}" data-solde>
                             {{ $solde > 0 ? $nombre($solde).' F' : 'Soldée' }}</td>
-                        <td class="px-md py-sm text-center">
+                        <td class="px-sm py-sm text-center">
                             @if ($solde > 0)
                                 <span class="rounded-full px-sm py-xs font-semibold {{ $jours > 10 ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline' }}">{{ $jours }} j</span>
                             @else
                                 <span class="text-outline">—</span>
                             @endif
                         </td>
-                        <td class="px-md py-sm text-right">
+                        <td class="px-sm py-sm text-right">
                             <div class="flex flex-wrap justify-end gap-xs">
                             <button type="button" wire:click="basculer('{{ $a->id }}')" aria-expanded="{{ $detail?->id === $a->id ? 'true' : 'false' }}"
                                     class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">
@@ -141,7 +141,7 @@
                     </tr>
                     @if ($detail?->id === $a->id)
                         <tr data-lignes-de="{{ $a->reference }}">
-                            <td colspan="11" class="bg-surface-zebra px-md py-sm">
+                            <td colspan="11" class="bg-surface-zebra px-sm py-sm">
                                 <p class="mb-xs text-caption text-outline" data-echeance>Échéance : {{ $a->echeance ? $a->echeance->timezone($fuseau)->format('d/m/Y') : 'aucune convenue' }}</p>
                                 <table class="w-full text-left text-xs">
                                     <thead class="text-caption uppercase text-outline">

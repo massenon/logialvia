@@ -244,7 +244,7 @@ scenario('caisse : vente a credit (avance) -> creance visible dans Clients', asy
     await m.waitFor({ state: 'detached' });
     await page.fill('[data-section=panier] input[placeholder="Client Comptant"]', 'Hôtel');
     await page.locator('[data-suggestion="Hôtel Bénin Royal"]').click();
-    await page.selectOption('[data-section=panier] select >> nth=1', { label: 'Avance (Solde Restant Dû)' });
+    await page.selectOption('[data-section=panier] select[wire\\:model\\.live="condition"]', { label: 'Avance (Solde Restant Dû)' });
     await calme(page);
     // REGRESSION (47n_) : clic immediat apres la frappe (< 300 ms de debounce) -> le montant recu doit partir avec l'action.
     await page.fill('[data-section=panier] input[inputmode=numeric]', '8000');
