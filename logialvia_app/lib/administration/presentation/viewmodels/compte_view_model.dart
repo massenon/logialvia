@@ -216,6 +216,8 @@ class CompteViewModel extends ChangeNotifier {
         message: message.trim(),
         etapes: etapes?.trim().isEmpty ?? true ? null : etapes!.trim(),
         utilisateurId: '${session?.utilisateur.id ?? 0}',
+        // Signature qui voyage avec le message (serveur, web, autres postes).
+        auteurNom: '$nomAffiche ($identifiant) — $libelleRole',
       );
       await _rafraichir();
       notifyListeners();

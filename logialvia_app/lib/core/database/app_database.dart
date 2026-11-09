@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 42;
+  static const int versionSchema = 45;
 
   @override
   int get schemaVersion => versionSchema;
@@ -455,6 +455,13 @@ class AppDatabase extends _$AppDatabase {
         // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
         // JAMAIS (DV-21) ; les factures d'hier sont a envoyer, normalisees ou non.
         await _facturesEnUuid(m);
+      }
+      // v43 et v44 : réservées à d'autres tranches de la synchronisation.
+      if (from < 45) {
+        // Doc 47u §4 : les messages à l'éditeur entrent dans la synchronisation (UUID,
+        // auteur, colonnes de synchronisation). Aucun message n'est perdu ; ceux d'hier
+        // sont à envoyer au serveur.
+        await _messagesEditeurEnUuid(m);
       }
     },
     beforeOpen: (details) async {
@@ -1067,6 +1074,48 @@ class AppDatabase extends _$AppDatabase {
         newColumns: [clients.syncStatus, clients.syncMotif, clients.updatedAt],
       ),
     );
+  }
+
+  /// `messages_editeur` en UUID (doc 47u §4, v45). Idempotent. Les messages existants
+  /// gardent leur date (leur instant de saisie) et deviennent `pending` ; les instantanés
+  /// de la corbeille (messages supprimés) reçoivent un UUID et sont déclarés `synced` : la
+  /// pierre tombale d'un message que le serveur n'a jamais vu serait sans objet.
+  Future<void> _messagesEditeurEnUuid(Migrator m) async {
+    if (await _idEstTexte('messages_editeur')) return;
+
+    await m.alterTable(
+      TableMigration(
+        messagesEditeur,
+        columnTransformer: {
+          messagesEditeur.id: const CustomExpression<String>(_uuidSql),
+          messagesEditeur.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', horodatage, 'unixepoch')",
+          ),
+        },
+        newColumns: [
+          messagesEditeur.auteurNom,
+          messagesEditeur.syncStatus,
+          messagesEditeur.syncMotif,
+          messagesEditeur.updatedAt,
+        ],
+      ),
+    );
+
+    final archives = await customSelect(
+      "SELECT id, donnees_json FROM corbeille WHERE nom_table = 'messages_editeur'",
+    ).get();
+    for (final a in archives) {
+      final donnees = jsonDecode(a.read<String>('donnees_json')) as Map<String, Object?>;
+      donnees['id'] = nouvelUuid();
+      donnees['sync_status'] = 'synced';
+      donnees['sync_motif'] = null;
+      donnees['auteur_nom'] = null;
+      donnees['updated_at'] = instantSaisie();
+      await customStatement(
+        'UPDATE corbeille SET donnees_json = ? WHERE id = ?',
+        [jsonEncode(donnees), a.read<int>('id')],
+      );
+    }
   }
 
   /// Soins, infirmerie, barèmes, taux et calendrier de prophylaxie en UUID

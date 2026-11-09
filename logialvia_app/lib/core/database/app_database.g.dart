@@ -3386,16 +3386,13 @@ class $MessagesEditeurTable extends MessagesEditeur
   $MessagesEditeurTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _horodatageMeta = const VerificationMeta(
     'horodatage',
@@ -3467,6 +3464,52 @@ class $MessagesEditeurTable extends MessagesEditeur
     requiredDuringInsert: false,
     defaultValue: const Constant(MessageEditeurStatut.enAttente),
   );
+  static const VerificationMeta _auteurNomMeta = const VerificationMeta(
+    'auteurNom',
+  );
+  @override
+  late final GeneratedColumn<String> auteurNom = GeneratedColumn<String>(
+    'auteur_nom',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3477,6 +3520,10 @@ class $MessagesEditeurTable extends MessagesEditeur
     etapes,
     utilisateurId,
     statut,
+    auteurNom,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3548,6 +3595,30 @@ class $MessagesEditeurTable extends MessagesEditeur
         statut.isAcceptableOrUnknown(data['statut']!, _statutMeta),
       );
     }
+    if (data.containsKey('auteur_nom')) {
+      context.handle(
+        _auteurNomMeta,
+        auteurNom.isAcceptableOrUnknown(data['auteur_nom']!, _auteurNomMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -3558,7 +3629,7 @@ class $MessagesEditeurTable extends MessagesEditeur
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MessageEditeurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       horodatage: attachedDatabase.typeMapping.read(
@@ -3589,6 +3660,22 @@ class $MessagesEditeurTable extends MessagesEditeur
         DriftSqlType.string,
         data['${effectivePrefix}statut'],
       )!,
+      auteurNom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auteur_nom'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -3600,7 +3687,10 @@ class $MessagesEditeurTable extends MessagesEditeur
 
 class MessageEditeurRow extends DataClass
     implements Insertable<MessageEditeurRow> {
-  final int id;
+  /// UUID généré au poste (DV-19, doc 47u §4) : un message est un fait synchronisé,
+  /// lisible et gérable depuis le web et les autres postes. Les messages existants
+  /// reçoivent le leur à la migration v45.
+  final String id;
   final DateTime horodatage;
 
   /// `question` ou `bug` — les 2 onglets du formulaire.
@@ -3619,6 +3709,20 @@ class MessageEditeurRow extends DataClass
   /// Aucun envoi automatique n'existe : le message reste `enAttente` tant que
   /// la Gérante ne l'a pas transmis elle-même, puis elle le marque `transmis`.
   final String statut;
+
+  /// « Nom (identifiant) — Rôle » de la rédactrice : `utilisateur_id` est un entier
+  /// LOCAL qui n'a pas de sens sur le serveur ni sur un autre poste. `null` pour les
+  /// messages d'avant la v45.
+  final String? auteurNom;
+
+  /// `pending` (à envoyer) · `synced` · `conflict` (refusé, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en français ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const MessageEditeurRow({
     required this.id,
     required this.horodatage,
@@ -3628,11 +3732,15 @@ class MessageEditeurRow extends DataClass
     this.etapes,
     required this.utilisateurId,
     required this.statut,
+    this.auteurNom,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['horodatage'] = Variable<DateTime>(horodatage);
     map['type'] = Variable<String>(type);
     map['sujet'] = Variable<String>(sujet);
@@ -3642,6 +3750,14 @@ class MessageEditeurRow extends DataClass
     }
     map['utilisateur_id'] = Variable<String>(utilisateurId);
     map['statut'] = Variable<String>(statut);
+    if (!nullToAbsent || auteurNom != null) {
+      map['auteur_nom'] = Variable<String>(auteurNom);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -3657,6 +3773,14 @@ class MessageEditeurRow extends DataClass
           : Value(etapes),
       utilisateurId: Value(utilisateurId),
       statut: Value(statut),
+      auteurNom: auteurNom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auteurNom),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -3666,7 +3790,7 @@ class MessageEditeurRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MessageEditeurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       horodatage: serializer.fromJson<DateTime>(json['horodatage']),
       type: serializer.fromJson<String>(json['type']),
       sujet: serializer.fromJson<String>(json['sujet']),
@@ -3674,13 +3798,17 @@ class MessageEditeurRow extends DataClass
       etapes: serializer.fromJson<String?>(json['etapes']),
       utilisateurId: serializer.fromJson<String>(json['utilisateurId']),
       statut: serializer.fromJson<String>(json['statut']),
+      auteurNom: serializer.fromJson<String?>(json['auteurNom']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'horodatage': serializer.toJson<DateTime>(horodatage),
       'type': serializer.toJson<String>(type),
       'sujet': serializer.toJson<String>(sujet),
@@ -3688,11 +3816,15 @@ class MessageEditeurRow extends DataClass
       'etapes': serializer.toJson<String?>(etapes),
       'utilisateurId': serializer.toJson<String>(utilisateurId),
       'statut': serializer.toJson<String>(statut),
+      'auteurNom': serializer.toJson<String?>(auteurNom),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   MessageEditeurRow copyWith({
-    int? id,
+    String? id,
     DateTime? horodatage,
     String? type,
     String? sujet,
@@ -3700,6 +3832,10 @@ class MessageEditeurRow extends DataClass
     Value<String?> etapes = const Value.absent(),
     String? utilisateurId,
     String? statut,
+    Value<String?> auteurNom = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => MessageEditeurRow(
     id: id ?? this.id,
     horodatage: horodatage ?? this.horodatage,
@@ -3709,6 +3845,10 @@ class MessageEditeurRow extends DataClass
     etapes: etapes.present ? etapes.value : this.etapes,
     utilisateurId: utilisateurId ?? this.utilisateurId,
     statut: statut ?? this.statut,
+    auteurNom: auteurNom.present ? auteurNom.value : this.auteurNom,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   MessageEditeurRow copyWithCompanion(MessagesEditeurCompanion data) {
     return MessageEditeurRow(
@@ -3724,6 +3864,12 @@ class MessageEditeurRow extends DataClass
           ? data.utilisateurId.value
           : this.utilisateurId,
       statut: data.statut.present ? data.statut.value : this.statut,
+      auteurNom: data.auteurNom.present ? data.auteurNom.value : this.auteurNom,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -3737,7 +3883,11 @@ class MessageEditeurRow extends DataClass
           ..write('message: $message, ')
           ..write('etapes: $etapes, ')
           ..write('utilisateurId: $utilisateurId, ')
-          ..write('statut: $statut')
+          ..write('statut: $statut, ')
+          ..write('auteurNom: $auteurNom, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -3752,6 +3902,10 @@ class MessageEditeurRow extends DataClass
     etapes,
     utilisateurId,
     statut,
+    auteurNom,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -3764,11 +3918,15 @@ class MessageEditeurRow extends DataClass
           other.message == this.message &&
           other.etapes == this.etapes &&
           other.utilisateurId == this.utilisateurId &&
-          other.statut == this.statut);
+          other.statut == this.statut &&
+          other.auteurNom == this.auteurNom &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<DateTime> horodatage;
   final Value<String> type;
   final Value<String> sujet;
@@ -3776,6 +3934,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
   final Value<String?> etapes;
   final Value<String> utilisateurId;
   final Value<String> statut;
+  final Value<String?> auteurNom;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const MessagesEditeurCompanion({
     this.id = const Value.absent(),
     this.horodatage = const Value.absent(),
@@ -3785,6 +3948,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     this.etapes = const Value.absent(),
     this.utilisateurId = const Value.absent(),
     this.statut = const Value.absent(),
+    this.auteurNom = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MessagesEditeurCompanion.insert({
     this.id = const Value.absent(),
@@ -3795,13 +3963,18 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     this.etapes = const Value.absent(),
     required String utilisateurId,
     this.statut = const Value.absent(),
+    this.auteurNom = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : horodatage = Value(horodatage),
        type = Value(type),
        sujet = Value(sujet),
        message = Value(message),
        utilisateurId = Value(utilisateurId);
   static Insertable<MessageEditeurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<DateTime>? horodatage,
     Expression<String>? type,
     Expression<String>? sujet,
@@ -3809,6 +3982,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     Expression<String>? etapes,
     Expression<String>? utilisateurId,
     Expression<String>? statut,
+    Expression<String>? auteurNom,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3819,11 +3997,16 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
       if (etapes != null) 'etapes': etapes,
       if (utilisateurId != null) 'utilisateur_id': utilisateurId,
       if (statut != null) 'statut': statut,
+      if (auteurNom != null) 'auteur_nom': auteurNom,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MessagesEditeurCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<DateTime>? horodatage,
     Value<String>? type,
     Value<String>? sujet,
@@ -3831,6 +4014,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     Value<String?>? etapes,
     Value<String>? utilisateurId,
     Value<String>? statut,
+    Value<String?>? auteurNom,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return MessagesEditeurCompanion(
       id: id ?? this.id,
@@ -3841,6 +4029,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
       etapes: etapes ?? this.etapes,
       utilisateurId: utilisateurId ?? this.utilisateurId,
       statut: statut ?? this.statut,
+      auteurNom: auteurNom ?? this.auteurNom,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -3848,7 +4041,7 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (horodatage.present) {
       map['horodatage'] = Variable<DateTime>(horodatage.value);
@@ -3871,6 +4064,21 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     if (statut.present) {
       map['statut'] = Variable<String>(statut.value);
     }
+    if (auteurNom.present) {
+      map['auteur_nom'] = Variable<String>(auteurNom.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -3884,7 +4092,12 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
           ..write('message: $message, ')
           ..write('etapes: $etapes, ')
           ..write('utilisateurId: $utilisateurId, ')
-          ..write('statut: $statut')
+          ..write('statut: $statut, ')
+          ..write('auteurNom: $auteurNom, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -26972,7 +27185,7 @@ typedef $$ParametresEntrepriseTableProcessedTableManager =
     >;
 typedef $$MessagesEditeurTableCreateCompanionBuilder =
     MessagesEditeurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required DateTime horodatage,
       required String type,
       required String sujet,
@@ -26980,10 +27193,15 @@ typedef $$MessagesEditeurTableCreateCompanionBuilder =
       Value<String?> etapes,
       required String utilisateurId,
       Value<String> statut,
+      Value<String?> auteurNom,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$MessagesEditeurTableUpdateCompanionBuilder =
     MessagesEditeurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<DateTime> horodatage,
       Value<String> type,
       Value<String> sujet,
@@ -26991,6 +27209,11 @@ typedef $$MessagesEditeurTableUpdateCompanionBuilder =
       Value<String?> etapes,
       Value<String> utilisateurId,
       Value<String> statut,
+      Value<String?> auteurNom,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$MessagesEditeurTableFilterComposer
@@ -27002,7 +27225,7 @@ class $$MessagesEditeurTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -27041,6 +27264,26 @@ class $$MessagesEditeurTableFilterComposer
     column: $table.statut,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get auteurNom => $composableBuilder(
+    column: $table.auteurNom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$MessagesEditeurTableOrderingComposer
@@ -27052,7 +27295,7 @@ class $$MessagesEditeurTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -27091,6 +27334,26 @@ class $$MessagesEditeurTableOrderingComposer
     column: $table.statut,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get auteurNom => $composableBuilder(
+    column: $table.auteurNom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MessagesEditeurTableAnnotationComposer
@@ -27102,7 +27365,7 @@ class $$MessagesEditeurTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get horodatage => $composableBuilder(
@@ -27129,6 +27392,20 @@ class $$MessagesEditeurTableAnnotationComposer
 
   GeneratedColumn<String> get statut =>
       $composableBuilder(column: $table.statut, builder: (column) => column);
+
+  GeneratedColumn<String> get auteurNom =>
+      $composableBuilder(column: $table.auteurNom, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$MessagesEditeurTableTableManager
@@ -27168,7 +27445,7 @@ class $$MessagesEditeurTableTableManager
               $$MessagesEditeurTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<DateTime> horodatage = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String> sujet = const Value.absent(),
@@ -27176,6 +27453,11 @@ class $$MessagesEditeurTableTableManager
                 Value<String?> etapes = const Value.absent(),
                 Value<String> utilisateurId = const Value.absent(),
                 Value<String> statut = const Value.absent(),
+                Value<String?> auteurNom = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MessagesEditeurCompanion(
                 id: id,
                 horodatage: horodatage,
@@ -27185,10 +27467,15 @@ class $$MessagesEditeurTableTableManager
                 etapes: etapes,
                 utilisateurId: utilisateurId,
                 statut: statut,
+                auteurNom: auteurNom,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required DateTime horodatage,
                 required String type,
                 required String sujet,
@@ -27196,6 +27483,11 @@ class $$MessagesEditeurTableTableManager
                 Value<String?> etapes = const Value.absent(),
                 required String utilisateurId,
                 Value<String> statut = const Value.absent(),
+                Value<String?> auteurNom = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MessagesEditeurCompanion.insert(
                 id: id,
                 horodatage: horodatage,
@@ -27205,6 +27497,11 @@ class $$MessagesEditeurTableTableManager
                 etapes: etapes,
                 utilisateurId: utilisateurId,
                 statut: statut,
+                auteurNom: auteurNom,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

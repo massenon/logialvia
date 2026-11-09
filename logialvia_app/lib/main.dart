@@ -50,6 +50,7 @@ import 'elevage/data/sync/table_cycles_couveuse_poste.dart';
 import 'elevage/data/sync/table_machines_incubateur_poste.dart';
 import 'comptabilite/data/seed/plan_comptable_seeder.dart';
 import 'comptabilite/data/sync/table_clotures_poste.dart';
+import 'administration/data/sync/table_messages_editeur_poste.dart';
 import 'comptabilite/data/sync/table_ecritures_poste.dart';
 import 'comptabilite/data/sync/table_exercices_poste.dart';
 import 'comptabilite/data/sync/table_notes_annexes_poste.dart';
@@ -232,6 +233,8 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableNotesAnnexesPoste(widget.database),
       TableCloturesPeriodiquesPoste(widget.database),
       TableCloturesExercicePoste(widget.database),
+      // Messages à l'éditeur (doc 47u §4) : un fait ouvert à tout compte.
+      TableMessagesEditeurPoste(widget.database),
     ],
     socleDuPlan: {
       for (final c in PlanComptableSeeder.tous)

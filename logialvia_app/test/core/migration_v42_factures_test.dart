@@ -224,7 +224,7 @@ void main() {
       expect(await lire(db, 'PRAGMA foreign_key_check'), isEmpty);
       final v = await db.customSelect('PRAGMA user_version').getSingle();
       expect(v.data.values.first, AppDatabase.versionSchema);
-      expect(AppDatabase.versionSchema, 42);
+      expect(AppDatabase.versionSchema, greaterThanOrEqualTo(42));
       await db.close();
     },
   );

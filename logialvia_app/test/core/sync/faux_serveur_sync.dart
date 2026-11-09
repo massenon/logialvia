@@ -76,6 +76,10 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> machines = {};
   final Map<String, Map<String, dynamic>> cycles = {};
 
+  /// Messages à l'éditeur (doc 47u §4) : fait plat, dernier écrivain gagne, pierre
+  /// tombale `supprime_le`. Lecture et écriture ouvertes à tout compte.
+  final Map<String, Map<String, dynamic>> messagesEditeur = {};
+
   /// Factures e-MECeF (avec leurs lignes imbriquées) et grille de taxation
   /// (référentiel, clé : la lettre). Le serveur ne transmet JAMAIS à la DGI.
   final Map<String, Map<String, dynamic>> factures = {};
@@ -170,6 +174,7 @@ class FauxServeurSync {
     voir(infirmerie.values);
     voir(machines.values);
     voir(cycles.values);
+    voir(messagesEditeur.values);
     voir(factures.values);
     voir(groupesTaxe.values);
     voir(fichesJournee.values);
@@ -204,6 +209,7 @@ class FauxServeurSync {
     }
     cycles.clear();
     machines.clear();
+    messagesEditeur.clear();
     marque = 'rz-${++_horloge}';
   }
 
@@ -413,6 +419,10 @@ class FauxServeurSync {
           for (final c in cycles.values)
             if (_dans(c['serveur_modifie_le'] as String, since, jusqua)) c,
         ],
+        'messages_editeur': [
+          for (final m in messagesEditeur.values)
+            if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
+        ],
         'mouvements_produit': [
           for (final m in mouvementsProduit.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
@@ -604,6 +614,12 @@ class FauxServeurSync {
     if (tables.containsKey('machines_incubateur')) {
       reponse['machines_incubateur'] = _machines(
         (tables['machines_incubateur'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('messages_editeur')) {
+      reponse['messages_editeur'] = _messagesEditeur(
+        (tables['messages_editeur'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -1525,6 +1541,67 @@ class FauxServeurSync {
       'serveur_modifie_le': _instant(),
       'supprime_le': supprimeLe,
     };
+  }
+
+  /// Rejoue les règles du vrai serveur (`MessagesEditeurTable`) : type et statut
+  /// permis, objet et message obligatoires, dernier écrivain gagne, pierre tombale.
+  Map<String, dynamic> _messagesEditeur(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final m in lot) {
+      final id = m['id'] as String;
+      String? motif;
+      if (m['type'] is! String || !['question', 'bug'].contains(m['type'])) {
+        motif = 'Le type du message est inconnu (question ou problème).';
+      } else if (m['sujet'] is! String ||
+          (m['sujet'] as String).trim().isEmpty) {
+        motif = 'L\'objet est obligatoire.';
+      } else if (m['message'] is! String ||
+          (m['message'] as String).trim().isEmpty) {
+        motif = 'Le message est obligatoire.';
+      } else if (m['statut'] is! String ||
+          !['En attente', 'Transmis'].contains(m['statut'])) {
+        motif = 'Le statut du message est inconnu.';
+      }
+      if (motif != null) {
+        refusees.add({'id': id, 'motif': motif});
+        continue;
+      }
+      final saisie = DateTime.parse(m['updated_at'] as String);
+      final existant = messagesEditeur[id];
+      final valeurs = {
+        'horodatage': m['horodatage'],
+        'type': m['type'],
+        'sujet': (m['sujet'] as String).trim(),
+        'message': (m['message'] as String).trim(),
+        'etapes': m['etapes'],
+        'auteur': m['auteur'],
+        'statut': m['statut'],
+        'supprime_le': m['supprime_le'],
+      };
+      if (existant == null) {
+        messagesEditeur[id] = {
+          'id': id,
+          'device_id': deviceId,
+          ...valeurs,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existant['updated_at'] as String),
+      )) {
+        existant
+          ..addAll(valeurs)
+          ..['device_id'] = deviceId
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
   }
 
   /// Rejoue les règles du vrai serveur (`MachinesIncubateurTable`) : champs

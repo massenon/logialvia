@@ -263,9 +263,11 @@ class ServiceArchivage {
       }
 
       final donnees = (jsonDecode(archive.donneesJson) as Map<String, Object?>);
-      if (type.nomTable == TypeArchivable.lots.nomTable) {
-        // Un lot restauré lève la pierre tombale envoyée au serveur : il repart,
-        // daté de maintenant (`46b_`). Un instantané ancien n'a pas ces colonnes.
+      if (type.nomTable == TypeArchivable.lots.nomTable ||
+          type.nomTable == TypeArchivable.messages.nomTable) {
+        // Un lot (ou un message, doc 47u §4) restauré lève la pierre tombale envoyée au
+        // serveur : il repart, daté de maintenant (`46b_`). Un instantané ancien n'a pas
+        // ces colonnes.
         donnees['sync_status'] = 'pending';
         donnees['sync_motif'] = null;
         donnees['updated_at'] = instantSaisie();
