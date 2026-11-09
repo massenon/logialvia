@@ -19,6 +19,10 @@ import '../../domain/entities/parametres_entreprise.dart';
 import '../../domain/entities/utilisateur.dart';
 import '../../domain/repositories/parametres_repository.dart';
 import '../../../commercial/domain/services/transmission_mecef.dart';
+import '../../../core/sync/depot_jeton_sync.dart';
+import '../../../core/sync/service_appairage.dart';
+import '../../data/repositories/preferences_poste_repository.dart';
+import '../viewmodels/appairage_view_model.dart';
 import '../viewmodels/modules_actifs_view_model.dart';
 import '../viewmodels/parametres_generaux_view_model.dart';
 import '../../data/seed/seed_demonstration.dart';
@@ -28,6 +32,7 @@ import '../../domain/services/service_sauvegarde.dart';
 import '../viewmodels/corbeille_view_model.dart';
 import '../viewmodels/sauvegardes_view_model.dart';
 import 'widgets/modale_utilisateur.dart';
+import 'widgets/onglet_appairage.dart';
 import 'widgets/onglet_corbeille.dart';
 import 'widgets/onglet_donnees_test.dart';
 import 'widgets/onglet_sauvegardes.dart';
@@ -65,6 +70,17 @@ class PageParametresGeneraux extends StatelessWidget {
             ),
           )..charger(),
         ),
+        // Appairage : a son propre ViewModel (reseau + coffre du systeme).
+        ChangeNotifierProvider<AppairageViewModel>(
+          create: (context) => AppairageViewModel(
+            ServiceAppairage(
+              preferences: PreferencesPosteRepository(
+                context.read<AppDatabase>(),
+              ),
+              depot: const DepotJetonSyncSecurise(),
+            ),
+          )..charger(),
+        ),
       ],
       child: const ParametresGenerauxScreen(),
     );
@@ -88,6 +104,7 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
     'Données de l\'Entreprise',
     'Gestion Utilisateurs',
     'Modes de Paiement',
+    'Appairage',
     'Sauvegardes',
     'Corbeille',
     'Données de Test',
@@ -137,8 +154,9 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
             1 => _OngletEntreprise(vm: vm),
             2 => _OngletUtilisateurs(vm: vm),
             3 => const _OngletModesPaiement(),
-            4 => const OngletSauvegardes(),
-            5 => const OngletCorbeille(),
+            4 => const OngletAppairage(),
+            5 => const OngletSauvegardes(),
+            6 => const OngletCorbeille(),
             _ => const OngletDonneesTest(),
           },
         ],

@@ -73,6 +73,19 @@ premier module ; la page est une route propre au serveur, l'onglet « Postes & A
 viendra avec cet écran ; pas encore d'écran de gestion des utilisateurs (création, désactivation, mot de passe
 temporaire).
 
+## 6c. Ce que l'appairage du poste a livré (P1b), et ses limites
+
+**Poste Flutter** (`lib/core/sync/`, onglet « Appairage » de Paramètres Généraux, 33 tests, 8 mutations vérifiées) :
+
+- **Identifiant du poste** : UUID v4 tiré une seule fois, gardé dans `preferences_poste` (`poste.identifiant`), jamais régénéré. Aucune migration de schéma (v30 inchangée).
+- **Adresse du serveur** normalisée (schéma ajouté : `http` en réseau local, `https` ailleurs ; `/` finaux retirés ; vide ou autre schéma refusé).
+- **Jeton au coffre du système** (`flutter_secure_storage`), jamais en base ; le **mot de passe n'est ni gardé ni journalisé** et le champ est vidé dès l'envoi. Seul le code de poste (`P2`), le compte web et la date sont mémorisés.
+- **Appairer** = `POST /api/auth/login` avec `device_name` = UUID du poste ; **Tester la connexion** = `GET /api/auth/me` ; **Déconnecter** (avec confirmation) efface toujours le jeton local, et dit si le serveur n'a pas pu être prévenu.
+- **401 = révocation** : le poste oublie le jeton et redemande une connexion, sans toucher à ses saisies. **Hors ligne n'est jamais une révocation** : le poste reste appairé.
+- Les comptes locaux sont inchangés (DV-20) ; l'onglet dit que « appairé » n'est pas « synchronisé » (P2).
+
+**Limites connues** : testé contre un **faux serveur** qui rejoue les réponses de `AuthController` ; l'essai contre le vrai serveur Laravel reste à faire (dernière étape). Restaurer une sauvegarde sur une **autre machine** copie l'identifiant du poste : il faudra proposer de le régénérer (`TODO(dette)`). Le manuel utilisateur ne décrit pas encore l'onglet.
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,
@@ -118,9 +131,9 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | **fait** (09/11/2026) pour 3 tables (référentiels + clients), 129 tests, mutations vérifiées ; voir `46_` §6. W3b livré aussi (demandes, resynchronisation, remise à zéro ; 144 tests) ; reste `POST /sync/demandes` et les 35 autres tables, voir `46_` §7 |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
-| P1 | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |
-| P2 | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | en attente |
-| P3 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | en attente |
+| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | à faire, sans réseau |
+| P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
+| P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | en attente |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait

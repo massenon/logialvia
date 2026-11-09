@@ -1,4 +1,6 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/adresse_serveur.dart';
+import '../../../core/sync/identifiant_poste.dart';
 
 /// Accès aux préférences locales du poste — voir `PreferencesPoste`.
 ///
@@ -13,6 +15,11 @@ class PreferencesPosteRepository {
 
   static const String _cleIdentifiantMemorise = 'identifiant_memorise';
   static const String _cleBarreLateraleRepliee = 'barre_laterale_repliee';
+  static const String _cleIdentifiantPoste = 'poste.identifiant';
+  static const String _cleAdresseServeur = 'sync.adresse_serveur';
+  static const String _cleCodePoste = 'sync.code_poste';
+  static const String _cleCompteAppaire = 'sync.compte';
+  static const String _cleAppaireLe = 'sync.appaire_le';
 
   Future<String?> _lire(String cle) async {
     final ligne = await (_db.select(
@@ -76,4 +83,63 @@ class PreferencesPosteRepository {
 
   Future<void> definirBarreLateraleRepliee({required bool repliee}) =>
       _ecrire(_cleBarreLateraleRepliee, repliee ? '1' : '0');
+
+  // ------------------------------------------------------------------ Poste
+
+  /// Identifiant de CE poste : un UUID tiré **une seule fois**, jamais
+  /// régénéré (`46_` §1, blueprint §2). Il nomme le jeton côté serveur ; une
+  /// constante partagée rendrait deux postes indiscernables.
+  ///
+  /// ⚠️ Copier la base sur un autre ordinateur (restauration d'une sauvegarde)
+  /// copie aussi cet identifiant : deux machines se feraient passer pour un
+  /// seul poste. Une restauration sur une AUTRE machine doit être suivie d'un
+  /// nouvel appairage (TODO(dette): proposer de régénérer l'identifiant).
+  Future<String> identifiantPoste() async {
+    final existant = await _lire(_cleIdentifiantPoste);
+    if (existant != null && existant.isNotEmpty) return existant;
+    final nouveau = genererUuidV4();
+    await _ecrire(_cleIdentifiantPoste, nouveau);
+    return nouveau;
+  }
+
+  /// Adresse du serveur, déjà normalisée. `null` tant qu'elle n'est pas saisie.
+  Future<String?> adresseServeur() => _lire(_cleAdresseServeur);
+
+  /// Enregistre l'adresse normalisée ; renvoie `null` si elle est invalide
+  /// (rien n'est alors écrit).
+  Future<String?> definirAdresseServeur(String saisie) async {
+    final propre = normaliserAdresseServeur(saisie);
+    if (propre == null) return null;
+    await _ecrire(_cleAdresseServeur, propre);
+    return propre;
+  }
+
+  /// Code attribué par le serveur à l'appairage (`P1`, `P2`… : DV-21).
+  Future<String?> codePoste() => _lire(_cleCodePoste);
+
+  /// Compte WEB utilisé pour l'appairage — jamais son mot de passe.
+  Future<String?> compteAppaire() => _lire(_cleCompteAppaire);
+
+  Future<DateTime?> appaireLe() async {
+    final v = await _lire(_cleAppaireLe);
+    return v == null ? null : DateTime.tryParse(v);
+  }
+
+  Future<void> memoriserAppairage({
+    required String codePoste,
+    required String compte,
+    required DateTime le,
+  }) async {
+    await _ecrire(_cleCodePoste, codePoste);
+    await _ecrire(_cleCompteAppaire, compte);
+    await _ecrire(_cleAppaireLe, le.toIso8601String());
+  }
+
+  /// Oublie l'appairage (le code reste attribué côté serveur ; l'identifiant
+  /// du poste et l'adresse sont conservés pour se reconnecter).
+  Future<void> oublierAppairage() async {
+    await _ecrire(_cleCodePoste, null);
+    await _ecrire(_cleCompteAppaire, null);
+    await _ecrire(_cleAppaireLe, null);
+  }
 }
