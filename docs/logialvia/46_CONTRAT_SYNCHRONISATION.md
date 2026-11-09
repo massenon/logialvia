@@ -160,3 +160,7 @@ Le serveur arbitre par **dernier écrivain gagne, à l'instant de saisie**. Le p
 ## 10. `POST /api/sync/demandes` (implémenté, 09/11/2026)
 
 Corps : `{ "device_id": "<uuid>", "demandes": [ { "id": "<uuid>", "type": "module_actif" | "parametres_entreprise", "saisi_le": "<ISO 8601>", "donnees": {…} } ] }` ; réponse : `{ "accepted": ["<uuid>"], "rejected": [ {"id", "motif"} ] }`. `device_id` = nom du jeton (sinon 403). `module_actif` : `{module_id, is_actif}` ; `parametres_entreprise` : les 20 champs de `DemandesReferentiel::CHAMPS_PARAMETRES`. Règles : voir `45_` §6f. Le §9 (règle du semis) reste vrai tant qu'une ligne n'a pas été décidée ; l'adoption initiale la lève.
+
+## 11. Ventes : identité et numéro (précision, 09/11/2026)
+
+Une vente a **deux identifiants** : `id` (UUID, identité synchronisée, immuable) et `reference` (numéro officiel remis au client, `V-P2-2026-001`, DV-21, jamais renuméroté). Une ligne de vente a son UUID et voyage **dans** sa vente (`lignes: [...]`), jamais seule. Le champ `client_id` est **facultatif** : vide quand le nom saisi ne désigne pas un client unique. Pas encore implémenté côté serveur (`45_` §6h).

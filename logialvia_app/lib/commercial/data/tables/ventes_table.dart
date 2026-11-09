@@ -1,8 +1,30 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `VENTES` — Doc D1 §2.
 @DataClassName('VenteRow')
 class Ventes extends Table {
+  /// UUID de la vente (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste
+  /// [ref] (les lignes, les ecritures et les factures s'y rattachent par texte) ;
+  /// `ref` est le numero OFFICIEL remis au client (`V-P2-2026-001`, DV-21), jamais
+  /// renumerote.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
+
+  /// Le client, quand il est identifiable. `null` si la vente porte un nom libre
+  /// (« Client Comptant ») ou si le nom designe PLUSIEURS clients (homonymes) :
+  /// on ne devine pas qui a achete.
+  TextColumn get clientId => text().nullable()();
+
+  // --- Synchronisation (`46_` §1) ---
+
+  /// `pending` · `synced` · `conflict`.
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
   /// Reference unique, format 'V-AAAA-NNN'.
   TextColumn get ref => text()();
 
@@ -78,4 +100,9 @@ class Ventes extends Table {
 
   @override
   Set<Column> get primaryKey => {ref};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {id},
+  ];
 }

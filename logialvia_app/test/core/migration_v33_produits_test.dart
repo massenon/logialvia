@@ -51,8 +51,8 @@ void main() {
       "(13, 'PRD-003', 'Jamais vendu', 'Divers', 500, 'u', 'box', 3, 1, NULL)",
     );
     await db.customStatement(
-      "INSERT INTO ventes (ref, client, date_vente, mode, status, total, paye) VALUES "
-      "('V-2026-001', 'DOSSOU', 1788000000, 'Espèces', 'Payée', 68000, 68000)",
+      "INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, paye) VALUES "
+      "('dddddddd-dddd-4ddd-8ddd-dddddddddddd', '2026-01-01T00:00:00.000Z', 'V-2026-001', 'DOSSOU', 1788000000, 'Espèces', 'Payée', 68000, 68000)",
     );
     await db.customStatement(
       "INSERT INTO lignes_vente (id, vente_ref, produit_id, name, qte, pu, espece) VALUES "

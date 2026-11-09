@@ -2,6 +2,8 @@ import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../domain/services/numerotation_pieces.dart';
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../../core/events/domain_event.dart';
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
@@ -197,6 +199,7 @@ class VentesRepositoryDrift implements VentesRepository {
             VentesCompanion.insert(
               ref: reference,
               client: client,
+              clientId: Value(await _resoudreClient(client)),
               dateVente: maintenant,
               mode: mode,
               status: statut,
@@ -353,6 +356,10 @@ class VentesRepositoryDrift implements VentesRepository {
         VentesCompanion(
           status: const Value(StatutVente.annulee),
           motifAnnulation: Value(motif),
+          // Toute modification locale repasse la vente a envoyer.
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
         ),
       );
     });
@@ -405,6 +412,9 @@ class VentesRepositoryDrift implements VentesRepository {
           status: Value(
             nouveauPaye >= vente.total ? StatutVente.payee : StatutVente.avance,
           ),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
         ),
       );
     });
@@ -497,19 +507,32 @@ class VentesRepositoryDrift implements VentesRepository {
 
   // ---------------------------------------------------------------- internes
 
-  /// Référence 'V-AAAA-NNN' — Doc D1.
+  /// Référence officielle : `V-P2-2026-001` pour un poste appairé (DV-21),
+  /// `V-2026-001` sinon. Séquence continue par poste et par année.
   Future<String> _prochaineReference(int annee) async {
-    final prefixe = 'V-$annee-';
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    final prefixe = NumerotationPieces.prefixeVente(annee, code);
     final existantes = await (_db.select(
       _db.ventes,
     )..where((v) => v.ref.like('$prefixe%'))).get();
 
     var maximum = 0;
     for (final vente in existantes) {
-      final numero = int.tryParse(vente.ref.substring(prefixe.length));
+      final numero = NumerotationPieces.sequence(vente.ref, prefixe);
       if (numero != null && numero > maximum) maximum = numero;
     }
-    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+    return NumerotationPieces.composer(prefixe, maximum + 1);
+  }
+
+  /// Le client que désigne ce nom, **s'il n'y en a qu'un** (casse et espaces
+  /// ignorés). Deux homonymes : `null`, on ne devine pas qui a acheté.
+  Future<String?> _resoudreClient(String nom) async {
+    final cherche = nom.trim().toLowerCase();
+    if (cherche.isEmpty) return null;
+    final trouves = (await _db.select(_db.clients).get()).where(
+      (c) => c.nom.trim().toLowerCase() == cherche,
+    );
+    return trouves.length == 1 ? trouves.first.id : null;
   }
 
   Future<void> _decrementerStock(String produitId, int quantite) async {

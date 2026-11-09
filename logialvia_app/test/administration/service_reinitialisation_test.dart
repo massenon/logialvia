@@ -21,9 +21,11 @@ void main() {
   /// Crée une activité complète : une vente, une écriture, une fiche, un lot.
   Future<void> creerActivite() async {
     await db.customStatement(
-      'INSERT INTO ventes (ref, client, date_vente, mode, status, total, paye) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, paye) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
+        'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+        '2026-01-01T00:00:00.000Z',
         'V-2026-001',
         'AGOSSOU Prudence',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,
@@ -274,9 +276,11 @@ void main() {
       await service.executer();
 
       await db.customStatement(
-        'INSERT INTO ventes (ref, client, date_vente, mode, status, total, '
-        'paye) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, '
+        'paye) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
+          'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          '2026-01-01T00:00:00.000Z',
           'V-2026-001',
           'Client Comptant',
           DateTime(2026, 9, 1).millisecondsSinceEpoch ~/ 1000,

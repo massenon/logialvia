@@ -129,6 +129,23 @@ temporaire).
 
 **Reste** : le branchement `onWindowClose` de `main.dart` n'est pas testable sans fenêtre (le comportement qu'il appelle l'est) ; `POST /sync/demandes` ne couvre que `module_actif` et `parametres_entreprise` (les autres référentiels — barèmes, calendrier de prophylaxie, plan comptable… — attendent leur palier).
 
+## 6g. Palier 3 (poste) : produits, lignes de vente et ventes en UUID
+
+**Fait (09/11/2026), schémas v33 et v34, côté poste uniquement** — la synchronisation des ventes avec le serveur est le palier suivant (§6h).
+
+- **v33 — `produits_vendables` et `lignes_vente` en UUID.** `lignes_vente.produit_id` suit. La migration passe par une table de correspondance ancien entier → nouvel UUID : **chaque ligne de vente garde son produit** (vérifié par jointure sur une vraie base v32, ids volontairement non consécutifs), les produits déjà **archivés en corbeille** voient leur instantané réécrit (sinon ils reviendraient sans UUID), aucune ligne orpheline (`PRAGMA foreign_key_check`), rejouable sans changer un UUID.
+- **v34 — `ventes`** reçoit son `id` (UUID, unique), `client_id`, `sync_status`, `sync_motif`, `updated_at`. **La clé primaire reste `ref`** : lignes, écritures comptables et factures s'y rattachent par texte, et la reconstruire aurait touché tout le comptable. `ref` est le **numéro officiel** remis au client (DV-21) ; `id` est l'identité synchronisée. Une vente existante est `pending` et son instant de saisie est **sa date de vente** (pas l'instant de la migration : il ferait gagner une vieille vente contre une correction faite ailleurs). Vérifié : **les lignes ne sont pas emportées par `ON DELETE CASCADE`** quand la table est reconstruite.
+- **Références à préfixe de poste (DV-21)** : `V-P2-2026-001` pour un poste appairé, `V-2026-001` pour un poste jamais appairé ; séquence continue **par poste et par année** ; aucune renumérotation rétroactive. Le **code attribué survit à la déconnexion** (sinon un poste déconnecté mélangerait ses références avec celles d'avant l'appairage). `P1` et `P12` ne se mélangent pas (le préfixe se termine par un tiret).
+- **`client_id` — la limite des homonymes, levée autant que possible.** Le POS saisit un nom libre : la vente est rattachée au client **si un seul client porte ce nom** (casse et espaces ignorés) ; **deux homonymes ou un nom libre (« Client Comptant ») : `client_id` reste vide**, on ne devine pas qui a acheté, le nom saisi est conservé tel quel. La migration fait de même pour les ventes existantes. *Reste* : un vrai sélecteur de client au POS (le champ est du texte libre) lèverait l'ambiguïté à la source.
+- Toute modification locale d'une vente (annulation, règlement d'une avance) la **remet à envoyer** avec un nouvel instant de saisie.
+- **Tests** : migrations v33 (8) et v34 (7) sur de vraies bases antérieures, références et liaison client (15) ; 14 mutations vérifiées (v33 : 5, ventes et v34 : 9).
+
+## 6h. Ce qui reste du palier 3 (serveur et moteur)
+
+Rien de ce qui suit n'existe encore : **tables `produits_vendables`, `ventes`, `lignes_vente` côté serveur** (migrations, modèles, `TableSync`), règle d'**unicité de la référence** (globale pour `V-Pn-…`, par poste pour les références sans code, voir ci-dessous), **lot jamais coupé entre une vente et ses lignes**, absorption par le poste des ventes d'un autre poste **sans toucher à son stock local** (le stock est une donnée dérivée, `46_` §2.2), et les **produits comme référentiel** (création et modification au poste proposées au serveur comme demandes ; `produits_vendables.stock` jamais synchronisé).
+
+Règle d'unicité retenue : deux postes qui ont chacun des ventes d'**avant l'appairage** (`V-2026-001`) produiraient le même numéro. Le serveur garde donc `UNIQUE(reference)` **pour les références à code de poste**, et `UNIQUE(device_id, reference)` pour les anciennes ; un doublon refusé revient au poste en `conflict` avec son motif.
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,
@@ -174,7 +191,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | **fait** (09/11/2026) : voir §6b |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | **fait** (09/11/2026) pour 3 tables (référentiels + clients), 129 tests, mutations vérifiées ; voir `46_` §6. W3b livré aussi (demandes, resynchronisation, remise à zéro ; 144 tests) ; reste `POST /sync/demandes` et les 35 autres tables, voir `46_` §7 |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
-| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **palier 1 fait** (`clients`, schéma v31, 09/11/2026) ; voir §6d. Restent 21 fichiers de tables |
+| P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1 et 3 (poste) faits** : `clients` (v31), `produits_vendables`, `lignes_vente`, `ventes` (v33-v34), références à préfixe de poste ; voir §6d et §6g. Restent 18 fichiers de tables et la synchronisation des ventes (§6h) |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
 | P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait pour `clients`** (§6d) ; reste les autres tables, la synchronisation automatique et la modale |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |

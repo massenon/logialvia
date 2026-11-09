@@ -18,6 +18,7 @@ class PreferencesPosteRepository {
   static const String _cleIdentifiantPoste = 'poste.identifiant';
   static const String _cleAdresseServeur = 'sync.adresse_serveur';
   static const String _cleCodePoste = 'sync.code_poste';
+  static const String _cleCodeAttribue = 'poste.code_attribue';
   static const String _cleCompteAppaire = 'sync.compte';
   static const String _cleAppaireLe = 'sync.appaire_le';
   static const String _cleCurseurTirage = 'sync.curseur';
@@ -119,6 +120,11 @@ class PreferencesPosteRepository {
   /// Code attribué par le serveur à l'appairage (`P1`, `P2`… : DV-21).
   Future<String?> codePoste() => _lire(_cleCodePoste);
 
+  /// Code attribué une fois pour toutes par le serveur (`P1`, `P2`…), conservé
+  /// même après une déconnexion. `null` : poste jamais appairé (références au
+  /// format sans code, `V-AAAA-NNN`).
+  Future<String?> codeAttribue() => _lire(_cleCodeAttribue);
+
   /// Compte WEB utilisé pour l'appairage — jamais son mot de passe.
   Future<String?> compteAppaire() => _lire(_cleCompteAppaire);
 
@@ -133,6 +139,10 @@ class PreferencesPosteRepository {
     required DateTime le,
   }) async {
     await _ecrire(_cleCodePoste, codePoste);
+    // Le code est STABLE (DV-21) : il survit a la deconnexion. Un poste qui se
+    // deconnecte ne repasse pas au format sans code, ses refs resteraient sinon
+    // melangees avec celles d'avant l'appairage.
+    await _ecrire(_cleCodeAttribue, codePoste);
     await _ecrire(_cleCompteAppaire, compte);
     await _ecrire(_cleAppaireLe, le.toIso8601String());
   }

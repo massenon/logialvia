@@ -99,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 33;
+  static const int versionSchema = 34;
 
   @override
   int get schemaVersion => versionSchema;
@@ -401,6 +401,11 @@ class AppDatabase extends _$AppDatabase {
         // d'hier pointent vers le NOUVEL identifiant de leur produit.
         await _produitsEtLignesEnUuid(m);
       }
+      if (from < 34) {
+        // DV-19, palier 3b : `ventes` recoit son UUID, son `client_id` et les
+        // colonnes de synchronisation. La cle primaire reste `ref`.
+        await _ventesEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -513,6 +518,44 @@ class AppDatabase extends _$AppDatabase {
     }
 
     await customStatement('DROP TABLE IF EXISTS _map_produits');
+  }
+
+  /// Donne a `ventes` un UUID, un `client_id` et les colonnes de synchronisation.
+  /// Idempotent : une base qui a deja la colonne `id` est laissee telle quelle.
+  Future<void> _ventesEnUuid(Migrator m) async {
+    if (await _colonneExiste('ventes', 'id')) return;
+
+    await m.alterTable(
+      TableMigration(
+        ventes,
+        columnTransformer: {
+          ventes.id: const CustomExpression<String>(_uuidSql),
+          // Une vente d'hier a ete SAISIE le jour de sa vente : c'est son instant
+          // de saisie (pas celui de la migration, qui la ferait gagner contre
+          // une correction faite ailleurs).
+          ventes.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', date_vente, 'unixepoch')",
+          ),
+        },
+        newColumns: [
+          ventes.id,
+          ventes.clientId,
+          ventes.syncStatus,
+          ventes.syncMotif,
+          ventes.updatedAt,
+        ],
+      ),
+    );
+
+    // Rattache chaque vente a son client quand le NOM ne designe qu'UN client.
+    // Deux clients homonymes : on ne devine pas, `client_id` reste vide.
+    await customStatement(
+      'UPDATE ventes SET client_id = ('
+      'SELECT c.id FROM clients c '
+      'WHERE lower(trim(c.nom)) = lower(trim(ventes.client))) '
+      'WHERE (SELECT COUNT(*) FROM clients c '
+      'WHERE lower(trim(c.nom)) = lower(trim(ventes.client))) = 1',
+    );
   }
 
   /// Reconstruit `clients` en UUID. Idempotent : une base dont `clients.id` est

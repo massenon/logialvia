@@ -186,9 +186,11 @@ void main() {
   group('Migration v17', () {
     test('les ventes antérieures restent sans échéance', () async {
       await db.customStatement(
-        'INSERT INTO ventes (ref, client, date_vente, mode, status, total, '
-        'paye) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, '
+        'paye) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
+          'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          '2026-01-01T00:00:00.000Z',
           'V-2025-001',
           'AGOSSOU Prudence',
           DateTime(2025, 5, 1).millisecondsSinceEpoch ~/ 1000,
