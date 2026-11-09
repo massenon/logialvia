@@ -78,6 +78,8 @@
         text-decoration: none !important;
     }
 
+}
+
 /* Vue imprimable (`47e_`) : fidele a l'etat imprime du poste. Navigation, boutons et formulaires
    disparaissent ; les tableaux gardent leurs bordures et ne se coupent pas au milieu d'une ligne. */
 @media print {
