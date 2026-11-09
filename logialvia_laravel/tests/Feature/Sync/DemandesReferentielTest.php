@@ -153,8 +153,9 @@ class DemandesReferentielTest extends TestCase
 
     public function test_un_refus_rejoue_rend_le_meme_motif(): void
     {
-        $poste = $this->poste('caissier');
-        $d = $this->demande('module_actif', ['module_id' => 'bovins', 'is_actif' => true]);
+        // Refus DEFINITIF (module inconnu) : memorise. Un refus pour droit ne l'est pas (`47g_`).
+        $poste = $this->poste('admin', 'gerante');
+        $d = $this->demande('module_actif', ['module_id' => 'dragons', 'is_actif' => true]);
         $premier = $this->envoyer($poste, [$d])->json('rejected.0.motif');
 
         $this->envoyer($poste, [$d])->assertJsonPath('rejected.0.motif', $premier);

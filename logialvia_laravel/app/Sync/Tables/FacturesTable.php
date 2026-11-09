@@ -370,7 +370,7 @@ class FacturesTable extends TableSync
     public function reserverTransmission(User $utilisateur, string $deviceId, string $factureId): array
     {
         if (! $utilisateur->can('manage-facturation')) {
-            return [403, ['message' => "Ce compte n'a pas le droit de transmettre des factures."]];
+            return [403, ['message' => "Ce compte n'a pas le droit de transmettre des factures.", 'code' => 'droit_insuffisant']];
         }
 
         $facture = Facture::query()->find($factureId);

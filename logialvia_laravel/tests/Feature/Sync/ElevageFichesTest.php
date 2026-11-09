@@ -397,7 +397,7 @@ class ElevageFichesTest extends TestCase
 
         $recodee = $b2 + [];
         $recodee['code'] = 'B1';
-        $recodee['updated_at'] = $this->instant('2030-01-01 00:00:00');
+        $recodee['updated_at'] = $this->instant(now()->addMinute()->format('Y-m-d H:i:s'));
 
         $this->assertSame(
             'Ce code de bande est déjà utilisé pour cette filière.',

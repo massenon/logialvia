@@ -69,7 +69,7 @@ class DemandesReferentiel
             if ($issue === null) {
                 $accepted[] = $id;
             } else {
-                $rejected[] = ['id' => $id, 'motif' => $issue];
+                $rejected[] = ['id' => $id, 'motif' => $issue] + ($this->codeRefus !== null ? ['code' => $this->codeRefus] : []);
             }
         }
 
@@ -84,9 +84,73 @@ class DemandesReferentiel
         return ['accepted' => $accepted, 'rejected' => $rejected];
     }
 
+    /** Code stable du refus de la demande en cours (`null` : refus ordinaire). */
+    private ?string $codeRefus = null;
+
+    /** Refus pour droit insuffisant : code stable `droit_insuffisant` (`47g_`). */
+    private function refusDroit(string $motif): string
+    {
+        $this->codeRefus = DroitsPoste::CODE_REFUS;
+
+        return $motif;
+    }
+
+    /**
+     * Droits qui ouvrent chaque type de demande (un SEUL suffit). Source unique : le poste
+     * l'apprend (`DroitsPoste`, liste `demandes`) et ne propose que ces types.
+     */
+    public const DROITS_PAR_TYPE = [
+        self::TYPE_MODULE => ['manage-modules'],
+        self::TYPE_PARAMETRES => ['manage-parametres'],
+        self::TYPE_PRODUIT => ['manage-ventes'],
+        self::TYPE_INTRANT => ['manage-stocks', 'manage-achats'],
+        self::TYPE_BAREME => ['manage-elevage'],
+        self::TYPE_TAUX_POIDS => ['manage-elevage'],
+        self::TYPE_ECHEANCE => ['manage-elevage'],
+        self::TYPE_COMPTE => ['manage-comptabilite'],
+    ];
+
+    /** Ce compte peut-il PROPOSER ce type de demande ? (un type inconnu : non) */
+    public static function peutProposer(User $utilisateur, string $type): bool
+    {
+        foreach (self::DROITS_PAR_TYPE[$type] ?? [] as $droit) {
+            if ($utilisateur->can($droit)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return list<string> Les types de demande que ce compte peut proposer. */
+    public static function typesPermis(User $utilisateur): array
+    {
+        return array_values(array_filter(
+            array_keys(self::DROITS_PAR_TYPE),
+            fn (string $type) => self::peutProposer($utilisateur, $type),
+        ));
+    }
+
+    /** Un refus lie a l'etat du MOMENT (droits, horloge) n'est jamais definitif : on ne le memorise pas. */
+    private const REFUS_PROVISOIRES = [DroitsPoste::CODE_REFUS, GardeHorloge::CODE];
+
+    private function motifDroit(string $type): string
+    {
+        return match ($type) {
+            self::TYPE_MODULE => 'Droit insuffisant pour modifier les modules actifs.',
+            self::TYPE_PARAMETRES => 'Droit insuffisant pour modifier les paramètres de l\'entreprise.',
+            self::TYPE_PRODUIT => 'Droit insuffisant pour modifier le catalogue.',
+            self::TYPE_INTRANT => 'Droit insuffisant pour modifier les intrants.',
+            self::TYPE_COMPTE => 'Droit insuffisant pour modifier le plan comptable.',
+            default => 'Droit insuffisant pour modifier les paramètres d\'élevage.',
+        };
+    }
+
     /** @return string|null Le motif du refus, ou `null` si la demande est acceptee. */
     private function une(User $utilisateur, string $deviceId, array $demande): ?string
     {
+        $this->codeRefus = null;
+
         $v = Validator::make($demande, [
             'id' => ['required', 'uuid'],
             'type' => ['required', 'string'],
@@ -112,6 +176,18 @@ class DemandesReferentiel
 
         $saisie = CarbonImmutable::parse($demande['saisi_le'])->utc();
 
+        // `47g_` : un instant de saisie dans le futur gagnerait toutes les comparaisons.
+        if (($motif = GardeHorloge::controler(['saisi_le' => $demande['saisi_le']])) !== null) {
+            $this->codeRefus = GardeHorloge::CODE;
+
+            return $motif;
+        }
+
+        // `47g_` : le droit se verifie AVANT tout (le poste ne propose que ce qu'il peut ecrire).
+        if (isset(self::DROITS_PAR_TYPE[$demande['type']]) && ! self::peutProposer($utilisateur, $demande['type'])) {
+            return $this->refusDroit($this->motifDroit($demande['type']));
+        }
+
         $motif = match ($demande['type']) {
             self::TYPE_MODULE => $this->module($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_PARAMETRES => $this->parametres($utilisateur, $demande['donnees'], $saisie, $cle),
@@ -121,6 +197,12 @@ class DemandesReferentiel
             self::TYPE_COMPTE => $this->compte($utilisateur, $demande['donnees'], $saisie, $cle),
             default => "Type de demande inconnu du serveur : « {$demande['type']} ».",
         };
+
+        // Droits et horloge : refus provisoire, rien n'est memorise (la meme demande,
+        // renvoyee quand le droit est accorde, sera jugee de nouveau).
+        if ($this->codeRefus !== null && in_array($this->codeRefus, self::REFUS_PROVISOIRES, true)) {
+            return $motif;
+        }
 
         DemandeReferentiel::query()->create([
             'id' => $demande['id'],
@@ -155,7 +237,7 @@ class DemandesReferentiel
             return "Module inconnu du serveur : « $cle ».";
         }
         if (! $utilisateur->can('manage-modules')) {
-            return 'Droit insuffisant pour modifier les modules actifs.';
+            return $this->refusDroit('Droit insuffisant pour modifier les modules actifs.');
         }
 
         $module = ModuleActif::query()->where('module_id', $cle)->first();
@@ -222,7 +304,7 @@ class DemandesReferentiel
             return $v->errors()->first();
         }
         if (! $utilisateur->can('manage-parametres')) {
-            return 'Droit insuffisant pour modifier les paramètres de l\'entreprise.';
+            return $this->refusDroit('Droit insuffisant pour modifier les paramètres de l\'entreprise.');
         }
 
         $parametres = ParametresEntreprise::courant();
@@ -292,7 +374,7 @@ class DemandesReferentiel
             return 'Le coût de revient dépasse le tarif indicatif : chaque vente serait à perte.';
         }
         if (! $utilisateur->can('manage-ventes')) {
-            return 'Droit insuffisant pour modifier le catalogue.';
+            return $this->refusDroit('Droit insuffisant pour modifier le catalogue.');
         }
 
         $champs = [
@@ -367,7 +449,7 @@ class DemandesReferentiel
             return $v->errors()->first();
         }
         if (! $utilisateur->can('manage-stocks') && ! $utilisateur->can('manage-achats')) {
-            return 'Droit insuffisant pour modifier les intrants.';
+            return $this->refusDroit('Droit insuffisant pour modifier les intrants.');
         }
 
         $champs = [
@@ -488,9 +570,9 @@ class DemandesReferentiel
 
         $archive = (bool) ($donnees['archive'] ?? false);
         if (! $utilisateur->can($archive ? 'archive-elevage' : 'manage-elevage')) {
-            return $archive
+            return $this->refusDroit($archive
                 ? 'Droit insuffisant pour supprimer un paramètre d\'élevage.'
-                : 'Droit insuffisant pour modifier les paramètres d\'élevage.';
+                : 'Droit insuffisant pour modifier les paramètres d\'élevage.');
         }
 
         $valeurs = [];
@@ -572,7 +654,7 @@ class DemandesReferentiel
             return "Le numéro {$donnees['numero_compte']} ne peut pas appartenir à la classe {$donnees['classe']}.";
         }
         if (! $utilisateur->can('manage-comptabilite')) {
-            return 'Droit insuffisant pour modifier le plan comptable.';
+            return $this->refusDroit('Droit insuffisant pour modifier le plan comptable.');
         }
 
         $champs = [

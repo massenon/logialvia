@@ -11,6 +11,7 @@ use App\Services\Comptabilite\ReportANouveau;
 use App\Services\Comptabilite\Verrous;
 use App\Support\Audit;
 use App\Support\UuidDeterministe;
+use App\Sync\DroitsPoste;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -100,7 +101,7 @@ class ClotureExerciceTable extends TableSync
             return $v->errors()->first();
         }
         if ($this->utilisateur === null || ! $this->utilisateur->can('close-fiscal-year')) {
-            return 'Droit insuffisant pour clôturer un exercice (close-fiscal-year).';
+            return $this->refuserAvecCode(DroitsPoste::CODE_REFUS, 'Droit insuffisant pour clôturer un exercice (close-fiscal-year).');
         }
 
         $annee = (int) $ligne['annee'];

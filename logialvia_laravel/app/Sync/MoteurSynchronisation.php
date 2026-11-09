@@ -76,14 +76,25 @@ class MoteurSynchronisation
                 ->all();
         }
 
-        return [
+        $reponse = [
             // Le curseur n'avance chez le poste qu'apres la DERNIERE page.
             'server_time' => $jusqua->format('Y-m-d\TH:i:s.u\Z'),
+            // L'heure du serveur A L'INSTANT de la reponse (`server_time` est fige par `until`
+            // pendant la pagination) : le poste y mesure le decalage de son horloge (`47g_`).
+            'server_now' => GardeHorloge::maintenant()->format('Y-m-d\TH:i:s.u\Z'),
             'page' => $page,
             'last_page' => $dernierePage,
             'reset_mark' => $this->marqueCourante(),
             'tables' => $tables,
         ];
+
+        // Les droits du compte (`47g_`), rafraichis a chaque tirage : un droit accorde au serveur,
+        // un changement de compte ou une reconnexion arrivent au poste a la synchronisation suivante.
+        if ($page === 1) {
+            $reponse['droits'] = DroitsPoste::pour($utilisateur);
+        }
+
+        return $reponse;
     }
 
     // ----------------------------------------------------------------- Envoi
@@ -148,19 +159,27 @@ class MoteurSynchronisation
         }
 
         if (! $table->peutEcrire($utilisateur)) {
-            return $this->tableRefusee($lignes, "Droit insuffisant pour écrire dans « {$table->nom()} ».");
+            return $this->tableRefusee($lignes, "Droit insuffisant pour écrire dans « {$table->nom()} ».", DroitsPoste::CODE_REFUS);
         }
 
         $resultat = ['accepted' => [], 'rejected' => [], 'ignored' => []];
 
         foreach ($lignes as $ligne) {
             $ligne = (array) $ligne;
-            $motif = $table->absorber($deviceId, $ligne);
+            $table->reinitialiserCodeRefus();
+
+            // Garde d'horloge (`47g_`), pour TOUTE table, avant son absorbeur propre.
+            if (($motif = GardeHorloge::controler($ligne)) !== null) {
+                $code = GardeHorloge::CODE;
+            } else {
+                $motif = $table->absorber($deviceId, $ligne);
+                $code = $table->codeRefus();
+            }
 
             if ($motif === null) {
                 $resultat['accepted'][] = $ligne['id'];
             } else {
-                $resultat['rejected'][] = ['id' => $this->identifiant($ligne), 'motif' => $motif];
+                $resultat['rejected'][] = ['id' => $this->identifiant($ligne), 'motif' => $motif] + ($code !== null ? ['code' => $code] : []);
             }
         }
 
@@ -168,11 +187,11 @@ class MoteurSynchronisation
     }
 
     /** @return array{accepted: list<string>, rejected: list<array>, ignored: list<array>} */
-    private function tableRefusee(array $lignes, string $motif): array
+    private function tableRefusee(array $lignes, string $motif, ?string $code = null): array
     {
         return [
             'accepted' => [],
-            'rejected' => array_map(fn ($l) => ['id' => $this->identifiant($l), 'motif' => $motif], $lignes),
+            'rejected' => array_map(fn ($l) => ['id' => $this->identifiant($l), 'motif' => $motif] + ($code !== null ? ['code' => $code] : []), $lignes),
             'ignored' => [],
         ];
     }

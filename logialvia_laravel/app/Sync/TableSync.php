@@ -23,7 +23,32 @@ abstract class TableSync
 
     public const FAIT = 'fait';
 
+    /** Poste nul du web (`Catalogue::POSTE_WEB`) : les ecrans du serveur ecrivent par les memes absorbeurs. */
+    private const POSTE_WEB = '00000000-0000-0000-0000-000000000000';
+
+    /** Code stable du dernier refus de cette table (`null` : refus ordinaire, sans code). */
+    private ?string $codeRefus = null;
+
     abstract public function nom(): string;
+
+    /** Code stable (`droit_insuffisant`, `horloge_en_avance`) du dernier refus rendu par [absorber]. */
+    public function codeRefus(): ?string
+    {
+        return $this->codeRefus;
+    }
+
+    public function reinitialiserCodeRefus(): void
+    {
+        $this->codeRefus = null;
+    }
+
+    /** Pose le code du refus et rend son motif. */
+    protected function refuserAvecCode(string $code, string $motif): string
+    {
+        $this->codeRefus = $code;
+
+        return $motif;
+    }
 
     abstract public function nature(): string;
 
@@ -150,6 +175,13 @@ abstract class TableSync
 
         if ($validateur->fails()) {
             return $validateur->errors()->first();
+        }
+
+        // Garde d'horloge (`47g_`) : un instant de saisie dans le futur gelerait la ligne. Les ecrans
+        // du web (poste nul) y echappent : ils datent leur ecriture APRES la ligne qu'ils remplacent
+        // (`max(maintenant, existante + 1 µs)`), y compris une ligne deja gelee par une horloge en avance.
+        if ($deviceId !== self::POSTE_WEB && ($motif = GardeHorloge::controler($ligne)) !== null) {
+            return $this->refuserAvecCode(GardeHorloge::CODE, $motif);
         }
 
         // Controles croises (plusieurs champs, ou une ligne d'une autre table).

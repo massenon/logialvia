@@ -423,7 +423,7 @@ class FacturesTest extends TestCase
         $this->pousser($a, [$etat])->assertOk();
 
         // Saisie PLUS RECENTE que l'etat du serveur : l'horloge ne decide pas, le rang decide.
-        $bilan = $this->bilan($this->pousser($a, [array_merge($f, $tentative, ['updated_at' => '2999-01-01T00:00:00.000000Z'])]));
+        $bilan = $this->bilan($this->pousser($a, [array_merge($f, $tentative, ['updated_at' => now()->addMinute()->format('Y-m-d\TH:i:s.u\Z')])]));
 
         $this->assertSame("La facture est déjà « $libelle » sur le serveur : un statut ne régresse jamais.", $bilan['rejected'][0]['motif']);
         $this->assertSame($actuel, Facture::query()->find($f['id'])->statut);
@@ -437,7 +437,7 @@ class FacturesTest extends TestCase
         $this->pousser($a, [$f])->assertOk();
         $this->pousser($a, [$this->normaliser($f)])->assertOk();
 
-        $double = $this->normaliser($f, ['code_mecef' => 'CODE-B', 'nim' => 'NIM-B', 'updated_at' => '2999-01-01T00:00:00.000000Z']);
+        $double = $this->normaliser($f, ['code_mecef' => 'CODE-B', 'nim' => 'NIM-B', 'updated_at' => now()->addMinute()->format('Y-m-d\TH:i:s.u\Z')]);
         $bilan = $this->bilan($this->pousser($b, [$double]));
 
         $this->assertSame('Cette facture est déjà normalisée sous un autre code (CODE-A) : une normalisation ne change pas.', $bilan['rejected'][0]['motif']);

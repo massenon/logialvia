@@ -177,18 +177,20 @@ class CouveuseTest extends TestCase
     public function test_les_mirages_sont_des_modifications_du_lot_saisies_dans_le_temps(): void
     {
         $a = $this->poste('admin', 'gerante');
-        $lot = $this->ligneCycle(['updated_at' => '2026-11-01T10:00:00.000000Z']);
+        // Instants relatifs a maintenant : la garde d'horloge (`47g_`) refuse un instant de saisie futur.
+        $instant = fn (string $decalage) => now()->modify($decalage)->format('Y-m-d\TH:i:s.u\Z');
+        $lot = $this->ligneCycle(['updated_at' => $instant('-10 days')]);
         $this->bilanLots($a, [$lot]);
 
-        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 22, 'updated_at' => '2026-11-08T10:00:00.000000Z'])]);
+        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 22, 'updated_at' => $instant('-5 days')])]);
         $this->assertSame(22, CycleCouveuse::query()->find($lot['id'])->oeufs_blancs_j7);
         $this->assertNull(CycleCouveuse::query()->find($lot['id'])->oeufs_gates_j14);
 
-        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 22, 'oeufs_gates_j14' => 0, 'updated_at' => '2026-11-15T10:00:00.000000Z'])]);
+        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 22, 'oeufs_gates_j14' => 0, 'updated_at' => $instant('-1 minute')])]);
         $row = CycleCouveuse::query()->find($lot['id']);
         $this->assertSame(0, $row->oeufs_gates_j14, 'mirage fait, zéro œuf gâté : distinct de « pas miré »');
 
-        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 99, 'updated_at' => '2026-11-05T10:00:00.000000Z'])]);
+        $this->bilanLots($a, [array_merge($lot, ['oeufs_blancs_j7' => 99, 'updated_at' => $instant('-7 days')])]);
         $this->assertSame(22, CycleCouveuse::query()->find($lot['id'])->oeufs_blancs_j7, 'saisie plus ancienne : sans effet');
     }
 

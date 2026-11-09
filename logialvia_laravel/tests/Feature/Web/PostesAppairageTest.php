@@ -82,6 +82,36 @@ class PostesAppairageTest extends TestCase
             ->assertSee('Marie');
     }
 
+    public function test_la_colonne_droits_donne_le_compte_le_role_et_ce_que_le_poste_peut_envoyer(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $caisse = $this->appairer($this->utilisateur('caissier', 'marie'));
+        $gerante = $this->appairer($this->utilisateur('admin', 'gerante'));
+
+        $composant = Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->assertSee('Droits')
+            ->assertSeeHtml('data-droits="'.$caisse->code.'"')
+            ->assertSeeHtml('data-droits="'.$gerante->code.'"')
+            ->assertSee('marie')
+            ->assertSee('Agent de Vente')
+            ->assertSee('gerante')
+            ->assertSee('Administrateur');
+
+        // Le caissier ne propose qu'un type de reglage (le catalogue) ; l'administrateur tous.
+        $composant->assertSee('propose 1 type(s) de réglages')->assertSee('propose 8 type(s) de réglages');
+    }
+
+    public function test_un_compte_sans_droit_d_ecriture_est_dit_en_lecture_seule(): void
+    {
+        $sans = User::factory()->create(['username' => 'vide', 'name' => 'Vide']);
+        $poste = $this->appairer($sans);
+
+        Livewire::actingAs($this->utilisateur('admin', 'admin'))->test(PostesAppairage::class)
+            ->assertSeeHtml('data-droits="'.$poste->code.'"')
+            ->assertSee('Lecture seule : rien à envoyer au serveur')
+            ->assertSee('Aucun rôle');
+    }
+
     public function test_sans_poste_la_page_l_explique(): void
     {
         Livewire::actingAs($this->utilisateur('admin'))->test(PostesAppairage::class)

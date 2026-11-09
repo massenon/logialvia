@@ -7,6 +7,8 @@ use App\Models\Poste;
 use App\Services\AuthentificationService;
 use App\Services\PostesService;
 use App\Support\Audit;
+use App\Sync\DroitsPoste;
+use App\Sync\GardeHorloge;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -61,6 +63,9 @@ class AuthController extends Controller
             'user' => $this->profil($utilisateur),
             'must_change_password' => $utilisateur->must_change_password,
             'poste' => ['id' => $appairage['poste']->id, 'code' => $appairage['poste']->code],
+            // `47g_` : ce que ce compte a le droit d'ecrire, et l'heure du serveur (decalage d'horloge).
+            'droits' => DroitsPoste::pour($utilisateur),
+            'server_now' => GardeHorloge::maintenant()->format('Y-m-d\TH:i:s.u\Z'),
         ]);
     }
 
@@ -74,6 +79,8 @@ class AuthController extends Controller
             'user' => $this->profil($utilisateur),
             'must_change_password' => $utilisateur->must_change_password,
             'poste' => $poste ? ['id' => $poste->id, 'code' => $poste->code] : null,
+            'droits' => DroitsPoste::pour($utilisateur),
+            'server_now' => GardeHorloge::maintenant()->format('Y-m-d\TH:i:s.u\Z'),
         ]);
     }
 

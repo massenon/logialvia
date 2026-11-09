@@ -20,6 +20,7 @@
                     <th class="px-md py-sm">Code</th>
                     <th class="px-md py-sm">Poste</th>
                     <th class="px-md py-sm">Dernier utilisateur</th>
+                    <th class="px-md py-sm">Droits</th>
                     <th class="px-md py-sm">Appairé le</th>
                     <th class="px-md py-sm">Dernier contact</th>
                     <th class="px-md py-sm">État</th>
@@ -33,6 +34,24 @@
                         <td class="px-md py-sm font-bold text-brand-navy">{{ $poste->code }}</td>
                         <td class="px-md py-sm font-mono" title="{{ $poste->device_id }}">{{ \Illuminate\Support\Str::substr($poste->device_id, 0, 8) }}…</td>
                         <td class="px-md py-sm">{{ $poste->dernierUtilisateur?->name ?? '—' }}</td>
+                        <td class="px-md py-sm" data-droits="{{ $poste->code }}">
+                            @if ($droits[$poste->id] ?? null)
+                                @php($d = $droits[$poste->id])
+                                <span class="font-semibold">{{ $d['compte'] }}</span> · {{ $d['roles'] }}
+                                @if ($d['supprime'])
+                                    <span class="font-semibold text-error-deep">(compte supprimé)</span>
+                                @endif
+                                <br><span class="text-outline">
+                                    @if ($d['lecture_seule'])
+                                        Lecture seule : rien à envoyer au serveur
+                                    @else
+                                        Envoie {{ $d['tables'] }} table(s) de saisies, propose {{ $d['demandes'] }} type(s) de réglages
+                                    @endif
+                                </span>
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td class="px-md py-sm">{{ $poste->appaire_le?->timezone(config('logialvia.fuseau'))->translatedFormat('d/m/Y H:i') ?? '—' }}</td>
                         <td class="px-md py-sm">{{ $poste->dernier_contact_le?->diffForHumans() ?? 'jamais' }}</td>
                         <td class="px-md py-sm">
@@ -55,7 +74,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-md py-lg text-center text-outline">
+                        <td colspan="8" class="px-md py-lg text-center text-outline">
                             Aucun poste appairé. Un poste apparaît ici dès sa première connexion.
                         </td>
                     </tr>
@@ -83,6 +102,15 @@
                     <dd class="font-mono" title="{{ $poste->device_id }}">{{ \Illuminate\Support\Str::substr($poste->device_id, 0, 8) }}…</dd>
                     <dt class="text-outline">Dernier utilisateur</dt>
                     <dd>{{ $poste->dernierUtilisateur?->name ?? '—' }}</dd>
+                    <dt class="text-outline">Droits</dt>
+                    <dd data-droits-carte="{{ $poste->code }}">
+                        @if ($droits[$poste->id] ?? null)
+                            {{ $droits[$poste->id]['compte'] }} · {{ $droits[$poste->id]['roles'] }}
+                            @if ($droits[$poste->id]['lecture_seule']) (lecture seule) @endif
+                        @else
+                            —
+                        @endif
+                    </dd>
                     <dt class="text-outline">Appairé le</dt>
                     <dd>{{ $poste->appaire_le?->timezone(config('logialvia.fuseau'))->translatedFormat('d/m/Y H:i') ?? '—' }}</dd>
                     <dt class="text-outline">Dernier contact</dt>

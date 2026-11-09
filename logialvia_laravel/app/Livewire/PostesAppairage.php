@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Poste;
 use App\Services\PostesService;
+use App\Sync\DroitsPoste;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -56,13 +57,50 @@ class PostesAppairage extends Component
         $this->posteAConfirmer = null;
     }
 
+    /**
+     * Etat de droits d'un poste : compte, role(s) et ce que le compte peut ecrire. `null` : aucun
+     * compte connu. Le serveur ne sait pas combien de saisies attendent DE DROIT sur le poste :
+     * cet etat-la se lit dans l'onglet Appairage du poste.
+     *
+     * @return array{compte: string, roles: string, tables: int, demandes: int, lecture_seule: bool, supprime: bool}|null
+     */
+    private function droitsDe(Poste $poste): ?array
+    {
+        $utilisateur = $poste->dernierUtilisateur;
+        if ($utilisateur === null) {
+            return null;
+        }
+
+        $d = DroitsPoste::pour($utilisateur);
+        $libelles = config('logialvia.roles');
+
+        return [
+            'compte' => $d['compte'],
+            'roles' => implode(', ', array_map(fn (string $r) => $libelles[$r] ?? $r, $d['roles'])) ?: 'Aucun rôle',
+            'tables' => count($d['tables_ecrites']),
+            'demandes' => count($d['demandes']),
+            // Les messages a l'editeur sont ouverts a tout compte : ils ne comptent pas comme un droit.
+            'lecture_seule' => array_diff($d['tables_ecrites'], ['messages_editeur']) === [] && $d['demandes'] === [],
+            'supprime' => $utilisateur->trashed(),
+        ];
+    }
+
     public function render()
     {
         $this->verifierDroit();
 
+        $postes = Poste::query()->with('dernierUtilisateur')->orderBy('code')->get()
+            ->sortBy(fn (Poste $p) => (int) substr($p->code, 1))->values();
+
+        // `47g_` : ce que le compte appaire a le droit d'ecrire (le poste ne propose que cela).
+        $droits = [];
+        foreach ($postes as $poste) {
+            $droits[$poste->id] = $this->droitsDe($poste);
+        }
+
         return view('livewire.postes-appairage', [
-            'postes' => Poste::query()->with('dernierUtilisateur')->orderBy('code')->get()
-                ->sortBy(fn (Poste $p) => (int) substr($p->code, 1))->values(),
+            'postes' => $postes,
+            'droits' => $droits,
             'aConfirmer' => $this->posteAConfirmer
                 ? Poste::query()->where('device_id', $this->posteAConfirmer)->first()
                 : null,
