@@ -87,7 +87,13 @@
     </div>
 
     <h2 class="mb-xs text-section-title font-bold">Créances Ouvertes</h2>
-    <p class="mb-sm text-xs text-outline">Le recouvrement d'une créance s'enregistre sur le poste, là où la vente a été saisie.</p>
+    <div class="mb-sm flex flex-wrap items-center gap-sm">
+        <p class="text-xs text-outline">Le recouvrement (total ou partiel) passe l'écriture Trésorerie / Clients et recalcule le solde du client.</p>
+        @if ($peutExporter)
+            <button type="button" wire:click="exporterCreances" data-action="exporter-creances" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Exporter (XLSX)</button>
+            <a href="{{ route('clients.creances.imprimer') }}" target="_blank" data-lien="imprimer-creances" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Imprimer / PDF</a>
+        @endif
+    </div>
     <div class="mb-lg overflow-x-auto rounded-lg border border-outline-variant bg-surface-card">
         <table class="w-full text-left text-xs" data-table="creances">
             <thead class="bg-surface-zebra text-caption uppercase text-outline">
@@ -97,6 +103,7 @@
                     <th class="px-md py-sm text-right">Montant Total</th>
                     <th class="px-md py-sm text-right">Solde Restant Dû</th>
                     <th class="px-md py-sm text-center">Ancienneté</th>
+                    <th class="px-md py-sm text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -110,9 +117,15 @@
                         <td class="px-md py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $jours > 10 ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline' }}">{{ $jours }} j</span>
                         </td>
+                        <td class="px-md py-sm text-right">
+                            @if ($peutGerer)
+                                <button type="button" wire:click="demanderRecouvrement('{{ $v->id }}')" data-action="recouvrer" class="font-semibold text-brand-navy">Enregistrer un Paiement</button>
+                            @endif
+                            <a href="{{ route('clients.relance', $v->id) }}" target="_blank" data-lien="relance" class="font-semibold text-outline underline">{{ $v->echeance === null ? 'Rappel de solde' : 'Lettre de relance' }}</a>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-md py-lg text-center text-outline">Aucune créance ouverte.</td></tr>
+                    <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucune créance ouverte.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -175,6 +188,28 @@
                     <button type="button" wire:click="confirmerSuppression" class="rounded-lg bg-error-deep px-md py-sm text-xs font-semibold text-white">Supprimer</button>
                 </div>
             </div>
+        </div>
+    @endif
+
+    @if ($aRecouvrer)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-recouvrement">
+            <form wire:submit="enregistrerRecouvrement" class="w-full max-w-sm rounded-lg bg-surface-card p-lg shadow-xl" data-modale="recouvrement">
+                <h2 id="titre-recouvrement" class="mb-sm text-modal-title font-bold">Enregistrer un Paiement</h2>
+                <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs"><strong>{{ $aRecouvrer->client }} · {{ $aRecouvrer->reference }}</strong><br>
+                    <span class="text-error-deep">Solde restant dû : {{ number_format($aRecouvrer->total - $aRecouvrer->paye, 0, ',', ' ') }} FCFA</span></p>
+                <label class="mb-sm block text-xs font-bold uppercase text-outline">Montant recouvré (FCFA) *
+                    <input type="text" inputmode="numeric" wire:model="recMontant" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm font-normal normal-case text-black"></label>
+                <label class="mb-sm block text-xs font-bold uppercase text-outline">Mode de règlement
+                    <select wire:model="recMode" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm font-normal normal-case text-black">
+                        @foreach ($modes as $m)<option value="{{ $m }}">{{ $m }}</option>@endforeach
+                    </select></label>
+                <p class="mb-sm text-caption text-outline">Un versement supérieur au reste dû est refusé. La vente passe en « Payée » une fois soldée.</p>
+                @if ($erreurRecouvrement)<p role="alert" class="mb-sm text-xs text-error-deep" data-erreur="recouvrement">{{ $erreurRecouvrement }}</p>@endif
+                <div class="flex justify-end gap-sm">
+                    <button type="button" wire:click="fermerRecouvrement" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Enregistrer</button>
+                </div>
+            </form>
         </div>
     @endif
 </div>

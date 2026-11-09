@@ -4,19 +4,23 @@ namespace App\Livewire;
 
 use App\Models\Client;
 use App\Models\Vente;
+use App\Services\Commerce\VentesWeb;
+use App\Support\ExportXlsx;
 use App\Sync\Tables\ClientsTable;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Clients et Creances (Dart : `clients_screen.dart`).
  *
  * Les clients sont des FAITS (dernier ecrivain gagne). Le web ecrit par `ClientsTable::absorber`
  * — la meme validation et la meme regle que pour un poste. `solde_creance` est DERIVE des
- * ventes : jamais saisi ici. Le recouvrement d'une creance reste au poste (il modifie une vente).
+ * ventes : jamais saisi ici. Le recouvrement d'une creance (`VentesWeb::recouvrer`) modifie la vente
+ * par `VentesTable::absorber` (le solde est recalcule par le serveur) et passe l'ecriture 411 / tresorerie.
  */
 #[Layout('components.layouts.app')]
 class Clients extends Component
@@ -42,6 +46,14 @@ class Clients extends Component
     public ?string $message = null;
 
     public ?string $aSupprimer = null;
+
+    public ?string $recouvrementId = null;
+
+    public string $recMontant = '';
+
+    public string $recMode = 'Espèces';
+
+    public ?string $erreurRecouvrement = null;
 
     private function verifierDroitDeGerer(): void
     {
@@ -126,6 +138,64 @@ class Clients extends Component
         $this->message = $motif ?? "Client « {$client->nom} » supprimé.";
     }
 
+    public function demanderRecouvrement(string $venteId): void
+    {
+        $this->verifierDroitDeGerer();
+        $this->message = null;
+        $this->erreurRecouvrement = null;
+        $vente = $this->creances()->firstWhere('id', $venteId);
+        $this->recouvrementId = $vente?->id;
+        $this->recMontant = '';
+        $this->recMode = $vente !== null && in_array($vente->mode, VentesWeb::MODES, true) ? $vente->mode : 'Espèces';
+    }
+
+    public function fermerRecouvrement(): void
+    {
+        $this->recouvrementId = null;
+        $this->erreurRecouvrement = null;
+    }
+
+    public function enregistrerRecouvrement(): void
+    {
+        $this->verifierDroitDeGerer();
+        $id = $this->recouvrementId;
+        if ($id === null) {
+            return;
+        }
+        $texte = str_replace([' ', "\u{00A0}", "\u{202F}", ','], ['', '', '', '.'], trim($this->recMontant));
+        $montant = $texte !== '' && is_numeric($texte) ? (float) $texte : 0.0;
+
+        $motif = (new VentesWeb(Auth::user()))->recouvrer($id, $montant, $this->recMode);
+        if ($motif !== null) {
+            $this->erreurRecouvrement = $motif;
+
+            return;
+        }
+        $reference = Vente::query()->whereKey($id)->value('reference');
+        $this->message = "Paiement enregistré sur la vente $reference.";
+        $this->recouvrementId = null;
+        $this->erreurRecouvrement = null;
+    }
+
+    /** Export XLSX des creances ouvertes : memes colonnes que l'ecran. Droit `export-ventes`. */
+    public function exporterCreances(): StreamedResponse
+    {
+        abort_unless(Auth::user()?->can('export-ventes'), 403);
+        $maintenant = CarbonImmutable::now(config('logialvia.fuseau'));
+        $fuseau = config('logialvia.fuseau');
+        $lignes = [['Client', 'Référence Vente', 'Date', 'Échéance', 'Montant Total', 'Déjà Réglé', 'Solde Restant Dû', 'Ancienneté (jours)']];
+        foreach ($this->creances() as $v) {
+            $lignes[] = [
+                $v->client, $v->reference, $v->date_vente->timezone($fuseau)->format('d/m/Y'),
+                $v->echeance?->timezone($fuseau)->format('d/m/Y') ?? '—',
+                (int) round($v->total), (int) round($v->paye), (int) round($v->total - $v->paye),
+                (int) $v->date_vente->diffInDays($maintenant, true),
+            ];
+        }
+
+        return ExportXlsx::telecharger(array_map(fn ($l) => array_map(ExportXlsx::typer(...), $l), $lignes), 'creances-clients.xlsx', 'Créances');
+    }
+
     private function maintenant(): string
     {
         return CarbonImmutable::now('UTC')->format('Y-m-d\TH:i:s.u\Z');
@@ -175,6 +245,9 @@ class Clients extends Component
             'evenements' => $evenements,
             'maintenant' => $maintenant,
             'peutGerer' => Auth::user()?->can('manage-ventes') ?? false,
+            'peutExporter' => Auth::user()?->can('export-ventes') ?? false,
+            'aRecouvrer' => $this->recouvrementId ? $this->creances()->firstWhere('id', $this->recouvrementId) : null,
+            'modes' => VentesWeb::MODES,
             'aConfirmer' => $this->aSupprimer ? Client::query()->find($this->aSupprimer) : null,
         ])->title('Clients et Créances');
     }
