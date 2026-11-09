@@ -202,4 +202,16 @@ trait PostesDeTest
             'reference' => 'ACH-P1-2026-001',
         ], $surcharge);
     }
+
+    protected function ligneMouvementProduit(string $produitId, array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'horodatage' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'produit_id' => $produitId,
+            'article' => 'Poulet de chair',
+            'motif' => 'Correction de stock (catalogue)',
+            'quantite' => -3,
+        ], $surcharge);
+    }
 }

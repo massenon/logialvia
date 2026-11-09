@@ -149,6 +149,7 @@ return [
             \App\Sync\Tables\VentesTable::class,
             \App\Sync\Tables\AchatsTable::class,
             \App\Sync\Tables\MouvementsIntrantTable::class,
+            \App\Sync\Tables\MouvementsProduitTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),
