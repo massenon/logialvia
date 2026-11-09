@@ -354,12 +354,14 @@ class DemandesReferentiel
             'cat' => ['required', 'string', 'max:80'],
             'unit' => ['required', 'string', 'max:40'],
             'threshold' => ['nullable', 'integer', 'min:0'],
+            'archive' => ['nullable', 'boolean'],
         ], [
             'code.required' => "Le code de l'intrant est obligatoire.",
             'name.required' => "La désignation de l'intrant est obligatoire.",
             'cat.required' => "La catégorie de l'intrant est obligatoire.",
             'unit.required' => "L'unité de l'intrant est obligatoire.",
             'threshold.min' => 'Le seuil d\'alerte ne peut être négatif.',
+            'archive.boolean' => 'Le drapeau d\'archivage de l\'intrant est invalide.',
         ]);
         if ($v->fails()) {
             return $v->errors()->first();
@@ -374,19 +376,24 @@ class DemandesReferentiel
             'unit' => $donnees['unit'],
             'threshold' => (int) ($donnees['threshold'] ?? 0),
         ];
-        $intrant = Intrant::query()->find($donnees['code']);
+        // Suppression au poste : pierre tombale (`archive`), jamais d'effacement (47h D4).
+        $archive = (bool) ($donnees['archive'] ?? false);
+        $intrant = Intrant::withoutGlobalScopes()->find($donnees['code']);
         if ($intrant === null) {
-            (new Intrant)->forceFill($champs + ['code' => $donnees['code'], 'saisi_le' => $saisie])->save();
+            (new Intrant)->forceFill($champs + [
+                'code' => $donnees['code'], 'saisi_le' => $saisie, 'archive_le' => $archive ? $saisie : null,
+            ])->save();
 
             return null;
         }
-        if (collect($champs)->every(fn ($valeur, $colonne) => $intrant->{$colonne} == $valeur)) {
+        if (collect($champs)->every(fn ($valeur, $colonne) => $intrant->{$colonne} == $valeur)
+            && ($intrant->archive_le !== null) === $archive) {
             return null;
         }
         if ($intrant->saisi_le !== null && $intrant->saisi_le->greaterThanOrEqualTo($saisie)) {
             return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
         }
-        $intrant->forceFill($champs + ['saisi_le' => $saisie])->save();
+        $intrant->forceFill($champs + ['saisi_le' => $saisie, 'archive_le' => $archive ? $saisie : null])->save();
 
         return null;
     }

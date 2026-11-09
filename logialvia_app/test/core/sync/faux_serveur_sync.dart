@@ -199,6 +199,9 @@ class FauxServeurSync {
     return plusRecent.toIso8601String();
   }
 
+  /// Le vrai serveur (`RemiseAZeroService`) efface dans l'ordre INVERSE des dépendances
+  /// (clés étrangères : achats avant fournisseurs, lignes avant pièces). Ici l'ordre
+  /// ci-dessous est celui-là ; le piège de 47h D5 était côté vrai serveur (ordre direct).
   void remettreAZero() {
     clients.clear();
     ventes.clear(); // les produits (référentiel) sont préservés
@@ -1984,15 +1987,24 @@ class FauxServeurSync {
   }
 
   void _intrant(Map<String, dynamic> demande) {
-    final donnees = demande['donnees'] as Map<String, dynamic>;
+    var donnees = demande['donnees'] as Map<String, dynamic>;
     final saisie = demande['saisi_le'] as String;
     final code = donnees['code'] as String;
+    // Pierre tombale (47h D4) : `archive` devient `archive_le`, jamais d'effacement.
+    final archive = donnees['archive'] == true;
+    donnees = {...donnees}..remove('archive');
+    donnees['archive_le'] = archive ? saisie : null;
     final existant = intrants[code];
     if (existant == null) {
       ajouterIntrant(donnees, saisiLe: saisie);
       return;
     }
-    if (donnees.entries.every((e) => existant[e.key] == e.value)) return;
+    final identique = donnees.entries.every(
+      (e) => e.key == 'archive_le'
+          ? (existant[e.key] != null) == (e.value != null)
+          : existant[e.key] == e.value,
+    );
+    if (identique) return;
     if (!DateTime.parse(
       saisie,
     ).isAfter(DateTime.parse(existant['saisi_le'] as String))) {

@@ -30,6 +30,12 @@ class IntrantsTable extends TableSync
         return Intrant::class;
     }
 
+    /** Les archives (pierres tombales) descendent aussi vers les postes. */
+    public function requete(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Intrant::withoutGlobalScopes();
+    }
+
     public function colonneCurseur(): string
     {
         return 'updated_at';

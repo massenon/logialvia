@@ -134,7 +134,7 @@ class AchatsTable extends TableSync
         // Les intrants (referentiel) partent AVANT les achats : un code inconnu rend
         // l'achat inexploitable par les autres postes.
         foreach ($ligne['lignes'] as $l) {
-            if (! Intrant::query()->whereKey($l['intrant_code'])->exists()) {
+            if (! Intrant::withoutGlobalScopes()->whereKey($l['intrant_code'])->exists()) {
                 return "Intrant inconnu du serveur : « {$l['intrant_code']} ».";
             }
         }

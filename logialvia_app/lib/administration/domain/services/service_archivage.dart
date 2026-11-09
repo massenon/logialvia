@@ -316,6 +316,9 @@ class ServiceArchivage {
         await DepotDemandesReferentiel(_db).proposerTauxPoids(idRestaure);
       } else if (type.nomTable == TypeArchivable.prophylaxie.nomTable) {
         await DepotDemandesReferentiel(_db).proposerEcheance(idRestaure);
+      } else if (type.nomTable == TypeArchivable.intrants.nomTable) {
+        // Intrant restauré : lève la pierre tombale posée au serveur (47h D4).
+        await DepotDemandesReferentiel(_db).proposerIntrant(idRestaure);
       }
     });
   }

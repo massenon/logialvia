@@ -109,6 +109,76 @@ class FideliteEtAdoptionTest extends TestCase
         );
     }
 
+    // ------------------------------------------------------------------ D4
+
+    private function intrantDemande(): array
+    {
+        return ['code' => 'INT-009', 'name' => 'Son de blé', 'cat' => 'Intrants Provende', 'unit' => 'kg', 'threshold' => 3];
+    }
+
+    public function test_la_suppression_d_un_intrant_l_archive_sans_l_effacer_et_il_redescend_archive(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $b = $this->poste('admin', 'seconde');
+        $intrant = $this->intrantDemande();
+        $this->demander($a, 'intrant', $intrant, '2026-11-01T10:00:00.000Z')->assertJsonPath('rejected', []);
+
+        $this->demander($a, 'intrant', $intrant + ['archive' => true], '2026-11-02T10:00:00.000Z')
+            ->assertJsonPath('rejected', []);
+
+        $this->assertNull(Intrant::query()->find('INT-009'), 'invisible des ecrans');
+        $ligne = Intrant::withoutGlobalScopes()->find('INT-009');
+        $this->assertNotNull($ligne->archive_le);
+        $servi = collect($this->avecJeton($b['jeton'])->getJson('/api/sync/pull')->assertOk()->json('tables.intrants'))
+            ->firstWhere('code', 'INT-009');
+        $this->assertNotNull($servi['archive_le'], 'la pierre tombale descend vers les postes');
+    }
+
+    public function test_une_restauration_plus_recente_leve_l_archivage_une_plus_ancienne_est_refusee(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $intrant = $this->intrantDemande();
+        $this->demander($a, 'intrant', $intrant, '2026-11-01T10:00:00.000Z');
+        $this->demander($a, 'intrant', $intrant + ['archive' => true], '2026-11-03T10:00:00.000Z');
+
+        $this->demander($a, 'intrant', $intrant, '2026-11-02T10:00:00.000Z')
+            ->assertJsonPath('rejected.0.motif', 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.');
+        $this->assertNotNull(Intrant::withoutGlobalScopes()->find('INT-009')->archive_le);
+
+        $this->demander($a, 'intrant', $intrant, '2026-11-04T10:00:00.000Z')->assertJsonPath('rejected', []);
+        $this->assertNull(Intrant::withoutGlobalScopes()->find('INT-009')->archive_le);
+    }
+
+    public function test_un_mouvement_d_un_intrant_archive_reste_accepte_l_historique_l_exige(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $intrant = $this->intrantDemande();
+        $this->demander($a, 'intrant', $intrant + ['archive' => true], '2026-11-02T10:00:00.000Z');
+
+        $bilan = $this->pousserTable($a, 'mouvements_intrant', [[
+            'id' => (string) Str::uuid(),
+            'horodatage' => '2026-11-01T09:00:00.000Z',
+            'intrant_code' => 'INT-009',
+            'article' => 'Son de blé',
+            'type' => 'Entrée',
+            'motif' => 'Avant suppression',
+            'quantite' => 5,
+            'reference' => null,
+            'updated_at' => '2026-11-01T09:00:00.000Z',
+        ]]);
+
+        $this->assertSame([], $bilan['rejected']);
+        $this->assertCount(1, $bilan['accepted']);
+    }
+
+    public function test_le_drapeau_d_archivage_d_un_intrant_invalide_est_refuse(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+
+        $this->demander($a, 'intrant', $this->intrantDemande() + ['archive' => 'peut-etre'], '2026-11-02T10:00:00.000Z')
+            ->assertJsonPath('rejected.0.motif', 'Le drapeau d\'archivage de l\'intrant est invalide.');
+    }
+
     // ------------------------------------------------------------------ D2
 
     public function test_un_texte_libre_est_conserve_octet_pour_octet(): void

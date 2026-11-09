@@ -1,5 +1,7 @@
+import 'package:drift/drift.dart';
 
 import '../../../administration/data/sync/depot_demandes_referentiel.dart';
+import '../../../administration/domain/services/service_archivage.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
 
@@ -73,6 +75,14 @@ class TableIntrantsPoste implements TablePoste {
           _db.intrants,
         )..where((i) => i.code.equals(code))).getSingleOrNull();
 
+        // Pierre tombale : l'intrant a été supprimé sur un autre poste (`47h_` D4).
+        final archive = l['archive_le'];
+        if (archive is String && archive.isNotEmpty) {
+          if (locale != null && await _archiver(locale)) absorbees++;
+          if (demande != null) await _depot.abandonner(demande.id);
+          continue;
+        }
+
         if (locale == null) {
           await _db
               .into(_db.intrants)
@@ -111,6 +121,30 @@ class TableIntrantsPoste implements TablePoste {
         supplantees: supplantees,
       );
     });
+  }
+
+  /// Archive ici l'intrant supprimé ailleurs (corbeille de CE poste, restaurable). Un
+  /// intrant déjà cité par un achat ou un mouvement d'ICI reste : son historique l'exige
+  /// (clé étrangère) et le supprimer à la main échouerait de la même façon.
+  /// Faux = conservé.
+  Future<bool> _archiver(IntrantRow intrant) async {
+    final cite = await _db
+        .customSelect(
+          'SELECT 1 FROM lignes_achat WHERE intrant_code = ? '
+          'UNION SELECT 1 FROM mouvements_intrant WHERE intrant_code = ? LIMIT 1',
+          variables: [
+            Variable.withString(intrant.code),
+            Variable.withString(intrant.code),
+          ],
+        )
+        .getSingleOrNull();
+    if (cite != null) return false;
+    await ServiceArchivage(_db).archiver(
+      type: TypeArchivable.intrants,
+      cle: intrant.code,
+      designation: '${intrant.code} — ${intrant.name}',
+    );
+    return true;
   }
 
   @override

@@ -84,7 +84,7 @@ class MouvementsIntrantTable extends TableSync
         if ((float) $ligne['quantite'] == 0.0) {
             return 'La quantité d\'un mouvement ne peut pas être nulle.';
         }
-        if (! Intrant::query()->whereKey($ligne['intrant_code'])->exists()) {
+        if (! Intrant::withoutGlobalScopes()->whereKey($ligne['intrant_code'])->exists()) {
             return "Intrant inconnu du serveur : « {$ligne['intrant_code']} ».";
         }
 

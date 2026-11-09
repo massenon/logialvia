@@ -279,6 +279,11 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       utilisateurId: utilisateurId,
       utilisateurNom: utilisateurNom,
     );
+    // Les autres postes l'apprennent (pierre tombale, jamais d'effacement serveur) ;
+    // proposé APRÈS l'archivage local réussi : une suppression refusée n'est pas diffusée.
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageIntrant(ligne);
+    }
   }
 
   @override

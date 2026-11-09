@@ -201,6 +201,15 @@ class DepotDemandesReferentiel {
     await proposer(type: typeIntrant, cle: code, donnees: champsIntrant(ligne));
   }
 
+  /// Suppression d'un intrant (`47h_` D4) : le serveur ne l'efface jamais (achats,
+  /// mouvements et autres postes peuvent le citer), il le marque archivé (pierre
+  /// tombale) et le redistribue. [ligne] : l'état AVANT la suppression locale.
+  Future<void> proposerArchivageIntrant(IntrantRow ligne) => proposer(
+    type: typeIntrant,
+    cle: ligne.code,
+    donnees: {...champsIntrant(ligne), 'archive': true},
+  );
+
   /// Une seule fois : propose TOUS les intrants locaux. Les intrants semés ont les
   /// mêmes codes sur tous les postes (le serveur accepte sans conflit ce qu'il connaît
   /// à l'identique) ; ceux que ce poste a créés seuls sont ainsi connus AVANT que les
