@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:logialvia_app/core/sync/droits_poste.dart';
 import 'package:logialvia_app/elevage/data/sync/identifiants_elevage.dart';
 
 /// Un faux serveur qui rejoue le CONTRAT de `logialvia_laravel`
@@ -24,6 +25,26 @@ class FauxServeurSync {
 
   /// Latence artificielle de chaque réponse (réseau lent).
   Duration? delaiReponse;
+
+  /// `47g_` : droits du compte appairé, tels que le vrai serveur les annonce au tirage
+  /// (`DroitsPoste::pour`). `null` : le faux serveur n'en annonce pas (et ne refuse rien pour
+  /// droit) ; sinon il REFUSE, avec le code stable `droit_insuffisant`, toute table de faits
+  /// absente de `tablesEcrites` et tout type de demande absent de `demandes`.
+  DroitsPoste? droits;
+
+  /// Faux : le serveur applique ses droits mais ne les annonce plus (le poste garde ceux qu'il
+  /// connaissait : on éprouve le refus `droit_insuffisant` rendu à un poste aux droits périmés).
+  bool annoncerDroits = true;
+
+  /// `47g_` : écart de l'horloge du faux serveur sur la VRAIE heure (positif : en avance). Le
+  /// tirage rend `server_now` ; une saisie postérieure de plus de la tolérance (5 min) à cette
+  /// heure est refusée `horloge_en_avance` (rejoue `GardeHorloge`).
+  Duration decalageServeur = Duration.zero;
+
+  /// Faux : le serveur ne dit pas son heure (ancien serveur) ; le poste ne peut rien mesurer.
+  bool annoncerHeure = true;
+
+  DateTime get heureServeur => DateTime.now().toUtc().add(decalageServeur);
 
   /// Erreur 500 forcée sur ce numéro de page du tirage (1-based), une fois.
   int? panneAuTirageDePage;
@@ -353,6 +374,9 @@ class FauxServeurSync {
     final debut = (page - 1) * lignesParPage;
     return _json(200, {
       'server_time': jusqua,
+      if (annoncerHeure) 'server_now': heureServeur.toIso8601String(),
+      if (droits != null && annoncerDroits && page == 1)
+        'droits': droits!.versJson(),
       'page': page,
       'last_page': derniere,
       'reset_mark': marque,
@@ -484,6 +508,11 @@ class FauxServeurSync {
     final acceptees = <String>[];
     final refusees = <Map<String, String>>[];
     for (final d in (corps['demandes'] as List).cast<Map<String, dynamic>>()) {
+      final provisoire = _refusDemandeProvisoire(d);
+      if (provisoire != null) {
+        refusees.add(provisoire);
+        continue;
+      }
       if (refuserDemandes != null) {
         refusees.add({'id': d['id'] as String, 'motif': refuserDemandes!});
         continue;
@@ -560,9 +589,83 @@ class FauxServeurSync {
         !t.isAfter(DateTime.parse(jusqua));
   }
 
+  /// Refus PROVISOIRES du vrai serveur (`47g_`), jamais mémorisés : droit insuffisant et
+  /// horloge en avance. `null` : la demande est jugée normalement.
+  Map<String, String>? _refusDemandeProvisoire(Map<String, dynamic> d) {
+    final id = d['id'] as String;
+    final saisi = DateTime.tryParse('${d['saisi_le']}');
+    if (saisi != null &&
+        saisi.toUtc().difference(heureServeur) > toleranceHorloge) {
+      return {
+        'id': id,
+        'motif': _motifHorloge(saisi.toUtc().difference(heureServeur)),
+        'code': codeHorlogeEnAvance,
+      };
+    }
+    if (droits != null && !droits!.peutProposer('${d['type']}')) {
+      return {
+        'id': id,
+        'motif': 'Droit insuffisant pour proposer « ${d['type']} ».',
+        'code': codeDroitInsuffisant,
+      };
+    }
+    return null;
+  }
+
+  String _motifHorloge(Duration avance) =>
+      'L\'horloge de ce poste avance de ${formaterDuree(avance)} : corrigez '
+      'la date et l\'heure du poste.';
+
+  /// Refus de lignes AVANT les absorbeurs des tables, comme le moteur du vrai serveur : une table
+  /// de faits que le compte ne peut pas écrire (`droit_insuffisant`), puis tout instant de saisie
+  /// en avance de plus de la tolérance (`horloge_en_avance`). Rend le lot restant et les refus.
+  ({Map<String, dynamic> tables, Map<String, List<Map<String, dynamic>>> refus})
+  _prefiltrer(Map<String, dynamic> tablesBrutes) {
+    final restantes = <String, dynamic>{};
+    final refus = <String, List<Map<String, dynamic>>>{};
+    final maintenantServeur = heureServeur;
+    for (final e in tablesBrutes.entries) {
+      final lignes = (e.value as List).cast<Map<String, dynamic>>();
+      final ok = <Map<String, dynamic>>[];
+      for (final l in lignes) {
+        final id = l['id'];
+        if (droits != null && !droits!.peutEcrireTable(e.key)) {
+          (refus[e.key] ??= []).add({
+            'id': id,
+            'motif': 'Droit insuffisant pour écrire dans « ${e.key} ».',
+            'code': codeDroitInsuffisant,
+          });
+          continue;
+        }
+        Duration? avance;
+        for (final cle in clesInstantSaisie) {
+          final v = l[cle];
+          final t = v is String ? DateTime.tryParse(v)?.toUtc() : null;
+          if (t == null) continue;
+          final a = t.difference(maintenantServeur);
+          if (a > toleranceHorloge && (avance == null || a > avance)) {
+            avance = a;
+          }
+        }
+        if (avance != null) {
+          (refus[e.key] ??= []).add({
+            'id': id,
+            'motif': _motifHorloge(avance),
+            'code': codeHorlogeEnAvance,
+          });
+          continue;
+        }
+        ok.add(l);
+      }
+      restantes[e.key] = ok;
+    }
+    return (tables: restantes, refus: refus);
+  }
+
   Future<http.Response> _push(http.Request r) async {
-    final corps = jsonDecode(r.body) as Map<String, dynamic>;
-    envois.add(corps);
+    final brut = jsonDecode(r.body) as Map<String, dynamic>;
+    envois.add(brut);
+    final corps = {...brut};
     if (corps['reset_mark'] != marque) {
       return _json(409, {
         'message': 'Ce poste ne connaît pas la dernière remise à zéro.',
@@ -576,6 +679,10 @@ class FauxServeurSync {
       await crochet();
     }
 
+    final prefiltre = _prefiltrer(
+      (brut['tables'] as Map).cast<String, dynamic>(),
+    );
+    corps['tables'] = prefiltre.tables;
     final reponse = <String, dynamic>{};
     final lignes = ((corps['tables'] as Map)['clients'] as List?) ?? const [];
     final acceptees = <String>[];
@@ -736,6 +843,15 @@ class FauxServeurSync {
             .cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
+    }
+    // Les refus provisoires (droit, horloge) rejoignent le bilan de leur table.
+    for (final e in prefiltre.refus.entries) {
+      final bilan = (reponse[e.key] ??= <String, dynamic>{
+        'accepted': <String>[],
+        'rejected': <Object>[],
+        'ignored': <Object>[],
+      }) as Map<String, dynamic>;
+      bilan['rejected'] = [...(bilan['rejected'] as List), ...e.value];
     }
     return _json(200, reponse);
   }

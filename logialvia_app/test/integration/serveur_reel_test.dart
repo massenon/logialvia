@@ -22,6 +22,7 @@ import 'package:logialvia_app/core/events/domain_event.dart';
 import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
+import 'package:logialvia_app/core/sync/droits_poste.dart';
 import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
 import 'package:logialvia_app/core/sync/table_poste.dart';
@@ -397,7 +398,7 @@ void main() {
   );
 
   test(
-    'un caissier ne peut pas modifier les modules : refus avec le vrai motif du serveur',
+    'un caissier ne propose pas les modules : la demande attend le droit (`47g_`), jamais conflit',
     () async {
       final c = await poste(compteForce: 'caissier1')
         ..let(postes.add);
@@ -407,18 +408,15 @@ void main() {
 
       final r = await c.moteur.synchroniser();
 
-      // Le caissier propose aussi tout le semis (catalogue : accepté, il a le droit de
-      // vendre ; intrants, barèmes, plan comptable… : refusés, il n'a pas ces droits) :
-      // seule la demande de MODULE nous intéresse ici.
-      expect(r.demandesRefusees, greaterThanOrEqualTo(1), reason: r.message);
+      // Le poste connaît les droits de `caissier1` : il ne propose que le catalogue (droit de
+      // vendre) ; intrants, barèmes, plan comptable, modules… restent EN ATTENTE DE DROIT.
+      expect(r.demandesRefusees, 0, reason: r.message);
+      expect(r.enAttenteDeDroit, greaterThanOrEqualTo(1), reason: r.message);
       final d = (await c.db.select(c.db.demandesReferentiel).get()).singleWhere(
         (x) => x.type == 'module_actif',
       );
-      expect(d.syncStatus, 'conflict');
-      expect(
-        d.syncMotif,
-        'Droit insuffisant pour modifier les modules actifs.',
-      );
+      expect(d.syncStatus, 'pending', reason: 'jamais conflict');
+      expect(d.syncMotif, isNull);
     },
     skip: saute,
   );
@@ -691,15 +689,30 @@ void main() {
 
       final r = await c.moteur.synchroniser();
 
-      expect(r.refusees, greaterThanOrEqualTo(2), reason: r.message);
+      // `47g_` : le poste sait que `caissier1` n'écrit pas les achats : il ne les propose pas,
+      // ils attendent le droit (aucun refus du serveur, aucun conflit).
+      expect(r.refusees, 0, reason: r.message);
+      expect(r.enAttenteDeDroit, greaterThanOrEqualTo(2), reason: r.message);
       final fournisseur = await (c.db.select(
         c.db.fournisseurs,
       )..where((x) => x.id.equals(f.id))).getSingle();
-      expect(fournisseur.syncStatus, 'conflict');
-      expect(
-        fournisseur.syncMotif,
-        'Droit insuffisant pour écrire dans « fournisseurs ».',
+      expect(fournisseur.syncStatus, 'pending');
+      expect(fournisseur.syncMotif, isNull);
+
+      // Une session avec le bon droit (autre compte appairé à ce poste) : tout part.
+      final autre = await c.appairage.connecter(
+        adresse: adresse!,
+        identifiant: 'admin${++compte}',
+        motDePasse: mdp,
       );
+      expect(autre.reussi, isTrue, reason: autre.message);
+      final apres = await c.moteur.synchroniser();
+      expect(apres.reussie, isTrue, reason: apres.message);
+      expect(apres.enAttenteDeDroit, 0);
+      final parti = await (c.db.select(
+        c.db.fournisseurs,
+      )..where((x) => x.id.equals(f.id))).getSingle();
+      expect(parti.syncStatus, 'synced');
     },
     skip: saute,
   );
@@ -1032,7 +1045,11 @@ void main() {
         await saisirJour(
           a,
           jourPlus(2),
-          morts: [2, 0, 0], // des sujets existent seulement dans la 1re catégorie
+          morts: [
+            2,
+            0,
+            0,
+          ], // des sujets existent seulement dans la 1re catégorie
           observation: 'Traitement 47h',
         );
 
@@ -2088,16 +2105,24 @@ void main() {
               contenu: 'Comptable 47h',
             ),
           );
-          await vendre(c);
+          final refVente = await vendre(c);
           final r = await c.moteur.synchroniser();
           expect(r.issue, IssueSynchronisation.terminee, reason: r.message);
           final refus = await conflits(c);
           refus.remove('demandes_referentiel');
           expect(
             refus.keys,
-            contains('ventes'),
-            reason: 'pas de droit de vendre',
+            isNot(contains('ventes')),
+            reason:
+                'pas de droit de vendre : la vente attend le droit (`47g_`), '
+                'elle n\'est pas proposée donc pas refusée',
           );
+          expect(
+            r.enAttenteDeDroit,
+            greaterThanOrEqualTo(1),
+            reason: r.message,
+          );
+          expect((await laVente(c, refVente)).syncStatus, 'pending');
           expect(refus.keys, isNot(contains('ecriture_comptable')));
           expect(refus.keys, isNot(contains('notes_annexes')));
           // ignore: avoid_print
@@ -2647,6 +2672,440 @@ void main() {
   }
 
   const posteWeb = '00000000-0000-0000-0000-000000000000';
+
+  // ===========================================================================
+  // 47g — DROITS du compte et HORLOGE du poste, contre le VRAI serveur.
+  // ===========================================================================
+
+  group('47g : droits par compte', () {
+    for (final cas in const <(String?, String)>[
+      ('caissier1', 'caissier'),
+      ('comptable1', 'comptable'),
+      ('animalier1', 'animalier'),
+      (null, 'admin'),
+    ]) {
+      test(
+        '${cas.$1 ?? 'administrateur'} : synchronise exactement ce qu\'il peut, aucune demande en conflit à tort',
+        () async {
+          final c = await poste(compteForce: cas.$1)
+            ..let(postes.add);
+          final refVente = await vendre(c, qte: 1);
+          await sync(c);
+
+          final etat = await c.moteur.etatDroits();
+          final droits = etat.droits!;
+          expect(droits.roles, [cas.$2]);
+          expect(droits.compte, cas.$1 ?? startsWith('admin'));
+
+          final demandes = await c.db.select(c.db.demandesReferentiel).get();
+          expect(demandes, isNotEmpty);
+          var attendues = 0;
+          for (final d in demandes) {
+            if (droits.peutProposer(d.type)) {
+              expect(
+                d.syncStatus,
+                isNot('pending'),
+                reason: '${d.type}/${d.cle} : le compte peut le proposer',
+              );
+              expect(
+                d.syncMotif ?? '',
+                isNot(contains('Droit insuffisant')),
+                reason: '${d.type}/${d.cle}',
+              );
+            } else {
+              expect(
+                d.syncStatus,
+                'pending',
+                reason:
+                    '${d.type}/${d.cle} : en attente de droit, pas conflict',
+              );
+              attendues++;
+            }
+          }
+          // En attente de droit = les demandes ci-dessus + les saisies de faits que le compte ne
+          // peut pas écrire (la vente et son mouvement de stock, pour qui ne vend pas).
+          expect(etat.enAttenteDeDroit, greaterThanOrEqualTo(attendues));
+          if (cas.$2 == 'admin') {
+            expect(
+              etat.enAttenteDeDroit,
+              0,
+              reason: 'l\'administrateur propose tout',
+            );
+          } else {
+            expect(attendues, greaterThan(0), reason: cas.$2);
+          }
+          if (cas.$2 == 'caissier') {
+            // Le cas constaté par l'essai réel (47h D6) : ~74 demandes refusées pour rien.
+            expect(attendues, greaterThanOrEqualTo(60));
+          }
+
+          // Aucune ligne, aucune table : jamais de conflit pour droit insuffisant.
+          final refus = await conflits(c);
+          for (final e in refus.entries) {
+            for (final motif in e.value) {
+              expect(
+                motif,
+                isNot(contains('Droit insuffisant')),
+                reason: '${e.key} : $motif',
+              );
+            }
+          }
+          // Ce que le compte peut écrire est parti (sa vente, hors comptable).
+          expect(
+            (await laVente(c, refVente)).syncStatus,
+            droits.peutEcrireTable('ventes') ? 'synced' : 'pending',
+            reason: 'la vente part si le compte peut vendre, sinon elle attend',
+          );
+        },
+        skip: saute,
+      );
+    }
+
+    test(
+      'changement de compte : les demandes en attente de droit partent (comptable puis administrateur)',
+      () async {
+        final c = await poste(compteForce: 'comptable1')
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        final code = 'G47-${unique.substring(unique.length - 6)}';
+        await ApprovisionnementRepositoryDrift(c.db).enregistrerIntrant(
+          Intrant(
+            code: code,
+            nom: 'Intrant du comptable 47g',
+            categorie: Intrant.categories.first,
+            stock: 0,
+            unite: 'kg',
+            seuil: 1,
+            pmp: 0,
+          ),
+          creation: true,
+        );
+
+        final r1 = await sync(c);
+        expect(r1.enAttenteDeDroit, greaterThan(0), reason: r1.message);
+        await sync(b);
+        expect(
+          await (b.db.select(
+            b.db.intrants,
+          )..where((i) => i.code.equals(code))).getSingleOrNull(),
+          isNull,
+          reason: 'le comptable n\'a pas le droit de proposer un intrant',
+        );
+
+        // Un administrateur se reconnecte sur ce poste : tout ce qui attendait un droit part.
+        final autre = await c.appairage.connecter(
+          adresse: adresse!,
+          identifiant: 'admin${++compte}',
+          motDePasse: mdp,
+        );
+        expect(autre.reussi, isTrue, reason: autre.message);
+        final r2 = await sync(c);
+        expect(r2.enAttenteDeDroit, 0, reason: r2.message);
+        expect((await c.moteur.etatDroits()).droits!.roles, [
+          'admin',
+        ], reason: 'les droits suivent le compte appairé');
+        for (final d in await c.db.select(c.db.demandesReferentiel).get()) {
+          expect(
+            d.syncStatus,
+            isNot('pending'),
+            reason: '${d.type}/${d.cle} est parti',
+          );
+          expect(d.syncMotif ?? '', isNot(contains('Droit insuffisant')));
+        }
+        await sync(b);
+        expect(
+          (await (b.db.select(
+            b.db.intrants,
+          )..where((i) => i.code.equals(code))).getSingle()).name,
+          'Intrant du comptable 47g',
+          reason: 'la demande du comptable a bien atteint le serveur',
+        );
+      },
+      skip: saute,
+    );
+
+    test(
+      'droit accordé au serveur, sans reconnexion : la demande repart à la synchronisation suivante',
+      () async {
+        final nom = 'g47${unique.substring(unique.length - 7)}';
+        final cree = await web(
+          "\$u = App\\Models\\User::query()->create(['name'=>'G47',"
+          "'username'=>'$nom','password'=>'EssaiPoste-2026!','is_active'=>true,"
+          "'must_change_password'=>false]); \$u->assignRole('caissier'); echo 'cree';",
+        );
+        expect(cree, contains('cree'), reason: cree);
+        final c = await poste(compteForce: nom)
+          ..let(postes.add);
+        final code = 'G47W-${unique.substring(unique.length - 5)}';
+        await ApprovisionnementRepositoryDrift(c.db).enregistrerIntrant(
+          Intrant(
+            code: code,
+            nom: 'Intrant droit accordé',
+            categorie: Intrant.categories.first,
+            stock: 0,
+            unite: 'kg',
+            seuil: 1,
+            pmp: 0,
+          ),
+          creation: true,
+        );
+        final r1 = await sync(c);
+        expect(r1.enAttenteDeDroit, greaterThan(0));
+
+        final accorde = await web(
+          "App\\Models\\User::query()->where('username','$nom')->first()"
+          "->assignRole('admin'); echo 'accorde';",
+        );
+        expect(accorde, contains('accorde'), reason: accorde);
+
+        final r2 = await sync(c);
+        expect(r2.enAttenteDeDroit, 0, reason: r2.message);
+        expect(
+          (await c.moteur.etatDroits()).droits!.roles,
+          containsAll(['caissier', 'admin']),
+        );
+        final d = (await c.db.select(c.db.demandesReferentiel).get())
+            .where((x) => x.type == 'intrant' && x.cle == code)
+            .single;
+        expect(d.syncStatus, 'synced');
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'le serveur refuse avec le code stable `droit_insuffisant` (jamais de texte à comparer)',
+      () async {
+        final c = await poste(compteForce: 'animalier1')
+          ..let(postes.add);
+        final jeton = await c.depot.lire();
+        final marque = (await c.preferences.marqueRemiseAZero()) ?? 'initiale';
+        final reponse = await http.post(
+          Uri.parse('$adresse/api/sync/push'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jeton',
+          },
+          body: jsonEncode({
+            'device_id': await c.preferences.identifiantPoste(),
+            'reset_mark': marque,
+            'tables': {
+              'fournisseurs': [
+                {
+                  'id': nouvelUuid(),
+                  'nom': 'Interdit 47g',
+                  'updated_at': instantSaisie(),
+                },
+              ],
+            },
+          }),
+        );
+        expect(reponse.statusCode, 200);
+        final corps = jsonDecode(reponse.body) as Map<String, dynamic>;
+        final bilan = corps['fournisseurs'] as Map<String, dynamic>;
+        final refus =
+            (bilan['rejected'] as List).single as Map<String, dynamic>;
+        expect(refus['code'], 'droit_insuffisant');
+        expect(refus['motif'], contains('Droit insuffisant'));
+      },
+      skip: saute,
+    );
+  });
+
+  group('47g : horloge du poste (décalage simulé)', () {
+    tearDown(() => horlogePoste = DateTime.now);
+
+    Future<ClientRow> nouveauClient(_Poste p, String nom) async {
+      final k = await ClientsRepositoryDrift(p.db).creerClient(nom: nom);
+      return p.ligne(k.id);
+    }
+
+    for (final cas in <(String, Duration, String)>[
+      ('+1 h', const Duration(hours: 1), 'avance de 1 h'),
+      ('+2 jours', const Duration(days: 2), 'avance de 2 jours'),
+      ('+2 ans', const Duration(days: 730), 'avance de 2 ans'),
+    ]) {
+      test(
+        'poste ${cas.$1} : envoi suspendu, rien de gelé sur le serveur, reprise après correction',
+        () async {
+          final a = await poste()
+            ..let(postes.add);
+          final b = await poste()
+            ..let(postes.add);
+          await sync(a);
+          await sync(b);
+
+          horlogePoste = () => DateTime.now().add(cas.$2);
+          final nom = 'Horloge ${cas.$1} $unique';
+          final k = await nouveauClient(a, nom);
+          final r = await sync(a);
+          expect(r.envoiSuspendu, isTrue, reason: r.message);
+          expect(r.message, contains(cas.$3));
+          expect((await a.ligne(k.id)).syncStatus, 'pending');
+
+          // Rien n'a atteint le serveur : l'autre poste n'a rien.
+          await sync(b);
+          expect(
+            await (b.db.select(
+              b.db.clients,
+            )..where((x) => x.id.equals(k.id))).getSingleOrNull(),
+            isNull,
+          );
+
+          // Correction de l'horloge : la saisie (datée du futur) repart, bornée à l'heure du serveur.
+          horlogePoste = DateTime.now;
+          final r2 = await sync(a);
+          expect(r2.envoiSuspendu, isFalse, reason: r2.message);
+          expect(r2.acceptees, greaterThanOrEqualTo(1), reason: r2.message);
+          expect((await a.ligne(k.id)).syncStatus, 'synced');
+          await sync(b);
+          final chezB = await b.ligne(k.id);
+          expect(chezB.nom, nom);
+          expect(
+            DateTime.parse(
+              chezB.updatedAt,
+            ).isAfter(DateTime.now().toUtc().add(const Duration(minutes: 5))),
+            isFalse,
+            reason: 'le serveur ne détient aucun instant du futur',
+          );
+
+          // Aucune ligne gelée : l'autre poste, à l'heure juste, corrige et GAGNE.
+          await (b.db.update(
+            b.db.clients,
+          )..where((x) => x.id.equals(k.id))).write(
+            ClientsCompanion(
+              nom: Value('$nom corrigé'),
+              syncStatus: const Value('pending'),
+              updatedAt: Value(instantSaisie()),
+            ),
+          );
+          await sync(b);
+          await sync(a);
+          expect((await a.ligne(k.id)).nom, '$nom corrigé');
+        },
+        skip: saute,
+      );
+    }
+
+    test(
+      'poste en retard de 1 h : avertissement sans blocage ; avance de 4 min : avertie, envoyée ; de 6 min : suspendue',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        await sync(a);
+
+        horlogePoste = () => DateTime.now().subtract(const Duration(hours: 1));
+        await nouveauClient(a, 'Retard $unique');
+        final retard = await sync(a);
+        expect(retard.horloge!.etat, EtatHorloge.retard);
+        expect(retard.envoiSuspendu, isFalse);
+        expect(retard.acceptees, 1);
+        expect(retard.message, contains('retarde de 1 h'));
+
+        horlogePoste = () => DateTime.now().add(const Duration(minutes: 4));
+        await nouveauClient(a, 'Avance4 $unique');
+        final avance4 = await sync(a);
+        expect(avance4.horloge!.etat, EtatHorloge.avanceAvertissement);
+        expect(avance4.envoiSuspendu, isFalse);
+        expect(avance4.acceptees, 1, reason: avance4.message);
+        expect(avance4.refuseesHorloge, 0);
+
+        horlogePoste = () => DateTime.now().add(const Duration(minutes: 6));
+        await nouveauClient(a, 'Avance6 $unique');
+        final avance6 = await sync(a);
+        expect(avance6.horloge!.etat, EtatHorloge.avanceBloquante);
+        expect(avance6.envoiSuspendu, isTrue);
+      },
+      skip: saute,
+    );
+
+    test(
+      'le vrai serveur refuse `horloge_en_avance` (code stable) : +6 min refusé, +300 s accepté',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final jeton = await a.depot.lire();
+        final marque = (await a.preferences.marqueRemiseAZero()) ?? 'initiale';
+        final device = await a.preferences.identifiantPoste();
+        Future<Map<String, dynamic>> pousser(String instant) async {
+          final r = await http.post(
+            Uri.parse('$adresse/api/sync/push'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $jeton',
+            },
+            body: jsonEncode({
+              'device_id': device,
+              'reset_mark': marque,
+              'tables': {
+                'clients': [
+                  {
+                    'id': nouvelUuid(),
+                    'nom': 'Brut 47g $unique',
+                    'updated_at': instant,
+                  },
+                ],
+              },
+            }),
+          );
+          expect(r.statusCode, 200, reason: r.body);
+          final corps = jsonDecode(r.body) as Map<String, dynamic>;
+          return corps['clients'] as Map<String, dynamic>;
+        }
+
+        final maintenant = DateTime.now().toUtc();
+        for (final avance in [
+          const Duration(hours: 1),
+          const Duration(days: 2),
+          const Duration(days: 730),
+        ]) {
+          final bilan = await pousser(maintenant.add(avance).toIso8601String());
+          final refus = (bilan['rejected'] as List).single as Map;
+          expect(refus['code'], 'horloge_en_avance');
+          expect(
+            refus['motif'],
+            contains('corrigez la date et l\'heure du poste'),
+          );
+        }
+        expect(
+          (await pousser(
+            maintenant.add(const Duration(minutes: 4)).toIso8601String(),
+          ))['accepted'],
+          hasLength(1),
+        );
+        expect(
+          (await pousser(
+            maintenant.subtract(const Duration(hours: 1)).toIso8601String(),
+          ))['accepted'],
+          hasLength(1),
+        );
+      },
+      skip: saute,
+    );
+
+    test(
+      'le décalage est calculé à chaque synchronisation et mémorisé avec l\'appairage',
+      () async {
+        horlogePoste = () => DateTime.now().add(const Duration(hours: 1));
+        final a = await poste()
+          ..let(postes.add);
+        expect(
+          (await a.preferences.decalageHorloge())!.inMinutes,
+          closeTo(60, 1),
+        );
+
+        horlogePoste = DateTime.now;
+        await sync(a);
+        expect(
+          (await a.preferences.decalageHorloge())!.inSeconds.abs(),
+          lessThan(5),
+        );
+      },
+      skip: saute,
+    );
+  });
 
   group('écrans web : ce que le web écrit, le poste le reçoit', () {
     test(

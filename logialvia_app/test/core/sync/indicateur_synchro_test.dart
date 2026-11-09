@@ -5,6 +5,7 @@ import 'package:logialvia_app/administration/data/repositories/preferences_poste
 import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
+import 'package:logialvia_app/core/sync/identifiant_poste.dart';
 import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/planificateur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
@@ -176,4 +177,31 @@ void main() {
 
     expect(serveur.journal.where((j) => j.contains('pull')).length, avant + 1);
   });
+
+  testWidgets(
+    'horloge en avance : icône d\'horloge, et la modale de synchronisation le dit',
+    (t) async {
+      addTearDown(() => horlogePoste = DateTime.now);
+      await t.runAsync(() async {
+        await appairer();
+        horlogePoste = () => DateTime.now().add(const Duration(days: 2));
+        await planificateur.synchroniserMaintenant();
+      });
+      await afficher(t);
+
+      expect(icone(t).icon, Symbols.schedule);
+      expect(infobulle(t), contains('avance de 2 jours'));
+
+      await t.tap(find.byKey(const Key('indicateur-synchro')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('synchro-modale-horloge')), findsOneWidget);
+      expect(
+        find.textContaining('corrigez la date et l\'heure du poste'),
+        findsWidgets,
+      );
+      await t.tap(find.text('Compris'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('synchro-modale-horloge')), findsNothing);
+    },
+  );
 }

@@ -15,6 +15,8 @@ import 'package:logialvia_app/administration/presentation/screens/widgets/onglet
 import 'package:logialvia_app/administration/presentation/viewmodels/appairage_view_model.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
+import 'package:logialvia_app/core/sync/droits_poste.dart';
+import 'package:logialvia_app/core/sync/identifiant_poste.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
 import 'package:provider/provider.dart';
 
@@ -294,5 +296,94 @@ void main() {
       findsOneWidget,
     );
     expect(t.takeException(), isNull);
+  });
+
+  // ------------------------------------------------- Droits et horloge (`47g_`)
+
+  cas('état de droits : compte, rôle, en attente de droit, « Réessayer »', (
+    t,
+  ) async {
+    fauxSync.droits = const DroitsPoste(
+      compte: 'caissier1',
+      roles: ['caissier'],
+      tablesEcrites: {},
+      demandes: {'produit_vendable'},
+    );
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+    await ClientsRepositoryDrift(db).creerClient(nom: 'Mama Rita');
+
+    await t.tap(find.byKey(const Key('appairage-reessayer')));
+    await t.pumpAndSettle();
+
+    expect(find.text('Droits et horloge'), findsOneWidget);
+    expect(find.text('caissier1'), findsOneWidget);
+    expect(find.text('Agent de Vente'), findsOneWidget);
+    expect(find.textContaining('0 table(s) de saisies'), findsOneWidget);
+    expect(
+      find.textContaining(
+        '1 saisie(s) ou demande(s) que ce compte ne peut pas envoyer',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      fauxSync.clients,
+      isEmpty,
+      reason: 'rien n\'est proposé sans le droit',
+    );
+
+    // Le droit est accordé au serveur : « Réessayer » fait partir la saisie.
+    fauxSync.droits = const DroitsPoste(
+      compte: 'caissier1',
+      roles: ['caissier'],
+      tablesEcrites: {'clients'},
+    );
+    await t.tap(find.byKey(const Key('appairage-reessayer')));
+    await t.pumpAndSettle();
+
+    expect(fauxSync.clients, hasLength(1));
+    expect(find.text('Rien'), findsOneWidget);
+  });
+
+  cas('horloge en avance : avertissement dans l\'onglet, envoi suspendu', (
+    t,
+  ) async {
+    addTearDown(() => horlogePoste = DateTime.now);
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+    await ClientsRepositoryDrift(db).creerClient(nom: 'Mama Rita');
+    horlogePoste = () => DateTime.now().add(const Duration(days: 2));
+
+    await t.tap(find.text('Synchroniser maintenant'));
+    await t.pumpAndSettle();
+
+    final avertissement = find.byKey(const Key('appairage-horloge'));
+    expect(avertissement, findsOneWidget);
+    expect(
+      find.descendant(
+        of: avertissement,
+        matching: find.textContaining('avance de 2 jours'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('En avance de 2 jours'), findsOneWidget);
+    expect(find.textContaining('envoi'), findsWidgets);
+    expect(fauxSync.clients, isEmpty);
+  });
+
+  cas('horloge juste : pas d\'avertissement', (t) async {
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Synchroniser maintenant'));
+    await t.pumpAndSettle();
+
+    expect(find.byKey(const Key('appairage-horloge')), findsNothing);
+    expect(find.textContaining('Juste (écart'), findsOneWidget);
   });
 }
