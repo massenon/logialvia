@@ -235,3 +235,9 @@ Poste : migration v36 (`mouvements_intrant.id` en UUID, `origine`, `sync_status`
 tables `intrants` / `mouvements_intrant`, droits lecture/écriture par table. Voir `46_` §14.
 Essais : `journal_sync_poste_test.dart` (25), `migration_v36_mouvements_test.dart`, `IntrantsEtJournalTest.php`.
 Non fait : essai contre le vrai serveur Laravel pour ces deux tables.
+
+### 6k. P6 — Stock des produits vendables (09/11/2026)
+Poste : migration v37 (`mouvements_produit`), journal des corrections de stock du catalogue,
+`TableMouvementsProduitPoste`. Serveur : table `mouvements_produit` et `MouvementsProduitTable`. Voir `46_` §15.
+Essais : `journal_produits_sync_poste_test.dart` (19), `migration_v37_mouvements_produit_test.dart`,
+`JournalProduitsTest.php` (11). Non fait : essai contre le vrai serveur Laravel pour cette table.

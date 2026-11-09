@@ -28,6 +28,7 @@ import '../../comptabilite/data/tables/comptabilite_tables.dart';
 import '../../commercial/data/tables/devis_table.dart';
 import '../../commercial/data/tables/facturation_mecef_tables.dart';
 import '../../commercial/data/tables/lignes_vente_table.dart';
+import '../../commercial/data/tables/mouvements_produit_table.dart';
 import '../../commercial/data/tables/produits_vendables_table.dart';
 import '../../commercial/data/tables/ventes_table.dart';
 import '../../elevage/data/tables/bandes_table.dart';
@@ -69,7 +70,7 @@ part 'app_database.g.dart';
     ParametresEntreprise, MessagesEditeur, PreferencesPoste, Corbeille,
     DemandesReferentiel,
     // Commercial
-    ProduitsVendables, Clients, Ventes, LignesVente, Devis,
+    ProduitsVendables, MouvementsProduit, Clients, Ventes, LignesVente, Devis,
     GroupesTaxe, Factures, LignesFacture,
     // Approvisionnement
     Intrants, Fournisseurs, Achats, LignesAchat, MouvementsIntrant,
@@ -99,7 +100,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 36;
+  static const int versionSchema = 37;
 
   @override
   int get schemaVersion => versionSchema;
@@ -416,6 +417,10 @@ class AppDatabase extends _$AppDatabase {
         // origine et ses colonnes de synchronisation. Les mouvements d'hier sont
         // LOCAUX (origine NULL) et a envoyer.
         await _mouvementsEnUuid(m);
+      }
+      if (from < 37) {
+        // Palier 6 : journal des corrections de stock des produits vendables.
+        await _creerTable(m, mouvementsProduit);
       }
     },
     beforeOpen: (details) async {

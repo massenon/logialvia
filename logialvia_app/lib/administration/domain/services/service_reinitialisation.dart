@@ -77,6 +77,8 @@ class ServiceReinitialisation {
     // les achats d'abord.
     'fournisseurs',
     'mouvements_intrant',
+    // Palier 6 : le journal des corrections de stock des produits.
+    'mouvements_produit',
     // Comptabilite
     'ecriture_comptable',
     'notes_annexes',

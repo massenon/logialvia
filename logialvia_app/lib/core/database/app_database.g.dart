@@ -5934,6 +5934,576 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
   }
 }
 
+class $MouvementsProduitTable extends MouvementsProduit
+    with TableInfo<$MouvementsProduitTable, MouvementProduitRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MouvementsProduitTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _horodatageMeta = const VerificationMeta(
+    'horodatage',
+  );
+  @override
+  late final GeneratedColumn<DateTime> horodatage = GeneratedColumn<DateTime>(
+    'horodatage',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _produitIdMeta = const VerificationMeta(
+    'produitId',
+  );
+  @override
+  late final GeneratedColumn<String> produitId = GeneratedColumn<String>(
+    'produit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES produits_vendables (id)',
+    ),
+  );
+  static const VerificationMeta _articleMeta = const VerificationMeta(
+    'article',
+  );
+  @override
+  late final GeneratedColumn<String> article = GeneratedColumn<String>(
+    'article',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _motifMeta = const VerificationMeta('motif');
+  @override
+  late final GeneratedColumn<String> motif = GeneratedColumn<String>(
+    'motif',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantiteMeta = const VerificationMeta(
+    'quantite',
+  );
+  @override
+  late final GeneratedColumn<double> quantite = GeneratedColumn<double>(
+    'quantite',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    horodatage,
+    produitId,
+    article,
+    motif,
+    quantite,
+    origine,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mouvements_produit';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MouvementProduitRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('horodatage')) {
+      context.handle(
+        _horodatageMeta,
+        horodatage.isAcceptableOrUnknown(data['horodatage']!, _horodatageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horodatageMeta);
+    }
+    if (data.containsKey('produit_id')) {
+      context.handle(
+        _produitIdMeta,
+        produitId.isAcceptableOrUnknown(data['produit_id']!, _produitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_produitIdMeta);
+    }
+    if (data.containsKey('article')) {
+      context.handle(
+        _articleMeta,
+        article.isAcceptableOrUnknown(data['article']!, _articleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articleMeta);
+    }
+    if (data.containsKey('motif')) {
+      context.handle(
+        _motifMeta,
+        motif.isAcceptableOrUnknown(data['motif']!, _motifMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_motifMeta);
+    }
+    if (data.containsKey('quantite')) {
+      context.handle(
+        _quantiteMeta,
+        quantite.isAcceptableOrUnknown(data['quantite']!, _quantiteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_quantiteMeta);
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MouvementProduitRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MouvementProduitRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      horodatage: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}horodatage'],
+      )!,
+      produitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}produit_id'],
+      )!,
+      article: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}article'],
+      )!,
+      motif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motif'],
+      )!,
+      quantite: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantite'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $MouvementsProduitTable createAlias(String alias) {
+    return $MouvementsProduitTable(attachedDatabase, alias);
+  }
+}
+
+class MouvementProduitRow extends DataClass
+    implements Insertable<MouvementProduitRow> {
+  final String id;
+  final DateTime horodatage;
+  final String produitId;
+
+  /// Nom du produit au moment de la correction (l'historique reste lisible).
+  final String article;
+  final String motif;
+
+  /// Variation SIGNÉE du stock de CE poste ; jamais nulle.
+  final double quantite;
+
+  /// `null` = CE poste ; sinon l'identifiant du poste d'origine (historique pur).
+  final String? origine;
+  final String syncStatus;
+  final String? syncMotif;
+  const MouvementProduitRow({
+    required this.id,
+    required this.horodatage,
+    required this.produitId,
+    required this.article,
+    required this.motif,
+    required this.quantite,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['horodatage'] = Variable<DateTime>(horodatage);
+    map['produit_id'] = Variable<String>(produitId);
+    map['article'] = Variable<String>(article);
+    map['motif'] = Variable<String>(motif);
+    map['quantite'] = Variable<double>(quantite);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  MouvementsProduitCompanion toCompanion(bool nullToAbsent) {
+    return MouvementsProduitCompanion(
+      id: Value(id),
+      horodatage: Value(horodatage),
+      produitId: Value(produitId),
+      article: Value(article),
+      motif: Value(motif),
+      quantite: Value(quantite),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory MouvementProduitRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MouvementProduitRow(
+      id: serializer.fromJson<String>(json['id']),
+      horodatage: serializer.fromJson<DateTime>(json['horodatage']),
+      produitId: serializer.fromJson<String>(json['produitId']),
+      article: serializer.fromJson<String>(json['article']),
+      motif: serializer.fromJson<String>(json['motif']),
+      quantite: serializer.fromJson<double>(json['quantite']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'horodatage': serializer.toJson<DateTime>(horodatage),
+      'produitId': serializer.toJson<String>(produitId),
+      'article': serializer.toJson<String>(article),
+      'motif': serializer.toJson<String>(motif),
+      'quantite': serializer.toJson<double>(quantite),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  MouvementProduitRow copyWith({
+    String? id,
+    DateTime? horodatage,
+    String? produitId,
+    String? article,
+    String? motif,
+    double? quantite,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => MouvementProduitRow(
+    id: id ?? this.id,
+    horodatage: horodatage ?? this.horodatage,
+    produitId: produitId ?? this.produitId,
+    article: article ?? this.article,
+    motif: motif ?? this.motif,
+    quantite: quantite ?? this.quantite,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  MouvementProduitRow copyWithCompanion(MouvementsProduitCompanion data) {
+    return MouvementProduitRow(
+      id: data.id.present ? data.id.value : this.id,
+      horodatage: data.horodatage.present
+          ? data.horodatage.value
+          : this.horodatage,
+      produitId: data.produitId.present ? data.produitId.value : this.produitId,
+      article: data.article.present ? data.article.value : this.article,
+      motif: data.motif.present ? data.motif.value : this.motif,
+      quantite: data.quantite.present ? data.quantite.value : this.quantite,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MouvementProduitRow(')
+          ..write('id: $id, ')
+          ..write('horodatage: $horodatage, ')
+          ..write('produitId: $produitId, ')
+          ..write('article: $article, ')
+          ..write('motif: $motif, ')
+          ..write('quantite: $quantite, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    horodatage,
+    produitId,
+    article,
+    motif,
+    quantite,
+    origine,
+    syncStatus,
+    syncMotif,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MouvementProduitRow &&
+          other.id == this.id &&
+          other.horodatage == this.horodatage &&
+          other.produitId == this.produitId &&
+          other.article == this.article &&
+          other.motif == this.motif &&
+          other.quantite == this.quantite &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
+  final Value<String> id;
+  final Value<DateTime> horodatage;
+  final Value<String> produitId;
+  final Value<String> article;
+  final Value<String> motif;
+  final Value<double> quantite;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const MouvementsProduitCompanion({
+    this.id = const Value.absent(),
+    this.horodatage = const Value.absent(),
+    this.produitId = const Value.absent(),
+    this.article = const Value.absent(),
+    this.motif = const Value.absent(),
+    this.quantite = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MouvementsProduitCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime horodatage,
+    required String produitId,
+    required String article,
+    required String motif,
+    required double quantite,
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : horodatage = Value(horodatage),
+       produitId = Value(produitId),
+       article = Value(article),
+       motif = Value(motif),
+       quantite = Value(quantite);
+  static Insertable<MouvementProduitRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? horodatage,
+    Expression<String>? produitId,
+    Expression<String>? article,
+    Expression<String>? motif,
+    Expression<double>? quantite,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (horodatage != null) 'horodatage': horodatage,
+      if (produitId != null) 'produit_id': produitId,
+      if (article != null) 'article': article,
+      if (motif != null) 'motif': motif,
+      if (quantite != null) 'quantite': quantite,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MouvementsProduitCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? horodatage,
+    Value<String>? produitId,
+    Value<String>? article,
+    Value<String>? motif,
+    Value<double>? quantite,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return MouvementsProduitCompanion(
+      id: id ?? this.id,
+      horodatage: horodatage ?? this.horodatage,
+      produitId: produitId ?? this.produitId,
+      article: article ?? this.article,
+      motif: motif ?? this.motif,
+      quantite: quantite ?? this.quantite,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (horodatage.present) {
+      map['horodatage'] = Variable<DateTime>(horodatage.value);
+    }
+    if (produitId.present) {
+      map['produit_id'] = Variable<String>(produitId.value);
+    }
+    if (article.present) {
+      map['article'] = Variable<String>(article.value);
+    }
+    if (motif.present) {
+      map['motif'] = Variable<String>(motif.value);
+    }
+    if (quantite.present) {
+      map['quantite'] = Variable<double>(quantite.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MouvementsProduitCompanion(')
+          ..write('id: $id, ')
+          ..write('horodatage: $horodatage, ')
+          ..write('produitId: $produitId, ')
+          ..write('article: $article, ')
+          ..write('motif: $motif, ')
+          ..write('quantite: $quantite, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -21912,6 +22482,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DemandesReferentielTable(this);
   late final $ProduitsVendablesTable produitsVendables =
       $ProduitsVendablesTable(this);
+  late final $MouvementsProduitTable mouvementsProduit =
+      $MouvementsProduitTable(this);
   late final $ClientsTable clients = $ClientsTable(this);
   late final $VentesTable ventes = $VentesTable(this);
   late final $LignesVenteTable lignesVente = $LignesVenteTable(this);
@@ -21968,6 +22540,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     corbeille,
     demandesReferentiel,
     produitsVendables,
+    mouvementsProduit,
     clients,
     ventes,
     lignesVente,
@@ -25170,6 +25743,27 @@ final class $$ProduitsVendablesTableReferences
     super.$_typedResult,
   );
 
+  static MultiTypedResultKey<$MouvementsProduitTable, List<MouvementProduitRow>>
+  _mouvementsProduitRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.mouvementsProduit,
+        aliasName: 'produits_vendables__id__mouvements_produit__produit_id',
+      );
+
+  $$MouvementsProduitTableProcessedTableManager get mouvementsProduitRefs {
+    final manager = $$MouvementsProduitTableTableManager(
+      $_db,
+      $_db.mouvementsProduit,
+    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _mouvementsProduitRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$LignesVenteTable, List<LigneVenteRow>>
   _lignesVenteRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.lignesVente,
@@ -25262,6 +25856,31 @@ class $$ProduitsVendablesTableFilterComposer
     column: $table.espece,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> mouvementsProduitRefs(
+    Expression<bool> Function($$MouvementsProduitTableFilterComposer f) f,
+  ) {
+    final $$MouvementsProduitTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mouvementsProduit,
+      getReferencedColumn: (t) => t.produitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MouvementsProduitTableFilterComposer(
+            $db: $db,
+            $table: $db.mouvementsProduit,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 
   Expression<bool> lignesVenteRefs(
     Expression<bool> Function($$LignesVenteTableFilterComposer f) f,
@@ -25416,6 +26035,32 @@ class $$ProduitsVendablesTableAnnotationComposer
   GeneratedColumn<String> get espece =>
       $composableBuilder(column: $table.espece, builder: (column) => column);
 
+  Expression<T> mouvementsProduitRefs<T extends Object>(
+    Expression<T> Function($$MouvementsProduitTableAnnotationComposer a) f,
+  ) {
+    final $$MouvementsProduitTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.mouvementsProduit,
+          getReferencedColumn: (t) => t.produitId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MouvementsProduitTableAnnotationComposer(
+                $db: $db,
+                $table: $db.mouvementsProduit,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> lignesVenteRefs<T extends Object>(
     Expression<T> Function($$LignesVenteTableAnnotationComposer a) f,
   ) {
@@ -25455,7 +26100,10 @@ class $$ProduitsVendablesTableTableManager
           $$ProduitsVendablesTableUpdateCompanionBuilder,
           (ProduitVendableRow, $$ProduitsVendablesTableReferences),
           ProduitVendableRow,
-          PrefetchHooks Function({bool lignesVenteRefs})
+          PrefetchHooks Function({
+            bool mouvementsProduitRefs,
+            bool lignesVenteRefs,
+          })
         > {
   $$ProduitsVendablesTableTableManager(
     _$AppDatabase db,
@@ -25545,36 +26193,63 @@ class $$ProduitsVendablesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({lignesVenteRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (lignesVenteRefs) db.lignesVente],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (lignesVenteRefs)
-                    await $_getPrefetchedData<
-                      ProduitVendableRow,
-                      $ProduitsVendablesTable,
-                      LigneVenteRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ProduitsVendablesTableReferences
-                          ._lignesVenteRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ProduitsVendablesTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).lignesVenteRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.produitId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({mouvementsProduitRefs = false, lignesVenteRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (mouvementsProduitRefs) db.mouvementsProduit,
+                    if (lignesVenteRefs) db.lignesVente,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (mouvementsProduitRefs)
+                        await $_getPrefetchedData<
+                          ProduitVendableRow,
+                          $ProduitsVendablesTable,
+                          MouvementProduitRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ProduitsVendablesTableReferences
+                              ._mouvementsProduitRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ProduitsVendablesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).mouvementsProduitRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.produitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (lignesVenteRefs)
+                        await $_getPrefetchedData<
+                          ProduitVendableRow,
+                          $ProduitsVendablesTable,
+                          LigneVenteRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ProduitsVendablesTableReferences
+                              ._lignesVenteRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ProduitsVendablesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).lignesVenteRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.produitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -25591,7 +26266,422 @@ typedef $$ProduitsVendablesTableProcessedTableManager =
       $$ProduitsVendablesTableUpdateCompanionBuilder,
       (ProduitVendableRow, $$ProduitsVendablesTableReferences),
       ProduitVendableRow,
-      PrefetchHooks Function({bool lignesVenteRefs})
+      PrefetchHooks Function({bool mouvementsProduitRefs, bool lignesVenteRefs})
+    >;
+typedef $$MouvementsProduitTableCreateCompanionBuilder =
+    MouvementsProduitCompanion Function({
+      Value<String> id,
+      required DateTime horodatage,
+      required String produitId,
+      required String article,
+      required String motif,
+      required double quantite,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$MouvementsProduitTableUpdateCompanionBuilder =
+    MouvementsProduitCompanion Function({
+      Value<String> id,
+      Value<DateTime> horodatage,
+      Value<String> produitId,
+      Value<String> article,
+      Value<String> motif,
+      Value<double> quantite,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+final class $$MouvementsProduitTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MouvementsProduitTable,
+          MouvementProduitRow
+        > {
+  $$MouvementsProduitTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ProduitsVendablesTable _produitIdTable(_$AppDatabase db) => db
+      .produitsVendables
+      .createAlias('mouvements_produit__produit_id__produits_vendables__id');
+
+  $$ProduitsVendablesTableProcessedTableManager get produitId {
+    final $_column = $_itemColumn<String>('produit_id')!;
+
+    final manager = $$ProduitsVendablesTableTableManager(
+      $_db,
+      $_db.produitsVendables,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_produitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MouvementsProduitTableFilterComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get article => $composableBuilder(
+    column: $table.article,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motif => $composableBuilder(
+    column: $table.motif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get quantite => $composableBuilder(
+    column: $table.quantite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ProduitsVendablesTableFilterComposer get produitId {
+    final $$ProduitsVendablesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produitId,
+      referencedTable: $db.produitsVendables,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProduitsVendablesTableFilterComposer(
+            $db: $db,
+            $table: $db.produitsVendables,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableOrderingComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get article => $composableBuilder(
+    column: $table.article,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motif => $composableBuilder(
+    column: $table.motif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get quantite => $composableBuilder(
+    column: $table.quantite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ProduitsVendablesTableOrderingComposer get produitId {
+    final $$ProduitsVendablesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produitId,
+      referencedTable: $db.produitsVendables,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProduitsVendablesTableOrderingComposer(
+            $db: $db,
+            $table: $db.produitsVendables,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get article =>
+      $composableBuilder(column: $table.article, builder: (column) => column);
+
+  GeneratedColumn<String> get motif =>
+      $composableBuilder(column: $table.motif, builder: (column) => column);
+
+  GeneratedColumn<double> get quantite =>
+      $composableBuilder(column: $table.quantite, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  $$ProduitsVendablesTableAnnotationComposer get produitId {
+    final $$ProduitsVendablesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.produitId,
+          referencedTable: $db.produitsVendables,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ProduitsVendablesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.produitsVendables,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MouvementsProduitTable,
+          MouvementProduitRow,
+          $$MouvementsProduitTableFilterComposer,
+          $$MouvementsProduitTableOrderingComposer,
+          $$MouvementsProduitTableAnnotationComposer,
+          $$MouvementsProduitTableCreateCompanionBuilder,
+          $$MouvementsProduitTableUpdateCompanionBuilder,
+          (MouvementProduitRow, $$MouvementsProduitTableReferences),
+          MouvementProduitRow,
+          PrefetchHooks Function({bool produitId})
+        > {
+  $$MouvementsProduitTableTableManager(
+    _$AppDatabase db,
+    $MouvementsProduitTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MouvementsProduitTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MouvementsProduitTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MouvementsProduitTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> horodatage = const Value.absent(),
+                Value<String> produitId = const Value.absent(),
+                Value<String> article = const Value.absent(),
+                Value<String> motif = const Value.absent(),
+                Value<double> quantite = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MouvementsProduitCompanion(
+                id: id,
+                horodatage: horodatage,
+                produitId: produitId,
+                article: article,
+                motif: motif,
+                quantite: quantite,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required DateTime horodatage,
+                required String produitId,
+                required String article,
+                required String motif,
+                required double quantite,
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MouvementsProduitCompanion.insert(
+                id: id,
+                horodatage: horodatage,
+                produitId: produitId,
+                article: article,
+                motif: motif,
+                quantite: quantite,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MouvementsProduitTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({produitId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (produitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.produitId,
+                                referencedTable:
+                                    $$MouvementsProduitTableReferences
+                                        ._produitIdTable(db),
+                                referencedColumn:
+                                    $$MouvementsProduitTableReferences
+                                        ._produitIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MouvementsProduitTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MouvementsProduitTable,
+      MouvementProduitRow,
+      $$MouvementsProduitTableFilterComposer,
+      $$MouvementsProduitTableOrderingComposer,
+      $$MouvementsProduitTableAnnotationComposer,
+      $$MouvementsProduitTableCreateCompanionBuilder,
+      $$MouvementsProduitTableUpdateCompanionBuilder,
+      (MouvementProduitRow, $$MouvementsProduitTableReferences),
+      MouvementProduitRow,
+      PrefetchHooks Function({bool produitId})
     >;
 typedef $$ClientsTableCreateCompanionBuilder =
     ClientsCompanion Function({
@@ -35365,6 +36455,8 @@ class $AppDatabaseManager {
       $$DemandesReferentielTableTableManager(_db, _db.demandesReferentiel);
   $$ProduitsVendablesTableTableManager get produitsVendables =>
       $$ProduitsVendablesTableTableManager(_db, _db.produitsVendables);
+  $$MouvementsProduitTableTableManager get mouvementsProduit =>
+      $$MouvementsProduitTableTableManager(_db, _db.mouvementsProduit);
   $$ClientsTableTableManager get clients =>
       $$ClientsTableTableManager(_db, _db.clients);
   $$VentesTableTableManager get ventes =>

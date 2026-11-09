@@ -465,6 +465,12 @@ class VentesRepositoryDrift implements VentesRepository {
           ),
         );
     await DepotDemandesReferentiel(_db).proposerProduit(id);
+    await _journaliserCorrection(
+      produitId: id,
+      article: produit.nom,
+      variation: produit.stock,
+      motif: 'Stock initial (catalogue)',
+    );
     return ProduitVendable(
       id: id,
       sku: produit.sku,
@@ -483,6 +489,9 @@ class VentesRepositoryDrift implements VentesRepository {
 
   @override
   Future<void> mettreAJourProduit(ProduitVendable produit) async {
+    final avant = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produit.id))).getSingleOrNull();
     await (_db.update(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produit.id))).write(
@@ -501,6 +510,36 @@ class VentesRepositoryDrift implements VentesRepository {
     );
     // Le catalogue appartient au serveur : le poste PROPOSE (`46_` §4.3).
     await DepotDemandesReferentiel(_db).proposerProduit(produit.id);
+    // Une correction de stock laisse une trace (journal partagé, jamais un stock).
+    if (avant != null) {
+      await _journaliserCorrection(
+        produitId: produit.id,
+        article: produit.nom,
+        variation: produit.stock - avant.stock,
+        motif: 'Correction de stock (catalogue)',
+      );
+    }
+  }
+
+  /// Trace d'une correction de stock de CE poste. Rien si le stock n'a pas bougé.
+  Future<void> _journaliserCorrection({
+    required String produitId,
+    required String article,
+    required int variation,
+    required String motif,
+  }) async {
+    if (variation == 0) return;
+    await _db
+        .into(_db.mouvementsProduit)
+        .insert(
+          MouvementsProduitCompanion.insert(
+            horodatage: DateTime.now(),
+            produitId: produitId,
+            article: article,
+            motif: motif,
+            quantite: variation.toDouble(),
+          ),
+        );
   }
 
   @override
@@ -513,13 +552,20 @@ class VentesRepositoryDrift implements VentesRepository {
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();
 
-    await ServiceArchivage(_db).archiver(
-      type: TypeArchivable.produits,
-      cle: produitId,
-      designation: ligne?.name ?? 'Produit #$produitId',
-      utilisateurId: utilisateurId,
-      utilisateurNom: utilisateurNom,
-    );
+    // Le journal des corrections référence le produit : il part avec lui (une
+    // même transaction, rien n'est effacé si l'archivage échoue).
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.mouvementsProduit,
+      )..where((m) => m.produitId.equals(produitId))).go();
+      await ServiceArchivage(_db).archiver(
+        type: TypeArchivable.produits,
+        cle: produitId,
+        designation: ligne?.name ?? 'Produit #$produitId',
+        utilisateurId: utilisateurId,
+        utilisateurNom: utilisateurNom,
+      );
+    });
   }
 
   // ---------------------------------------------------------------- internes

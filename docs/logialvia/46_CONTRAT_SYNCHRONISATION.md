@@ -192,3 +192,19 @@ Décision du client : **stock propre à chaque poste + journal partagé**.
 - Refus strict à la réception : UUID invalide, type inconnu, quantité nulle, motif vide, date invalide, intrant inconnu.
 - Remise à zéro serveur : le journal est purgé ; intrants et stock restent.
 - Limite : le stock global n'existe pas ; produits vendables et comptabilité restent à faire.
+
+## 15. Journal des corrections de stock des produits vendables (implémenté, 09/11/2026)
+
+Même décision que §14 : **stock propre à chaque poste + journal partagé**.
+
+- `produits_vendables` était déjà un référentiel sans stock (§2.2) : rien ne change.
+- `mouvements_produit` : fait immuable (UUID, schéma poste v37), envoyé après les produits. Il ne journalise
+  **que les corrections manuelles** (formulaire du catalogue : variation signée, « Stock initial » à la création) ;
+  les ventes et leurs annulations voyagent déjà avec leurs lignes (`ventes`) et ne sont pas recopiées.
+- Un mouvement reçu d'un autre poste est stocké avec son `origine` et ne change **jamais** le stock local.
+- Refus strict : UUID invalide, produit non UUID ou inconnu, quantité nulle, motif ou désignation vide, date invalide.
+- Droits : lecture `view-ventes` ou `view-stocks` ; écriture `manage-ventes` ou `manage-stocks`.
+- Supprimer un produit au poste emporte son journal local ; la remise à zéro du poste et celle du serveur vident le
+  journal et préservent produits et stock.
+- Limites : le motif d'une correction n'est pas saisi (texte fixe) ; la suppression d'un produit n'est pas propagée ;
+  stock global et comptabilité restent hors synchronisation.

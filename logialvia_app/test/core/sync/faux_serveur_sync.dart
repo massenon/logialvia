@@ -41,6 +41,7 @@ class FauxServeurSync {
   /// mouvements (faits immuables).
   final Map<String, Map<String, dynamic>> intrants = {};
   final Map<String, Map<String, dynamic>> mouvements = {};
+  final Map<String, Map<String, dynamic>> mouvementsProduit = {};
 
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
@@ -112,6 +113,7 @@ class FauxServeurSync {
     voir(achats.values);
     voir(intrants.values);
     voir(mouvements.values);
+    voir(mouvementsProduit.values);
     if (parametres != null) voir([parametres!]);
     return plusRecent.toIso8601String();
   }
@@ -121,6 +123,7 @@ class FauxServeurSync {
     ventes.clear(); // les produits (référentiel) sont préservés
     achats.clear();
     fournisseurs.clear();
+    mouvementsProduit.clear();
     mouvements.clear(); // les intrants (référentiel) sont préservés
     marque = 'rz-${++_horloge}';
   }
@@ -283,6 +286,10 @@ class FauxServeurSync {
           for (final m in mouvements.values)
             if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
         ],
+        'mouvements_produit': [
+          for (final m in mouvementsProduit.values)
+            if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
+        ],
       },
     });
   }
@@ -424,6 +431,12 @@ class FauxServeurSync {
     if (tables.containsKey('mouvements_intrant')) {
       reponse['mouvements_intrant'] = _mouvements(
         (tables['mouvements_intrant'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('mouvements_produit')) {
+      reponse['mouvements_produit'] = _mouvementsProduit(
+        (tables['mouvements_produit'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -728,6 +741,34 @@ class FauxServeurSync {
       }
       if (!mouvements.containsKey(id)) {
         mouvements[id] = {
+          ...m,
+          'device_id': deviceId,
+          'serveur_modifie_le': _instant(),
+        };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Corrections de stock des produits : faits IMMUABLES, produit connu du serveur.
+  Map<String, dynamic> _mouvementsProduit(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final m in lot) {
+      final id = m['id'] as String;
+      if (!produits.containsKey(m['produit_id'])) {
+        refusees.add({
+          'id': id,
+          'motif': 'Produit inconnu du serveur : « ${m['produit_id']} ».',
+        });
+        continue;
+      }
+      if (!mouvementsProduit.containsKey(id)) {
+        mouvementsProduit[id] = {
           ...m,
           'device_id': deviceId,
           'serveur_modifie_le': _instant(),
