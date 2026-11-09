@@ -2,7 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\ReglementDette;
 use App\Models\Achat;
+use App\Models\EcritureComptable;
 use App\Models\Fournisseur;
 use App\Sync\Tables\FournisseursTable;
 use Carbon\CarbonImmutable;
@@ -11,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Support\ExportXlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Fournisseurs (Dart : `FournisseursScreen`, `achats_fournisseurs_screens.dart`).
@@ -18,11 +22,17 @@ use Livewire\Component;
  * Les fournisseurs sont des FAITS (dernier ecrivain gagne). Le web ecrit par
  * `FournisseursTable::absorber` : meme validation, meme regle qu'un poste. Les agregats
  * (commandes, total achats, solde du) sont RECALCULES depuis les achats, jamais stockes.
- * Le reglement d'une dette reste au poste (il modifie l'achat).
+ *
+ * PARITE avec le poste : « Régler » une dette (modale `_FormulaireReglement`, trait `ReglementDette` partage
+ * avec Achats & Commandes) ; la suppression reste REFUSEE tant qu'une dette est ouverte (regle validee par le
+ * client) ; releve d'un fournisseur et etat « Fournisseurs & Dettes » imprimables. Un controle de coherence
+ * rapproche les dettes des achats du compte 401 des ecritures d'achat (visible de qui lit la comptabilite).
  */
 #[Layout('components.layouts.app')]
 class Fournisseurs extends Component
 {
+    use ReglementDette;
+
     public const ANCIENNETE_JOURS = 10;
 
     public string $recherche = '';
@@ -156,7 +166,7 @@ class Fournisseurs extends Component
 
     private function motifDette(Fournisseur $f): string
     {
-        return "Le fournisseur « {$f->nom} » a une dette ouverte : réglez-la sur le poste avant de le supprimer.";
+        return "Le fournisseur « {$f->nom} » a une dette ouverte : réglez-la avant de le supprimer.";
     }
 
     private function nullSiVide(string $valeur): ?string
@@ -197,6 +207,33 @@ class Fournisseurs extends Component
             ->sum(fn (Achat $a) => $a->total - $a->paye) > 0;
     }
 
+    /** Export XLSX : fournisseurs (solde du) puis dettes en cours. Droit de lecture verifie ICI. */
+    public function exporter(): StreamedResponse
+    {
+        abort_unless(Auth::user()?->can('view-achats'), 403);
+        $fuseau = config('logialvia.fuseau');
+        $maintenant = CarbonImmutable::now($fuseau);
+        $fournisseurs = Fournisseur::query()->whereNull('supprime_le')->orderBy('nom')->get();
+        $achats = $this->achatsActifs();
+        $noms = $fournisseurs->pluck('nom', 'id');
+
+        $lignes = [['Fournisseurs & Dettes'], ['Nom', 'Téléphone', 'Adresse', 'Fournit', 'Commandes', 'Total achats', 'Solde dû']];
+        foreach ($fournisseurs as $f) {
+            $siens = $achats->where('fournisseur_id', $f->id);
+            $lignes[] = [$f->nom, $f->telephone ?? '', $f->adresse ?? '', $f->fournit ?? '', $siens->count(),
+                (float) $siens->sum('total'), (float) $siens->sum(fn (Achat $a) => $a->total - $a->paye)];
+        }
+        $lignes[] = [];
+        $lignes[] = ['Dettes en cours'];
+        $lignes[] = ['Fournisseur', 'Référence', 'Total', 'Réglé', 'Solde dû', 'Échéance', 'Ancienneté (jours)'];
+        foreach ($achats->filter(fn (Achat $a) => $noms->has($a->fournisseur_id) && ($a->total - $a->paye) > 0) as $d) {
+            $lignes[] = [$noms[$d->fournisseur_id], $d->reference, (float) $d->total, (float) $d->paye, round($d->total - $d->paye, 2),
+                $d->echeance ? $d->echeance->timezone($fuseau)->format('d/m/Y') : '', max(0, (int) $d->date_achat->diffInDays($maintenant, true))];
+        }
+
+        return ExportXlsx::telecharger($lignes, 'fournisseurs-dettes.xlsx', 'Fournisseurs');
+    }
+
     public function render()
     {
         $maintenant = CarbonImmutable::now(config('logialvia.fuseau'));
@@ -231,6 +268,8 @@ class Fournisseurs extends Component
         $dettes = $achats->filter(fn (Achat $a) => $noms->has($a->fournisseur_id) && ($a->total - $a->paye) > 0)->values();
 
         return view('livewire.fournisseurs', [
+            'reglement' => $this->reglementEnCours(),
+            'coherence' => $this->coherence($achats),
             'fournisseurs' => $fournisseurs,
             'agregats' => $agregats,
             'nombre' => $tous->count(),
@@ -243,5 +282,38 @@ class Fournisseurs extends Component
             'peutGerer' => Auth::user()?->can('manage-achats') ?? false,
             'aConfirmer' => $this->aSupprimer ? Fournisseur::query()->find($this->aSupprimer) : null,
         ])->title('Fournisseurs');
+    }
+
+    /**
+     * Coherence achats ↔ comptabilite : « le solde fournisseur = les dettes 401 ». Les dettes des achats
+     * (total − paye, hors annules) sont comparees au solde crediteur du compte 401 sur les SEULES pieces
+     * d'achat (`achat_ref`). Un ecart a deux causes connues : un achat anterieur a la comptabilite (sans
+     * piece) ou une piece d'un poste pas encore synchronise. Le solde 401 de TOUTES les pieces est donne
+     * a part : il compte aussi les depenses « a credit » saisies a la main, qui ne sont pas des achats.
+     *
+     * @return array{dettes: float, achats_401: float, ecart: float, grand_livre_401: float}|null
+     */
+    private function coherence(Collection $achats): ?array
+    {
+        if (! Auth::user()?->can('view-comptabilite')) {
+            return null;
+        }
+
+        $r = EcritureComptable::query()
+            ->join('pieces_comptables as p', 'p.id', '=', 'ecritures_comptables.piece_id')
+            ->where('ecritures_comptables.numero_compte', '401')
+            ->selectRaw('COALESCE(SUM(CASE WHEN p.achat_ref IS NOT NULL THEN ecritures_comptables.credit - ecritures_comptables.debit ELSE 0 END), 0) as achats_401')
+            ->selectRaw('COALESCE(SUM(ecritures_comptables.credit - ecritures_comptables.debit), 0) as total_401')
+            ->first();
+
+        $dettes = round((float) $achats->sum(fn (Achat $a) => $a->total - $a->paye), 2);
+        $achats401 = round((float) $r->achats_401, 2);
+
+        return [
+            'dettes' => $dettes,
+            'achats_401' => $achats401,
+            'ecart' => round($achats401 - $dettes, 2),
+            'grand_livre_401' => round((float) $r->total_401, 2),
+        ];
     }
 }

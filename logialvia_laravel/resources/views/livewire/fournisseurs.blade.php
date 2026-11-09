@@ -1,12 +1,18 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
         <h1 class="text-page-title font-bold">Fournisseurs</h1>
-        @if ($peutGerer)
-            <button type="button" wire:click="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
-                Ajouter un Fournisseur
-            </button>
-        @endif
+        <div class="flex flex-wrap gap-sm">
+            <a href="{{ url('/fournisseurs/impression') }}" target="_blank" rel="noopener" data-action="imprimer-liste"
+               class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
+            <button type="button" wire:click="exporter" data-action="exporter"
+                    class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            @if ($peutGerer)
+                <button type="button" wire:click="nouveau"
+                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                    Ajouter un Fournisseur
+                </button>
+            @endif
+        </div>
     </div>
 
     @if ($message)
@@ -46,7 +52,7 @@
                     <th class="px-md py-sm text-center">Commandes</th>
                     <th class="px-md py-sm text-right">Total Achats</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
-                    @if ($peutGerer)<th class="px-md py-sm text-right">Actions</th>@endif
+                    <th class="px-md py-sm text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,12 +65,14 @@
                         <td class="px-md py-sm text-center">{{ $ag['commandes'] }}</td>
                         <td class="px-md py-sm text-right">{{ number_format($ag['total'], 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right font-bold {{ $ag['solde'] > 0 ? 'text-error-deep' : 'text-success-deep' }}">{{ number_format($ag['solde'], 0, ',', ' ') }}</td>
-                        @if ($peutGerer)
-                            <td class="px-md py-sm text-right">
+                        <td class="whitespace-nowrap px-md py-sm text-right">
+                            <a href="{{ url('/fournisseurs/'.$f->id.'/releve') }}" target="_blank" rel="noopener" data-action="releve"
+                               class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Relevé</a>
+                            @if ($peutGerer)
                                 <button type="button" wire:click="modifier('{{ $f->id }}')" class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Modifier</button>
                                 <button type="button" wire:click="demanderSuppression('{{ $f->id }}')" class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">Supprimer</button>
-                            </td>
-                        @endif
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="7" class="px-md py-lg text-center text-outline">
@@ -81,12 +89,13 @@
                 <p class="text-caption text-outline">{{ $f->telephone ?: '—' }} · {{ $f->fournit ?: '—' }}</p>
                 <p class="text-caption text-outline">{{ $ag['commandes'] }} commande(s) · {{ number_format($ag['total'], 0, ',', ' ') }} F</p>
                 <p class="font-bold {{ $ag['solde'] > 0 ? 'text-error-deep' : 'text-success-deep' }}">Solde dû : {{ number_format($ag['solde'], 0, ',', ' ') }} F</p>
-                @if ($peutGerer)
-                    <div class="mt-sm flex gap-sm">
+                <div class="mt-sm flex gap-sm">
+                    <a href="{{ url('/fournisseurs/'.$f->id.'/releve') }}" target="_blank" rel="noopener" class="flex-1 rounded-lg border border-outline-variant px-sm py-sm text-center text-xs font-semibold">Relevé</a>
+                    @if ($peutGerer)
                         <button type="button" wire:click="modifier('{{ $f->id }}')" class="flex-1 rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold">Modifier</button>
                         <button type="button" wire:click="demanderSuppression('{{ $f->id }}')" class="flex-1 rounded-lg border border-error-deep px-sm py-sm text-xs font-semibold text-error-deep">Supprimer</button>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </article>
         @empty
             <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">
@@ -95,7 +104,9 @@
     </div>
 
     <h2 class="mb-xs text-section-title font-bold">Dettes Fournisseurs</h2>
-    <p class="mb-sm text-xs text-outline">Le règlement d'une dette s'enregistre sur le poste, là où l'achat a été saisi.</p>
+    @if ($peutGerer)
+        <p class="mb-sm text-xs text-outline">« Régler » enregistre un versement (borné au reste dû) et passe l'écriture 401 / trésorerie.</p>
+    @endif
     <div class="overflow-x-auto rounded-lg border border-outline-variant bg-surface-card">
         <table class="w-full text-left text-xs" data-table="dettes">
             <thead class="bg-surface-zebra text-caption uppercase text-outline">
@@ -105,7 +116,9 @@
                     <th class="px-md py-sm text-right">Montant Total</th>
                     <th class="px-md py-sm text-right">Déjà Réglé</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
+                    <th class="px-md py-sm text-center">Échéance</th>
                     <th class="px-md py-sm text-center">Ancienneté</th>
+                    @if ($peutGerer)<th class="px-md py-sm text-right">Action</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -117,16 +130,45 @@
                         <td class="px-md py-sm text-right">{{ number_format($d->total, 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right">{{ number_format($d->paye, 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right font-bold text-error-deep">{{ number_format($d->total - $d->paye, 0, ',', ' ') }}</td>
+                        @php($echue = $d->echeance && $d->echeance->timezone(config('logialvia.fuseau'))->endOfDay()->lessThan($maintenant))
+                        <td class="px-md py-sm text-center {{ $echue ? 'font-bold text-error-deep' : 'text-outline' }}" data-echeance>
+                            {{ $d->echeance ? $d->echeance->timezone(config('logialvia.fuseau'))->format('d/m/Y').($echue ? ' (échue)' : '') : '—' }}</td>
                         <td class="px-md py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $jours > 10 ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline' }}">{{ $jours }} j</span>
                         </td>
+                        @if ($peutGerer)
+                            <td class="px-md py-sm text-right">
+                                <button type="button" wire:click="demanderReglement('{{ $d->id }}')" data-action="regler"
+                                        class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Régler</button>
+                            </td>
+                        @endif
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucune dette ouverte. Les commandes non entièrement réglées apparaissent ici.</td></tr>
+                    <tr><td colspan="{{ $peutGerer ? 8 : 7 }}" class="px-md py-lg text-center text-outline">Aucune dette ouverte. Les commandes non entièrement réglées apparaissent ici.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+
+
+    @if ($coherence)
+        <section class="mt-lg rounded-lg border border-outline-variant bg-surface-card p-md" data-bloc="coherence">
+            <h2 class="mb-xs text-section-title font-bold">Cohérence achats ↔ comptabilité</h2>
+            <p class="mb-sm text-xs text-outline">Le solde dû aux fournisseurs doit égaler le solde créditeur du compte 401 sur les écritures d'achat.</p>
+            <dl class="grid grid-cols-1 gap-sm text-xs sm:grid-cols-4">
+                <div><dt class="text-caption uppercase text-outline">Dettes des achats</dt><dd class="font-bold" data-coherence="dettes">{{ number_format($coherence['dettes'], 0, ',', ' ') }} FCFA</dd></div>
+                <div><dt class="text-caption uppercase text-outline">Compte 401 (écritures d'achat)</dt><dd class="font-bold" data-coherence="achats-401">{{ number_format($coherence['achats_401'], 0, ',', ' ') }} FCFA</dd></div>
+                <div><dt class="text-caption uppercase text-outline">Écart</dt>
+                    <dd class="font-bold {{ abs($coherence['ecart']) < 0.01 ? 'text-success-deep' : 'text-error-deep' }}" data-coherence="ecart">{{ abs($coherence['ecart']) < 0.01 ? 'Aucun écart' : number_format($coherence['ecart'], 0, ',', ' ').' FCFA' }}</dd></div>
+                <div><dt class="text-caption uppercase text-outline">Compte 401 au grand livre (toutes pièces)</dt><dd class="font-bold" data-coherence="grand-livre">{{ number_format($coherence['grand_livre_401'], 0, ',', ' ') }} FCFA</dd></div>
+            </dl>
+            @if (abs($coherence['ecart']) >= 0.01)
+                <p class="mt-sm text-xs text-error-deep" data-coherence-avertissement>Un écart vient d'un achat antérieur à la comptabilité (sans écriture) ou d'un poste dont les écritures ne sont pas encore synchronisées. Le grand livre compte aussi les dépenses « à crédit » saisies à la main, qui ne sont pas des achats.</p>
+            @endif
+        </section>
+    @endif
+
+    @include('livewire.achats._reglement')
 
     @if ($formulaire)
         <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-fournisseur">
