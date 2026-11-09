@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\DemandesSynchronisationService;
 use App\Sync\DemandesReferentiel;
 use App\Sync\MoteurSynchronisation;
+use App\Sync\Tables\FacturesTable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -91,6 +92,26 @@ class SyncController extends Controller
         );
 
         return response()->json($resultat['corps'], $resultat['statut']);
+    }
+
+    /**
+     * Un poste RESERVE la transmission d'une facture emise au web (`47a2_`) : un seul poste a la fois,
+     * jamais de double normalisation. Le serveur ne transmet rien lui-meme.
+     */
+    public function reserverFacture(Request $request): JsonResponse
+    {
+        $donnees = $request->validate([
+            'device_id' => ['required', 'uuid'],
+            'facture_id' => ['required', 'uuid'],
+        ], [
+            'device_id.required' => "L'identifiant du poste est obligatoire.",
+            'facture_id.required' => "L'identifiant de la facture est obligatoire.",
+            'facture_id.uuid' => "L'identifiant de la facture doit être un UUID.",
+        ]);
+
+        [$statut, $corps] = (new FacturesTable)->reserverTransmission($request->user(), $donnees['device_id'], $donnees['facture_id']);
+
+        return response()->json($corps, $statut);
     }
 
     /** Le poste PROPOSE une modification de referentiel ; le serveur decide. */

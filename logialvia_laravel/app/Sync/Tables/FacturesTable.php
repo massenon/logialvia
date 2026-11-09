@@ -2,11 +2,15 @@
 
 namespace App\Sync\Tables;
 
+use App\Livewire\Catalogue;
 use App\Models\Facture;
 use App\Models\LigneFacture;
+use App\Models\Poste;
+use App\Models\User;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -22,7 +26,11 @@ use Illuminate\Support\Facades\Validator;
  *    le poste emetteur a obtenu (statut, code de normalisation, NIM imprime sur la facture) ;
  *  - **le statut ne regresse jamais** (rang : a_transmettre < rejetee < normalisee). Entre deux postes
  *    qui divergent, c'est le RANG qui l'emporte, pas l'horloge ; deux rejets : le plus recent. Une facture
- *    normalisee est IMMUABLE : un second code différent est REFUSE avec son motif, jamais departage en silence.
+ *    normalisee est IMMUABLE : un second code différent est REFUSE avec son motif, jamais departage en silence ;
+ *  - **facture emise au WEB** (`FV-WEB-AAAA-NNN`, `device_id` = poste web, sans poste emetteur) : n'importe quel poste
+ *    appaire disposant de `manage-facturation` peut la transmettre, mais seulement apres l'avoir RESERVEE
+ *    (`reserverTransmission`, un seul poste a la fois, {@see self::DUREE_RESERVATION_MINUTES} min) ; seul le detenteur
+ *    peut ensuite envoyer sa normalisation ou son rejet. Un rejet libere la reservation (`47a2_`).
  */
 class FacturesTable extends TableSync
 {
@@ -36,6 +44,11 @@ class FacturesTable extends TableSync
     public const MOTIF_REFERENCE = 'Cette référence est déjà utilisée par une autre facture.';
 
     public const MOTIF_IMMUABLE = 'Une facture émise ne se modifie pas : émettez un avoir.';
+
+    /** Duree de la reservation d'une transmission (facture emise au web). */
+    public const DUREE_RESERVATION_MINUTES = 15;
+
+    public const MOTIF_RESERVATION = 'Cette facture a été émise au web : sa transmission doit être réservée au serveur avant d\'être envoyée.';
 
     /** Tolerance d'arrondi entre un total et la somme de ses lignes (FCFA). */
     private const TOLERANCE = 0.01;
@@ -73,19 +86,20 @@ class FacturesTable extends TableSync
     /** Une reference a code de poste est globale ; sans code, elle est propre au poste. */
     public static function porteeReference(string $reference, string $deviceId): string
     {
-        return preg_match('/^F[VA]-P\d+-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
+        return preg_match('/^F[VA]-(P\d+|WEB)-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
     }
 
     /** Une reference de VENTE a code de poste est globale ; sans code, elle est propre au poste. */
     private static function venteGlobale(string $venteRef): bool
     {
-        return preg_match('/^V-P\d+-\d{4}-\d{3,}$/', $venteRef) === 1;
+        return preg_match('/^V-(P\d+|WEB)-\d{4}-\d{3,}$/', $venteRef) === 1;
     }
 
     public function exporter(Model $ligne): array
     {
         $donnees = parent::exporter($ligne);
-        unset($donnees['portee_reference']); // detail d'implementation du serveur
+        // Details d'implementation du serveur : jamais servis.
+        unset($donnees['portee_reference'], $donnees['transmission_poste'], $donnees['transmission_reservee_jusqua']);
         $donnees['lignes'] = $ligne->lignes()->orderBy('id')->get()
             ->map(fn (LigneFacture $l) => $l->attributesToArray())
             ->all();
@@ -107,17 +121,17 @@ class FacturesTable extends TableSync
             return $this->creer($deviceId, $ligne, $saisie);
         }
 
-        return $this->mettreAJourLeStatut($existante, $ligne, $saisie);
+        return $this->mettreAJourLeStatut($existante, $ligne, $saisie, $deviceId);
     }
 
     private function valider(array $ligne): ?string
     {
         $v = Validator::make($ligne, [
             'id' => ['required', 'uuid'],
-            'reference' => ['required', 'string', 'regex:/^(FV|FA)-(P\d+-)?\d{4}-\d{3,}$/'],
+            'reference' => ['required', 'string', 'regex:/^(FV|FA)-(P\d+-|WEB-)?\d{4}-\d{3,}$/'],
             'type' => ['required', 'string', 'in:'.implode(',', self::TYPES)],
-            'vente_ref' => ['nullable', 'string', 'regex:/^V-(P\d+-)?\d{4}-\d{3,}$/'],
-            'origine_ref' => ['nullable', 'string', 'regex:/^FV-(P\d+-)?\d{4}-\d{3,}$/'],
+            'vente_ref' => ['nullable', 'string', 'regex:/^V-(P\d+-|WEB-)?\d{4}-\d{3,}$/'],
+            'origine_ref' => ['nullable', 'string', 'regex:/^FV-(P\d+-|WEB-)?\d{4}-\d{3,}$/'],
             'date_facture' => ['required', 'date'],
             'client' => ['required', 'string', 'max:255'],
             'client_ifu' => ['nullable', 'string', 'max:40'],
@@ -240,7 +254,8 @@ class FacturesTable extends TableSync
                 ->where('vente_ref', $ligne['vente_ref'])
                 ->where('id', '!=', $ligne['id']);
             if (! self::venteGlobale($ligne['vente_ref'])) {
-                $requete->where('device_id', $deviceId);
+                // Une vente sans code de poste : la facture du poste OU celle emise au web pour elle.
+                $requete->whereIn('device_id', [$deviceId, Catalogue::POSTE_WEB]);
             }
             $autre = $requete->first();
             if ($autre !== null) {
@@ -304,10 +319,16 @@ class FacturesTable extends TableSync
     }
 
     /** Le contenu ne change JAMAIS ; le statut ne regresse JAMAIS. */
-    private function mettreAJourLeStatut(Facture $existante, array $ligne, CarbonImmutable $saisie): ?string
+    private function mettreAJourLeStatut(Facture $existante, array $ligne, CarbonImmutable $saisie, string $deviceId): ?string
     {
         if (! $this->memeContenu($existante, $ligne)) {
             return self::MOTIF_IMMUABLE;
+        }
+
+        // Facture emise au web : seul le poste qui a RESERVE sa transmission peut en changer le statut.
+        if ($existante->device_id === Catalogue::POSTE_WEB && $deviceId !== Catalogue::POSTE_WEB
+            && $existante->transmission_poste !== $deviceId) {
+            return self::MOTIF_RESERVATION;
         }
 
         $rangServeur = self::RANG[$existante->statut];
@@ -329,12 +350,64 @@ class FacturesTable extends TableSync
             || ($ligne['statut'] === 'rejetee' && $saisie->greaterThan($existante->updated_at));
         if ($applique) {
             $existante->forceFill($this->champsDgi($ligne) + [
+                // Un rejet libere la reservation : un autre poste (ou celui-ci) pourra retransmettre.
+                'transmission_poste' => $ligne['statut'] === 'rejetee' ? null : $existante->transmission_poste,
+                'transmission_reservee_jusqua' => $ligne['statut'] === 'rejetee' ? null : $existante->transmission_reservee_jusqua,
                 'updated_at' => $saisie,
                 'serveur_modifie_le' => CarbonImmutable::now('UTC'),
             ])->save();
         }
 
         return null;
+    }
+
+    /**
+     * Reserve la TRANSMISSION d'une facture emise au web pour ce poste (verrou contre la double normalisation).
+     * Atomique : la mise a jour ne reussit que si personne d'autre ne detient une reservation en cours.
+     *
+     * @return array{0: int, 1: array<string, mixed>} statut HTTP et corps de la reponse
+     */
+    public function reserverTransmission(User $utilisateur, string $deviceId, string $factureId): array
+    {
+        if (! $utilisateur->can('manage-facturation')) {
+            return [403, ['message' => "Ce compte n'a pas le droit de transmettre des factures."]];
+        }
+
+        $facture = Facture::query()->find($factureId);
+        if ($facture === null) {
+            return [404, ['message' => 'Facture inconnue du serveur.']];
+        }
+        if ($facture->device_id !== Catalogue::POSTE_WEB) {
+            return [422, ['message' => 'Cette facture a été émise par un poste : seul ce poste la transmet.']];
+        }
+        if ($facture->statut === 'normalisee') {
+            return [409, ['message' => 'Cette facture est déjà normalisée : elle ne se retransmet pas.']];
+        }
+
+        $maintenant = CarbonImmutable::now('UTC');
+        $format = 'Y-m-d H:i:s.u';
+        $jusqua = $maintenant->addMinutes(self::DUREE_RESERVATION_MINUTES);
+
+        $modifiees = DB::transaction(fn () => Facture::query()
+            ->whereKey($factureId)
+            ->where('statut', '!=', 'normalisee')
+            ->where(fn ($q) => $q
+                ->whereNull('transmission_poste')
+                ->orWhere('transmission_poste', $deviceId)
+                ->orWhere('transmission_reservee_jusqua', '<=', $maintenant->format($format)))
+            ->update([
+                'transmission_poste' => $deviceId,
+                'transmission_reservee_jusqua' => $jusqua->format($format),
+            ]));
+
+        if ($modifiees === 0) {
+            $detenteur = Facture::query()->whereKey($factureId)->value('transmission_poste');
+            $code = $detenteur ? Poste::query()->where('device_id', $detenteur)->value('code') : null;
+
+            return [409, ['message' => 'Cette facture est en cours de transmission depuis '.($code ? "le poste $code" : 'un autre poste').' : réessayez dans quelques minutes.']];
+        }
+
+        return [200, ['message' => 'Transmission réservée.', 'reservee_jusqua' => $jusqua->format('Y-m-d\TH:i:s.u\Z')]];
     }
 
     private function libelle(string $statut): string

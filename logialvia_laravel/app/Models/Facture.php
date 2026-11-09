@@ -24,6 +24,7 @@ class Facture extends Model
             'date_normalisation' => 'datetime',
             'updated_at' => 'datetime',
             'serveur_modifie_le' => 'datetime',
+            'transmission_reservee_jusqua' => 'datetime',
             'total_ht' => 'float',
             'total_taxe' => 'float',
             'total_ttc' => 'float',

@@ -34,5 +34,7 @@ Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(func
         Route::get('/sync/pull', [SyncController::class, 'pull']);
         Route::post('/sync/push', [SyncController::class, 'push'])->middleware('poste.jeton');
         Route::post('/sync/demandes', [SyncController::class, 'demandes'])->middleware('poste.jeton');
+        // `47a2_` : reservation de la transmission d'une facture emise au web.
+        Route::post('/sync/factures/reserver', [SyncController::class, 'reserverFacture'])->middleware('poste.jeton');
     });
 });
