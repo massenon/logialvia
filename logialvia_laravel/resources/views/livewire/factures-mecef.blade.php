@@ -1,14 +1,29 @@
 <div>
-    <div class="mb-md">
-        <h1 class="text-page-title font-bold">Facturation MeCeF</h1>
-        <p class="text-xs text-outline">Factures de vente et factures d'avoir, conformité fiscale.</p>
+    <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
+        <div>
+            <h1 class="text-page-title font-bold">Facturation MeCeF</h1>
+            <p class="text-xs text-outline">Factures de vente et factures d'avoir, conformité fiscale.</p>
+        </div>
+        <div class="flex flex-wrap gap-sm">
+            <button type="button" wire:click="exporter" data-action="exporter"
+                    class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            @if ($peutGerer)
+                <button type="button" wire:click="ouvrirEmission" data-action="emettre"
+                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Émettre une Facture</button>
+            @endif
+        </div>
     </div>
 
     <p class="mb-md rounded-lg border border-brand-gold bg-surface-zebra p-sm text-xs text-brand-gold" data-ecart="factures-mecef">
-        Sur le web, la facturation est en consultation. L'émission d'une facture, la transmission à la DGI (le jeton et l'adresse du
-        service e-MECeF restent sur le poste, jamais sur le serveur), la saisie du code de normalisation, les avoirs et l'export PDF
-        restent sur le poste. Le web ne transmet rien : une facture « À transmettre » le reste jusqu'à ce que son poste la transmette.
+        Le web émet les factures de vente et les avoirs (statut « À transmettre »), mais il ne transmet rien à la DGI : le jeton et
+        l'adresse du service e-MECeF restent sur les postes, jamais sur le serveur. Une facture émise au web se transmet depuis
+        n'importe quel poste appairé (le serveur réserve la transmission à un seul poste à la fois, pour qu'elle ne soit pas
+        normalisée deux fois). Une facture émise est immuable : pour la corriger, émettez un avoir.
     </p>
+
+    @if ($message)
+        <p role="status" class="mb-md rounded-lg bg-success-container p-sm text-xs text-success-deep">{{ $message }}</p>
+    @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
@@ -163,11 +178,78 @@
                     <span class="text-caption font-bold uppercase text-outline">Total TTC</span>
                     <span class="text-section-title font-bold text-brand-navy" data-total="ttc">{{ number_format(($ouverte->type === 'FA' ? -1 : 1) * $ouverte->total_ttc, 0, ',', ' ') }} FCFA</span>
                 </div>
-                <p class="mt-sm text-caption text-outline">L'impression et la transmission de la facture se font sur le poste.</p>
-                <div class="mt-md flex justify-end">
+                @if ($ouverte->device_id === \App\Livewire\Catalogue::POSTE_WEB && $ouverte->statut !== 'normalisee')
+                    <p class="mt-sm text-caption text-outline" data-info="transmission-web">Émise au web : à transmettre à la DGI depuis un poste appairé (le serveur réserve la transmission à un seul poste).</p>
+                @endif
+                <div class="mt-md flex flex-wrap justify-end gap-sm">
+                    <a href="{{ route('factures-mecef.imprimer', $ouverte->id) }}" target="_blank" rel="noopener" data-action="imprimer"
+                       class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
+                    @if ($peutGerer && $ouverte->type === 'FV')
+                        <button type="button" wire:click="ouvrirAvoir('{{ $ouverte->id }}')" data-action="avoir"
+                                class="rounded-lg border border-error-deep px-md py-sm text-xs font-semibold text-error-deep hover:bg-error-container">Émettre un avoir</button>
+                    @endif
                     <button type="button" wire:click="fermer" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Fermer</button>
                 </div>
             </div>
+        </div>
+    @endif
+    @if ($emission)
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-emission">
+            <form wire:submit="emettre" class="w-full max-w-lg rounded-lg bg-surface-card p-lg shadow-xl" data-form="emission">
+                <h2 id="titre-emission" class="mb-sm text-modal-title font-bold">Émettre une facture de vente</h2>
+                <p class="mb-md text-xs text-outline">Les prix de la caisse sont des montants toutes taxes comprises : ils sont ramenés hors taxe selon le groupe de taxe de chaque produit. Une seule facture par vente.</p>
+                <label class="mb-sm block text-xs">Vente à facturer *
+                    <select wire:model="venteId" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                        <option value="">— Choisir une vente —</option>
+                        @foreach ($ventesAFacturer as $v)
+                            <option value="{{ $v->id }}">{{ $v->reference }} · {{ $v->client }} · {{ number_format($v->total, 0, ',', ' ') }} FCFA · {{ $v->date_vente->timezone($fuseau)->format('d/m/Y') }}</option>
+                        @endforeach
+                    </select></label>
+                @if ($ventesAFacturer->isEmpty())
+                    <p class="mb-sm text-xs text-outline" data-vide>Toutes les ventes ont déjà leur facture.</p>
+                @endif
+                <label class="mb-sm block text-xs">IFU du client (facultatif)
+                    <input type="text" wire:model="ifu" maxlength="40" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                <label class="block text-xs">Adresse du client (facultatif)
+                    <input type="text" wire:model="adresse" maxlength="255" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                @if ($erreur)
+                    <p role="alert" class="mt-sm text-xs text-error-deep">{{ $erreur }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="annulerSaisie" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Émettre la Facture</button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    @if ($origineAvoir)
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-avoir">
+            <form wire:submit="emettreAvoir" class="w-full max-w-lg rounded-lg bg-surface-card p-lg shadow-xl" data-form="avoir">
+                <h2 id="titre-avoir" class="mb-sm text-modal-title font-bold">Émettre un avoir sur {{ $origineAvoir->reference }}</h2>
+                <p class="mb-sm text-xs text-outline">Facture de {{ number_format($origineAvoir->total_ttc, 0, ',', ' ') }} FCFA TTC, dont {{ number_format($dejaCredite, 0, ',', ' ') }} FCFA déjà crédités par des avoirs. Un avoir ne dépasse jamais la facture.</p>
+                <label class="mb-sm flex items-center gap-sm text-xs"><input type="checkbox" wire:model.live="avoirTotal"> Avoir total (reprend toutes les lignes de la facture)</label>
+                @unless ($avoirTotal)
+                    <ul class="mb-sm text-xs" data-lignes-avoir>
+                        @foreach ($origineAvoir->lignes as $l)
+                            <li class="mb-xs flex items-center justify-between gap-sm">
+                                <span>{{ $l->designation }} <span class="text-outline">(facturé : {{ rtrim(rtrim(number_format($l->quantite, 2, ',', ' '), '0'), ',') }})</span></span>
+                                <input type="text" inputmode="decimal" wire:model="avoirQuantites.{{ $l->id }}" placeholder="0" aria-label="Quantité créditée de {{ $l->designation }}"
+                                       class="w-24 rounded-lg border border-outline-variant px-sm py-xs text-right">
+                            </li>
+                        @endforeach
+                    </ul>
+                @endunless
+                <label class="block text-xs">Motif de l'avoir *
+                    <input type="text" wire:model="avoirMotif" maxlength="255" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                @if ($erreur)
+                    <p role="alert" class="mt-sm text-xs text-error-deep">{{ $erreur }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="annulerSaisie" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" class="rounded-lg bg-error-deep px-md py-sm text-xs font-semibold text-white">Émettre l'Avoir</button>
+                </div>
+            </form>
         </div>
     @endif
 </div>

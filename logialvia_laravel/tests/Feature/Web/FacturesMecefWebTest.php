@@ -18,8 +18,8 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Écran web « Facturation MeCeF » : factures et avoirs en LECTURE SEULE (une facture est une pièce fiscale
- * émise par le poste, qui seul détient le jeton e-MECeF et transmet à la DGI : le web ne transmet RIEN).
+ * Écran web « Facturation MeCeF » : LECTURE (cette classe) ; l'émission, les avoirs, l'impression et l'export sont
+ * éprouvés dans `FacturesMecefEmissionWebTest`. Le web ne transmet RIEN à la DGI (jeton et URL e-MECeF : aux postes).
  */
 class FacturesMecefWebTest extends TestCase
 {
@@ -118,12 +118,12 @@ class FacturesMecefWebTest extends TestCase
         $this->actingAs($caissier)->get('/dashboard')->assertDontSee('Facturation MeCeF');
     }
 
-    public function test_l_ecran_declare_ses_ecarts_avec_le_poste(): void
+    public function test_l_ecran_declare_ce_que_le_web_fait_et_ne_fait_pas(): void
     {
         Livewire::actingAs($this->caissier())->test(FacturesMecef::class)
             ->assertSeeHtml('data-ecart="factures-mecef"')
-            ->assertSee('consultation')->assertSee('jeton')->assertSee('Le web ne transmet rien')
-            ->assertSee('avoirs')->assertSee('export PDF')->assertSee('code de normalisation');
+            ->assertSee('Le web émet les factures de vente et les avoirs')->assertSee('il ne transmet rien à la DGI')
+            ->assertSee('depuis')->assertSee('poste appairé')->assertSee('immuable');
     }
 
     // --------------------------------------------------------------------- KPI
@@ -361,44 +361,57 @@ class FacturesMecefWebTest extends TestCase
 
     // ------------------------------------------------- Lecture seule, aucune transmission
 
-    public function test_aucun_bouton_d_ecriture_aucune_ecriture_en_base_et_aucun_appel_reseau_meme_pour_l_admin(): void
+    public function test_le_caissier_et_le_comptable_sans_manage_facturation_ne_voient_aucun_bouton_d_ecriture(): void
+    {
+        $f = $this->facture();
+        Livewire::actingAs($this->caissier())->test(FacturesMecef::class)
+            ->assertDontSee('Émettre une Facture')->assertDontSee('Émettre un avoir')
+            ->call('ouvrir', $f->id)->assertDontSeeHtml('data-action="avoir"')->assertSeeHtml('data-action="imprimer"');
+    }
+
+    public function test_aucune_transmission_aucun_appel_reseau_meme_pour_l_admin(): void
     {
         Http::fake();
         $f = $this->facture();
-        $this->normalisee();
-        $etat = fn () => [
-            Facture::query()->orderBy('reference')->get()->toArray(),
-            LigneFacture::query()->orderBy('id')->get()->toArray(),
-        ];
-        $avant = $etat();
+        $avant = Facture::query()->orderBy('reference')->get()->toArray();
 
         Livewire::actingAs($this->utilisateur('admin', 'gerante'))->test(FacturesMecef::class)
-            ->assertDontSee('Émettre une Facture')->assertDontSeeHtml('wire:click="transmettre')->assertDontSee('Transmettre à e-MECeF')
-            ->assertDontSee('Saisir le code')->assertDontSee('Émettre un avoir')
+            ->assertDontSeeHtml('wire:click="transmettre')->assertDontSee('Transmettre à e-MECeF')->assertDontSee('Saisir le code')
             ->call('ouvrir', $f->id)->call('fermer')->call('filtrer', 'rejetee')->set('recherche', 'x');
 
-        $this->assertSame($avant, $etat(), 'rien ne s\'écrit : ni statut, ni code, ni instant de saisie');
+        $this->assertSame($avant, Facture::query()->orderBy('reference')->get()->toArray(), 'consulter n\'écrit rien');
         Http::assertNothingSent();
     }
 
-    public function test_le_composant_n_expose_aucune_methode_d_ecriture_ni_de_transmission(): void
+    public function test_le_composant_n_expose_que_l_emission_les_avoirs_l_export_et_la_lecture(): void
     {
         $publiques = collect((new \ReflectionClass(FacturesMecef::class))->getMethods(\ReflectionMethod::IS_PUBLIC))
             ->filter(fn (\ReflectionMethod $m) => $m->class === FacturesMecef::class)->map->getName()->sort()->values()->all();
 
-        $this->assertSame(['fermer', 'filtrer', 'ouvrir', 'render'], $publiques, 'lecture, filtre et détail : rien d\'autre');
+        $this->assertSame([
+            'annulerSaisie', 'emettre', 'emettreAvoir', 'exporter', 'fermer', 'filtrer', 'ouvrir', 'ouvrirAvoir', 'ouvrirEmission', 'render',
+        ], $publiques, 'jamais de modification, de suppression, de transmission ni de saisie de code de normalisation');
     }
 
     public function test_le_composant_n_a_ni_jeton_ni_url_ni_client_http(): void
     {
         $code = fn (string $fichier) => preg_replace('~/\*.*?\*/|//[^\n]*|\{\{--.*?--\}\}~s', '', file_get_contents($fichier));
-        $php = $code((new \ReflectionClass(FacturesMecef::class))->getFileName());
+        $fichiers = [
+            $code((new \ReflectionClass(FacturesMecef::class))->getFileName()),
+            $code(app_path('Support/CalculFacture.php')),
+            $code(app_path('Http/Controllers/FactureImprimableController.php')),
+        ];
         $vue = $code(resource_path('views/livewire/factures-mecef.blade.php'));
 
-        foreach (['Http', 'mecef_url', 'mecef_nim', 'jeton', 'curl', 'file_get_contents', 'ParametresEntreprise'] as $interdit) {
-            $this->assertStringNotContainsStringIgnoringCase($interdit, $php, "le composant ne touche pas à : $interdit");
+        foreach ($fichiers as $php) {
+            foreach (['Facades\\Http', 'Http::', 'mecef_url', 'mecef_nim', 'jeton', 'curl', 'file_get_contents', 'Guzzle', 'ParametresEntreprise'] as $interdit) {
+                if ($interdit === 'ParametresEntreprise' && str_contains($php, 'FactureImprimableController')) {
+                    continue; // l'en-tete du document imprime lit la raison sociale, rien d'autre
+                }
+                $this->assertStringNotContainsStringIgnoringCase($interdit, $php, "le web ne touche pas à : $interdit");
+            }
         }
         $this->assertStringNotContainsString('wire:click="transmettre', $vue);
-        $this->assertStringNotContainsString('wire:submit', $vue, 'aucun formulaire : rien ne s\'écrit');
+        $this->assertStringNotContainsString('normaliser', $vue);
     }
 }
