@@ -514,6 +514,37 @@ void main() {
     });
   });
 
+  group('Soins en retard : le statut saisi ne suffit pas (`47e_`)', () {
+    Future<void> soin(String statut, DateTime date, String type) => db
+        .into(db.soinsCalendrier)
+        .insert(
+          SoinsCalendrierCompanion.insert(
+            espece: 'goliaths',
+            datePrevue: date,
+            typeSoin: type,
+            statut: statut,
+          ),
+        );
+
+    test('un soin Planifié dont la date est passée est en retard', () async {
+      final hier = DateTime.now().subtract(const Duration(days: 3));
+      final demain = DateTime.now().add(const Duration(days: 3));
+      await soin('Planifié', hier, 'Vaccin Newcastle');
+      await soin('Planifié', demain, 'Vermifuge');
+      await soin('En retard', demain, 'Vitamines');
+      await soin('Effectué', hier, 'Traitement curatif');
+
+      final prochains = await repository.prochainsSoins();
+      final parType = {for (final p in prochains) p.typeSoin: p.estEnRetard};
+      expect(parType, {
+        'Vaccin Newcastle': true,
+        'Vermifuge': false,
+        'Vitamines': true,
+      });
+      expect(await repository.nombreAlertesSanitaires(), 2);
+    });
+  });
+
   group('Intrants — cohérence du seeder', () {
     test('les seuils du seeder correspondent au prototype', () {
       final mais = IntrantsSeeder.intrants.firstWhere(

@@ -469,18 +469,30 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
           espece: _libelleEspece[s.espece] ?? s.espece,
           typeSoin: s.typeSoin,
           datePrevue: s.datePrevue,
-          statut: s.statut,
+          // Planifie dont la date est passee = EN RETARD (`47e_`), sans attendre qu'on le dise.
+          statut: _statutEffectif(s.statut, s.datePrevue),
           observations: s.observations,
         ),
     ];
+  }
+
+  /// « Planifié » dont la date est passée est en retard ; les autres statuts ne changent pas.
+  static String _statutEffectif(String statut, DateTime datePrevue) {
+    final maintenant = DateTime.now();
+    final aujourdhui = DateTime(maintenant.year, maintenant.month, maintenant.day);
+    return statut == 'Planifié' && datePrevue.isBefore(aujourdhui)
+        ? 'En retard'
+        : statut;
   }
 
   @override
   Future<int> nombreAlertesSanitaires() async {
     final lignes = await (_db.select(
       _db.soinsCalendrier,
-    )..where((s) => s.statut.equals('En retard'))).get();
-    return lignes.length;
+    )..where((s) => s.statut.isIn(const ['En retard', 'Planifié']))).get();
+    return lignes
+        .where((s) => _statutEffectif(s.statut, s.datePrevue) == 'En retard')
+        .length;
   }
 
   // ---------------------------------------------------------------- internes
