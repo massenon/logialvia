@@ -20,7 +20,7 @@
         <p role="alert" class="mb-md rounded-lg bg-error-container p-sm text-xs text-error-deep">{{ $erreur }}</p>
     @endif
 
-    <div class="mb-md flex overflow-x-auto border-b border-outline-variant" role="tablist" aria-label="Sections des paramètres">
+    <div class="mb-md flex flex-wrap border-b border-outline-variant" role="tablist" aria-label="Sections des paramètres">
         @foreach ($onglets as $i => $libelle)
             <button type="button" role="tab" wire:click="choisirOnglet({{ $i }})" aria-selected="{{ $i === $onglet ? 'true' : 'false' }}"
                     class="whitespace-nowrap border-b-2 px-md py-sm text-xs font-bold {{ $i === $onglet ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">

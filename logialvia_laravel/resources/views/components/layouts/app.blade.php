@@ -15,11 +15,16 @@
     <div class="flex min-h-screen flex-col md:flex-row">
         {{-- Barre laterale : transcrite du Dart (`navigation_model.dart`), filtree par droits et modules. --}}
         <aside class="bg-brand-navy text-white md:w-64 md:shrink-0 print:hidden" aria-label="Navigation">
-            <div class="px-md py-md">
-                <a href="/dashboard" class="text-section-title font-bold">Logi<span class="text-brand-gold-light">ALVIA</span></a>
-                <p class="text-xs text-white/70">ALLMANY ET COMPAGNIE</p>
+            <div class="flex items-center justify-between px-md py-md">
+                <div>
+                    <a href="/dashboard" class="text-section-title font-bold">Logi<span class="text-brand-gold-light">ALVIA</span></a>
+                    <p class="text-xs text-white/70">ALLMANY ET COMPAGNIE</p>
+                </div>
+                {{-- Telephone (47n_) : le menu se replie, sinon le contenu commence apres 40 liens (plus d'un ecran). --}}
+                <button type="button" data-menu-bascule aria-controls="menu-principal" aria-expanded="false"
+                        class="rounded-lg border border-white/40 px-md py-sm text-xs font-semibold md:hidden">Menu</button>
             </div>
-            <nav class="px-sm pb-md">
+            <nav id="menu-principal" class="hidden px-sm pb-md md:block">
                 @foreach ($groupes as $groupe)
                     <p class="mt-md px-sm text-xs font-bold tracking-wide text-white/60">{{ $groupe['titre'] }}</p>
                     <ul>
