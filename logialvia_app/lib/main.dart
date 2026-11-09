@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'administration/domain/services/service_restauration.dart';
 import 'core/database/reprise_dossier_precedent.dart';
 import 'administration/domain/services/service_sauvegarde.dart';
 import 'administration/data/repositories/preferences_poste_repository.dart';
+import 'administration/data/sync/depot_demandes_referentiel.dart';
 import 'administration/data/repositories/modules_actifs_repository_drift.dart';
 import 'administration/domain/repositories/auth_repository.dart';
 import 'administration/domain/usecases/connecter_utilisateur_usecase.dart';
@@ -135,7 +137,7 @@ class LogiALVIAApp extends StatefulWidget {
   State<LogiALVIAApp> createState() => _LogiALVIAAppState();
 }
 
-class _LogiALVIAAppState extends State<LogiALVIAApp> {
+class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
   late final AuthRepository _authRepository = AuthRepositoryDrift(
     widget.database,
   );
@@ -163,6 +165,8 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
     preferences: _preferencesPoste,
     depot: const DepotJetonSyncSecurise(),
     appairage: _appairage,
+    // Les modifications de referentiel faites ici sont PROPOSEES au serveur.
+    demandes: DepotDemandesReferentiel(widget.database),
     // Referentiels d'abord (le serveur gagne), puis les faits saisis au poste.
     // Palier 2 de la migration UUID (DV-19) : les ventes, achats… suivront.
     tables: [
@@ -197,10 +201,25 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
     super.initState();
     // Sans effet (aucun minuteur) tant que le poste n'est pas appaire.
     _planificateur.demarrer();
+    // La fermeture passe par nous : une derniere synchronisation, bornee a 4 s.
+    windowManager.addListener(this);
+    unawaited(windowManager.setPreventClose(true));
+  }
+
+  @override
+  Future<void> onWindowClose() async {
+    try {
+      await _planificateur.synchroniserALaFermeture();
+    } finally {
+      // Quoi qu'il arrive, la fenetre se ferme : un echec de synchronisation ne
+      // doit jamais empecher de quitter l'application.
+      await windowManager.destroy();
+    }
   }
 
   @override
   void dispose() {
+    windowManager.removeListener(this);
     // Avant la fermeture de la base : un geste tardif ne doit pas l'ecrire.
     _planificateur.dispose();
     _authViewModel.dispose();

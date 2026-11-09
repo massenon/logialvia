@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\DemandesSynchronisationService;
+use App\Sync\DemandesReferentiel;
 use App\Sync\MoteurSynchronisation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class SyncController extends Controller
     public function __construct(
         private readonly MoteurSynchronisation $moteur,
         private readonly DemandesSynchronisationService $demandes,
+        private readonly DemandesReferentiel $demandesReferentiel,
     ) {}
 
     /** Le poste, c'est le NOM de son jeton. */
@@ -89,5 +91,23 @@ class SyncController extends Controller
         );
 
         return response()->json($resultat['corps'], $resultat['statut']);
+    }
+
+    /** Le poste PROPOSE une modification de referentiel ; le serveur decide. */
+    public function demandes(Request $request): JsonResponse
+    {
+        $donnees = $request->validate([
+            'device_id' => ['required', 'uuid'],
+            'demandes' => ['present', 'array'],
+        ], [
+            'demandes.present' => 'La liste « demandes » est obligatoire (vide si rien à envoyer).',
+            'demandes.array' => 'La liste « demandes » doit être un tableau.',
+        ]);
+
+        return response()->json($this->demandesReferentiel->traiter(
+            $request->user(),
+            $donnees['device_id'],
+            $donnees['demandes'],
+        ));
     }
 }

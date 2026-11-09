@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
+import 'depot_demandes_referentiel.dart';
 import 'regle_referentiel.dart';
 
 /// `parametres_entreprise` — référentiel : le serveur gagne (`46_` §2.2).
@@ -28,6 +29,22 @@ class TableParametresEntreprisePoste implements TablePoste {
 
   final AppDatabase _db;
 
+  DepotDemandesReferentiel get depot => DepotDemandesReferentiel(_db);
+
+  /// Le poste tient-il une valeur renseignée que le serveur n'a pas (ou a
+  /// autrement) ? Sert à décider d'une adoption initiale.
+  static bool _differe(
+    Map<String, dynamic> serveur,
+    ParametresEntrepriseRow p,
+  ) {
+    for (final e in DepotDemandesReferentiel.champsParametres(p).entries) {
+      final local = e.value;
+      if (local == null || (local is String && local.trim().isEmpty)) continue;
+      if (serveur[e.key] != local) return true;
+    }
+    return false;
+  }
+
   @override
   String get nom => 'parametres_entreprise';
 
@@ -49,6 +66,7 @@ class TableParametresEntreprisePoste implements TablePoste {
       var absorbees = 0;
       var refusees = 0;
       var conservees = 0;
+      var supplantees = 0;
 
       for (final l in lignes) {
         // La ligne n'existe qu'après un premier enregistrement au poste.
@@ -85,7 +103,28 @@ class TableParametresEntreprisePoste implements TablePoste {
           continue;
         }
 
-        if (!serveurADecide(l)) {
+        final decide = serveurADecide(l);
+        final demande = await depot.enAttente(
+          DepotDemandesReferentiel.typeParametres,
+          DepotDemandesReferentiel.cleParametres,
+        );
+        // Une demande du poste en attente : la version la plus récente gagne, comme
+        // sur le serveur. Il ne l'emporte que s'il a décidé APRÈS la saisie.
+        final aAppliquer = demande != null
+            ? decide &&
+                  (decisionDuServeur(
+                        l,
+                      )?.isAfter(DateTime.parse(demande.saisiLe)) ??
+                      false)
+            : decide;
+        if (!aAppliquer) {
+          // Valeur de semis (ou saisie locale plus récente) : rien n'est absorbé.
+          // Si le serveur n'a jamais décidé et diffère du poste, le poste lui
+          // PROPOSE ses valeurs (adoption initiale : le web est installé vide,
+          // le poste tient les vraies données de l'entreprise).
+          if (demande == null && actuel != null && _differe(l, actuel)) {
+            await depot.proposerParametres();
+          }
           conservees++;
           continue;
         }
@@ -131,12 +170,15 @@ class TableParametresEntreprisePoste implements TablePoste {
         if (nouveau != actuel) {
           await _db.update(_db.parametresEntreprise).replace(nouveau);
           absorbees++;
+          if (demande != null) supplantees++;
         }
+        if (demande != null) await depot.abandonner(demande.id);
       }
       return ResultatAbsorption(
         absorbees: absorbees,
         refusees: refusees,
         conservees: conservees,
+        supplantees: supplantees,
       );
     });
   }

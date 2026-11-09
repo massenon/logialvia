@@ -156,3 +156,7 @@ Le serveur arbitre par **dernier écrivain gagne, à l'instant de saisie**. Le p
 ## 9. Référentiels côté poste (précision, 09/11/2026)
 
 « Le serveur gagne » ne vaut que **lorsque le serveur a décidé** : une ligne dont `updated_at` égale `created_at` porte une valeur de semis et n'est pas absorbée (voir `45_` §6e) ; une ligne absente du poste est toujours créée ; une valeur `null` n'efface jamais une valeur locale ; `chemin_logo`, `chemin_favicon`, `mode_donnees_test` et l'identifiant ne sont jamais absorbés. À lever quand `POST /api/sync/demandes` existera : le poste pourra alors proposer ses valeurs au serveur, et la règle du semis deviendra inutile.
+
+## 10. `POST /api/sync/demandes` (implémenté, 09/11/2026)
+
+Corps : `{ "device_id": "<uuid>", "demandes": [ { "id": "<uuid>", "type": "module_actif" | "parametres_entreprise", "saisi_le": "<ISO 8601>", "donnees": {…} } ] }` ; réponse : `{ "accepted": ["<uuid>"], "rejected": [ {"id", "motif"} ] }`. `device_id` = nom du jeton (sinon 403). `module_actif` : `{module_id, is_actif}` ; `parametres_entreprise` : les 20 champs de `DemandesReferentiel::CHAMPS_PARAMETRES`. Règles : voir `45_` §6f. Le §9 (règle du semis) reste vrai tant qu'une ligne n'a pas été décidée ; l'adoption initiale la lève.

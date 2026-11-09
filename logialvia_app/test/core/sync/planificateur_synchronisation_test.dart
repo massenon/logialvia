@@ -380,4 +380,77 @@ void main() {
       expect(planificateur.suspendu, isFalse);
     },
   );
+
+  group('à la fermeture', () {
+    test('une saisie en attente est envoyée avant de quitter', () async {
+      await appairer();
+      await planificateur.demarrer();
+      await ClientsRepositoryDrift(db).creerClient(nom: 'Avant de fermer');
+
+      final reussi = await planificateur.synchroniserALaFermeture();
+
+      expect(reussi, isTrue);
+      expect(serveur.clients, hasLength(1));
+      expect((await db.select(db.clients).get()).single.syncStatus, 'synced');
+    });
+
+    test(
+      'rien à envoyer : aucun appel, la fenêtre se ferme tout de suite',
+      () async {
+        await appairer();
+        await planificateur.demarrer();
+        final n = serveur.journal.length;
+
+        final reussi = await planificateur.synchroniserALaFermeture();
+
+        expect(reussi, isFalse);
+        expect(serveur.journal.length, n);
+      },
+    );
+
+    test('poste non appairé ou suspendu : rien n\'est tenté', () async {
+      await planificateur.demarrer(); // non appairé : suspendu
+      await ClientsRepositoryDrift(db).creerClient(nom: 'Local');
+
+      expect(await planificateur.synchroniserALaFermeture(), isFalse);
+      expect(serveur.journal, isEmpty);
+    });
+
+    test(
+      'serveur lent : borné au délai, la fermeture n\'attend pas le réseau',
+      () async {
+        await appairer();
+        await planificateur.demarrer();
+        await ClientsRepositoryDrift(db).creerClient(nom: 'Réseau lent');
+        serveur.delaiReponse = const Duration(seconds: 2);
+        final debut = DateTime.now();
+
+        final reussi = await planificateur.synchroniserALaFermeture(
+          delai: const Duration(milliseconds: 150),
+        );
+
+        expect(reussi, isFalse);
+        expect(
+          DateTime.now().difference(debut),
+          lessThan(const Duration(seconds: 1)),
+        );
+        expect(
+          (await db.select(db.clients).get()).single.syncStatus,
+          'pending',
+          reason:
+              'la saisie n\'est pas perdue : elle repartira à la prochaine ouverture',
+        );
+      },
+    );
+
+    test('hors ligne : renvoie false sans bloquer, saisie conservée', () async {
+      await appairer();
+      await planificateur.demarrer();
+      await ClientsRepositoryDrift(db).creerClient(nom: 'Coupure');
+      serveur.horsLigne = true;
+
+      expect(await planificateur.synchroniserALaFermeture(), isFalse);
+      expect((await db.select(db.clients).get()).single.syncStatus, 'pending');
+    });
+  });
 }

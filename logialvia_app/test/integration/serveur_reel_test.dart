@@ -5,7 +5,9 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:logialvia_app/administration/data/repositories/preferences_poste_repository.dart';
+import 'package:logialvia_app/administration/data/repositories/modules_actifs_repository_drift.dart';
 import 'package:logialvia_app/administration/data/seed/modules_actifs_seeder.dart';
+import 'package:logialvia_app/administration/data/sync/depot_demandes_referentiel.dart';
 import 'package:logialvia_app/administration/data/sync/table_modules_actifs_poste.dart';
 import 'package:logialvia_app/administration/data/sync/table_parametres_entreprise_poste.dart';
 import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
@@ -26,6 +28,9 @@ import 'package:logialvia_app/core/sync/service_appairage.dart';
 /// # puis des comptes admin1…admin8 (rôle admin, sans mot de passe temporaire) :
 /// php artisan tinker --execute="foreach (range(1,8) as \$i) { \$u = App\Models\User::query()->create(['name'=>'Admin '.\$i,'username'=>'admin'.\$i,'password'=>'EssaiPoste-2026!','is_active'=>true,'must_change_password'=>false]); \$u->assignRole('admin'); }"
 /// DB_DATABASE=/tmp/lv/essai.sqlite php artisan serve --port=8765
+///
+/// # un compte caissier (n'a pas le droit de modifier les modules) :
+/// php artisan tinker --execute="\$u = App\Models\User::query()->create(['name'=>'Caissier','username'=>'caissier1','password'=>'EssaiPoste-2026!','is_active'=>true,'must_change_password'=>false]); \$u->assignRole('caissier');"
 ///
 /// # un réglage DÉCIDÉ sur le serveur (updated_at > created_at) et un module laissé de semis :
 /// php artisan tinker --execute="App\Models\ModuleActif::where('module_id','bovins')->update(['is_actif'=>true]); App\Models\ParametresEntreprise::query()->update(['raison_sociale'=>'ALLMANY SARL (web)','prefixe_bac'=>'BC']);"
@@ -50,7 +55,7 @@ void main() {
   var compte = 0;
 
   /// Un poste complet, HTTP réel.
-  Future<_Poste> poste() async {
+  Future<_Poste> poste({String? compteForce}) async {
     final db = AppDatabase.enMemoire();
     await ModulesActifsSeeder(db).executer();
     final preferences = PreferencesPosteRepository(db);
@@ -58,7 +63,7 @@ void main() {
     final appairage = ServiceAppairage(preferences: preferences, depot: depot);
     final r = await appairage.connecter(
       adresse: adresse!,
-      identifiant: 'admin${++compte}',
+      identifiant: compteForce ?? 'admin${++compte}',
       motDePasse: mdp,
     );
     expect(r.reussi, isTrue, reason: r.message);
@@ -76,6 +81,7 @@ void main() {
           TableParametresEntreprisePoste(db),
           TableClientsPoste(db),
         ],
+        demandes: DepotDemandesReferentiel(db),
         tailleLot: 2,
       ),
     );
@@ -288,6 +294,59 @@ void main() {
       expect(
         (await b.moteur.interrogerDemande()).resynchronisationComplete,
         isFalse,
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'une modification de module faite au poste est proposée, acceptée et redescend vers les autres',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      final b = await poste()
+        ..let(postes.add);
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+
+      await ModulesActifsRepositoryDrift(
+        a.db,
+      ).definirEtat('heliciculture', actif: true);
+      final ra = await a.moteur.synchroniser();
+      expect(ra.reussie, isTrue, reason: ra.message);
+      expect(ra.demandesAcceptees, 1);
+
+      final rb = await b.moteur.synchroniser();
+      expect(rb.reussie, isTrue, reason: rb.message);
+      final chezB = await (b.db.select(
+        b.db.modulesActifs,
+      )..where((m) => m.moduleId.equals('heliciculture'))).getSingle();
+      expect(
+        chezB.isActif,
+        isTrue,
+        reason: 'décidé par le poste A, reçu par le poste B',
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'un caissier ne peut pas modifier les modules : refus avec le vrai motif du serveur',
+    () async {
+      final c = await poste(compteForce: 'caissier1')
+        ..let(postes.add);
+      await ModulesActifsRepositoryDrift(
+        c.db,
+      ).definirEtat('pisciculture', actif: true);
+
+      final r = await c.moteur.synchroniser();
+
+      expect(r.demandesRefusees, 1, reason: r.message);
+      final d = (await c.db.select(c.db.demandesReferentiel).get()).single;
+      expect(d.syncStatus, 'conflict');
+      expect(
+        d.syncMotif,
+        'Droit insuffisant pour modifier les modules actifs.',
       );
     },
     skip: saute,

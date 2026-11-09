@@ -2,6 +2,7 @@ import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../domain/entities/parametres_elevage.dart';
 
 abstract class ParametresElevageRepository {
@@ -370,5 +371,6 @@ class ParametresElevageRepositoryDrift implements ParametresElevageRepository {
             prefixeParc: Value(formats.parc),
           ),
         );
+    await DepotDemandesReferentiel(_db).proposerParametres();
   }
 }

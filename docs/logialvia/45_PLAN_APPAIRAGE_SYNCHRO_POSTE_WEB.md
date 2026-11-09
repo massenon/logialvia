@@ -114,6 +114,21 @@ temporaire).
 
 **Limites** : pas de synchronisation à la fermeture (`windowManager.destroy()` ne se retarde pas sur un réseau incertain) ; le poste ne peut toujours pas modifier un référentiel vers le serveur (`POST /sync/demandes`, W4+) ; les modifications faites au web sur les modules ne sont reçues qu'après `updated_at > created_at`, ce que seul un enregistrement par l'écran web garantit.
 
+## 6f. Les trois limites du palier 2, levées
+
+**1. Le poste propose ses modifications de référentiel** (`POST /api/sync/demandes`).
+- *Serveur* : le poste **propose**, le serveur **décide**. Droit vérifié par type (`manage-modules`, `manage-parametres`) ; **idempotent par l'UUID de la demande** (journal `demandes_referentiel` : une demande rejouée rend la même issue sans rien réappliquer) ; une demande plus **ancienne** que la dernière décision du serveur est refusée (« une modification plus récente existe… ») ; une demande acceptée **décide** la ligne (`updated_at` avance, même si la valeur est identique à celle du semis) et redescend vers tous les postes ; champs interdits (`chemin_logo`, `mode_donnees_test`, `marque_remise_a_zero`, `id`) refusés en bloc ; une valeur vide n'efface jamais celle du serveur. 17 tests, 8 mutations (la 8e a révélé le cas « valeur identique », désormais testé).
+- *Poste* (schéma **v32**, table `demandes_referentiel`) : chaque modification locale d'un module, des paramètres ou des formats de numérotation dépose une demande (une seule en attente par clé : la dernière saisie remplace la précédente). Le moteur les envoie après les faits ; accusé seulement si la demande n'a pas été remplacée ; refus → `conflict` avec le motif du serveur, jamais renvoyé en boucle.
+- **Règle du plus récent, des deux côtés** : à l'absorption, une demande locale en attente n'est supplantée que par une décision du serveur **postérieure** à la saisie du poste (sinon le tirage, qui passe *avant* l'envoi, aurait défait un choix fait hors ligne). Elle tombe alors, et le rapport le dit.
+
+**2. Adoption initiale.** Quand le serveur n'a jamais décidé (valeur de semis) et diffère du poste, le poste lui **propose** ses valeurs une fois : le web installé vide apprend l'IFU, le RCCM et les modules choisis par la Gérante. Une fois la ligne décidée, la règle du semis cesse de jouer : un changement fait au web redescend normalement.
+
+**3. Synchronisation à la fermeture** : `synchroniserALaFermeture`, bornée à **4 s** (une fenêtre qui ne se ferme pas parce que le réseau est coupé serait pire qu'une saisie qui attend l'ouverture suivante ; elle reste `pending`, l'envoi étant idempotent). Elle n'envoie que s'il y a quelque chose, jamais pour un poste suspendu ou non appairé, et `main.dart` ferme la fenêtre **quoi qu'il arrive** (`finally`).
+
+**Tests** : 108 sur la synchronisation du poste, 161 côté serveur, **9 essais contre le vrai serveur Laravel** (dont : demande d'un administrateur acceptée puis reçue par un second poste ; demande d'un caissier refusée avec le vrai motif). Mutations : 12 sur le poste ; deux restent *équivalentes* par construction — l'accusé d'une demande n'a pas besoin de comparer la date (une demande remplacée change d'identifiant) et la fermeture d'un poste suspendu (`_lancer` refuse déjà).
+
+**Reste** : le branchement `onWindowClose` de `main.dart` n'est pas testable sans fenêtre (le comportement qu'il appelle l'est) ; `POST /sync/demandes` ne couvre que `module_actif` et `parametres_entreprise` (les autres référentiels — barèmes, calendrier de prophylaxie, plan comptable… — attendent leur palier).
+
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
 1. **22 fichiers de tables** déclarent des identifiants entiers auto-incrémentés (ventes lignes, fiches, soins,

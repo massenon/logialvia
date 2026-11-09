@@ -21,6 +21,9 @@ class FauxServeurSync {
   bool jetonRevoque = false;
   bool horsLigne = false;
 
+  /// Latence artificielle de chaque réponse (réseau lent).
+  Duration? delaiReponse;
+
   /// Erreur 500 forcée sur ce numéro de page du tirage (1-based), une fois.
   int? panneAuTirageDePage;
 
@@ -34,6 +37,17 @@ class FauxServeurSync {
   bool demandeSynchro = false;
   bool resyncDemandee = false;
   int acquittements = 0;
+
+  /// Demandes de modification de référentiel reçues (`POST /api/sync/demandes`).
+  final List<Map<String, dynamic>> demandesRecues = [];
+
+  /// Non nul : le serveur refuse toute demande avec ce motif.
+  String? refuserDemandes;
+
+  /// `false` : le serveur n'applique pas les demandes (on isole le tirage).
+  bool demandesAccepteesParLeServeur = true;
+
+  Future<void> Function()? pendantDemandes;
   final List<String> journal = []; // « GET pull », « POST push »…
   final List<Map<String, dynamic>> envois = [];
 
@@ -73,15 +87,25 @@ class FauxServeurSync {
     required bool actif,
     bool decide = true,
     String? espece,
+    DateTime? decisionLe,
   }) {
-    final cree = _instant();
+    // `decisionLe` : instant RÉEL de la décision du serveur (pour la comparer à
+    // la saisie d'un poste) ; la création est une heure plus tôt.
+    final cree = decisionLe == null
+        ? _instant()
+        : decisionLe
+              .toUtc()
+              .subtract(const Duration(hours: 1))
+              .toIso8601String();
     modules[id] = {
       'id': 'm-$id',
       'module_id': id,
       'is_actif': actif,
       'espece': espece,
       'created_at': cree,
-      'updated_at': decide ? _instant() : cree,
+      'updated_at': decisionLe != null
+          ? decisionLe.toUtc().toIso8601String()
+          : (decide ? _instant() : cree),
     };
   }
 
@@ -128,6 +152,7 @@ class FauxServeurSync {
 
   Future<http.Response> repondre(http.Request r) async {
     if (horsLigne) throw http.ClientException('réseau coupé');
+    if (delaiReponse != null) await Future<void>.delayed(delaiReponse!);
     journal.add('${r.method} ${r.url.path}');
     if (jetonRevoque) return _json(401, {'message': 'Non authentifié.'});
 
@@ -144,6 +169,7 @@ class FauxServeurSync {
       acquittements++;
       return _json(200, {'message': 'Resynchronisation acquittée.'});
     }
+    if (r.url.path == '/api/sync/demandes') return _demandes(r);
     if (r.url.path == '/api/sync/pull') return _pull(r);
     if (r.url.path == '/api/sync/push') return _push(r);
     return _json(404, {'message': 'inconnu'});
@@ -192,6 +218,35 @@ class FauxServeurSync {
         'clients': lignes.skip(debut).take(lignesParPage).toList(),
       },
     });
+  }
+
+  Future<http.Response> _demandes(http.Request r) async {
+    final corps = jsonDecode(r.body) as Map<String, dynamic>;
+    if (pendantDemandes != null) {
+      await pendantDemandes!();
+      pendantDemandes = null;
+    }
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final d in (corps['demandes'] as List).cast<Map<String, dynamic>>()) {
+      if (refuserDemandes != null) {
+        refusees.add({'id': d['id'] as String, 'motif': refuserDemandes!});
+        continue;
+      }
+      demandesRecues.add(d);
+      acceptees.add(d['id'] as String);
+      if (!demandesAccepteesParLeServeur) continue;
+      final donnees = d['donnees'] as Map<String, dynamic>;
+      if (d['type'] == 'module_actif') {
+        ajouterModule(
+          donnees['module_id'] as String,
+          actif: donnees['is_actif'] as bool,
+        );
+      } else if (d['type'] == 'parametres_entreprise') {
+        definirParametres(donnees);
+      }
+    }
+    return _json(200, {'accepted': acceptees, 'rejected': refusees});
   }
 
   bool _dans(String instant, String? since, String jusqua) =>

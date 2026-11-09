@@ -21,8 +21,7 @@ import 'moteur_synchronisation.dart';
 ///   révocation (401) : il se **suspend** jusqu'à [reprendre] (nouvel appairage).
 ///   Interroger un serveur qui répond 401 toutes les 30 s n'aurait aucun sens.
 /// - **Hors ligne n'est pas une panne** : il réessaie au tick suivant, sans bruit.
-/// - Pas de synchronisation à la fermeture (TODO(dette): la fermeture passe par
-///   `windowManager.destroy()`, qu'on ne retarde pas sur un réseau incertain).
+/// - **À la fermeture** : [synchroniserALaFermeture], bornée à 4 s.
 class PlanificateurSynchronisation extends ChangeNotifier {
   PlanificateurSynchronisation({
     required this.moteur,
@@ -115,6 +114,34 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       notifyListeners();
     }
     return rapport;
+  }
+
+  /// Dernière chance avant la fermeture : envoie ce qui attend, **au plus
+  /// [delai]**. Renvoie `true` si une synchronisation a réussi.
+  ///
+  /// Jamais plus long que [delai] : une fenêtre qui ne se ferme pas parce que le
+  /// réseau est coupé serait pire qu'une saisie qui attend la prochaine
+  /// ouverture (elle n'est pas perdue : elle reste `pending`, et l'envoi est
+  /// idempotent si la requête interrompue avait abouti).
+  Future<bool> synchroniserALaFermeture({
+    Duration delai = const Duration(seconds: 4),
+  }) async {
+    if (_ferme || _suspendu) return false;
+    final limite = DateTime.now().add(delai);
+    // Une synchronisation en cours : on l'attend, dans la limite du délai.
+    while (_enCours && DateTime.now().isBefore(limite)) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    if (_enCours) return false;
+    final restant = limite.difference(DateTime.now());
+    if (restant <= Duration.zero) return false;
+    try {
+      if (!await moteur.aDesSaisiesAEnvoyer()) return false;
+      final rapport = await _lancer().timeout(restant);
+      return rapport?.reussie ?? false;
+    } on TimeoutException {
+      return false;
+    }
   }
 
   void _surGeste() {

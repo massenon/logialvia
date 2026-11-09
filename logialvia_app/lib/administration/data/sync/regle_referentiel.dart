@@ -16,6 +16,10 @@ bool serveurADecide(Map<String, dynamic> ligne) {
   return modifie.isAfter(cree);
 }
 
+/// Instant de la dernière décision du serveur sur cette ligne.
+DateTime? decisionDuServeur(Map<String, dynamic> ligne) =>
+    _instant(ligne['updated_at']);
+
 DateTime? _instant(Object? v) => v is String ? DateTime.tryParse(v) : null;
 
 /// `true`/`false`, `1`/`0`. `null` pour toute autre valeur : l'absorbeur strict

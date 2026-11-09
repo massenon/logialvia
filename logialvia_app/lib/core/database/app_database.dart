@@ -37,6 +37,7 @@ import '../../elevage/data/tables/infirmerie_table.dart';
 import '../../elevage/data/tables/parametres_elevage_tables.dart';
 import '../../elevage/data/tables/soins_calendrier_table.dart';
 import '../sync/identifiant_poste.dart';
+import '../../administration/data/tables/demandes_referentiel_table.dart';
 
 part 'app_database.g.dart';
 
@@ -65,6 +66,7 @@ part 'app_database.g.dart';
     // Administration
     Roles, Utilisateurs, PermissionsRole, AuditLogs, SecurityLogs, ModulesActifs,
     ParametresEntreprise, MessagesEditeur, PreferencesPoste, Corbeille,
+    DemandesReferentiel,
     // Commercial
     ProduitsVendables, Clients, Ventes, LignesVente, Devis,
     GroupesTaxe, Factures, LignesFacture,
@@ -96,7 +98,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 31;
+  static const int versionSchema = 32;
 
   @override
   int get schemaVersion => versionSchema;
@@ -386,6 +388,11 @@ class AppDatabase extends _$AppDatabase {
         // sans cascade. Les clients existants deviennent `pending` : le serveur
         // ne les a jamais vus, ils partent au premier envoi.
         await _clientsEnUuid(m);
+      }
+      if (from < 32) {
+        // File des demandes de modification de referentiel (`46_` §4.3) : table
+        // nouvelle, aucune donnee a reprendre.
+        await _creerTable(m, demandesReferentiel);
       }
     },
     beforeOpen: (details) async {

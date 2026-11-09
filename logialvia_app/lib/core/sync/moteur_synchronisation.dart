@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../administration/data/sync/depot_demandes_referentiel.dart';
 import 'depot_jeton_sync.dart';
 import 'service_appairage.dart';
 import 'table_poste.dart';
@@ -33,6 +34,8 @@ class RapportSynchronisation {
     this.conserveesLocalement = 0,
     this.supplantees = 0,
     this.referentielsMisAJour = 0,
+    this.demandesAcceptees = 0,
+    this.demandesRefusees = 0,
     this.envoyees = 0,
     this.acceptees = 0,
     this.refusees = 0,
@@ -59,6 +62,10 @@ class RapportSynchronisation {
   /// Lignes de référentiels (modules, paramètres) modifiées d'après le serveur.
   final int referentielsMisAJour;
 
+  /// Demandes de modification de référentiel acceptées / refusées par le serveur.
+  final int demandesAcceptees;
+  final int demandesRefusees;
+
   final int envoyees;
   final int acceptees;
 
@@ -80,6 +87,8 @@ class RapportSynchronisation {
     int? conserveesLocalement,
     int? supplantees,
     int? referentielsMisAJour,
+    int? demandesAcceptees,
+    int? demandesRefusees,
     int? envoyees,
     int? acceptees,
     int? refusees,
@@ -94,6 +103,8 @@ class RapportSynchronisation {
     conserveesLocalement: conserveesLocalement ?? this.conserveesLocalement,
     supplantees: supplantees ?? this.supplantees,
     referentielsMisAJour: referentielsMisAJour ?? this.referentielsMisAJour,
+    demandesAcceptees: demandesAcceptees ?? this.demandesAcceptees,
+    demandesRefusees: demandesRefusees ?? this.demandesRefusees,
     envoyees: envoyees ?? this.envoyees,
     acceptees: acceptees ?? this.acceptees,
     refusees: refusees ?? this.refusees,
@@ -116,6 +127,7 @@ class MoteurSynchronisationPoste {
     required this.depot,
     required this.appairage,
     required this.tables,
+    this.demandes,
     this.client,
     this.delai = const Duration(seconds: 30),
     this.tailleLot = 100,
@@ -127,6 +139,9 @@ class MoteurSynchronisationPoste {
 
   /// Dans l'ordre des dépendances (clients avant ventes…).
   final List<TablePoste> tables;
+
+  /// File des demandes de modification de référentiel (`null` : aucune).
+  final DepotDemandesReferentiel? demandes;
   final http.Client? client;
   final Duration delai;
 
@@ -186,6 +201,10 @@ class MoteurSynchronisationPoste {
     rapport = envoi.rapport;
     if (envoi.arret != null) return envoi.arret!;
 
+    final proposition = await _envoyerDemandes(session, rapport);
+    rapport = proposition.rapport;
+    if (proposition.arret != null) return proposition.arret!;
+
     return rapport.avec(message: _resume(rapport));
   }
 
@@ -237,12 +256,14 @@ class MoteurSynchronisationPoste {
     for (final t in tables) {
       if ((await t.aEnvoyer()).isNotEmpty) return true;
     }
-    return false;
+    return demandes != null && (await demandes!.aEnvoyer()).isNotEmpty;
   }
 
   /// Émet à chaque modification locale d'une table synchronisée.
-  Stream<void> get modifications =>
-      StreamGroup.merge(tables.map((t) => t.modifications));
+  Stream<void> get modifications => StreamGroup.merge([
+    ...tables.map((t) => t.modifications),
+    ?demandes?.modifications,
+  ]);
 
   // ------------------------------------------------------------------ Tirage
 
@@ -395,6 +416,74 @@ class MoteurSynchronisationPoste {
     return _Etape(rapport, null);
   }
 
+  // ------------------------------------------------------------ Demandes
+
+  /// Le poste PROPOSE ses modifications de référentiel ; le serveur décide
+  /// (`POST /api/sync/demandes`). Le résultat redescend au tirage suivant.
+  Future<_Etape> _envoyerDemandes(
+    _Session s,
+    RapportSynchronisation rapport,
+  ) async {
+    final file = demandes;
+    if (file == null) return _Etape(rapport, null);
+    final aEnvoyer = await file.aEnvoyer();
+    if (aEnvoyer.isEmpty) return _Etape(rapport, null);
+
+    final reponse = await _appeler(
+      (c) => c.post(
+        Uri.parse('${s.adresse}/api/sync/demandes'),
+        headers: _entetes(s.jeton),
+        body: jsonEncode({
+          'device_id': s.idPoste,
+          'demandes': [
+            for (final d in aEnvoyer)
+              {
+                'id': d.id,
+                'type': d.type,
+                'saisi_le': d.saisiLe,
+                'donnees': jsonDecode(d.donnees),
+              },
+          ],
+        }),
+      ),
+    );
+    final arret = await _verifier(reponse);
+    if (arret != null) return _Etape(rapport, arret);
+
+    final json = _json(reponse!.body);
+    if (json == null) {
+      return _Etape(
+        rapport,
+        _refus('Réponse du serveur inattendue aux demandes.'),
+      );
+    }
+    final saisies = {for (final d in aEnvoyer) d.id: d.saisiLe};
+    var acceptees = 0;
+    var refusees = 0;
+    for (final id in (json['accepted'] as List? ?? const [])) {
+      if (id is String && saisies.containsKey(id)) {
+        await file.marquerSynchronisee(id, saisies[id]!);
+        acceptees++;
+      }
+    }
+    for (final r in (json['rejected'] as List? ?? const [])) {
+      if (r is Map && r['id'] is String && saisies.containsKey(r['id'])) {
+        await file.marquerRefusee(
+          r['id'] as String,
+          (r['motif'] as String?) ?? 'Refusée par le serveur.',
+        );
+        refusees++;
+      }
+    }
+    return _Etape(
+      rapport.avec(
+        demandesAcceptees: rapport.demandesAcceptees + acceptees,
+        demandesRefusees: rapport.demandesRefusees + refusees,
+      ),
+      null,
+    );
+  }
+
   // ------------------------------------------------------------------ Outils
 
   Map<String, String> _entetes(String jeton) => {
@@ -467,6 +556,14 @@ class MoteurSynchronisationPoste {
       '${r.recues} reçue(s)',
       '${r.acceptees} envoyée(s)',
     ];
+    if (r.demandesAcceptees > 0) {
+      morceaux.add('${r.demandesAcceptees} réglage(s) proposé(s) au serveur');
+    }
+    if (r.demandesRefusees > 0) {
+      morceaux.add(
+        '${r.demandesRefusees} demande(s) de réglage refusée(s) par le serveur',
+      );
+    }
     if (r.referentielsMisAJour > 0) {
       morceaux.add(
         '${r.referentielsMisAJour} réglage(s) mis à jour depuis le serveur',

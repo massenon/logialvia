@@ -4692,6 +4692,469 @@ class CorbeilleCompanion extends UpdateCompanion<ElementArchiveRow> {
   }
 }
 
+class $DemandesReferentielTable extends DemandesReferentiel
+    with TableInfo<$DemandesReferentielTable, DemandeReferentielRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DemandesReferentielTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cleMeta = const VerificationMeta('cle');
+  @override
+  late final GeneratedColumn<String> cle = GeneratedColumn<String>(
+    'cle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _donneesMeta = const VerificationMeta(
+    'donnees',
+  );
+  @override
+  late final GeneratedColumn<String> donnees = GeneratedColumn<String>(
+    'donnees',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saisiLeMeta = const VerificationMeta(
+    'saisiLe',
+  );
+  @override
+  late final GeneratedColumn<String> saisiLe = GeneratedColumn<String>(
+    'saisi_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    type,
+    cle,
+    donnees,
+    saisiLe,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'demandes_referentiel';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DemandeReferentielRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('cle')) {
+      context.handle(
+        _cleMeta,
+        cle.isAcceptableOrUnknown(data['cle']!, _cleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cleMeta);
+    }
+    if (data.containsKey('donnees')) {
+      context.handle(
+        _donneesMeta,
+        donnees.isAcceptableOrUnknown(data['donnees']!, _donneesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_donneesMeta);
+    }
+    if (data.containsKey('saisi_le')) {
+      context.handle(
+        _saisiLeMeta,
+        saisiLe.isAcceptableOrUnknown(data['saisi_le']!, _saisiLeMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DemandeReferentielRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DemandeReferentielRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      cle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cle'],
+      )!,
+      donnees: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}donnees'],
+      )!,
+      saisiLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}saisi_le'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $DemandesReferentielTable createAlias(String alias) {
+    return $DemandesReferentielTable(attachedDatabase, alias);
+  }
+}
+
+class DemandeReferentielRow extends DataClass
+    implements Insertable<DemandeReferentielRow> {
+  /// UUID de la demande : le serveur la rend idempotente par cet identifiant.
+  final String id;
+
+  /// `module_actif` ou `parametres_entreprise`.
+  final String type;
+
+  /// `module_id`, ou `parametres` (ligne unique).
+  final String cle;
+
+  /// Corps JSON de la demande.
+  final String donnees;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String saisiLe;
+
+  /// `pending` · `synced` · `conflict` (refusée, voir `syncMotif`).
+  final String syncStatus;
+  final String? syncMotif;
+  const DemandeReferentielRow({
+    required this.id,
+    required this.type,
+    required this.cle,
+    required this.donnees,
+    required this.saisiLe,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['type'] = Variable<String>(type);
+    map['cle'] = Variable<String>(cle);
+    map['donnees'] = Variable<String>(donnees);
+    map['saisi_le'] = Variable<String>(saisiLe);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  DemandesReferentielCompanion toCompanion(bool nullToAbsent) {
+    return DemandesReferentielCompanion(
+      id: Value(id),
+      type: Value(type),
+      cle: Value(cle),
+      donnees: Value(donnees),
+      saisiLe: Value(saisiLe),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory DemandeReferentielRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DemandeReferentielRow(
+      id: serializer.fromJson<String>(json['id']),
+      type: serializer.fromJson<String>(json['type']),
+      cle: serializer.fromJson<String>(json['cle']),
+      donnees: serializer.fromJson<String>(json['donnees']),
+      saisiLe: serializer.fromJson<String>(json['saisiLe']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'type': serializer.toJson<String>(type),
+      'cle': serializer.toJson<String>(cle),
+      'donnees': serializer.toJson<String>(donnees),
+      'saisiLe': serializer.toJson<String>(saisiLe),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  DemandeReferentielRow copyWith({
+    String? id,
+    String? type,
+    String? cle,
+    String? donnees,
+    String? saisiLe,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => DemandeReferentielRow(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    cle: cle ?? this.cle,
+    donnees: donnees ?? this.donnees,
+    saisiLe: saisiLe ?? this.saisiLe,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  DemandeReferentielRow copyWithCompanion(DemandesReferentielCompanion data) {
+    return DemandeReferentielRow(
+      id: data.id.present ? data.id.value : this.id,
+      type: data.type.present ? data.type.value : this.type,
+      cle: data.cle.present ? data.cle.value : this.cle,
+      donnees: data.donnees.present ? data.donnees.value : this.donnees,
+      saisiLe: data.saisiLe.present ? data.saisiLe.value : this.saisiLe,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemandeReferentielRow(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('cle: $cle, ')
+          ..write('donnees: $donnees, ')
+          ..write('saisiLe: $saisiLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, type, cle, donnees, saisiLe, syncStatus, syncMotif);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DemandeReferentielRow &&
+          other.id == this.id &&
+          other.type == this.type &&
+          other.cle == this.cle &&
+          other.donnees == this.donnees &&
+          other.saisiLe == this.saisiLe &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class DemandesReferentielCompanion
+    extends UpdateCompanion<DemandeReferentielRow> {
+  final Value<String> id;
+  final Value<String> type;
+  final Value<String> cle;
+  final Value<String> donnees;
+  final Value<String> saisiLe;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const DemandesReferentielCompanion({
+    this.id = const Value.absent(),
+    this.type = const Value.absent(),
+    this.cle = const Value.absent(),
+    this.donnees = const Value.absent(),
+    this.saisiLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DemandesReferentielCompanion.insert({
+    this.id = const Value.absent(),
+    required String type,
+    required String cle,
+    required String donnees,
+    this.saisiLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : type = Value(type),
+       cle = Value(cle),
+       donnees = Value(donnees);
+  static Insertable<DemandeReferentielRow> custom({
+    Expression<String>? id,
+    Expression<String>? type,
+    Expression<String>? cle,
+    Expression<String>? donnees,
+    Expression<String>? saisiLe,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (type != null) 'type': type,
+      if (cle != null) 'cle': cle,
+      if (donnees != null) 'donnees': donnees,
+      if (saisiLe != null) 'saisi_le': saisiLe,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DemandesReferentielCompanion copyWith({
+    Value<String>? id,
+    Value<String>? type,
+    Value<String>? cle,
+    Value<String>? donnees,
+    Value<String>? saisiLe,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return DemandesReferentielCompanion(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      cle: cle ?? this.cle,
+      donnees: donnees ?? this.donnees,
+      saisiLe: saisiLe ?? this.saisiLe,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (cle.present) {
+      map['cle'] = Variable<String>(cle.value);
+    }
+    if (donnees.present) {
+      map['donnees'] = Variable<String>(donnees.value);
+    }
+    if (saisiLe.present) {
+      map['saisi_le'] = Variable<String>(saisiLe.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemandesReferentielCompanion(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('cle: $cle, ')
+          ..write('donnees: $donnees, ')
+          ..write('saisiLe: $saisiLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ProduitsVendablesTable extends ProduitsVendables
     with TableInfo<$ProduitsVendablesTable, ProduitVendableRow> {
   @override
@@ -20639,6 +21102,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $CorbeilleTable corbeille = $CorbeilleTable(this);
+  late final $DemandesReferentielTable demandesReferentiel =
+      $DemandesReferentielTable(this);
   late final $ProduitsVendablesTable produitsVendables =
       $ProduitsVendablesTable(this);
   late final $ClientsTable clients = $ClientsTable(this);
@@ -20695,6 +21160,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     messagesEditeur,
     preferencesPoste,
     corbeille,
+    demandesReferentiel,
     produitsVendables,
     clients,
     ventes,
@@ -23592,6 +24058,262 @@ typedef $$CorbeilleTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $CorbeilleTable, ElementArchiveRow>,
       ),
       ElementArchiveRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DemandesReferentielTableCreateCompanionBuilder =
+    DemandesReferentielCompanion Function({
+      Value<String> id,
+      required String type,
+      required String cle,
+      required String donnees,
+      Value<String> saisiLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$DemandesReferentielTableUpdateCompanionBuilder =
+    DemandesReferentielCompanion Function({
+      Value<String> id,
+      Value<String> type,
+      Value<String> cle,
+      Value<String> donnees,
+      Value<String> saisiLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+class $$DemandesReferentielTableFilterComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cle => $composableBuilder(
+    column: $table.cle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get donnees => $composableBuilder(
+    column: $table.donnees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get saisiLe => $composableBuilder(
+    column: $table.saisiLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DemandesReferentielTableOrderingComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cle => $composableBuilder(
+    column: $table.cle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get donnees => $composableBuilder(
+    column: $table.donnees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get saisiLe => $composableBuilder(
+    column: $table.saisiLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DemandesReferentielTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get cle =>
+      $composableBuilder(column: $table.cle, builder: (column) => column);
+
+  GeneratedColumn<String> get donnees =>
+      $composableBuilder(column: $table.donnees, builder: (column) => column);
+
+  GeneratedColumn<String> get saisiLe =>
+      $composableBuilder(column: $table.saisiLe, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+}
+
+class $$DemandesReferentielTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DemandesReferentielTable,
+          DemandeReferentielRow,
+          $$DemandesReferentielTableFilterComposer,
+          $$DemandesReferentielTableOrderingComposer,
+          $$DemandesReferentielTableAnnotationComposer,
+          $$DemandesReferentielTableCreateCompanionBuilder,
+          $$DemandesReferentielTableUpdateCompanionBuilder,
+          (
+            DemandeReferentielRow,
+            BaseReferences<
+              _$AppDatabase,
+              $DemandesReferentielTable,
+              DemandeReferentielRow
+            >,
+          ),
+          DemandeReferentielRow,
+          PrefetchHooks Function()
+        > {
+  $$DemandesReferentielTableTableManager(
+    _$AppDatabase db,
+    $DemandesReferentielTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DemandesReferentielTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DemandesReferentielTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$DemandesReferentielTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> cle = const Value.absent(),
+                Value<String> donnees = const Value.absent(),
+                Value<String> saisiLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemandesReferentielCompanion(
+                id: id,
+                type: type,
+                cle: cle,
+                donnees: donnees,
+                saisiLe: saisiLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String type,
+                required String cle,
+                required String donnees,
+                Value<String> saisiLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemandesReferentielCompanion.insert(
+                id: id,
+                type: type,
+                cle: cle,
+                donnees: donnees,
+                saisiLe: saisiLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DemandesReferentielTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DemandesReferentielTable,
+      DemandeReferentielRow,
+      $$DemandesReferentielTableFilterComposer,
+      $$DemandesReferentielTableOrderingComposer,
+      $$DemandesReferentielTableAnnotationComposer,
+      $$DemandesReferentielTableCreateCompanionBuilder,
+      $$DemandesReferentielTableUpdateCompanionBuilder,
+      (
+        DemandeReferentielRow,
+        BaseReferences<
+          _$AppDatabase,
+          $DemandesReferentielTable,
+          DemandeReferentielRow
+        >,
+      ),
+      DemandeReferentielRow,
       PrefetchHooks Function()
     >;
 typedef $$ProduitsVendablesTableCreateCompanionBuilder =
@@ -33510,6 +34232,8 @@ class $AppDatabaseManager {
       $$PreferencesPosteTableTableManager(_db, _db.preferencesPoste);
   $$CorbeilleTableTableManager get corbeille =>
       $$CorbeilleTableTableManager(_db, _db.corbeille);
+  $$DemandesReferentielTableTableManager get demandesReferentiel =>
+      $$DemandesReferentielTableTableManager(_db, _db.demandesReferentiel);
   $$ProduitsVendablesTableTableManager get produitsVendables =>
       $$ProduitsVendablesTableTableManager(_db, _db.produitsVendables);
   $$ClientsTableTableManager get clients =>

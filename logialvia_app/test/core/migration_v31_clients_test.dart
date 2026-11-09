@@ -98,12 +98,16 @@ void main() {
     },
   );
 
-  test('la base est estampillée v31 et la table a le schéma courant', () async {
+  test('la base est estampillée à la version courante et la table a le schéma v31', () async {
     await baseV30();
     final db = AppDatabase.pourFichier(fichier);
     await db.customSelect('SELECT 1').get();
     final v = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(v.data.values.first, 31);
+    expect(
+      v.data.values.first,
+      AppDatabase.versionSchema,
+      reason: 'la base est estampillée à la version courante',
+    );
     final colonnes = await db
         .customSelect('PRAGMA table_info("clients")')
         .get()

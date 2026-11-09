@@ -33,5 +33,6 @@ Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(func
         Route::post('/sync/resynchronisation/acquittement', [SyncController::class, 'acquittement']);
         Route::get('/sync/pull', [SyncController::class, 'pull']);
         Route::post('/sync/push', [SyncController::class, 'push'])->middleware('poste.jeton');
+        Route::post('/sync/demandes', [SyncController::class, 'demandes'])->middleware('poste.jeton');
     });
 });
