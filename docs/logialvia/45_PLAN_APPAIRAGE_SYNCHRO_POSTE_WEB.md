@@ -294,11 +294,23 @@ l'**administrateur** (pas de compte acheteur : seuls existent les comptes créé
 **menu du compte** de la barre du haut ; le mot de passe suit **la règle du Dart** (8 caractères, 1 majuscule, 1 chiffre, mêmes messages) au web
 (`App\Support\RegleMotDePasse`), à l'API et au seeder de l'administrateur.
 
-### 7.2 Écrans restant à convertir — bloqués par des données absentes du serveur
+### 7.2 P7 à P9 : élevage, comptabilité, factures MeCeF (09/11/2026)
 
-Le serveur ne synchronise ni les **fiches d'élevage** (11 écrans : couveuse, mirages, 8 filières, soins, dashboard et paramètres élevage),
-ni les **dépenses**, ni la **comptabilité** (6 écrans), ni les **factures MeCeF**. `/inventaire` et `/rapports` dépendent du stock propre à
-chaque poste ou de ces données. Chacun demande d'abord ses tables serveur et sa synchronisation (comme P3 à P6), puis l'écran.
+Chaque tranche a fait le parcours complet : migration UUID au poste (schémas v38 à v42), tables serveur, synchronisation, écrans web.
+
+| Tranche | Schéma | Écrans web | Doc |
+|---|---|---|---|
+| P7a fiches journalières, ventes du jour, bandes | v38 | 7 fiches d'espèce, dashboard élevage | `46a_` |
+| P7b couveuse | v39 | couveuse, mirages | `46b_` |
+| P7c soins, infirmerie, barèmes, taux, prophylaxie | v40 | soins, paramètres élevage | `46c_` |
+| P8 comptabilité, dépenses | v41 | 9 écrans de comptabilité, dépenses | `46d_` |
+| P9 factures e-MECeF | v42 | factures MeCeF (lecture) | `46e_` |
+
+**Reste en « bientôt » : `/inventaire` et `/rapports`** — ils dépendent du stock propre à chaque poste ou agrègent les données ci-dessus.
+Chaque doc porte sa section « Décisions à valider par le client » : à relire avant la mise en service (voir `46f_`).
+
+**Points de fusion à connaître** : `soins_calendrier.bande_id` est un UUID (v38) mais ne voyage pas encore avec les soins (P7c l'a laissé
+local) ; `46_` §2.5 et §3 (numérotation des écritures et des factures par le poste, pas par le serveur) sont à réécrire ; `45_` §6 à jour via ce §7.
 
 ## 8. Recette de conversion d'un écran (à suivre à la lettre)
 
