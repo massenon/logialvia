@@ -24,8 +24,8 @@ void main() {
       final bilan = calculer([
         ligne(compte: '311', debit: 186400), // stocks
         ligne(compte: '411', debit: 7000), // clients
-        ligne(compte: '512', debit: 225000), // Mobile Money
-        ligne(compte: '531', debit: 87000), // caisse
+        ligne(compte: '552', debit: 225000), // Mobile Money
+        ligne(compte: '571', debit: 87000), // caisse
         ligne(compte: '101', credit: 493400), // capital
         ligne(compte: '401', credit: 12000), // fournisseurs
       ]);
@@ -57,9 +57,9 @@ void main() {
     test('le résultat de l\'exercice vient du moteur, pas d\'un compte 13', () {
       // BR-CPT-005 : le resultat est produits − charges, calcule.
       final bilan = calculer([
-        ligne(compte: '531', debit: 100000),
-        ligne(compte: '701', credit: 100000), // vente
-        ligne(compte: '601', debit: 26000), // achat
+        ligne(compte: '571', debit: 100000),
+        ligne(compte: '702', credit: 100000), // vente
+        ligne(compte: '602', debit: 26000), // achat
         ligne(compte: '401', credit: 26000),
       ]);
 
@@ -84,9 +84,9 @@ void main() {
       // capitalInitial = totalActif − dettes − resultat, donc l'egalite
       // tombait juste par construction.
       final bilan = calculer([
-        ligne(compte: '531', debit: 87000),
+        ligne(compte: '571', debit: 87000),
         ligne(compte: '401', credit: 12000),
-        ligne(compte: '601', debit: 12000), // pour equilibrer l'ecriture
+        ligne(compte: '602', debit: 12000), // pour equilibrer l'ecriture
       ]);
 
       expect(bilan.estEquilibre, isFalse);
@@ -113,7 +113,7 @@ void main() {
 
     test('un écart au centime ne déclenche pas d\'alerte', () {
       final bilan = calculer([
-        ligne(compte: '531', debit: 1000.004),
+        ligne(compte: '571', debit: 1000.004),
         ligne(compte: '101', credit: 1000),
       ]);
       expect(bilan.estEquilibre, isTrue);
@@ -130,9 +130,9 @@ void main() {
   group('Cohérence avec l\'onglet Bilan des États Financiers', () {
     test('les deux bilans annoncent le même résultat net (BR-CPT-005)', () {
       final ecritures = [
-        ligne(compte: '531', debit: 100000),
-        ligne(compte: '701', credit: 100000),
-        ligne(compte: '601', debit: 26000),
+        ligne(compte: '571', debit: 100000),
+        ligne(compte: '702', credit: 100000),
+        ligne(compte: '602', debit: 26000),
         ligne(compte: '401', credit: 26000),
       ];
       final soldes = SoldesComptes.depuis(ecritures);

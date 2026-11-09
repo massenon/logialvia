@@ -27,7 +27,7 @@ void main() {
           debit: 100,
           credit: 50,
           libelle: 'Test',
-          numeroCompte: '531',
+          numeroCompte: '571',
         ),
         isNotNull,
       );
@@ -39,7 +39,7 @@ void main() {
           debit: 0,
           credit: 0,
           libelle: 'Test',
-          numeroCompte: '531',
+          numeroCompte: '571',
         ),
         isNotNull,
       );
@@ -51,7 +51,7 @@ void main() {
           debit: -1,
           credit: 0,
           libelle: 'Test',
-          numeroCompte: '531',
+          numeroCompte: '571',
         ),
         isNotNull,
       );
@@ -60,7 +60,7 @@ void main() {
           debit: 100,
           credit: 0,
           libelle: '  ',
-          numeroCompte: '531',
+          numeroCompte: '571',
         ),
         isNotNull,
       );
@@ -81,7 +81,7 @@ void main() {
           debit: 100,
           credit: 0,
           libelle: 'Vente',
-          numeroCompte: '531',
+          numeroCompte: '571',
         ),
         isNull,
       );
@@ -162,7 +162,7 @@ void main() {
 
     test('la trésorerie (classe 5) est débitrice', () {
       const caisse = CompteComptable(
-        numero: '531',
+        numero: '571',
         libelle: 'Caisse',
         classe: '5',
       );
@@ -173,7 +173,7 @@ void main() {
   group('Grand Livre — solde progressif', () {
     test('sur un compte débiteur, le débit fait monter le solde', () {
       const caisse = CompteComptable(
-        numero: '531',
+        numero: '571',
         libelle: 'Caisse',
         classe: '5',
       );
@@ -182,9 +182,9 @@ void main() {
         compte: caisse,
         soldeOuverture: 100000,
         ecritures: [
-          ecriture(compte: '531', debit: 12000, date: DateTime(2026, 6, 1)),
-          ecriture(compte: '531', credit: 5000, date: DateTime(2026, 6, 2)),
-          ecriture(compte: '531', debit: 3000, date: DateTime(2026, 6, 3)),
+          ecriture(compte: '571', debit: 12000, date: DateTime(2026, 6, 1)),
+          ecriture(compte: '571', credit: 5000, date: DateTime(2026, 6, 2)),
+          ecriture(compte: '571', debit: 3000, date: DateTime(2026, 6, 3)),
         ],
       );
 
@@ -193,7 +193,7 @@ void main() {
 
     test('sur un compte de produits, c\'est le crédit qui fait monter', () {
       const ventes = CompteComptable(
-        numero: '701',
+        numero: '702',
         libelle: 'Ventes',
         classe: '7',
       );
@@ -202,8 +202,8 @@ void main() {
         compte: ventes,
         soldeOuverture: 0,
         ecritures: [
-          ecriture(compte: '701', credit: 12000, date: DateTime(2026, 6, 1)),
-          ecriture(compte: '701', credit: 8000, date: DateTime(2026, 6, 2)),
+          ecriture(compte: '702', credit: 12000, date: DateTime(2026, 6, 1)),
+          ecriture(compte: '702', credit: 8000, date: DateTime(2026, 6, 2)),
         ],
       );
 
@@ -214,7 +214,7 @@ void main() {
       'les écritures sont triées chronologiquement, quel que soit l\'ordre',
       () {
         const caisse = CompteComptable(
-          numero: '531',
+          numero: '571',
           libelle: 'Caisse',
           classe: '5',
         );
@@ -223,9 +223,9 @@ void main() {
           compte: caisse,
           soldeOuverture: 0,
           ecritures: [
-            ecriture(compte: '531', debit: 300, date: DateTime(2026, 6, 3)),
-            ecriture(compte: '531', debit: 100, date: DateTime(2026, 6, 1)),
-            ecriture(compte: '531', debit: 200, date: DateTime(2026, 6, 2)),
+            ecriture(compte: '571', debit: 300, date: DateTime(2026, 6, 3)),
+            ecriture(compte: '571', debit: 100, date: DateTime(2026, 6, 1)),
+            ecriture(compte: '571', debit: 200, date: DateTime(2026, 6, 2)),
           ],
         );
 
@@ -236,9 +236,9 @@ void main() {
 
   group('Balance Générale — BR-CPT-004', () {
     const comptes = [
-      CompteComptable(numero: '531', libelle: 'Caisse', classe: '5'),
-      CompteComptable(numero: '701', libelle: 'Ventes Avicoles', classe: '7'),
-      CompteComptable(numero: '601', libelle: 'Achats Matières', classe: '6'),
+      CompteComptable(numero: '571', libelle: 'Caisse', classe: '5'),
+      CompteComptable(numero: '702', libelle: 'Ventes Avicoles', classe: '7'),
+      CompteComptable(numero: '602', libelle: 'Achats Matières', classe: '6'),
     ];
 
     test('une comptabilité en partie double est toujours équilibrée', () {
@@ -246,10 +246,10 @@ void main() {
         comptes: comptes,
         ecrituresAnterieures: const [],
         ecrituresPeriode: [
-          ecriture(compte: '531', debit: 12000),
-          ecriture(compte: '701', credit: 12000),
-          ecriture(compte: '601', debit: 5000),
-          ecriture(compte: '531', credit: 5000),
+          ecriture(compte: '571', debit: 12000),
+          ecriture(compte: '702', credit: 12000),
+          ecriture(compte: '602', debit: 5000),
+          ecriture(compte: '571', credit: 5000),
         ],
       );
 
@@ -262,8 +262,8 @@ void main() {
         comptes: comptes,
         ecrituresAnterieures: const [],
         ecrituresPeriode: [
-          ecriture(compte: '531', debit: 12000),
-          ecriture(compte: '701', credit: 11000), // 1 000 manquants
+          ecriture(compte: '571', debit: 12000),
+          ecriture(compte: '702', credit: 11000), // 1 000 manquants
         ],
       );
 
@@ -276,16 +276,16 @@ void main() {
         comptes: comptes,
         ecrituresAnterieures: const [],
         ecrituresPeriode: [
-          ecriture(compte: '531', debit: 12000),
-          ecriture(compte: '701', credit: 12000),
+          ecriture(compte: '571', debit: 12000),
+          ecriture(compte: '702', credit: 12000),
         ],
       );
 
-      final caisse = lignes.firstWhere((l) => l.numeroCompte == '531');
+      final caisse = lignes.firstWhere((l) => l.numeroCompte == '571');
       expect(caisse.finalDebit, 12000);
       expect(caisse.finalCredit, 0);
 
-      final ventes = lignes.firstWhere((l) => l.numeroCompte == '701');
+      final ventes = lignes.firstWhere((l) => l.numeroCompte == '702');
       expect(ventes.finalDebit, 0);
       expect(ventes.finalCredit, 12000);
     });
@@ -294,9 +294,9 @@ void main() {
       final lignes = const BalanceCalculator().calculer(
         comptes: comptes,
         ecrituresAnterieures: [
-          ecriture(compte: '531', debit: 50000, date: DateTime(2026, 1, 5)),
+          ecriture(compte: '571', debit: 50000, date: DateTime(2026, 1, 5)),
         ],
-        ecrituresPeriode: [ecriture(compte: '531', debit: 12000)],
+        ecrituresPeriode: [ecriture(compte: '571', debit: 12000)],
       );
 
       final caisse = lignes.single;
@@ -309,7 +309,7 @@ void main() {
       final lignes = const BalanceCalculator().calculer(
         comptes: comptes,
         ecrituresAnterieures: const [],
-        ecrituresPeriode: [ecriture(compte: '531', debit: 1)],
+        ecrituresPeriode: [ecriture(compte: '571', debit: 1)],
       );
       expect(lignes, hasLength(1));
     });
@@ -318,14 +318,14 @@ void main() {
   group('BR-CPT-005 — Résultat Net, source unique', () {
     final ecritures = [
       // Ventes 20 000
-      ecriture(compte: '701', credit: 12000),
-      ecriture(compte: '707', credit: 8000),
+      ecriture(compte: '702', credit: 12000),
+      ecriture(compte: '701', credit: 8000),
       // Charges 9 000
-      ecriture(compte: '601', debit: 6000),
-      ecriture(compte: '622', debit: 3000),
+      ecriture(compte: '602', debit: 6000),
+      ecriture(compte: '604', debit: 3000),
       // Contrepartie trésorerie
-      ecriture(compte: '531', debit: 20000),
-      ecriture(compte: '531', credit: 9000),
+      ecriture(compte: '571', debit: 20000),
+      ecriture(compte: '571', credit: 9000),
     ];
 
     test('Résultat = Produits − Charges', () {
@@ -362,8 +362,8 @@ void main() {
 
     test('une perte donne un résultat négatif', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '701', credit: 5000),
-        ecriture(compte: '601', debit: 8000),
+        ecriture(compte: '702', credit: 5000),
+        ecriture(compte: '602', debit: 8000),
       ]);
       expect(CalculerResultatNet.calculer(soldes), -3000);
     });
@@ -377,7 +377,7 @@ void main() {
     test('un apport en capital équilibre le bilan', () {
       // 101 Capital 500 000 au crédit, 531 Caisse 500 000 au débit.
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 500000),
+        ecriture(compte: '571', debit: 500000),
         ecriture(compte: '101', credit: 500000),
       ]);
 
@@ -389,10 +389,10 @@ void main() {
 
     test('une vente comptant conserve l\'équilibre', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 500000),
+        ecriture(compte: '571', debit: 500000),
         ecriture(compte: '101', credit: 500000),
-        ecriture(compte: '531', debit: 12000),
-        ecriture(compte: '701', credit: 12000),
+        ecriture(compte: '571', debit: 12000),
+        ecriture(compte: '702', credit: 12000),
       ]);
 
       final bilan = const BilanCalculator().calculer(soldes);
@@ -404,9 +404,9 @@ void main() {
 
     test('une vente à crédit place la créance à l\'actif', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 3500),
+        ecriture(compte: '571', debit: 3500),
         ecriture(compte: '411', debit: 8500),
-        ecriture(compte: '701', credit: 12000),
+        ecriture(compte: '702', credit: 12000),
       ]);
 
       final bilan = const BilanCalculator().calculer(soldes);
@@ -419,8 +419,8 @@ void main() {
 
     test('un achat à crédit place la dette au passif', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '601', debit: 30000),
-        ecriture(compte: '531', credit: 10000),
+        ecriture(compte: '602', debit: 30000),
+        ecriture(compte: '571', credit: 10000),
         ecriture(compte: '401', credit: 20000),
       ]);
 
@@ -445,8 +445,8 @@ void main() {
   group('Compte de Résultat — cascade SYSCOHADA', () {
     test('marge commerciale = ventes marchandises − achats marchandises', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '707', credit: 18500),
-        ecriture(compte: '602', debit: 11000),
+        ecriture(compte: '701', credit: 18500),
+        ecriture(compte: '601', debit: 11000),
       ]);
 
       final cr = const CompteResultatCalculator().calculer(soldes);
@@ -458,9 +458,9 @@ void main() {
 
     test('la valeur ajoutée retranche les consommations de tiers', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '701', credit: 100000),
-        ecriture(compte: '601', debit: 30000),
-        ecriture(compte: '622', debit: 5000),
+        ecriture(compte: '702', credit: 100000),
+        ecriture(compte: '602', debit: 30000),
+        ecriture(compte: '604', debit: 5000),
       ]);
 
       final cr = const CompteResultatCalculator().calculer(soldes);
@@ -471,11 +471,11 @@ void main() {
 
     test('la cascade se termine sur le même résultat que la source unique', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '701', credit: 100000),
-        ecriture(compte: '707', credit: 18500),
-        ecriture(compte: '601', debit: 30000),
-        ecriture(compte: '602', debit: 11000),
-        ecriture(compte: '622', debit: 5000),
+        ecriture(compte: '702', credit: 100000),
+        ecriture(compte: '701', credit: 18500),
+        ecriture(compte: '602', debit: 30000),
+        ecriture(compte: '601', debit: 11000),
+        ecriture(compte: '604', debit: 5000),
       ]);
 
       final cr = const CompteResultatCalculator().calculer(soldes);
@@ -489,14 +489,14 @@ void main() {
   group('TAFIRE', () {
     test('la trésorerie de clôture = ouverture + variation', () {
       final ouverture = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 50000, date: DateTime(2025, 12, 31)),
+        ecriture(compte: '571', debit: 50000, date: DateTime(2025, 12, 31)),
         ecriture(compte: '101', credit: 50000, date: DateTime(2025, 12, 31)),
       ]);
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 50000, date: DateTime(2025, 12, 31)),
+        ecriture(compte: '571', debit: 50000, date: DateTime(2025, 12, 31)),
         ecriture(compte: '101', credit: 50000, date: DateTime(2025, 12, 31)),
-        ecriture(compte: '531', debit: 12000),
-        ecriture(compte: '701', credit: 12000),
+        ecriture(compte: '571', debit: 12000),
+        ecriture(compte: '702', credit: 12000),
       ]);
 
       final tafire = const TafireCalculator().calculer(
@@ -513,8 +513,8 @@ void main() {
 
     test('le flux d\'exploitation part du résultat net', () {
       final soldes = SoldesComptes.depuis([
-        ecriture(compte: '531', debit: 12000),
-        ecriture(compte: '701', credit: 12000),
+        ecriture(compte: '571', debit: 12000),
+        ecriture(compte: '702', credit: 12000),
       ]);
       final tafire = const TafireCalculator().calculer(
         soldes: soldes,

@@ -1013,6 +1013,7 @@ class FauxServeurSync {
       'libelle': libelle,
       'classe': classe,
       'archive': archive,
+      'plan_version': 2,
       'saisi_le': saisiLe,
       'created_at': cree,
       'updated_at': decide ? _instant() : cree,
@@ -1053,6 +1054,7 @@ class FauxServeurSync {
       'vente_ref': venteRef,
       'achat_ref': achatRef,
       'contrepasse_de': contrepasseDe,
+      'plan_version': 2,
       'updated_at': _instant(),
       'serveur_modifie_le': _instant(),
       'lignes': lignes,
@@ -1063,6 +1065,9 @@ class FauxServeurSync {
     final d = demande['donnees'] as Map<String, dynamic>;
     final numero = d['numero_compte'] as String;
     final saisie = demande['saisi_le'] as String;
+    if (d['plan_version'] != 2) {
+      return "Ce poste utilise l'ancien plan comptable : mettez-le à jour.";
+    }
     final existant = comptes[numero];
     if (existant == null) {
       ajouterCompte(
@@ -1112,6 +1117,15 @@ class FauxServeurSync {
           .cast<Map<String, dynamic>>();
       if (pieces.containsKey(id)) {
         acceptees.add(id); // fait immuable : rejeu accepté sans rien changer
+        continue;
+      }
+      // Garde de version du plan (`47p_` §7) : même motif que le vrai serveur.
+      if (p['plan_version'] != 2) {
+        refusees.add({
+          'id': id,
+          'motif':
+              "Ce poste utilise l'ancien plan comptable : mettez-le à jour avant d'envoyer des écritures.",
+        });
         continue;
       }
       if (lignes.length < 2) {

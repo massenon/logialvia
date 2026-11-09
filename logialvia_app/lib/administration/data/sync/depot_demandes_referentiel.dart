@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../repositories/preferences_poste_repository.dart';
+import '../../../comptabilite/domain/plan_syscohada.dart';
 
 /// La file des demandes de modification de référentiel (voir
 /// `DemandesReferentiel`). Écrite par les dépôts qui modifient un module ou les
@@ -341,6 +342,8 @@ class DepotDemandesReferentiel {
     'libelle': c.libelle,
     'classe': c.classe,
     'archive': c.archive,
+    // Garde de version du plan (`47p_`) : le serveur refuse une demande d'un autre plan.
+    'plan_version': PlanSyscohada.version,
   };
 
   /// Propose l'état ACTUEL d'un compte (relu en base).

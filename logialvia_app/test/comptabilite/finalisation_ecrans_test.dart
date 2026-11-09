@@ -29,7 +29,7 @@ void main() {
     required double montant,
     required DateTime date,
     String libelle = 'Transport livraison',
-    String compteCharge = '613',
+    String compteCharge = '622',
   }) async {
     final piece = vm.prochainNumeroPiece('DEP');
     final resultat = await vm.enregistrerPiece(
@@ -44,7 +44,7 @@ void main() {
           libelle: libelle,
         ),
         LigneAEcrire(
-          numeroCompte: '531',
+          numeroCompte: '571',
           debit: 0,
           credit: montant,
           libelle: libelle,
@@ -68,13 +68,13 @@ void main() {
         journalCode: CodeJournal.caisse,
         lignes: [
           const LigneAEcrire(
-            numeroCompte: '613',
+            numeroCompte: '622',
             debit: 15000,
             credit: 0,
             libelle: 'Transport livraison — corrigé',
           ),
           const LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 15000,
             libelle: 'Transport livraison — corrigé',
@@ -111,13 +111,13 @@ void main() {
         journalCode: CodeJournal.caisse,
         lignes: [
           const LigneAEcrire(
-            numeroCompte: '616',
+            numeroCompte: '625',
             debit: 8000,
             credit: 0,
             libelle: 'Reclassé en entretien',
           ),
           const LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 8000,
             libelle: 'Reclassé en entretien',
@@ -131,7 +131,7 @@ void main() {
         reason: 'Deux lignes remplacent deux lignes, elles ne s\'ajoutent pas.',
       );
       expect(
-        vm.ecritures.where((e) => e.numeroCompte == '613'),
+        vm.ecritures.where((e) => e.numeroCompte == '622'),
         isEmpty,
         reason: 'L\'ancienne imputation doit avoir disparu du Grand Livre.',
       );
@@ -149,13 +149,13 @@ void main() {
         journalCode: CodeJournal.caisse,
         lignes: [
           const LigneAEcrire(
-            numeroCompte: '613',
+            numeroCompte: '622',
             debit: 9500,
             credit: 0,
             libelle: 'Corrigé',
           ),
           const LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 9500,
             libelle: 'Corrigé',
@@ -178,13 +178,13 @@ void main() {
         journalCode: CodeJournal.caisse,
         lignes: [
           const LigneAEcrire(
-            numeroCompte: '613',
+            numeroCompte: '622',
             debit: 9500,
             credit: 0,
             libelle: 'Déséquilibré',
           ),
           const LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 4000,
             libelle: 'Déséquilibré',
@@ -207,13 +207,13 @@ void main() {
         journalCode: CodeJournal.caisse,
         lignes: [
           const LigneAEcrire(
-            numeroCompte: '613',
+            numeroCompte: '622',
             debit: 100,
             credit: 0,
             libelle: 'X',
           ),
           const LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 100,
             libelle: 'X',
@@ -237,7 +237,7 @@ void main() {
 
     test('l\'exercice complet couvre les deux dépenses', () {
       vm.definirPerimetreBalance(moisCourant: false);
-      final charges = vm.balance.firstWhere((l) => l.numeroCompte == '613');
+      final charges = vm.balance.firstWhere((l) => l.numeroCompte == '622');
 
       expect(charges.mouvementsDebit, 42000);
       expect(charges.ouvertureDebit, 0, reason: 'Rien ne precede l\'exercice.');
@@ -247,7 +247,7 @@ void main() {
       if (moisCourant == 1) return; // les deux ecritures sont du meme mois
 
       vm.definirPerimetreBalance(moisCourant: true);
-      final charges = vm.balance.firstWhere((l) => l.numeroCompte == '613');
+      final charges = vm.balance.firstWhere((l) => l.numeroCompte == '622');
 
       expect(
         charges.mouvementsDebit,
@@ -266,12 +266,12 @@ void main() {
     test('le solde final ne dépend pas du périmètre', () {
       vm.definirPerimetreBalance(moisCourant: false);
       final finalExercice = vm.balance
-          .firstWhere((l) => l.numeroCompte == '613')
+          .firstWhere((l) => l.numeroCompte == '622')
           .finalDebit;
 
       vm.definirPerimetreBalance(moisCourant: true);
       final finalMois = vm.balance
-          .firstWhere((l) => l.numeroCompte == '613')
+          .firstWhere((l) => l.numeroCompte == '622')
           .finalDebit;
 
       expect(

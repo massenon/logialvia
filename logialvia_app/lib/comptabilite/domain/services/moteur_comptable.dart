@@ -1,4 +1,5 @@
 import '../entities/comptabilite.dart';
+import '../plan_syscohada.dart';
 
 /// Validation d'une écriture — partie double.
 class EcritureValidator {
@@ -432,13 +433,13 @@ class CompteResultatCalculator {
 
   CompteDeResultat calculer(SoldesComptes soldes) {
     // Produits : soldes créditeurs, donc négatifs en net -> on inverse.
-    final ventesMarchandises = -soldes.parPrefixe('707');
-    final ventesProduits = -soldes.parPrefixe('701');
+    final ventesMarchandises = -soldes.parPrefixe(PlanSyscohada.ventesMarchandises);
+    final ventesProduits = -soldes.parPrefixe(PlanSyscohada.ventesProduitsFinis);
     final ventesTotales = -soldes.parPrefixe('70');
 
     // Charges : soldes débiteurs, positifs en net.
-    final achatsMarchandises = soldes.parPrefixe('602');
-    final achatsMatieres = soldes.parPrefixe('601');
+    final achatsMarchandises = soldes.parPrefixe(PlanSyscohada.achatsMarchandises);
+    final achatsMatieres = soldes.parPrefixe(PlanSyscohada.achatsMatieres);
 
     final margeCommerciale = ventesMarchandises - achatsMarchandises;
 
@@ -495,12 +496,12 @@ class CompteResultatCalculator {
         PosteEtat(
           libelle: 'Ventes de Marchandises',
           montant: ventesMarchandises,
-          detail: 'Compte 707',
+          detail: 'Compte ${PlanSyscohada.ventesMarchandises}',
         ),
         PosteEtat(
           libelle: 'Achats de Marchandises Consommés',
           montant: -achatsMarchandises,
-          detail: 'Compte 602',
+          detail: 'Compte ${PlanSyscohada.achatsMarchandises}',
         ),
         PosteEtat(
           libelle: 'MARGE COMMERCIALE',
@@ -510,12 +511,12 @@ class CompteResultatCalculator {
         PosteEtat(
           libelle: 'Ventes de Produits Avicoles',
           montant: ventesProduits,
-          detail: 'Compte 701',
+          detail: 'Compte ${PlanSyscohada.ventesProduitsFinis}',
         ),
         PosteEtat(
           libelle: 'Consommations en Provenance des Tiers',
           montant: -consommationsTiers,
-          detail: 'Comptes 60 (hors 602), 61, 62, 63',
+          detail: 'Comptes 60 (hors ${PlanSyscohada.achatsMarchandises}), 61, 62, 63',
         ),
         PosteEtat(
           libelle: 'VALEUR AJOUTÉE',

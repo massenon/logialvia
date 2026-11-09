@@ -73,7 +73,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
   // ------------------------------------------- Onglet 1 : Recettes/Dépenses
 
   /// Une ligne **par compte de gestion mouvementé**, comme le prototype qui
-  /// agrège par catégorie SYSCOHADA (`701`, `707`, `601`, `628`) et non par
+  /// agrège par catégorie SYSCOHADA (`702`, `701`, `602`, `658`) et non par
   /// écriture individuelle.
   Future<List<LigneRecetteDepense>> _recettesDepenses(
     DateTime debut,

@@ -23947,7 +23947,7 @@ class $PlanComptableTable extends PlanComptable
 }
 
 class CompteRow extends DataClass implements Insertable<CompteRow> {
-  /// Ex. '531' (Caisse), '701' (Ventes de Produits Avicoles).
+  /// Ex. '571' (Caisse), '702' (Ventes de produits finis).
   final String numeroCompte;
   final String libelle;
 

@@ -1325,7 +1325,7 @@ void main() {
     int mois = 6,
     int jour = 15,
     String numero = '',
-    String compteCharge = '624',
+    String compteCharge = '618',
   }) => ComptabiliteRepositoryDrift(p.db).enregistrerPiece(
     date: DateTime(annee, mois, jour, 10),
     journalCode: 'CA',
@@ -1340,7 +1340,7 @@ void main() {
         libelle: 'Transport 47h',
       ),
       LigneAEcrire(
-        numeroCompte: '531',
+        numeroCompte: '571',
         debit: 0,
         credit: montant,
         libelle: 'Transport 47h',
@@ -3621,15 +3621,15 @@ void main() {
             "echo 'compte:'.json_encode(app(App\\Sync\\DemandesReferentiel::class)->traiter(\$u, \$w, [["
                 "'id'=>(string) Illuminate\\Support\\Str::uuid(),'type'=>'compte_comptable','saisi_le'=>$instant,"
                 "'donnees'=>['numero_compte'=>'6$fin','libelle'=>'Compte web $fin','classe'=>'6',"
-                "'archive'=>false]]])).PHP_EOL;",
+                "'archive'=>false,'plan_version'=>2]]])).PHP_EOL;",
             // Pièce comptable saisie au web (journal CA, numéro DEP-WEB-…).
             "echo 'piece:'.((new App\\Sync\\Tables\\EcrituresTable)->pourUtilisateur(\$u)->absorber(\$w, ["
                 "'id'=>'$piece','numero_piece'=>'$numeroPiece',"
                 "'date_ecriture'=>now('UTC')->setDate($annee,5,12)->setTime(12,0)->format('Y-m-d\\TH:i:s.u\\Z'),"
                 "'exercice_annee'=>$annee,'journal_code'=>'CA','vente_ref'=>null,'achat_ref'=>null,"
-                "'contrepasse_de'=>null,'updated_at'=>$instant,'lignes'=>["
-                "['id'=>(string) Illuminate\\Support\\Str::uuid(),'numero_compte'=>'624','debit'=>2500.5,'credit'=>0,'libelle'=>'Transport web','axe_analytique'=>null],"
-                "['id'=>(string) Illuminate\\Support\\Str::uuid(),'numero_compte'=>'531','debit'=>0,'credit'=>2500.5,'libelle'=>'Transport web','axe_analytique'=>null]"
+                "'contrepasse_de'=>null,'plan_version'=>2,'updated_at'=>$instant,'lignes'=>["
+                "['id'=>(string) Illuminate\\Support\\Str::uuid(),'numero_compte'=>'618','debit'=>2500.5,'credit'=>0,'libelle'=>'Transport web','axe_analytique'=>null],"
+                "['id'=>(string) Illuminate\\Support\\Str::uuid(),'numero_compte'=>'571','debit'=>0,'credit'=>2500.5,'libelle'=>'Transport web','axe_analytique'=>null]"
                 "]]) ?? 'ok').PHP_EOL;",
           ].join(' ');
           final sortie = await web(php);
@@ -4407,13 +4407,13 @@ void main() {
           numeroPiece: 'TARDIVE-47H-$unique',
           lignes: [
             const LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 40,
               credit: 0,
               libelle: 'Tardive',
             ),
             const LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 40,
               libelle: 'Tardive',

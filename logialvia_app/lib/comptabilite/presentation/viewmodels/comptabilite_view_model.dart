@@ -6,6 +6,7 @@ import '../../domain/entities/comptabilite.dart';
 import '../../domain/services/bilan_entreprise.dart';
 import '../../domain/services/moteur_comptable.dart';
 import '../../domain/services/report_a_nouveau.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// État partagé du module Comptabilité — Doc F6.
 ///
@@ -788,7 +789,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   /// Une dépense au sens de `saisie-depenses.html` : une charge d'exploitation
   /// saisie à la main, **hors achats d'intrants** (déjà couverts par Achats &
-  /// Commandes, qui génèrent leurs écritures sur 601/602/622 avec un
+  /// Commandes, qui génèrent leurs écritures sur 602/601/604 avec un
   /// `achatRef`).
   ///
   /// Le critère est donc structurel, pas une convention de libellé : ligne au
@@ -909,8 +910,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       .where(
         (c) =>
             c.classe == '6' &&
-            !c.numero.startsWith('601') &&
-            !c.numero.startsWith('602'),
+            !c.numero.startsWith(PlanSyscohada.achatsMarchandises) &&
+            !c.numero.startsWith(PlanSyscohada.achatsMatieres),
       )
       .toList();
 
@@ -930,8 +931,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// précise, et un sac de maïs nourrit plusieurs espèces à la fois.
   ///
   /// Ce qui est **réellement** dérivable du grand livre : la ventilation par
-  /// activité que les comptes distinguent déjà — Avicole (701 / 601 / 622) et
-  /// Commerce Annexe (707 / 602). C'est la même que celle du KPI « Chiffre
+  /// activité que les comptes distinguent déjà — Avicole (702 / 602 / 604) et
+  /// Commerce Annexe (701 / 601). C'est la même que celle du KPI « Chiffre
   /// d'Affaires » du tableau de bord, donc cohérente avec le reste de
   /// l'application. L'écran l'affiche et énonce la limite plutôt que d'inventer
   /// trois filières.
@@ -959,7 +960,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// 1. `ECRITURE_COMPTABLE.axeAnalytique` quand il est renseigné — imputation
   ///    **explicite**, elle prime toujours ;
   /// 2. à défaut, l'heuristique du numéro de compte, tout ce dont on disposait
-  ///    avant la v19 : 701/601/622 pour l'avicole, 707/602 pour le commerce.
+  ///    avant la v19 : 702/602/604 pour l'avicole, 701/601 pour le commerce (SYSCOHADA, `47p_`).
   ///
   /// Une ligne comptée par l'axe n'est **jamais recomptée** par l'heuristique,
   /// sans quoi une charge d'aliment imputée aux Pintades pèserait deux fois.
@@ -974,10 +975,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
     final parAxe = _montantsParAxe;
 
     // Ce que le numero de compte laisse deviner, hors lignes deja imputees.
-    final avicoleRevenus = -_soldeNonImpute('701');
-    final avicoleCouts = _soldeNonImpute('601') + _soldeNonImpute('622');
-    final commerceRevenus = -_soldeNonImpute('707');
-    final commerceCouts = _soldeNonImpute('602');
+    final avicoleRevenus = -_soldeNonImpute(PlanSyscohada.ventesProduitsFinis);
+    final avicoleCouts =
+        _soldeNonImpute(PlanSyscohada.achatsMatieres) +
+        _soldeNonImpute(PlanSyscohada.fraisVeterinaires);
+    final commerceRevenus = -_soldeNonImpute(PlanSyscohada.ventesMarchandises);
+    final commerceCouts = _soldeNonImpute(PlanSyscohada.achatsMarchandises);
 
     final centres = <CentreAnalytique>[];
 
@@ -988,7 +991,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
         CentreAnalytique(
           nom: nom,
           detail: estCommerce && (commerceRevenus.abs() + commerceCouts.abs()) >= 0.01
-              ? 'Imputation analytique + comptes 707 et 602'
+              ? 'Imputation analytique + comptes ${PlanSyscohada.ventesMarchandises} et ${PlanSyscohada.achatsMarchandises}'
               : 'Imputation analytique',
           revenus: part.revenus + (estCommerce ? commerceRevenus : 0),
           couts: part.couts + (estCommerce ? commerceCouts : 0),
@@ -1002,7 +1005,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       centres.add(
         CentreAnalytique(
           nom: 'Commerce Annexe',
-          detail: 'Comptes 707 et 602',
+          detail:
+              'Comptes ${PlanSyscohada.ventesMarchandises} et ${PlanSyscohada.achatsMarchandises}',
           revenus: commerceRevenus,
           couts: commerceCouts,
         ),
@@ -1017,7 +1021,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       centres.add(
         CentreAnalytique(
           nom: 'Avicole — filière non précisée',
-          detail: 'Comptes 701, 601 et 622 sans imputation analytique',
+          detail:
+              'Comptes ${PlanSyscohada.ventesProduitsFinis}, ${PlanSyscohada.achatsMatieres} et ${PlanSyscohada.fraisVeterinaires} sans imputation analytique',
           revenus: avicoleRevenus,
           couts: avicoleCouts,
         ),
@@ -1076,9 +1081,9 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// fausses avec l'air d'être exactes.
   double get chargesNonAffectees =>
       _classeNonImputee('6') -
-      _soldeNonImpute('601') -
-      _soldeNonImpute('602') -
-      _soldeNonImpute('622');
+      _soldeNonImpute(PlanSyscohada.achatsMatieres) -
+      _soldeNonImpute(PlanSyscohada.achatsMarchandises) -
+      _soldeNonImpute(PlanSyscohada.fraisVeterinaires);
 
   /// Produits qu'aucun axe ni aucun compte ne rattache — subventions (75),
   /// produits financiers (77), produits HAO (78).
@@ -1086,16 +1091,18 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// Sans eux, l'invariant « Σ marges − charges non affectées = résultat net »
   /// serait faux dès la première subvention encaissée.
   double get produitsNonAffectes =>
-      -(_classeNonImputee('7') - _soldeNonImpute('701') - _soldeNonImpute('707'));
+      -(_classeNonImputee('7') -
+          _soldeNonImpute(PlanSyscohada.ventesProduitsFinis) -
+          _soldeNonImpute(PlanSyscohada.ventesMarchandises));
 }
 
 /// Numéros de comptes de charges à comportement particulier.
 class ComptesDepenses {
   ComptesDepenses._();
 
-  /// `saisie-depenses.html` : 613 (Locations) et 616 (Assurances) alimentent le
-  /// KPI « Charges Fixes », tout le reste les « Charges Variables ».
-  static const Set<String> fixes = {'613', '616'};
+  /// 622 (Locations) et 625 (Assurances) alimentent le KPI « Charges Fixes », tout le reste
+  /// les « Charges Variables » (`saisie-depenses.html`, renumérotés en SYSCOHADA, `47p_`).
+  static const Set<String> fixes = PlanSyscohada.comptesChargesFixes;
 }
 
 /// Une dépense reconstruite depuis ses écritures — Doc F6 Écran « Saisie des

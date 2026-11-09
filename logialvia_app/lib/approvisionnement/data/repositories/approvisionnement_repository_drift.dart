@@ -11,6 +11,7 @@ import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/approvisionnement.dart';
 import '../../domain/entities/fabrication_provende.dart';
 import '../../domain/services/calcul_pmp.dart';
+import '../../../comptabilite/domain/plan_syscohada.dart';
 
 /// Dépôt du contexte Approvisionnement — intrants, mouvements, achats,
 /// fournisseurs.
@@ -88,21 +89,27 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
   final GenererEcrituresAutomatiques _ecritures;
 
   /// Ventile un panier d'achat entre les comptes de charges selon la catégorie
-  /// de l'intrant : « Vétérinaire » → 622, « Marchandises » → 602, le reste
-  /// (provende) → 601.
-  Map<String, double> _ventilerAchat(
+  /// de l'intrant : « Vétérinaire » → 604, « Marchandises » → 601, le reste
+  /// (provende) → 602 (plan SYSCOHADA, `47p_`).
+  ///
+  /// **TVA** : un intrant n'a pas encore de groupe de taxe (colonne à créer, voir `47p_` §6) :
+  /// le taux est 0, l'achat reste intégralement en charge. Dès qu'un taux est connu, la
+  /// génération extrait la TVA déductible (4452) du montant TTC.
+  Map<CleVentilationAchat, double> _ventilerAchat(
     List<LignePanierAchat> panier,
     Map<String, String> categorieParCode,
   ) {
-    final ventilation = <String, double>{};
+    const tauxAchat = 0.0;
+    final ventilation = <CleVentilationAchat, double>{};
     for (final ligne in panier) {
       final categorie = categorieParCode[ligne.intrantCode];
       final compte = switch (categorie) {
-        'Vétérinaire' => ComptesAutomatiques.fraisVeterinaires,
-        'Marchandises' => ComptesAutomatiques.achatsMarchandises,
-        _ => ComptesAutomatiques.achatsMatieres,
+        'Vétérinaire' => PlanSyscohada.fraisVeterinaires,
+        'Marchandises' => PlanSyscohada.achatsMarchandises,
+        _ => PlanSyscohada.achatsMatieres,
       };
-      ventilation[compte] = (ventilation[compte] ?? 0) + ligne.total;
+      final cle = (compte, tauxAchat);
+      ventilation[cle] = (ventilation[cle] ?? 0) + ligne.total;
     }
     return ventilation;
   }

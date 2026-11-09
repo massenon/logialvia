@@ -21,6 +21,7 @@ import '../../../core/pdf/bouton_export_pdf.dart';
 import '../../domain/services/report_a_nouveau.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// Clôture — Doc F6 §3 et §9, fidèle à `cloture-exercice.html`.
 ///
@@ -452,7 +453,7 @@ class _AssistantCloture extends StatelessWidget {
             statutFait: _resumeAffectation(vm),
             statutRestant:
                 'Par défaut, tout le résultat est reporté à nouveau '
-                '(${vm.resultatNet < 0 ? '129' : '121'}).',
+                '(${vm.resultatNet < 0 ? PlanSyscohada.reportDebiteur : PlanSyscohada.reportCrediteur}).',
           ),
           const SizedBox(height: AppSpacing.sm),
           _EtapeCloture(

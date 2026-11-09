@@ -1,6 +1,8 @@
 /// @docImport 'package:logialvia_app/rapports/data/repositories/rapports_repository_drift.dart';
 library;
 
+import '../../../comptabilite/domain/plan_syscohada.dart';
+
 /// Entités du module Rapports & États — Doc F7, `rapports-exports.html`.
 ///
 /// Ce module est un **modèle de lecture transverse** : il n'a aucune table à
@@ -48,12 +50,13 @@ class CentresProfit {
   static const List<String> tous = [aviculture, commerceAnnexe, chargeGenerale];
 
   static String pourCompte(String numeroCompte) {
-    if (numeroCompte.startsWith('701') ||
-        numeroCompte.startsWith('601') ||
-        numeroCompte.startsWith('622')) {
+    if (numeroCompte.startsWith(PlanSyscohada.ventesProduitsFinis) ||
+        numeroCompte.startsWith(PlanSyscohada.achatsMatieres) ||
+        numeroCompte.startsWith(PlanSyscohada.fraisVeterinaires)) {
       return aviculture;
     }
-    if (numeroCompte.startsWith('707') || numeroCompte.startsWith('602')) {
+    if (numeroCompte.startsWith(PlanSyscohada.ventesMarchandises) ||
+        numeroCompte.startsWith(PlanSyscohada.achatsMarchandises)) {
       return commerceAnnexe;
     }
     return chargeGenerale;
@@ -93,10 +96,10 @@ class CompteTresorerie {
   final String libelle;
   final double soldeOuverture;
 
-  /// Libellés du filtre — `531` → « Caisse », `512` → « Mobile Money ».
+  /// Libellés du filtre — `571` → « Caisse », `552` → « Mobile Money ».
   static String libelleCourt(String numero) {
-    if (numero.startsWith('531')) return 'Caisse';
-    if (numero.startsWith('512')) return 'Mobile Money';
+    if (numero.startsWith(PlanSyscohada.caisse)) return 'Caisse';
+    if (numero.startsWith(PlanSyscohada.mobileMoney)) return 'Mobile Money';
     return numero;
   }
 }

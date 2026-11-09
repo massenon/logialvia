@@ -60,7 +60,7 @@ void main() {
     test('les 4 comptes de charges de saisie-depenses.html existent, alors '
         'que plan-comptable.html ne les listait pas', () async {
       final numeros = vm.plan.map((c) => c.numero).toSet();
-      for (final compte in ['613', '616', '624', '628']) {
+      for (final compte in ['622', '625', '618', '658']) {
         expect(
           numeros,
           contains(compte),
@@ -77,10 +77,10 @@ void main() {
         // Simule une base creee avant l'ajout des comptes de depenses.
         await db.customStatement(
           "DELETE FROM plan_comptable WHERE numero_compte IN "
-          "('613','616','624','628')",
+          "('622','625','618','658')",
         );
         await ComptabiliteRepositoryDrift(db).modifierCompte(
-          numero: '531',
+          numero: '571',
           libelle: 'Caisse principale (renommée par la Gérante)',
           classe: '5',
         );
@@ -89,9 +89,9 @@ void main() {
         await vm.charger();
 
         final numeros = vm.plan.map((c) => c.numero).toSet();
-        expect(numeros, containsAll(['613', '616', '624', '628']));
+        expect(numeros, containsAll(['622', '625', '618', '658']));
 
-        final caisse = vm.plan.firstWhere((c) => c.numero == '531');
+        final caisse = vm.plan.firstWhere((c) => c.numero == '571');
         expect(
           caisse.libelle,
           'Caisse principale (renommée par la Gérante)',
@@ -103,13 +103,13 @@ void main() {
 
     test('un compte mouvementé ne peut plus changer de classe', () async {
       await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 12000,
       );
 
       final resultat = await vm.modifierCompte(
-        numero: '624',
+        numero: '618',
         libelle: 'Transports',
         classe: '6',
       );
@@ -118,7 +118,7 @@ void main() {
       // Changer la classe reclasserait retroactivement l'ecriture d'un poste
       // du bilan a un autre.
       final refus = await vm.modifierCompte(
-        numero: '624',
+        numero: '618',
         libelle: 'Transports',
         classe: '7',
       );
@@ -140,8 +140,8 @@ void main() {
       expect(vm.prochainNumeroPiece('DEP'), 'DEP-$annee-0001');
 
       await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 12000,
       );
       expect(vm.prochainNumeroPiece('DEP'), 'DEP-$annee-0002');
@@ -157,8 +157,8 @@ void main() {
       'une dépense saisie apparaît aussitôt au Journal et à la Balance',
       () async {
         await depense(
-          compteCharge: '628',
-          compteReglement: '531',
+          compteCharge: '658',
+          compteReglement: '571',
           montant: 15000,
           libelle: 'Entretien groupe électrogène',
         );
@@ -166,7 +166,7 @@ void main() {
         expect(vm.depenses, hasLength(1));
         expect(vm.depenses.first.libelle, 'Entretien groupe électrogène');
         expect(vm.depenses.first.montant, 15000);
-        expect(vm.depenses.first.categorie, contains('628'));
+        expect(vm.depenses.first.categorie, contains('658'));
 
         // Le meme fait comptable, vu par les autres ecrans.
         expect(vm.ecritures, hasLength(2));
@@ -182,7 +182,7 @@ void main() {
       'une charge réglée par 401 reste « En attente », pas « Payée »',
       () async {
         await depense(
-          compteCharge: '613',
+          compteCharge: '622',
           compteReglement: '401',
           montant: 30000,
           libelle: 'Location entrepôt',
@@ -203,18 +203,18 @@ void main() {
       'charges fixes et variables suivent les comptes, pas un libellé',
       () async {
         await depense(
-          compteCharge: '613',
-          compteReglement: '531',
+          compteCharge: '622',
+          compteReglement: '571',
           montant: 30000,
         );
         await depense(
-          compteCharge: '616',
-          compteReglement: '531',
+          compteCharge: '625',
+          compteReglement: '571',
           montant: 10000,
         );
         await depense(
-          compteCharge: '624',
-          compteReglement: '531',
+          compteCharge: '618',
+          compteReglement: '571',
           montant: 12000,
         );
 
@@ -232,13 +232,13 @@ void main() {
         achatRef: 'A-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '601',
+            numeroCompte: '602',
             debit: 25000,
             credit: 0,
             libelle: 'Achat Maïs',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 25000,
             libelle: 'Achat Maïs',
@@ -260,8 +260,8 @@ void main() {
 
     test('supprimer une dépense supprime SES DEUX lignes', () async {
       final piece = await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 12000,
       );
       expect(vm.ecritures, hasLength(2));
@@ -287,13 +287,13 @@ void main() {
           venteRef: 'V-2026-001',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 4500,
               credit: 0,
               libelle: 'Vente',
             ),
             LigneAEcrire(
-              numeroCompte: '701',
+              numeroCompte: '702',
               debit: 0,
               credit: 4500,
               libelle: 'Vente',
@@ -312,20 +312,20 @@ void main() {
   group('Grand Livre — le solde progressif reste juste quand on filtre', () {
     setUp(() async {
       await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 5000,
         libelle: 'Transport janvier',
         mois: 1,
       );
       await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 7000,
         libelle: 'Transport juin',
         mois: 6,
       );
-      vm.selectionnerCompte('624');
+      vm.selectionnerCompte('618');
     });
 
     test('sans borne, tout l\'exercice est cumulé', () {
@@ -374,19 +374,19 @@ void main() {
         venteRef: 'V-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 10000,
             credit: 0,
             libelle: 'Vente',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 6000,
             libelle: 'Vente avicole',
           ),
           LigneAEcrire(
-            numeroCompte: '707',
+            numeroCompte: '701',
             debit: 0,
             credit: 4000,
             libelle: 'Vente marchandises',
@@ -394,14 +394,14 @@ void main() {
         ],
       );
       await depense(
-        compteCharge: '622',
-        compteReglement: '531',
+        compteCharge: '604',
+        compteReglement: '571',
         montant: 1000,
         libelle: 'Vétérinaire',
       );
       await depense(
-        compteCharge: '628',
-        compteReglement: '531',
+        compteCharge: '658',
+        compteReglement: '571',
         montant: 500,
         libelle: 'Divers',
       );
@@ -447,14 +447,14 @@ void main() {
         numeroPiece: 'DEP-2026-0099',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '628',
+            numeroCompte: '658',
             debit: 800,
             credit: 0,
             libelle: 'Électricité couvoir',
             axeAnalytique: 'Goliaths',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 800,
             libelle: 'Électricité couvoir',
@@ -462,8 +462,8 @@ void main() {
         ],
       );
       await depense(
-        compteCharge: '628',
-        compteReglement: '531',
+        compteCharge: '658',
+        compteReglement: '571',
         montant: 500,
         libelle: 'Divers non imputés',
       );
@@ -489,14 +489,14 @@ void main() {
         numeroPiece: 'DEP-2026-0100',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '622',
+            numeroCompte: '604',
             debit: 2000,
             credit: 0,
             libelle: 'Vétérinaire pintades',
             axeAnalytique: 'Pintades',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 2000,
             libelle: 'Vétérinaire pintades',
@@ -504,8 +504,8 @@ void main() {
         ],
       );
       await depense(
-        compteCharge: '622',
-        compteReglement: '531',
+        compteCharge: '604',
+        compteReglement: '571',
         montant: 1000,
         libelle: 'Vétérinaire, filière non précisée',
       );
@@ -550,14 +550,14 @@ void main() {
           numeroPiece: 'DEP-2026-0200',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '628',
+              numeroCompte: '658',
               debit: 700,
               credit: 0,
               libelle: 'Aliment lapins',
               axeAnalytique: 'Lapins',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 700,
               libelle: 'Aliment lapins',
@@ -588,13 +588,13 @@ void main() {
         numeroPiece: piece,
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '624',
+            numeroCompte: '618',
             debit: 1000,
             credit: 0,
             libelle: 'Transport',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 1000,
             libelle: 'Transport',
@@ -607,8 +607,8 @@ void main() {
 
       // Un autre mois reste ouvert.
       await depense(
-        compteCharge: '624',
-        compteReglement: '531',
+        compteCharge: '618',
+        compteReglement: '571',
         montant: 1000,
         mois: 7,
       );
@@ -639,8 +639,8 @@ void main() {
       'la clôture annuelle ouvre l\'exercice suivant et verrouille tout',
       () async {
         await depense(
-          compteCharge: '624',
-          compteReglement: '531',
+          compteCharge: '618',
+          compteReglement: '571',
           montant: 1000,
         );
 
@@ -660,13 +660,13 @@ void main() {
           numeroPiece: piece,
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 500,
               credit: 0,
               libelle: 'Transport',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 500,
               libelle: 'Transport',

@@ -50,6 +50,15 @@ class CompteComptable {
     // « avances reçues » qui est créditeur) · 42x/43x/44x = dettes sociales et
     // fiscales (créditeur) · classe 5 = trésorerie, débitrice sauf découvert.
     if (numero.startsWith('419')) return false;
+    // Comptes débiteurs au milieu de classes créditrices (SYSCOHADA révisé) : 409 fournisseurs
+    // débiteurs (avances versées), 421 personnel avances, 445 État TVA récupérable et 4449 crédit
+    // de TVA à reporter (`47p_`).
+    if (numero.startsWith('409') ||
+        numero.startsWith('421') ||
+        numero.startsWith('445') ||
+        numero.startsWith('4449')) {
+      return true;
+    }
     if (numero.startsWith('40')) return false;
     if (numero.startsWith('42') ||
         numero.startsWith('43') ||

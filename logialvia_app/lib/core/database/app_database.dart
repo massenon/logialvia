@@ -44,6 +44,7 @@ import '../../elevage/data/tables/soins_calendrier_table.dart';
 import '../../elevage/data/sync/identifiants_parametres_elevage.dart';
 import '../sync/identifiant_poste.dart';
 import '../../administration/data/tables/demandes_referentiel_table.dart';
+import '../../comptabilite/data/migration/migration_plan_syscohada.dart';
 
 part 'app_database.g.dart';
 
@@ -115,6 +116,8 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+      // Base NEUVE : le plan sera semé directement en SYSCOHADA (`47p_`), rien à renuméroter.
+      await MigrationPlanSyscohada(this).marquerMigre();
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -483,6 +486,12 @@ class AppDatabase extends _$AppDatabase {
         await _ajouterColonne(m, ficheJournee, ficheJournee.baseMaj);
         await _ajouterColonne(m, ficheJournee, ficheJournee.variantes);
         await _ajouterColonne(m, ficheJournee, ficheJournee.resolution);
+      }
+      if (from < 48) {
+        // Plan comptable SYSCOHADA révisé (`47p_`) : le plan, les écritures (CL/AN compris) et
+        // les demandes de plan en attente sont RENUMÉROTÉS par la table de correspondance, en
+        // une transaction, idempotente (marqueur dans l'en-tête de la base), équilibre vérifié.
+        await MigrationPlanSyscohada(this).executer();
       }
       if (from < 49) {
         // `47s_` : stock ciblé. Une opération web désigne le poste dont le stock subit son

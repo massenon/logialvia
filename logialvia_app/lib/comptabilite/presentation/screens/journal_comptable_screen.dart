@@ -22,6 +22,7 @@ import '../../domain/services/report_a_nouveau.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
 import '../../../core/saisie/formats_saisie.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// Journal Comptable — Doc F6 §1, fidèle à `journal-comptable.html`.
 ///
@@ -33,8 +34,8 @@ import '../../../core/saisie/formats_saisie.dart';
 /// deux lignes.
 ///
 /// Or les écritures automatiques du système en comptent trois ou quatre : une
-/// vente partiellement réglée génère 531 (débit) + 411 (débit) / 701 (crédit) +
-/// 707 (crédit). La colonne « Débit » du prototype devrait alors contenir deux
+/// vente partiellement réglée génère 571 (débit) + 411 (débit) / 702 (crédit) +
+/// 701 (crédit). La colonne « Débit » du prototype devrait alors contenir deux
 /// comptes et la colonne « Montant » deux montants — c'est impossible.
 ///
 /// Le tableau adopte donc la disposition d'un journal comptable professionnel
@@ -609,10 +610,10 @@ Future<void> _ouvrirModaleEcriture(
   }
 
   var compteDebit = comptes
-      .firstWhere((c) => c.numero == '531', orElse: () => comptes.first)
+      .firstWhere((c) => c.numero == PlanSyscohada.caisse, orElse: () => comptes.first)
       .numero;
   var compteCredit = comptes
-      .firstWhere((c) => c.numero == '701', orElse: () => comptes.last)
+      .firstWhere((c) => c.numero == PlanSyscohada.ventesProduitsFinis, orElse: () => comptes.last)
       .numero;
   var date = DateTime.now();
 

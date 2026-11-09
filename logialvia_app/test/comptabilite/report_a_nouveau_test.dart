@@ -51,11 +51,11 @@ void main() {
   );
 
   Future<void> jeu2024() async {
-    await piece('P1', 2024, 1, [('531', 1000000, 0), ('101', 0, 1000000)]);
-    await piece('P2', 2024, 2, [('531', 600000, 0), ('701', 0, 600000)]);
-    await piece('P3', 2024, 3, [('601', 250000, 0), ('401', 0, 250000)]);
-    await piece('P4', 2024, 4, [('624', 50000, 0), ('531', 0, 50000)]);
-    await piece('P5', 2024, 5, [('231', 300000, 0), ('531', 0, 300000)]);
+    await piece('P1', 2024, 1, [('571', 1000000, 0), ('101', 0, 1000000)]);
+    await piece('P2', 2024, 2, [('571', 600000, 0), ('702', 0, 600000)]);
+    await piece('P3', 2024, 3, [('602', 250000, 0), ('401', 0, 250000)]);
+    await piece('P4', 2024, 4, [('618', 50000, 0), ('571', 0, 50000)]);
+    await piece('P5', 2024, 5, [('231', 300000, 0), ('571', 0, 300000)]);
   }
 
   setUp(() async {
@@ -70,7 +70,7 @@ void main() {
     }
     await db
         .into(db.planComptable)
-        .insert(
+        .insertOnConflictUpdate(
           PlanComptableCompanion.insert(
             numeroCompte: '231',
             libelle: 'Bâtiments',
@@ -127,7 +127,7 @@ void main() {
       expect(an.totalCredit, 1550000);
       expect(c.soldesReportes, {
         '231': 300000,
-        '531': 1250000,
+        '571': 1250000,
         '101': -1000000,
         '401': -250000,
         '111': -30000,
@@ -145,7 +145,7 @@ void main() {
     });
 
     test('perte : 139 débité au 129, report débiteur', () async {
-      await piece('P6', 2024, 6, [('624', 800000, 0), ('531', 0, 800000)]);
+      await piece('P6', 2024, 6, [('618', 800000, 0), ('571', 0, 800000)]);
       await vm.charger();
       final c = vm.apercuCloture();
       // Produits 600 000 − charges 1 100 000 = −500 000.
@@ -188,14 +188,14 @@ void main() {
     test('la classe 8 entre dans le résultat net (HAO, impôt)', () async {
       await db
           .into(db.planComptable)
-          .insert(
+          .insertOnConflictUpdate(
             PlanComptableCompanion.insert(
               numeroCompte: '891',
               libelle: 'Impôt sur le résultat',
               classe: '8',
             ),
           );
-      await piece('P7', 2024, 7, [('891', 75000, 0), ('531', 0, 75000)]);
+      await piece('P7', 2024, 7, [('891', 75000, 0), ('571', 0, 75000)]);
       await vm.charger();
       expect(vm.resultatNet, 225000);
       expect(vm.apercuCloture().resultat, 225000);
@@ -214,7 +214,7 @@ void main() {
         final toutes2024 = await (db.select(
           db.ecritureComptable,
         )..where((e) => e.exerciceAnnee.equals(2024))).get();
-        for (final c in ['601', '624', '701', '131']) {
+        for (final c in ['602', '618', '702', '131']) {
           expect(solde(toutes2024, c), 0, reason: 'compte $c soldé');
         }
         // 121 : 170 000 créditeur après l'affectation.
@@ -222,7 +222,7 @@ void main() {
 
         final an = await lignes(2025, 'AN');
         expect(an.length, 7);
-        expect(solde(an, '531'), 1250000);
+        expect(solde(an, '571'), 1250000);
         expect(an.fold<double>(0, (s, e) => s + e.debit), 1550000);
         expect(an.fold<double>(0, (s, e) => s + e.credit), 1550000);
         expect(
@@ -274,7 +274,7 @@ void main() {
             .insert(
               EcritureComptableCompanion.insert(
                 exerciceAnnee: 2024,
-                numeroCompte: '531',
+                numeroCompte: '571',
                 dateEcriture: DateTime(2024, 8, 1),
                 debit: const Value(1000),
                 libelle: 'ligne seule',
@@ -319,7 +319,7 @@ void main() {
             numeroPiece: 'X',
             lignes: const [
               LigneAEcrire(
-                numeroCompte: '531',
+                numeroCompte: '571',
                 debit: 1,
                 credit: 0,
                 libelle: 'x',
@@ -386,7 +386,7 @@ void main() {
   group('états de N+1 : ils partent de l\'ouverture', () {
     Future<void> ouvrir2025(bool cloture) async {
       if (cloture) await repo.cloturerExercice(2024, affectation: affectation);
-      await piece('V25', 2025, 2, [('531', 200000, 0), ('701', 0, 200000)]);
+      await piece('V25', 2025, 2, [('571', 200000, 0), ('702', 0, 200000)]);
       await vm.charger();
       await vm.changerExercice(2025);
     }
@@ -437,8 +437,8 @@ void main() {
         expect(l.fold<double>(0, (s, x) => s + x.ouvertureDebit), 1550000);
         expect(l.fold<double>(0, (s, x) => s + x.ouvertureCredit), 1550000);
         expect(vm.balanceEstEquilibree, isTrue);
-        expect(l.any((x) => x.numeroCompte == '601'), isFalse);
-        final c531 = l.firstWhere((x) => x.numeroCompte == '531');
+        expect(l.any((x) => x.numeroCompte == '602'), isFalse);
+        final c531 = l.firstWhere((x) => x.numeroCompte == '571');
         expect(
           (c531.ouvertureDebit, c531.mouvementsDebit, c531.finalDebit),
           (1250000, 200000, 1450000),
@@ -448,7 +448,7 @@ void main() {
 
     test('grand livre 2025 du 531 : ouverture 1 250 000 reportée', () async {
       await ouvrir2025(true);
-      vm.selectionnerCompte('531');
+      vm.selectionnerCompte('571');
       expect(vm.soldeOuvertureCompte, 1250000);
       expect(vm.soldeFinalCompte, 1450000);
     });
@@ -467,7 +467,7 @@ void main() {
         expect(vm.ecritures.any((e) => e.journalCode == 'CL'), isFalse);
         // La balance de 2024 lit le livre complet : 701 y est soldé.
         expect(
-          vm.balance.firstWhere((x) => x.numeroCompte == '701').finalCredit,
+          vm.balance.firstWhere((x) => x.numeroCompte == '702').finalCredit,
           0,
         );
         expect(vm.balanceEstEquilibree, isTrue);
@@ -479,7 +479,7 @@ void main() {
       () async {
         await ouvrir2025(false);
         expect(vm.ouvertureParANouveaux, isFalse);
-        expect(vm.soldesOuverture['531'], 1250000);
+        expect(vm.soldesOuverture['571'], 1250000);
         expect(vm.soldesOuverture['121'], -300000);
         expect(
           vm.soldesOuverture.keys.any((c) => '678'.contains(c[0])),
@@ -501,7 +501,7 @@ void main() {
         ]) {
           await db
               .into(db.planComptable)
-              .insert(
+              .insertOnConflictUpdate(
                 PlanComptableCompanion.insert(
                   numeroCompte: n,
                   libelle: l,
@@ -511,9 +511,9 @@ void main() {
         }
         await repo.cloturerExercice(2024, affectation: affectation);
         // 2025 : emprunt 400 000 encaissé, amortissement 30 000, vente à crédit 100 000.
-        await piece('E1', 2025, 1, [('531', 400000, 0), ('161', 0, 400000)]);
+        await piece('E1', 2025, 1, [('571', 400000, 0), ('161', 0, 400000)]);
         await piece('A1', 2025, 12, [('681', 30000, 0), ('281', 0, 30000)]);
-        await piece('V2', 2025, 3, [('411', 100000, 0), ('701', 0, 100000)]);
+        await piece('V2', 2025, 3, [('411', 100000, 0), ('702', 0, 100000)]);
         await vm.charger();
         await vm.changerExercice(2025);
         final t = vm.tafire;
@@ -567,12 +567,13 @@ void main() {
           'date_ecriture': DateTime(2025, 1, 1, 12).toUtc().toIso8601String(),
           'exercice_annee': 2025,
           'journal_code': 'AN',
+          'plan_version': 2,
           'device_id': 'web',
           'updated_at': DateTime.now().toUtc().toIso8601String(),
           'lignes': [
             {
-              'id': PiecesClotureDrift.idLigne('an:2025', '531'),
-              'numero_compte': '531',
+              'id': PiecesClotureDrift.idLigne('an:2025', '571'),
+              'numero_compte': '571',
               'debit': 100.0,
               'credit': 0.0,
               'libelle': 'À-nouveau',
@@ -675,7 +676,7 @@ void main() {
           '735d7a68-4f35-5cd8-8097-0400f95b9bc6',
         );
         expect(
-          PiecesClotureDrift.idLigne('an:2025', '531'),
+          PiecesClotureDrift.idLigne('an:2025', '571'),
           isNot(PiecesClotureDrift.idLigne('an:2025', '231')),
         );
       },

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// `plan_comptable` — **référentiel** : le serveur gagne, le poste PROPOSE (`46d_` §2).
 ///
@@ -48,6 +49,11 @@ class TablePlanComptablePoste implements TablePoste {
         final libelle = _texte(l['libelle']);
         final classe = _texte(l['classe']);
         final archive = l['archive'];
+        // Garde de version du plan : le plan d'un autre référentiel de numéros n'est jamais absorbé.
+        if (l['plan_version'] != PlanSyscohada.version) {
+          refusees++;
+          continue;
+        }
         // Strict : une ligne incohérente est refusée, jamais lissée.
         if (numero == null ||
             !_numero.hasMatch(numero) ||

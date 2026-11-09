@@ -15,6 +15,7 @@ import '../../domain/entities/livraison.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/vente.dart';
 import '../../domain/repositories/ventes_repository.dart';
+import '../../../comptabilite/domain/plan_syscohada.dart';
 
 class VentesRepositoryDrift implements VentesRepository {
   VentesRepositoryDrift(this._db, this._bus)
@@ -40,30 +41,46 @@ class VentesRepositoryDrift implements VentesRepository {
   /// `comptabilite-analytique.html` l.146-149 ventile bien **Goliaths** et
   /// **Pintades** séparément. Le centre vient de `PRODUITS_VENDABLES.espece`
   /// pour un animal vivant, de la catégorie sinon.
-  Future<Map<(String, String?), double>> _ventilerVente(
+  Future<Map<CleVentilationVente, double>> _ventilerVente(
     List<LignePanier> panier,
   ) async {
-    final ventilation = <(String, String?), double>{};
+    final taux = await _tauxParGroupe();
+    final ventilation = <CleVentilationVente, double>{};
     for (final ligne in panier) {
       final produit = await (_db.select(
         _db.produitsVendables,
       )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
-      final cle = _cle(produit);
+      final cle = _cle(produit, taux);
       ventilation[cle] = (ventilation[cle] ?? 0) + ligne.total;
     }
     return ventilation;
   }
 
-  (String, String?) _cle(ProduitVendableRow? produit) {
+  /// Taux de TVA (en %) par groupe de taxe (`groupes_taxe`) : le prix d'une ligne de vente est
+  /// TTC, la TVA s'en extrait au taux du groupe du produit (A exonéré : 0, B : 18 %).
+  Future<Map<String, double>> _tauxParGroupe() async {
+    final groupes = await _db.select(_db.groupesTaxe).get();
+    return {for (final g in groupes) g.code: g.taux};
+  }
+
+  /// Taux des frais de livraison facturés : celui du panier s'il est unique, sinon 0 (exonéré).
+  static double _tauxLivraison(Map<CleVentilationVente, double> ventilation) {
+    final taux = {for (final cle in ventilation.keys) cle.$3};
+    return taux.length == 1 ? taux.first : 0;
+  }
+
+  CleVentilationVente _cle(ProduitVendableRow? produit, Map<String, double> taux) {
+    final tauxProduit = taux[produit?.groupeTaxe ?? 'A'] ?? 0.0;
     if (produit?.cat == 'Commerce Annexe') {
-      return (ComptesAutomatiques.ventesMarchandises, 'Commerce Annexe');
+      return (PlanSyscohada.ventesMarchandises, 'Commerce Annexe', tauxProduit);
     }
     return (
-      ComptesAutomatiques.ventesAvicoles,
+      PlanSyscohada.ventesProduitsFinis,
       // `espece` porte l'identifiant de la filiere ; a defaut le produit est
       // avicole sans filiere identifiee (oeufs vendus au detail, par exemple)
       // et reste non impute plutot que rattache arbitrairement.
       _centreDepuisEspece(produit?.espece),
+      tauxProduit,
     );
   }
 
@@ -84,15 +101,16 @@ class VentesRepositoryDrift implements VentesRepository {
   /// L'écriture inverse doit porter **les mêmes centres** que l'écriture
   /// d'origine, sans quoi l'annulation d'une vente de goliaths retirerait du
   /// revenu à un autre centre.
-  Future<Map<(String, String?), double>> _ventilerLignesEnregistrees(
+  Future<Map<CleVentilationVente, double>> _ventilerLignesEnregistrees(
     List<LigneVenteRow> lignes,
   ) async {
-    final ventilation = <(String, String?), double>{};
+    final taux = await _tauxParGroupe();
+    final ventilation = <CleVentilationVente, double>{};
     for (final ligne in lignes) {
       final produit = await (_db.select(
         _db.produitsVendables,
       )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
-      final cle = _cle(produit);
+      final cle = _cle(produit, taux);
       ventilation[cle] = (ventilation[cle] ?? 0) + ligne.qte * ligne.pu;
     }
     return ventilation;
@@ -274,6 +292,7 @@ class VentesRepositoryDrift implements VentesRepository {
     // BR-CPT-003 — ecritures comptables, APRES la transaction de vente : une
     // vente reste valide meme si le mois comptable est cloture (l'ecriture est
     // alors refusee et signalee, pas la vente).
+    final ventilationVente = await _ventilerVente(panier);
     await _ecritures.pourVente(
       reference: vente.reference,
       date: vente.date,
@@ -281,8 +300,9 @@ class VentesRepositoryDrift implements VentesRepository {
       statut: statut,
       total: total,
       paye: montantPaye,
-      ventilation: await _ventilerVente(panier),
+      ventilation: ventilationVente,
       fraisLivraison: livraison?.supplementFacture ?? 0,
+      tauxLivraison: _tauxLivraison(ventilationVente),
     );
 
     // Publie APRES la transaction : notifier des ecrans d'une ecriture qui
@@ -310,7 +330,7 @@ class VentesRepositoryDrift implements VentesRepository {
     required String motif,
   }) async {
     final lignesInfo = <LigneVenteInfo>[];
-    Map<(String, String?), double> ventilation = const {};
+    Map<CleVentilationVente, double> ventilation = const {};
     VenteRow? venteAnnulee;
 
     await _db.transaction(() async {
@@ -385,6 +405,7 @@ class VentesRepositoryDrift implements VentesRepository {
         fraisLivraison: annulee.livraisonMode == ModeLivraison.facturee.code
             ? (annulee.livraisonFrais ?? 0)
             : 0,
+        tauxLivraison: _tauxLivraison(ventilation),
       );
     }
 

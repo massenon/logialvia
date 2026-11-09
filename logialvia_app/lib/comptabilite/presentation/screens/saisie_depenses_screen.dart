@@ -21,6 +21,7 @@ import '../../domain/entities/comptabilite.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
 import '../../../core/saisie/formats_saisie.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// Saisie des Dépenses — Doc F6, fidèle à `saisie-depenses.html`.
 ///
@@ -36,7 +37,7 @@ import '../../../core/saisie/formats_saisie.dart';
 /// 1. Le champ est libellé « Compte de Trésorerie **Débité** ». C'est l'inverse :
 ///    lors d'une dépense la trésorerie est **créditée** (elle diminue) et le
 ///    compte de charge est débité. Le libellé est corrigé ; la mécanique du
-///    prototype, elle, était juste (`compteToCredit()` crédite bien 531/512).
+///    prototype, elle, était juste (`compteToCredit()` crédite bien 571/552).
 /// 2. Le filtre de statut propose « En attente » alors que le formulaire
 ///    n'offre que Caisse et Mobile Money : aucune dépense saisie ne peut jamais
 ///    être « en attente », le filtre est décoratif. Le choix « À crédit —
@@ -167,7 +168,7 @@ class _KpisDepenses extends StatelessWidget {
             valeur: Formats.montant(vm.chargesFixes),
             accent: AppColors.brandGold,
             icone: Symbols.event_repeat,
-            detail: 'Comptes 613 et 616',
+            detail: 'Comptes ${PlanSyscohada.locations} et ${PlanSyscohada.assurances}',
           ),
         ),
         const SizedBox(width: AppSpacing.md),

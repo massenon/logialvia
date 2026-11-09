@@ -69,19 +69,19 @@ void main() {
         venteRef: 'V-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 10000,
             credit: 0,
             libelle: 'Vente comptant',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 6000,
             libelle: 'Vente avicole',
           ),
           LigneAEcrire(
-            numeroCompte: '707',
+            numeroCompte: '701',
             debit: 0,
             credit: 4000,
             libelle: 'Vente marchandises',
@@ -94,13 +94,13 @@ void main() {
         journal: 'CA',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '628',
+            numeroCompte: '658',
             debit: 1500,
             credit: 0,
             libelle: 'Entretien groupe électrogène',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 1500,
             libelle: 'Entretien groupe électrogène',
@@ -135,9 +135,9 @@ void main() {
         for (final l in vm.donnees.recettesDepenses)
           l.categorie.split(' ').first: l.centre,
       };
-      expect(parCentre['701'], CentresProfit.aviculture);
-      expect(parCentre['707'], CentresProfit.commerceAnnexe);
-      expect(parCentre['628'], CentresProfit.chargeGenerale);
+      expect(parCentre['702'], CentresProfit.aviculture);
+      expect(parCentre['701'], CentresProfit.commerceAnnexe);
+      expect(parCentre['658'], CentresProfit.chargeGenerale);
     });
 
     test('le filtre par centre restreint la table et le solde cumulé', () {
@@ -167,13 +167,13 @@ void main() {
         journal: 'VT',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 50000,
             credit: 0,
             libelle: 'Vente de juillet',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 50000,
             libelle: 'Vente de juillet',
@@ -193,7 +193,7 @@ void main() {
         date: DateTime(annee, 7, 1),
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 20000,
             credit: 0,
             libelle: 'Apport initial',
@@ -213,13 +213,13 @@ void main() {
         venteRef: 'V-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 4500,
             credit: 0,
             libelle: 'Vente comptant',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 4500,
             libelle: 'Vente comptant',
@@ -233,13 +233,13 @@ void main() {
         achatRef: 'ACH-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '601',
+            numeroCompte: '602',
             debit: 6000,
             credit: 0,
             libelle: 'Achat maïs',
           ),
           LigneAEcrire(
-            numeroCompte: '512',
+            numeroCompte: '552',
             debit: 0,
             credit: 6000,
             libelle: 'Achat maïs',

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// `ecriture_comptable` — les écritures sont des **FAITS IMMUABLES** (`46d_` §2, §3).
 ///
@@ -52,6 +53,9 @@ class TableEcrituresPoste implements TablePoste {
   /// Une pièce reçue est-elle cohérente ? Partie double stricte, comptes valides.
   bool _valide(Map<String, dynamic> p) {
     final lignes = p['lignes'];
+    // Garde de version du plan (`47p_` §7) : une pièce d'un autre plan comptable (serveur ou poste
+    // non migré) serait comptabilisée sur de mauvais comptes (601/602 inversés) : refusée.
+    if (p['plan_version'] != PlanSyscohada.version) return false;
     if (!_uuidValide(p['id']) ||
         p['date_ecriture'] is! String ||
         DateTime.tryParse(p['date_ecriture'] as String) == null ||
@@ -207,6 +211,7 @@ class TableEcrituresPoste implements TablePoste {
             'vente_ref': entree.value.first.venteRef,
             'achat_ref': entree.value.first.achatRef,
             'contrepasse_de': entree.value.first.contrepasseDe,
+            'plan_version': PlanSyscohada.version,
             'updated_at': entree.value.first.updatedAt,
             'lignes': [
               for (final x in entree.value)

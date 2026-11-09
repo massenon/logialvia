@@ -59,7 +59,7 @@ void main() {
         .insert(ExerciceComptableCompanion.insert(annee: Value(n - 1)));
     await db
         .into(db.planComptable)
-        .insert(
+        .insertOnConflictUpdate(
           PlanComptableCompanion.insert(
             numeroCompte: '231',
             libelle: 'Bâtiments',
@@ -68,42 +68,42 @@ void main() {
         );
 
     await piece('OD-P1-${n - 1}-0001', n - 1, 12, 20, 'OD', [
-      ('531', 100000, 0, null),
+      ('571', 100000, 0, null),
       ('101', 0, 100000, null),
     ]);
     await piece('OD-P1-$n-0001', n, 1, 2, 'OD', [
-      ('531', 500000, 0, null),
+      ('571', 500000, 0, null),
       ('101', 0, 500000, null),
     ]);
     await piece('V-P1-$n-001', n, 2, 15, 'VT', [
-      ('531', 120000, 0, null),
-      ('701', 0, 120000, 'Goliaths'),
+      ('571', 120000, 0, null),
+      ('702', 0, 120000, 'Goliaths'),
     ], venteRef: 'V-P1-$n-001');
     await piece('V-P1-$n-002', n, 3, 10, 'VT', [
-      ('531', 30000, 0, null),
+      ('571', 30000, 0, null),
       ('411', 50000, 0, null),
-      ('707', 0, 80000, null),
+      ('701', 0, 80000, null),
     ], venteRef: 'V-P1-$n-002');
     await piece('ACH-P1-$n-001', n, 4, 12, 'AC', [
-      ('601', 40000, 0, null),
-      ('531', 0, 10000, null),
+      ('602', 40000, 0, null),
+      ('571', 0, 10000, null),
       ('401', 0, 30000, null),
     ], achatRef: 'ACH-P1-$n-001');
     await piece('DEP-P1-$n-0001', n, 5, 5, 'CA', [
-      ('624', 15000, 0, 'Pintades'),
-      ('531', 0, 15000, null),
+      ('618', 15000, 0, 'Pintades'),
+      ('571', 0, 15000, null),
     ]);
     await piece('DEP-P1-$n-0002', n, 5, 20, 'CA', [
-      ('616', 12000, 0, null),
+      ('625', 12000, 0, null),
       ('401', 0, 12000, null),
     ]);
     await piece('REG-V-P1-$n-002', n, 6, 15, 'CA', [
-      ('531', 20000, 0, null),
+      ('571', 20000, 0, null),
       ('411', 0, 20000, null),
     ], venteRef: 'V-P1-$n-002');
     await piece('OD-P1-$n-0002', n, 7, 1, 'OD', [
       ('231', 200000, 0, null),
-      ('531', 0, 200000, null),
+      ('571', 0, 200000, null),
     ]);
 
     vm = ComptabiliteViewModel(ComptabiliteRepositoryDrift(db));
@@ -179,7 +179,7 @@ void main() {
     expect(b.ecart, 0);
     expect(b.estEquilibre, isTrue);
     expect(b.actif.firstWhere((p) => p.compte == '411').montant, 30000);
-    expect(b.actif.firstWhere((p) => p.compte == '531').montant, 545000);
+    expect(b.actif.firstWhere((p) => p.compte == '571').montant, 545000);
     expect(b.passif.firstWhere((p) => p.compte == '101').montant, 600000);
     expect(b.passif.firstWhere((p) => p.compte == '401').montant, 42000);
   });
@@ -200,13 +200,13 @@ void main() {
       (c101.ouvertureCredit, c101.mouvementsCredit, c101.finalCredit),
       (100000, 500000, 600000),
     );
-    expect(l.firstWhere((x) => x.numeroCompte == '531').finalDebit, 545000);
+    expect(l.firstWhere((x) => x.numeroCompte == '571').finalDebit, 545000);
     expect(l.firstWhere((x) => x.numeroCompte == '401').finalCredit, 42000);
-    expect(l.any((x) => x.numeroCompte == '622'), isFalse);
+    expect(l.any((x) => x.numeroCompte == '604'), isFalse);
   });
 
   test('grand livre du 531 : ouverture 100 000, débit 670 000, crédit 225 000, final 545 000', () {
-    vm.selectionnerCompte('531');
+    vm.selectionnerCompte('571');
     expect(vm.soldeOuvertureCompte, 100000);
     expect(vm.totalDebitCompte, 670000);
     expect(vm.totalCreditCompte, 225000);
@@ -218,7 +218,7 @@ void main() {
   });
 
   test('grand livre : une période déplace l\'ouverture (740 000) sans fausser le final', () {
-    vm.selectionnerCompte('531');
+    vm.selectionnerCompte('571');
     vm.definirPeriodeGrandLivre(debut: DateTime(n, 5, 1));
     expect(vm.soldeOuvertureCompte, 740000);
     expect(vm.totalDebitCompte, 20000);
@@ -227,13 +227,13 @@ void main() {
   });
 
   test('grand livre : la borne de fin est incluse (au 15/06 : final 745 000)', () {
-    vm.selectionnerCompte('531');
+    vm.selectionnerCompte('571');
     vm.definirPeriodeGrandLivre(fin: DateTime(n, 6, 15));
     expect(vm.soldeFinalCompte, 745000);
   });
 
   test('grand livre d\'un compte créditeur : 701, final 120 000', () {
-    vm.selectionnerCompte('701');
+    vm.selectionnerCompte('702');
     expect(vm.compteCourant!.estDebiteurParNature, isFalse);
     expect(vm.soldeFinalCompte, 120000);
   });
@@ -244,7 +244,7 @@ void main() {
     expect(c['Goliaths']!.couts, 0);
     expect(c['Pintades']!.couts, 15000);
     expect(c['Commerce Annexe']!.revenus, 80000);
-    expect(c['Commerce Annexe']!.detail, 'Comptes 707 et 602');
+    expect(c['Commerce Annexe']!.detail, 'Comptes 701 et 601');
     expect(c['Avicole — filière non précisée']!.couts, 40000);
     final marges = vm.centresAnalytiques.fold<double>(0, (s, x) => s + x.marge);
     expect(marges, 145000);
@@ -262,9 +262,9 @@ void main() {
     expect(d.keys.toSet(), {'DEP-P1-$n-0001', 'DEP-P1-$n-0002'});
     expect(d['DEP-P1-$n-0001']!.payee, isTrue);
     expect(d['DEP-P1-$n-0001']!.montant, 15000);
-    expect(d['DEP-P1-$n-0001']!.categorie, '624 - Transports');
+    expect(d['DEP-P1-$n-0001']!.categorie, '618 - Autres frais de transport');
     expect(d['DEP-P1-$n-0002']!.payee, isFalse);
-    expect(d['DEP-P1-$n-0002']!.categorie, '616 - Assurances');
+    expect(d['DEP-P1-$n-0002']!.categorie, '625 - Primes d\'assurance');
     expect(vm.chargesFixes, 12000);
     expect(vm.chargesVariables, 15000);
   });

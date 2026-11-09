@@ -111,8 +111,8 @@ class _Poste {
   Future<void> depense(
     double montant, {
     DateTime? date,
-    String compteCharge = '624',
-    String tresorerie = '531',
+    String compteCharge = '618',
+    String tresorerie = '571',
     String? numero,
   }) async {
     final piece = numero ?? vm.prochainNumeroPiece('DEP');
@@ -263,7 +263,7 @@ void main() {
       () async {
         final a = await poste('P1');
         await a.vm.modifierCompte(
-          numero: '624',
+          numero: '618',
           libelle: 'Transports (renommé)',
           classe: '6',
         );
@@ -275,13 +275,13 @@ void main() {
         await a.moteur.synchroniser(complet: true);
         await a.vm.charger();
         expect(
-          a.vm.plan.firstWhere((c) => c.numero == '624').libelle,
+          a.vm.plan.firstWhere((c) => c.numero == '618').libelle,
           'Transports (renommé)',
         );
 
         // Le serveur DÉCIDE : cette fois le poste obéit.
         serveur.ajouterCompte(
-          '624',
+          '618',
           'Transports et déplacements',
           '6',
           decide: true,
@@ -289,7 +289,7 @@ void main() {
         await a.moteur.synchroniser(complet: true);
         await a.vm.charger();
         expect(
-          a.vm.plan.firstWhere((c) => c.numero == '624').libelle,
+          a.vm.plan.firstWhere((c) => c.numero == '618').libelle,
           'Transports et déplacements',
         );
       },
@@ -300,7 +300,7 @@ void main() {
       () async {
         final a = await poste('P1');
         serveur.ajouterCompte(
-          '624',
+          '618',
           'Décision ancienne',
           '6',
           decide: true,
@@ -310,7 +310,7 @@ void main() {
               .toIso8601String(),
         );
         await a.vm.modifierCompte(
-          numero: '624',
+          numero: '618',
           libelle: 'Ma saisie récente',
           classe: '6',
         );
@@ -318,7 +318,7 @@ void main() {
         final r = await a.moteur.synchroniser(complet: true);
 
         expect(r.conserveesLocalement, 1);
-        expect(serveur.comptes['624']!['libelle'], 'Ma saisie récente');
+        expect(serveur.comptes['618']!['libelle'], 'Ma saisie récente');
       },
     );
 
@@ -331,6 +331,7 @@ void main() {
           'libelle': 'Hors plan',
           'classe': '9',
           'archive': false,
+          'plan_version': 2,
           'saisi_le': null,
           'created_at': '2026-01-01T00:00:00Z',
           'updated_at': '2026-02-01T00:00:00Z',
@@ -340,6 +341,7 @@ void main() {
           'libelle': 'Lettre',
           'classe': '6',
           'archive': false,
+          'plan_version': 2,
           'saisi_le': null,
           'created_at': '2026-01-01T00:00:00Z',
           'updated_at': '2026-02-01T00:00:00Z',
@@ -349,6 +351,7 @@ void main() {
           'libelle': 'Mauvaise classe',
           'classe': '7',
           'archive': false,
+          'plan_version': 2,
           'saisi_le': null,
           'created_at': '2026-01-01T00:00:00Z',
           'updated_at': '2026-02-01T00:00:00Z',
@@ -549,6 +552,7 @@ void main() {
           'date_ecriture': jour().toUtc().toIso8601String(),
           'exercice_annee': annee,
           'journal_code': 'OD',
+          'plan_version': 2,
           'vente_ref': null,
           'achat_ref': null,
           'contrepasse_de': null,
@@ -561,23 +565,23 @@ void main() {
         }
 
         poser('desequilibree', {
-          'lignes': [_ligne('531', 100, 0), _ligne('701', 0, 90)],
+          'lignes': [_ligne('571', 100, 0), _ligne('702', 0, 90)],
         });
         poser('compte', {
-          'lignes': [_ligne('531', 100, 0), _ligne('9999', 0, 100)],
+          'lignes': [_ligne('571', 100, 0), _ligne('9999', 0, 100)],
         });
         poser('exercice', {
           'exercice_annee': annee - 5,
-          'lignes': [_ligne('531', 100, 0), _ligne('701', 0, 100)],
+          'lignes': [_ligne('571', 100, 0), _ligne('702', 0, 100)],
         });
         poser('seule', {
-          'lignes': [_ligne('531', 100, 0)],
+          'lignes': [_ligne('571', 100, 0)],
         });
         poser('deux-sens', {
-          'lignes': [_ligne('531', 100, 100), _ligne('701', 0, 0)],
+          'lignes': [_ligne('571', 100, 100), _ligne('702', 0, 0)],
         });
         poser('bonne', {
-          'lignes': [_ligne('531', 100, 0), _ligne('701', 0, 100)],
+          'lignes': [_ligne('571', 100, 0), _ligne('702', 0, 100)],
         });
 
         final r = await a.moteur.synchroniser();
@@ -634,13 +638,13 @@ void main() {
           journalCode: 'CA',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 450,
               credit: 0,
               libelle: 'Transport corrigé',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 450,
               libelle: 'Transport corrigé',
@@ -680,13 +684,13 @@ void main() {
           journalCode: 'CA',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 150,
               credit: 0,
               libelle: 'x',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 150,
               libelle: 'x',
@@ -731,8 +735,8 @@ void main() {
         date: jour(),
         journalCode: 'CA',
         lignes: const [
-          LigneAEcrire(numeroCompte: '624', debit: 1, credit: 0, libelle: 'x'),
-          LigneAEcrire(numeroCompte: '531', debit: 0, credit: 1, libelle: 'x'),
+          LigneAEcrire(numeroCompte: '618', debit: 1, credit: 0, libelle: 'x'),
+          LigneAEcrire(numeroCompte: '571', debit: 0, credit: 1, libelle: 'x'),
         ],
       );
 
@@ -767,7 +771,7 @@ void main() {
           isTrue,
         );
         expect(inverses.every((l) => l.journalCode == 'OD'), isTrue);
-        final charge = inverses.firstWhere((l) => l.numeroCompte == '624');
+        final charge = inverses.firstWhere((l) => l.numeroCompte == '618');
         expect(charge.credit, 900);
         expect(charge.debit, 0);
         await a.vm.charger();
@@ -837,13 +841,13 @@ void main() {
           journalCode: 'CA',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 1,
               credit: 0,
               libelle: 'x',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 1,
               libelle: 'x',
@@ -898,13 +902,13 @@ void main() {
           numeroPiece: 'OD-P2-$annee-0001',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 5,
               credit: 0,
               libelle: 'x',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 5,
               libelle: 'x',
@@ -1103,13 +1107,13 @@ void main() {
           numeroPiece: 'OD-P2-$annee-0001',
           lignes: const [
             LigneAEcrire(
-              numeroCompte: '624',
+              numeroCompte: '618',
               debit: 5,
               credit: 0,
               libelle: 'x',
             ),
             LigneAEcrire(
-              numeroCompte: '531',
+              numeroCompte: '571',
               debit: 0,
               credit: 5,
               libelle: 'x',
@@ -1129,7 +1133,7 @@ void main() {
           annee: annee - 1,
           date: DateTime(annee - 1, 11, 20, 10),
           numeroPiece: 'OD-P2-${annee - 1}-0001',
-          lignes: [_ligne('531', 700, 0), _ligne('701', 0, 700)],
+          lignes: [_ligne('571', 700, 0), _ligne('702', 0, 700)],
         );
         final b = await poste('P3');
 

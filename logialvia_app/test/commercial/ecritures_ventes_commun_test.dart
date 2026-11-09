@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/commercial/data/repositories/ventes_repository_drift.dart';
 import 'package:logialvia_app/commercial/domain/entities/livraison.dart';
@@ -104,7 +104,7 @@ void main() {
   }
 
   group('Jeu commun poste / web — ventes', () {
-    test('A. comptant en espèces : 531 D / 701 C (centre Goliaths)', () async {
+    test('A. comptant en espèces : 571 D / 702 C (centre Goliaths)', () async {
       final r = await repository.enregistrerVente(
         client: 'Client Comptant',
         mode: ModeReglement.especes,
@@ -113,13 +113,13 @@ void main() {
         panier: [ligne('Goliath mature', 2, 12000)],
       );
       expect(await piece(r.vente.reference), [
-        ('531', 12000.0, 0.0, null),
-        ('701', 0.0, 12000.0, 'Goliaths'),
+        ('571', 12000.0, 0.0, null),
+        ('702', 0.0, 12000.0, 'Goliaths'),
       ]);
     });
 
     test(
-      'B. avance en Mobile Money, trois centres : 512 + 411 / 701 x2 + 707',
+      'B. avance en Mobile Money, trois centres : 552 + 411 / 702 x2 + 701',
       () async {
         final r = await repository.enregistrerVente(
           client: 'AGOSSOU Prudence',
@@ -135,15 +135,15 @@ void main() {
         );
         expect(await piece(r.vente.reference), [
           ('411', 11500.0, 0.0, null),
-          ('512', 4000.0, 0.0, null),
-          ('701', 0.0, 6500.0, 'Pintades'),
-          ('701', 0.0, 6000.0, 'Goliaths'),
-          ('707', 0.0, 3000.0, 'Commerce Annexe'),
+          ('552', 4000.0, 0.0, null),
+          ('701', 0.0, 3000.0, 'Commerce Annexe'),
+          ('702', 0.0, 6500.0, 'Pintades'),
+          ('702', 0.0, 6000.0, 'Goliaths'),
         ]);
       },
     );
 
-    test('C. livraison facturée : les frais sont un produit (707), la pièce '
+    test('C. livraison facturée : les frais sont un produit accessoire (7071), la pièce '
         'est ÉQUILIBRÉE', () async {
       final r = await repository.enregistrerVente(
         client: 'Client Comptant',
@@ -155,9 +155,9 @@ void main() {
       );
       expect(await ecartPiece(r.vente.reference), 0);
       expect(await piece(r.vente.reference), [
-        ('531', 7500.0, 0.0, null),
-        ('701', 0.0, 6000.0, 'Goliaths'),
-        ('707', 0.0, 1500.0, null),
+        ('571', 7500.0, 0.0, null),
+        ('702', 0.0, 6000.0, 'Goliaths'),
+        ('7071', 0.0, 1500.0, null),
       ]);
     });
 
@@ -176,7 +176,7 @@ void main() {
       );
       // Reste dû : 12 000 − 3 500 = 8 500, pas 999 999.
       expect(await piece('REG-${r.vente.reference}'), [
-        ('531', 8500.0, 0.0, null),
+        ('571', 8500.0, 0.0, null),
         ('411', 0.0, 8500.0, null),
       ]);
       expect(
@@ -211,13 +211,13 @@ void main() {
         );
         // Payé au moment de l'annulation : 4 000 + 2 000 ; reste dû : 15 500 − 6 000.
         expect(await piece('ANN-${r.vente.reference}'), [
-          ('701', 6500.0, 0.0, 'Pintades'),
-          ('701', 6000.0, 0.0, 'Goliaths'),
-          ('707', 3000.0, 0.0, 'Commerce Annexe'),
+          ('702', 6500.0, 0.0, 'Pintades'),
+          ('702', 6000.0, 0.0, 'Goliaths'),
+          ('701', 3000.0, 0.0, 'Commerce Annexe'),
           ('411', 0.0, 9500.0, null),
-          ('512', 0.0, 6000.0, null),
+          ('552', 0.0, 6000.0, null),
         ]);
-        for (final compte in ['411', '512', '701', '707']) {
+        for (final compte in ['411', '552', '702', '701']) {
           expect(await solde(compte), 0, reason: 'compte $compte soldé');
         }
       },
@@ -238,9 +238,126 @@ void main() {
         motif: 'Erreur de saisie',
       );
       expect(await ecartPiece('ANN-${r.vente.reference}'), 0);
-      for (final compte in ['531', '701', '707']) {
+      for (final compte in ['571', '702', '7071']) {
         expect(await solde(compte), 0, reason: 'compte $compte soldé');
       }
+    });
+
+    // --- TVA ventilée (`47p_` §6) : les prix du catalogue sont TTC, la TVA s'en extrait au
+    // taux du groupe de taxe du produit (A exonéré, B 18 %). Calculs faits à la main, rejoués à
+    // l'identique côté web (`EcrituresAutomatiquesVentesTest`).
+    Future<void> taxer(String nom, String groupe) => (db.update(
+      db.produitsVendables,
+    )..where((p) => p.id.equals(produit(nom).id))).write(
+      ProduitsVendablesCompanion(groupeTaxe: Value(groupe)),
+    );
+
+    test('G. produit taxable à 18 % : 11 800 TTC = 10 000 HT + 1 800 de TVA '
+        'collectée (4431)', () async {
+      await taxer('Tee-shirt enfant', 'B');
+      final r = await repository.enregistrerVente(
+        client: 'Client Comptant',
+        mode: ModeReglement.especes,
+        statut: StatutVente.payee,
+        montantPaye: 11800,
+        panier: [ligne('Tee-shirt enfant', 2, 11800)],
+      );
+      expect(await piece(r.vente.reference), [
+        ('571', 11800.0, 0.0, null),
+        ('4431', 0.0, 1800.0, null),
+        ('701', 0.0, 10000.0, 'Commerce Annexe'),
+      ]);
+      expect(await ecartPiece(r.vente.reference), 0);
+    });
+
+    test('H. panier mixte exonéré + taxable, livraison facturée au taux unique '
+        'du panier taxable : 4431 et 4432 distinctes', () async {
+      await taxer('Tee-shirt enfant', 'B');
+      final r = await repository.enregistrerVente(
+        client: 'Client Comptant',
+        mode: ModeReglement.especes,
+        statut: StatutVente.payee,
+        montantPaye: 12980,
+        panier: [ligne('Tee-shirt enfant', 2, 11800)],
+        livraison: const Livraison(mode: ModeLivraison.facturee, frais: 1180),
+      );
+      // 11 800 → HT 10 000 + TVA 1 800 ; livraison 1 180 → HT 1 000 + TVA 180.
+      expect(await piece(r.vente.reference), [
+        ('571', 12980.0, 0.0, null),
+        ('4431', 0.0, 1800.0, null),
+        ('4432', 0.0, 180.0, null),
+        ('701', 0.0, 10000.0, 'Commerce Annexe'),
+        ('7071', 0.0, 1000.0, null),
+      ]);
+      expect(await ecartPiece(r.vente.reference), 0);
+    });
+
+    test('I. panier mixte (exonéré + taxable) : livraison exonérée, TVA sur la '
+        'seule ligne taxable', () async {
+      await taxer('Tee-shirt enfant', 'B');
+      final r = await repository.enregistrerVente(
+        client: 'Client Comptant',
+        mode: ModeReglement.especes,
+        statut: StatutVente.payee,
+        montantPaye: 19300,
+        panier: [
+          ligne('Goliath mature', 1, 6000),
+          ligne('Tee-shirt enfant', 2, 11800),
+        ],
+        livraison: const Livraison(mode: ModeLivraison.facturee, frais: 1500),
+      );
+      expect(await piece(r.vente.reference), [
+        ('571', 19300.0, 0.0, null),
+        ('4431', 0.0, 1800.0, null),
+        ('701', 0.0, 10000.0, 'Commerce Annexe'),
+        ('702', 0.0, 6000.0, 'Goliaths'),
+        ('7071', 0.0, 1500.0, null),
+      ]);
+    });
+
+    test('J. annulation d\'une vente taxable : la TVA collectée est reprise, le '
+        'résultat ne la contient jamais', () async {
+      await taxer('Tee-shirt enfant', 'B');
+      final r = await repository.enregistrerVente(
+        client: 'Client Comptant',
+        mode: ModeReglement.especes,
+        statut: StatutVente.payee,
+        montantPaye: 11800,
+        panier: [ligne('Tee-shirt enfant', 2, 11800)],
+      );
+      expect(await solde('4431'), -1800);
+      await repository.annulerVente(
+        reference: r.vente.reference,
+        motif: 'Erreur',
+      );
+      expect(await ecartPiece('ANN-${r.vente.reference}'), 0);
+      for (final compte in ['571', '701', '4431']) {
+        expect(await solde(compte), 0, reason: 'compte $compte soldé');
+      }
+    });
+
+    test('K. règlement d\'une créance taxable : la TVA reste facturée à la vente, '
+        'le recouvrement ne touche que 411 et la trésorerie', () async {
+      await taxer('Tee-shirt enfant', 'B');
+      final r = await repository.enregistrerVente(
+        client: 'AGOSSOU Prudence',
+        mode: ModeReglement.especes,
+        statut: StatutVente.avance,
+        montantPaye: 3800,
+        panier: [ligne('Tee-shirt enfant', 2, 11800)],
+      );
+      expect(await piece(r.vente.reference), [
+        ('411', 8000.0, 0.0, null),
+        ('571', 3800.0, 0.0, null),
+        ('4431', 0.0, 1800.0, null),
+        ('701', 0.0, 10000.0, 'Commerce Annexe'),
+      ]);
+      await repository.enregistrerPaiement(
+        reference: r.vente.reference,
+        montant: 8000,
+      );
+      expect(await solde('411'), 0);
+      expect(await solde('4431'), -1800);
     });
   });
 }

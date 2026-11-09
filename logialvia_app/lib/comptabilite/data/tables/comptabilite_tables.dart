@@ -38,7 +38,7 @@ class ExerciceComptable extends Table {
 /// Table `PLAN_COMPTABLE` — Doc D1 §2.
 @DataClassName('CompteRow')
 class PlanComptable extends Table {
-  /// Ex. '531' (Caisse), '701' (Ventes de Produits Avicoles).
+  /// Ex. '571' (Caisse), '702' (Ventes de produits finis).
   TextColumn get numeroCompte => text()();
 
   TextColumn get libelle => text()();

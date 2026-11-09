@@ -1,5 +1,6 @@
 import '../entities/comptabilite.dart';
 import 'moteur_comptable.dart';
+import '../plan_syscohada.dart';
 
 /// # Report à nouveau et clôture annuelle — SYSCOHADA révisé (OHADA 2018)
 ///
@@ -55,19 +56,6 @@ class JournauxDeCloture {
   /// Journaux qui ne se saisissent pas à la main : générés par la clôture.
   static bool estDeCloture(String code) =>
       code == cloture || code == reportANouveau;
-}
-
-/// Comptes SYSCOHADA révisé utilisés par la clôture.
-class ComptesCloture {
-  ComptesCloture._();
-
-  static const String reserveLegale = '111';
-  static const String autresReserves = '118';
-  static const String reportCrediteur = '121';
-  static const String reportDebiteur = '129';
-  static const String resultatBenefice = '131';
-  static const String resultatPerte = '139';
-  static const String dividendesAPayer = '465';
 }
 
 /// Décision d'affectation du bénéfice (Assemblée) : ce qui part en réserves et en
@@ -304,8 +292,8 @@ class ReportANouveau {
     if (residuGestion.abs() >= tolerance) {
       // net débiteur (charges > produits) = perte → 129 ; net créditeur = bénéfice → 121.
       final cible = residuGestion > 0
-          ? ComptesCloture.reportDebiteur
-          : ComptesCloture.reportCrediteur;
+          ? PlanSyscohada.reportDebiteur
+          : PlanSyscohada.reportCrediteur;
       bilan[cible] = (bilan[cible] ?? 0) + residuGestion;
     }
     return _sansNuls(bilan);
@@ -383,7 +371,7 @@ class ReportANouveau {
     resultat = centime(resultat);
 
     final reportDebiteurAnterieur = () {
-      final net = ouverture[ComptesCloture.reportDebiteur] ?? 0;
+      final net = ouverture[PlanSyscohada.reportDebiteur] ?? 0;
       return net > 0 ? net : 0.0;
     }();
     final refus = affectation.valider(
@@ -420,7 +408,7 @@ class ReportANouveau {
       if (resultat >= tolerance) {
         lignes.add(
           LigneCloture(
-            numeroCompte: ComptesCloture.resultatBenefice,
+            numeroCompte: PlanSyscohada.resultatBenefice,
             debit: 0,
             credit: resultat,
             libelle: 'Résultat net (bénéfice) de l\'exercice $annee',
@@ -429,7 +417,7 @@ class ReportANouveau {
       } else if (resultat <= -tolerance) {
         lignes.add(
           LigneCloture(
-            numeroCompte: ComptesCloture.resultatPerte,
+            numeroCompte: PlanSyscohada.resultatPerte,
             debit: -resultat,
             credit: 0,
             libelle: 'Résultat net (perte) de l\'exercice $annee',
@@ -454,7 +442,7 @@ class ReportANouveau {
     if (resultat >= tolerance) {
       final lignes = <LigneCloture>[
         LigneCloture(
-          numeroCompte: ComptesCloture.resultatBenefice,
+          numeroCompte: PlanSyscohada.resultatBenefice,
           debit: resultat,
           credit: 0,
           libelle: 'Affectation du résultat $annee',
@@ -473,22 +461,22 @@ class ReportANouveau {
       }
 
       credit(
-        ComptesCloture.reserveLegale,
+        PlanSyscohada.reserveLegale,
         affectation.reserveLegale,
         'Dotation à la réserve légale — résultat $annee',
       );
       credit(
-        ComptesCloture.autresReserves,
+        PlanSyscohada.autresReserves,
         affectation.autresReserves,
         'Dotation aux autres réserves — résultat $annee',
       );
       credit(
-        ComptesCloture.dividendesAPayer,
+        PlanSyscohada.dividendesAPayer,
         affectation.dividendes,
         'Dividendes à payer — résultat $annee',
       );
       credit(
-        ComptesCloture.reportCrediteur,
+        PlanSyscohada.reportCrediteur,
         centime(
           resultat -
               affectation.reserveLegale -
@@ -517,13 +505,13 @@ class ReportANouveau {
           exerciceAnnee: annee,
           lignes: [
             LigneCloture(
-              numeroCompte: ComptesCloture.reportDebiteur,
+              numeroCompte: PlanSyscohada.reportDebiteur,
               debit: -resultat,
               credit: 0,
               libelle: 'Perte $annee portée en report à nouveau débiteur',
             ),
             LigneCloture(
-              numeroCompte: ComptesCloture.resultatPerte,
+              numeroCompte: PlanSyscohada.resultatPerte,
               debit: 0,
               credit: -resultat,
               libelle: 'Affectation de la perte $annee',
