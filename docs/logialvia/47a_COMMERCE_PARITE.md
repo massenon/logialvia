@@ -33,6 +33,10 @@ montant ; avance qui solde (« choisissez Comptant ») ; comptant insuffisant ; 
 
 ### 2.2 Stock : propre à chaque poste (décision du client)
 
+> **Levé par `47s_STOCK_CIBLE.md` (09/11/2026)** : la vente web désigne désormais un **poste de stock** qui décrémente SON stock (une fois, plancher à 0 avec
+> avertissement), et l'annulation d'une vente web réintègre au même poste. Le texte ci-dessous décrit la limite d'avant ; D6 reste vrai pour une vente
+> **saisie sur un poste** (sans poste cible).
+
 Une vente au web **ne décrémente aucun stock** et n'écrit aucun mouvement de produit ; l'écran le dit (`data-ecart="ventes"`) et la modale d'annulation
 précise qu'aucun stock n'est restitué. Les contrôles de stock du poste (rupture, quantité > stock) n'existent donc pas au web.
 

@@ -43,6 +43,10 @@ saisies à la main). Visible de qui a `view-comptabilite`.
 
 ## 3. Réception : « stock propre à chaque poste + journal partagé »
 
+> **Levé par `47s_STOCK_CIBLE.md` (09/11/2026)** : la commande désigne un **poste de stock** ; ce poste applique l'entrée de stock et le PMP à SON stock à la
+> réception (et la sortie inverse à l'annulation d'une commande livrée), une seule fois. D1 est donc résolue par l'alternative proposée (le poste qui a passé
+> la commande est proposé par défaut). Le texte ci-dessous décrit la limite d'avant.
+
 La réception au web inscrit **un mouvement `Entrée` par ligne** au journal partagé (`mouvements_intrant`, poste d'origine = Web, motif
 « Réception commande <réf> ») et **ne met aucun stock ni PMP à jour**. C'est déclaré sur l'écran (bandeau, fenêtre de confirmation, message).
 Conséquence à connaître (décision D1) : si la commande a été passée **sur un poste**, ce poste n'augmente pas son stock du fait d'une réception
