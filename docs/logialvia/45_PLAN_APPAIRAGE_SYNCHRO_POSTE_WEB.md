@@ -140,11 +140,26 @@ temporaire).
 - Toute modification locale d'une vente (annulation, règlement d'une avance) la **remet à envoyer** avec un nouvel instant de saisie.
 - **Tests** : migrations v33 (8) et v34 (7) sur de vraies bases antérieures, références et liaison client (15) ; 14 mutations vérifiées (v33 : 5, ventes et v34 : 9).
 
-## 6h. Ce qui reste du palier 3 (serveur et moteur)
+## 6h. Palier 3c : produits et ventes synchronisés (serveur et moteur) — fait
 
-Rien de ce qui suit n'existe encore : **tables `produits_vendables`, `ventes`, `lignes_vente` côté serveur** (migrations, modèles, `TableSync`), règle d'**unicité de la référence** (globale pour `V-Pn-…`, par poste pour les références sans code, voir ci-dessous), **lot jamais coupé entre une vente et ses lignes**, absorption par le poste des ventes d'un autre poste **sans toucher à son stock local** (le stock est une donnée dérivée, `46_` §2.2), et les **produits comme référentiel** (création et modification au poste proposées au serveur comme demandes ; `produits_vendables.stock` jamais synchronisé).
+**Serveur** (`logialvia_laravel/`, 196 tests, 14 mutations) :
+- Tables `produits_vendables` (référentiel, **sans stock**), `ventes` et `lignes_vente`.
+- **Une vente et ses lignes forment un lot** : validées ensemble, écrites ensemble, **refusées ensemble** (un produit inconnu rejette toute la vente, aucune ligne orpheline), servies ensemble au tirage (`lignes` imbriquées). Les lignes sont **immuables** après création ; l'entête suit « dernier écrivain gagne » ; la référence ne change jamais.
+- **Règle d'unicité de la référence (validée par le client)** : unique pour tous quand elle porte un code de poste (`V-P2-2026-001`), **unique par poste** sans code (`V-2026-001`, ventes d'avant l'appairage : deux postes peuvent l'avoir). Un doublon est refusé avec son motif.
+- Droits : lecture `view-ventes`, écriture `manage-ventes` ; ni stock ni écriture comptable côté serveur (le fait est enregistré, rien d'autre). `clients.solde_creance` est **dérivé** par le serveur (restes dus des avances non annulées), jamais accepté d'un poste.
+- **Produits par demande** (`type: produit_vendable`) : stock refusé, contenu identique accepté sans conflit (deux postes semés du même catalogue), demande plus ancienne refusée, droit `manage-ventes`. Un envoi direct reste ignoré.
+- Le moteur a été **généralisé** : `TableSync::absorber()` (par défaut : ligne plate en dernier écrivain gagne ; `VentesTable` le surcharge).
 
-Règle d'unicité retenue : deux postes qui ont chacun des ventes d'**avant l'appairage** (`V-2026-001`) produiraient le même numéro. Le serveur garde donc `UNIQUE(reference)` **pour les références à code de poste**, et `UNIQUE(device_id, reference)` pour les anciennes ; un doublon refusé revient au poste en `conflict` avec son motif.
+**Poste** (schémas v33-v34 inchangés ; 142 tests de synchronisation) :
+- **UUID déterministes pour les produits** (SHA-1, `sku|désignation`) : deux postes installés du même programme donnent le **même** identifiant à « Goliath mature » (sinon doublon au serveur). Appliqué au catalogue semé **et à la migration v33** ; un doublon exact sur un même poste se départage par son ancien entier.
+- **Adoption du catalogue** (une fois) : le poste propose tout son catalogue au serveur, car ses ventes référencent ses produits.
+- **Ordre du moteur : tirage → demandes → faits.** Les produits partent AVANT les ventes ; sans cela, toute vente d'un produit créé au poste serait refusée.
+- `TableProduitsPoste` : le serveur gagne, **jamais le stock** (un produit d'un autre poste arrive avec un stock de 0 ; un produit connu garde le sien), règle du plus récent contre une demande locale en attente, lignes incohérentes refusées.
+- `TableVentesPoste` : envoi d'une vente avec ses lignes ; **absorption d'une vente d'un autre poste sans décrément de stock, sans écriture comptable, sans compteur de fiche, sans événement** (ces effets appartiennent au poste qui a vendu) ; absorbeur strict ; règle du plus récent ; lignes immuables ; accusé seulement si la vente n'a pas bougé depuis l'envoi.
+- **Sélecteur de client au POS** : saisie avec suggestions (nom **et téléphone**, ce qui distingue deux homonymes) ; choisir dans la liste mémorise l'identifiant, retoucher le texte l'oublie ; un nom ambigu tapé à la main affiche un message ; un nom libre reste possible. La limite des homonymes du §6g est levée **à la source**.
+- **Tests** : 35 sur produits et ventes, 16 sur le sélecteur ; mutations : 15 + 8, dont 3 survivantes d'abord (tests trop faibles, renforcés) et 1 équivalente (supprimer les ventes emporte déjà leurs lignes par cascade). **11 essais contre le vrai serveur Laravel**, dont deux postes qui vendent et reçoivent la vente de l'autre avec un stock inchangé, et une avance dont le solde est calculé par le serveur.
+
+**Limites** : la comptabilité et le stock du poste ne sont pas synchronisés (autres paliers) — une remise à zéro du serveur vide donc les ventes du poste mais **pas** ses écritures ni ses compteurs ; une ancienne référence sans code déjà prise par une autre vente **de ce poste** ne peut pas coexister localement (la clé primaire est `ref`) : la vente reçue est refusée et comptée, pas écrasée ; la suppression d'un produit (archivage) n'est pas propagée ; **18 fichiers de tables** restent en entiers.
 
 ## 4. Constats techniques sur le poste (à connaître avant la migration UUID)
 
@@ -193,7 +208,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
 | P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1 et 3 (poste) faits** : `clients` (v31), `produits_vendables`, `lignes_vente`, `ventes` (v33-v34), références à préfixe de poste ; voir §6d et §6g. Restent 18 fichiers de tables et la synchronisation des ventes (§6h) |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
-| P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait pour `clients`** (§6d) ; reste les autres tables, la synchronisation automatique et la modale |
+| P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait** pour modules, paramètres, produits, clients, ventes (§6d-§6h) ; reste les autres tables |
 | W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait

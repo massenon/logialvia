@@ -470,9 +470,26 @@ class AppDatabase extends _$AppDatabase {
     // migration : les lignes de vente la consultent pour retrouver leur produit.
     await customStatement('DROP TABLE IF EXISTS _map_produits');
     await customStatement(
-      'CREATE TABLE _map_produits AS '
-      'SELECT id AS ancien, $_uuidSql AS nouveau FROM produits_vendables',
+      'CREATE TABLE _map_produits (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
     );
+    // UUID DETERMINISTE depuis `sku|designation` : deux postes qui portent le meme
+    // produit (catalogue seme, ou meme produit saisi a l'identique) lui donnent le
+    // meme identifiant. Un doublon exact sur CE poste se departage par son ancien
+    // entier, pour ne pas violer la cle primaire.
+    final vus = <String>{};
+    final produits = await customSelect(
+      'SELECT id, sku, name FROM produits_vendables ORDER BY id',
+    ).get();
+    for (final p in produits) {
+      final ancien = p.read<int>('id');
+      var cle = 'produit:${p.readNullable<String>('sku') ?? ''}|${p.read<String>('name')}';
+      if (!vus.add(cle)) cle = '$cle#$ancien';
+      vus.add(cle);
+      await customStatement(
+        'INSERT INTO _map_produits (ancien, nouveau) VALUES (?, ?)',
+        [ancien, uuidDeterministe(cle)],
+      );
+    }
 
     await m.alterTable(
       TableMigration(

@@ -46,6 +46,8 @@ void main() {
       demandes: file,
       client: serveur.client,
     );
+    // Le catalogue a sa propre adoption (testée à part) : ici on isole modules et paramètres.
+    await preferences.definirCatalogueAdopte();
     await preferences.definirAdresseServeur('http://serveur.test');
     await preferences.memoriserAppairage(
       codePoste: 'P1',

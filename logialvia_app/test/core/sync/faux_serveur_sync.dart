@@ -29,6 +29,10 @@ class FauxServeurSync {
 
   final Map<String, Map<String, dynamic>> clients = {};
 
+  /// Produits (référentiel, sans stock) et ventes (avec leurs lignes imbriquées).
+  final Map<String, Map<String, dynamic>> produits = {};
+  final Map<String, Map<String, dynamic>> ventes = {};
+
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
   Map<String, dynamic>? parametres;
@@ -77,6 +81,7 @@ class FauxServeurSync {
 
   void remettreAZero() {
     clients.clear();
+    ventes.clear(); // les produits (référentiel) sont préservés
     marque = 'rz-${++_horloge}';
   }
 
@@ -215,7 +220,15 @@ class FauxServeurSync {
               _dans(parametres!['updated_at'] as String, since, jusqua))
             parametres,
         ],
+        'produits_vendables': [
+          for (final p in produits.values)
+            if (_dans(p['updated_at'] as String, since, jusqua)) p,
+        ],
         'clients': lignes.skip(debut).take(lignesParPage).toList(),
+        'ventes': [
+          for (final v in ventes.values)
+            if (_dans(v['serveur_modifie_le'] as String, since, jusqua)) v,
+        ],
       },
     });
   }
@@ -237,6 +250,20 @@ class FauxServeurSync {
       acceptees.add(d['id'] as String);
       if (!demandesAccepteesParLeServeur) continue;
       final donnees = d['donnees'] as Map<String, dynamic>;
+      if (d['type'] == 'produit_vendable') {
+        final donnees = d['donnees'] as Map<String, dynamic>;
+        if (donnees.containsKey('stock')) {
+          acceptees.remove(d['id']);
+          refusees.add({
+            'id': d['id'] as String,
+            'motif':
+                'Le stock n\'est pas synchronisé : il reste propre à chaque poste.',
+          });
+          continue;
+        }
+        _produit(d);
+        continue;
+      }
       if (d['type'] == 'module_actif') {
         ajouterModule(
           donnees['module_id'] as String,
@@ -314,6 +341,128 @@ class FauxServeurSync {
       'rejected': refusees,
       'ignored': [],
     };
+    if ((corps['tables'] as Map).containsKey('ventes')) {
+      reponse['ventes'] = _ventes(
+        ((corps['tables'] as Map)['ventes'] as List)
+            .cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
     return _json(200, reponse);
+  }
+
+  /// Un instant de réception du serveur, dans le temps du faux serveur.
+  String instantServeur() => _instant();
+
+  /// Un produit tel que le serveur le garde (jamais de stock).
+  void ajouterProduit(Map<String, dynamic> p, {String? saisiLe}) {
+    produits[p['id'] as String] = {
+      ...p,
+      'saisi_le': saisiLe ?? _instant(),
+      'created_at': _instant(),
+      'updated_at': _instant(),
+    };
+  }
+
+  void _produit(Map<String, dynamic> demande) {
+    final donnees = demande['donnees'] as Map<String, dynamic>;
+    final saisie = demande['saisi_le'] as String;
+    final id = donnees['id'] as String;
+    final existant = produits[id];
+    if (existant == null) {
+      ajouterProduit(donnees, saisiLe: saisie);
+      return;
+    }
+    final identique = donnees.entries.every((e) => existant[e.key] == e.value);
+    if (identique) return;
+    if (!DateTime.parse(
+      saisie,
+    ).isAfter(DateTime.parse(existant['saisi_le'] as String))) {
+      demandesAccepteesParLeServeur = true;
+      return;
+    }
+    existant
+      ..addAll(donnees)
+      ..['saisi_le'] = saisie
+      ..['updated_at'] = _instant();
+  }
+
+  /// Rejoue les règles du vrai serveur (`VentesTable`) : lot vente + lignes,
+  /// produits connus, unicité de la référence, entête en dernier écrivain gagne,
+  /// lignes immuables.
+  Map<String, dynamic> _ventes(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    bool codee(String ref) => RegExp(r'^V-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+
+    for (final v in lot) {
+      final id = v['id'] as String;
+      final lignes = (v['lignes'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      if (lignes.isEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Une vente doit avoir au moins une ligne.',
+        });
+        continue;
+      }
+      final inconnu = lignes.where(
+        (l) => !produits.containsKey(l['produit_id']),
+      );
+      if (inconnu.isNotEmpty) {
+        refusees.add({
+          'id': id,
+          'motif': 'Produit inconnu du serveur : « ${inconnu.first['name']} ».',
+        });
+        continue;
+      }
+      final ref = v['reference'] as String;
+      final doublon = ventes.values.any(
+        (x) =>
+            x['id'] != id &&
+            x['reference'] == ref &&
+            (codee(ref) || x['device_id'] == deviceId),
+      );
+      if (doublon) {
+        refusees.add({
+          'id': id,
+          'motif': 'Cette référence est déjà utilisée par une autre vente.',
+        });
+        continue;
+      }
+      final saisie = DateTime.parse(v['updated_at'] as String);
+      final existante = ventes[id];
+      if (existante == null) {
+        ventes[id] = {
+          ...v,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      } else if (saisie.isAfter(
+        DateTime.parse(existante['updated_at'] as String),
+      )) {
+        for (final c in const [
+          'client',
+          'client_id',
+          'mode',
+          'status',
+          'total',
+          'paye',
+          'motif_annulation',
+          'echeance',
+        ]) {
+          existante[c] = v[c];
+        }
+        existante
+          ..['updated_at'] = saisie.toUtc().toIso8601String()
+          ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
   }
 }

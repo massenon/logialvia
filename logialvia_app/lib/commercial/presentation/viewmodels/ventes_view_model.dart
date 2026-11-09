@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../../administration/data/repositories/parametres_repository_drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/resultat/resultat.dart';
+import '../../domain/entities/client.dart';
 import '../../domain/entities/produit_vendable.dart';
 import '../../domain/entities/livraison.dart';
 import '../../domain/entities/vente.dart';
@@ -116,9 +117,45 @@ class VentesViewModel extends ChangeNotifier {
 
   String _client = '';
   String get client => _client;
+
+  /// Le client CHOISI dans la liste, quand il y en a un. Dès que le texte est
+  /// retouché à la main, le choix est oublié : on ne garde pas l'identifiant d'un
+  /// client dont le nom n'est plus celui qui est affiché.
+  String? _clientId;
+  String? get clientId => _clientId;
   set client(String valeur) {
     _client = valeur;
+    if (_clientId != null && !_clients.any((c) => c.id == _clientId && c.nom == valeur)) {
+      _clientId = null;
+    }
     notifyListeners();
+  }
+
+  List<ClientChoix> _clients = const [];
+
+  /// Les clients dont le nom contient [saisie] (casse ignorée), 8 au plus.
+  List<ClientChoix> suggestionsClients(String saisie) {
+    final cherche = saisie.trim().toLowerCase();
+    if (cherche.isEmpty) return const [];
+    return _clients
+        .where((c) => c.nom.toLowerCase().contains(cherche))
+        .take(8)
+        .toList();
+  }
+
+  void choisirClient(ClientChoix client) {
+    _client = client.nom;
+    _clientId = client.id;
+    notifyListeners();
+  }
+
+  /// Plusieurs clients portent exactement ce nom ET aucun n'est choisi : la vente
+  /// serait rattachée à personne. L'écran invite alors à choisir dans la liste.
+  bool get clientAmbigu {
+    if (_clientId != null) return false;
+    final nom = _client.trim().toLowerCase();
+    if (nom.isEmpty) return false;
+    return _clients.where((c) => c.nom.trim().toLowerCase() == nom).length > 1;
   }
 
   String _mode = ModeReglement.especes;
@@ -285,6 +322,7 @@ class VentesViewModel extends ChangeNotifier {
   void viderPanier() {
     _panier.clear();
     _client = '';
+    _clientId = null;
     _montantRecu = 0;
     _mode = ModeReglement.especes;
     _condition = ConditionPaiement.comptant;
@@ -334,6 +372,7 @@ class VentesViewModel extends ChangeNotifier {
 
   Future<void> _rafraichir() async {
     _catalogue = await _repository.chargerCatalogue();
+    _clients = await _repository.chargerClientsChoix();
     _ventes = await _repository.chargerVentes();
     _devis = await _chargerDevis();
     _ligneMobileMoney = await _chargerLigneMobileMoney();
@@ -415,6 +454,7 @@ class VentesViewModel extends ChangeNotifier {
     try {
       final resultat = await _repository.enregistrerVente(
         client: _client.trim().isEmpty ? 'Client Comptant' : _client.trim(),
+        clientId: _clientId,
         mode: _mode,
         statut: enAvance ? StatutVente.avance : StatutVente.payee,
         // Une vente comptant est soldée : `paye` vaut le total, pas le montant

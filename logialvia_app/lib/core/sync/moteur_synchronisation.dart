@@ -184,6 +184,9 @@ class MoteurSynchronisationPoste {
       jeton,
       await preferences.identifiantPoste(),
     );
+    // Une seule fois : le catalogue local est propose au serveur.
+    await demandes?.adopterCatalogueSiBesoin(preferences);
+
     var rapport = const RapportSynchronisation(
       IssueSynchronisation.terminee,
       '',
@@ -197,13 +200,16 @@ class MoteurSynchronisationPoste {
     rapport = tirage.rapport;
     if (tirage.arret != null) return tirage.arret!;
 
-    final envoi = await _envoyer(session, rapport);
-    rapport = envoi.rapport;
-    if (envoi.arret != null) return envoi.arret!;
-
+    // Les DEMANDES partent avant les faits : un produit créé au poste doit être connu
+    // du serveur avant que les ventes qui le portent n'arrivent (sinon : « produit
+    // inconnu »).
     final proposition = await _envoyerDemandes(session, rapport);
     rapport = proposition.rapport;
     if (proposition.arret != null) return proposition.arret!;
+
+    final envoi = await _envoyer(session, rapport);
+    rapport = envoi.rapport;
+    if (envoi.arret != null) return envoi.arret!;
 
     return rapport.avec(message: _resume(rapport));
   }

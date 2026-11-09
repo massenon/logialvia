@@ -163,4 +163,11 @@ Corps : `{ "device_id": "<uuid>", "demandes": [ { "id": "<uuid>", "type": "modul
 
 ## 11. Ventes : identité et numéro (précision, 09/11/2026)
 
-Une vente a **deux identifiants** : `id` (UUID, identité synchronisée, immuable) et `reference` (numéro officiel remis au client, `V-P2-2026-001`, DV-21, jamais renuméroté). Une ligne de vente a son UUID et voyage **dans** sa vente (`lignes: [...]`), jamais seule. Le champ `client_id` est **facultatif** : vide quand le nom saisi ne désigne pas un client unique. Pas encore implémenté côté serveur (`45_` §6h).
+Une vente a **deux identifiants** : `id` (UUID, identité synchronisée, immuable) et `reference` (numéro officiel remis au client, `V-P2-2026-001`, DV-21, jamais renuméroté). Une ligne de vente a son UUID et voyage **dans** sa vente (`lignes: [...]`), jamais seule. Le champ `client_id` est **facultatif** : vide quand le nom saisi ne désigne pas un client unique. Implémenté côté serveur et poste (`45_` §6h).
+
+## 12. Ventes et produits (implémenté, 09/11/2026)
+
+- **Pull** : `ventes` avec `lignes` imbriquées (une vente n'est jamais servie sans ses lignes) ; `produits_vendables` sans stock. **Push** : `tables.ventes = [ {id, reference, client, client_id, date_vente, mode, status, total, paye, …, updated_at, lignes:[{id, produit_id, name, qte, pu, espece}]} ]`.
+- **Ordre d'un cycle du poste** : tirage → `POST /sync/demandes` (dont les produits) → `POST /sync/push` (clients, puis ventes) : un produit doit être connu du serveur avant les ventes qui le portent.
+- **Unicité de la référence** : voir `45_` §6h. **Produits** : demande `produit_vendable` `{id, sku, name, cat, price, price_max, unit, icon, cout_revient, groupe_taxe, threshold, espece}`, jamais `stock`. `id` des produits semés = UUID v5 de `produit:<sku>|<désignation>`.
+- **Une vente reçue d'un autre poste ne produit AUCUN effet** (stock, comptabilité, compteurs d'élevage) : elle est connue, pas rejouée.

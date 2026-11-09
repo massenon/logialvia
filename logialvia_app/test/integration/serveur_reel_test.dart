@@ -11,6 +11,12 @@ import 'package:logialvia_app/administration/data/sync/depot_demandes_referentie
 import 'package:logialvia_app/administration/data/sync/table_modules_actifs_poste.dart';
 import 'package:logialvia_app/administration/data/sync/table_parametres_entreprise_poste.dart';
 import 'package:logialvia_app/commercial/data/repositories/clients_repository_drift.dart';
+import 'package:logialvia_app/commercial/data/repositories/ventes_repository_drift.dart';
+import 'package:logialvia_app/commercial/data/seed/catalogue_seeder.dart';
+import 'package:logialvia_app/commercial/data/sync/table_produits_poste.dart';
+import 'package:logialvia_app/commercial/data/sync/table_ventes_poste.dart';
+import 'package:logialvia_app/commercial/domain/entities/vente.dart';
+import 'package:logialvia_app/core/events/domain_event.dart';
 import 'package:logialvia_app/commercial/data/sync/table_clients_poste.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/sync/depot_jeton_sync.dart';
@@ -58,6 +64,9 @@ void main() {
   Future<_Poste> poste({String? compteForce}) async {
     final db = AppDatabase.enMemoire();
     await ModulesActifsSeeder(db).executer();
+    await CatalogueSeeder(
+      db,
+    ).executer(); // 14 produits, memes UUID sur tous les postes
     final preferences = PreferencesPosteRepository(db);
     final depot = DepotJetonSyncMemoire();
     final appairage = ServiceAppairage(preferences: preferences, depot: depot);
@@ -79,7 +88,9 @@ void main() {
         tables: [
           TableModulesActifsPoste(db),
           TableParametresEntreprisePoste(db),
+          TableProduitsPoste(db),
           TableClientsPoste(db),
+          TableVentesPoste(db),
         ],
         demandes: DepotDemandesReferentiel(db),
         tailleLot: 2,
@@ -342,11 +353,174 @@ void main() {
       final r = await c.moteur.synchroniser();
 
       expect(r.demandesRefusees, 1, reason: r.message);
-      final d = (await c.db.select(c.db.demandesReferentiel).get()).single;
+      // Le caissier propose aussi le catalogue (droit de vendre) : ces demandes-la
+      // sont acceptees ; seule celle du module est refusee.
+      final d = (await c.db.select(c.db.demandesReferentiel).get()).singleWhere(
+        (x) => x.type == 'module_actif',
+      );
       expect(d.syncStatus, 'conflict');
       expect(
         d.syncMotif,
         'Droit insuffisant pour modifier les modules actifs.',
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'ventes réelles : deux postes vendent, chacun reçoit celles de l\'autre, références à code de poste',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      final b = await poste()
+        ..let(postes.add);
+      final venteA = VentesRepositoryDrift(a.db, EventBus());
+      final venteB = VentesRepositoryDrift(b.db, EventBus());
+
+      Future<String> vendre(
+        VentesRepositoryDrift repo, {
+        String client = 'Client Comptant',
+        String? clientId,
+        String statut = StatutVente.payee,
+        double? paye,
+      }) async {
+        final p = (await repo.chargerCatalogue()).firstWhere(
+          (x) => x.nom == 'Goliath mature',
+        );
+        final r = await repo.enregistrerVente(
+          client: client,
+          clientId: clientId,
+          mode: ModeReglement.especes,
+          statut: statut,
+          montantPaye: paye ?? p.prix * 2,
+          panier: [
+            LignePanier(
+              produitId: p.id,
+              nom: p.nom,
+              montantGlobal: p.prix * 2,
+              quantite: 2,
+              stockDisponible: p.stock,
+              prixIndicatif: p.prix,
+              prixIndicatifMax: p.prixMax,
+              espece: p.espece,
+              unite: p.unite,
+            ),
+          ],
+        );
+        return r.vente.reference;
+      }
+
+      // Les deux postes ont un code attribue par le VRAI serveur : leurs references different.
+      final codeA = (await a.appairage.etat()).codePoste!;
+      final codeB = (await b.appairage.etat()).codePoste!;
+      expect(codeA, isNot(codeB));
+      final refA = await vendre(venteA);
+      final refB = await vendre(venteB);
+      expect(refA, startsWith('V-$codeA-'));
+      expect(refB, startsWith('V-$codeB-'));
+
+      final ra = await a.moteur.synchroniser();
+      expect(ra.reussie, isTrue, reason: ra.message);
+      expect(ra.refusees, 0, reason: ra.message);
+      final rb = await b.moteur.synchroniser();
+      expect(rb.refusees, 0, reason: rb.message);
+      await a.moteur.synchroniser();
+
+      for (final p in [a, b]) {
+        final refs = (await p.db.select(p.db.ventes).get())
+            .map((v) => v.ref)
+            .toSet();
+        // Un serveur déjà utilisé par d'autres essais en a d'autres : « au moins ».
+        expect(
+          refs,
+          containsAll([refA, refB]),
+          reason: 'chaque poste connaît les deux ventes',
+        );
+        expect(
+          (await p.db.select(p.db.lignesVente).get()).length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(
+          (await p.db.select(p.db.ventes).get()).every(
+            (v) => v.syncStatus == 'synced',
+          ),
+          isTrue,
+        );
+      }
+      // Le stock reste propre a chaque poste : 31 - 2 chez le vendeur, 31 - 2 chez l'autre
+      // (chacun a vendu sa vente) ; la vente RECUE n'a rien decremente.
+      final goliathA = (await venteA.chargerCatalogue()).firstWhere(
+        (x) => x.nom == 'Goliath mature',
+      );
+      expect(
+        goliathA.stock,
+        29,
+        reason: 'la vente de B reçue chez A n\'a pas touché son stock',
+      );
+    },
+    skip: saute,
+  );
+
+  test(
+    'ventes réelles : le client choisi reçoit la vente, la créance est calculée par le serveur',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      final venteA = VentesRepositoryDrift(a.db, EventBus());
+      final clients = ClientsRepositoryDrift(a.db);
+      final rita1 = await clients.creerClient(
+        nom: 'Mama Rita',
+        telephone: '97000001',
+      );
+      await clients.creerClient(nom: 'Mama Rita', telephone: '97000002');
+      final p = (await venteA.chargerCatalogue()).firstWhere(
+        (x) => x.nom == 'Goliath mature',
+      );
+
+      final r = await venteA.enregistrerVente(
+        client: 'Mama Rita',
+        clientId: rita1.id,
+        mode: ModeReglement.especes,
+        statut: StatutVente.avance,
+        montantPaye: 1000,
+        panier: [
+          LignePanier(
+            produitId: p.id,
+            nom: p.nom,
+            montantGlobal: p.prix,
+            quantite: 1,
+            stockDisponible: p.stock,
+            prixIndicatif: p.prix,
+            prixIndicatifMax: p.prixMax,
+            espece: p.espece,
+            unite: p.unite,
+          ),
+        ],
+      );
+
+      final rs = await a.moteur.synchroniser();
+      expect(rs.refusees, 0, reason: rs.message);
+      final vente = await (a.db.select(
+        a.db.ventes,
+      )..where((v) => v.ref.equals(r.vente.reference))).getSingle();
+      expect(vente.clientId, rita1.id);
+      expect(vente.syncStatus, 'synced');
+      final idServeur = await http.get(
+        Uri.parse('$adresse/api/sync/pull'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${await a.depot.lire()}',
+        },
+      );
+      final corps = jsonDecode(idServeur.body) as Map<String, dynamic>;
+      final clientServeur = ((corps['tables'] as Map)['clients'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((c) => c['id'] == rita1.id);
+      expect(
+        (clientServeur['solde_creance'] as num).toDouble(),
+        p.prix - 1000,
+        reason:
+            'solde dérivé calculé par le serveur, jamais envoyé par le poste',
       );
     },
     skip: saute,

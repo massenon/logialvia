@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../domain/services/numerotation_pieces.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../../core/events/domain_event.dart';
@@ -10,6 +11,7 @@ import '../../../comptabilite/data/repositories/comptabilite_repository_drift.da
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
 import '../../domain/entities/produit_vendable.dart';
 import '../../domain/entities/livraison.dart';
+import '../../domain/entities/client.dart';
 import '../../domain/entities/vente.dart';
 import '../../domain/repositories/ventes_repository.dart';
 
@@ -176,6 +178,7 @@ class VentesRepositoryDrift implements VentesRepository {
     required String statut,
     required double montantPaye,
     required List<LignePanier> panier,
+    String? clientId,
     Livraison? livraison,
     String? ligneMobileMoney,
     DateTime? echeance,
@@ -199,7 +202,7 @@ class VentesRepositoryDrift implements VentesRepository {
             VentesCompanion.insert(
               ref: reference,
               client: client,
-              clientId: Value(await _resoudreClient(client)),
+              clientId: Value(await _clientRetenu(client, clientId)),
               dateVente: maintenant,
               mode: mode,
               status: statut,
@@ -430,6 +433,17 @@ class VentesRepositoryDrift implements VentesRepository {
   }
 
   @override
+  Future<List<ClientChoix>> chargerClientsChoix() async {
+    final lignes = await (_db.select(
+      _db.clients,
+    )..orderBy([(c) => OrderingTerm.asc(c.nom)])).get();
+    return [
+      for (final c in lignes)
+        ClientChoix(id: c.id, nom: c.nom, telephone: c.telephone),
+    ];
+  }
+
+  @override
   Future<ProduitVendable> creerProduit(ProduitVendable produit) async {
     final id = nouvelUuid();
     await _db
@@ -450,6 +464,7 @@ class VentesRepositoryDrift implements VentesRepository {
             coutRevient: Value(produit.coutRevient),
           ),
         );
+    await DepotDemandesReferentiel(_db).proposerProduit(id);
     return ProduitVendable(
       id: id,
       sku: produit.sku,
@@ -484,6 +499,8 @@ class VentesRepositoryDrift implements VentesRepository {
         coutRevient: Value(produit.coutRevient),
       ),
     );
+    // Le catalogue appartient au serveur : le poste PROPOSE (`46_` §4.3).
+    await DepotDemandesReferentiel(_db).proposerProduit(produit.id);
   }
 
   @override
@@ -522,6 +539,18 @@ class VentesRepositoryDrift implements VentesRepository {
       if (numero != null && numero > maximum) maximum = numero;
     }
     return NumerotationPieces.composer(prefixe, maximum + 1);
+  }
+
+  /// Le client CHOISI dans la liste s'il existe ; sinon celui que désigne le nom
+  /// (voir [_resoudreClient]).
+  Future<String?> _clientRetenu(String nom, String? clientId) async {
+    if (clientId != null) {
+      final existe = await (_db.select(
+        _db.clients,
+      )..where((c) => c.id.equals(clientId))).getSingleOrNull();
+      if (existe != null) return clientId;
+    }
+    return _resoudreClient(nom);
   }
 
   /// Le client que désigne ce nom, **s'il n'y en a qu'un** (casse et espaces

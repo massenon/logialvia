@@ -1,3 +1,4 @@
+import '../entities/client.dart';
 import '../entities/produit_vendable.dart';
 import '../entities/livraison.dart';
 import '../entities/vente.dart';
@@ -13,6 +14,9 @@ class ResultatEncaissement {
 abstract class VentesRepository {
   Future<List<ProduitVendable>> chargerCatalogue();
 
+  /// Les clients proposes a la saisie d'une vente, par ordre alphabetique.
+  Future<List<ClientChoix>> chargerClientsChoix();
+
   Future<List<Vente>> chargerVentes({int limite = 200});
 
   Future<Vente?> chargerVente(String reference);
@@ -26,6 +30,10 @@ abstract class VentesRepository {
     required String statut,
     required double montantPaye,
     required List<LignePanier> panier,
+
+    /// Le client CHOISI dans la liste (lève l'ambiguité des homonymes). `null` : le
+    /// depot cherche un client unique portant ce nom.
+    String? clientId,
 
     /// `null` si la vente ne concerne pas de livraison. Les frais d'une
     /// livraison **facturee separement** s'ajoutent au total.

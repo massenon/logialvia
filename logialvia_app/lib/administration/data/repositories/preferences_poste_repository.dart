@@ -19,6 +19,7 @@ class PreferencesPosteRepository {
   static const String _cleAdresseServeur = 'sync.adresse_serveur';
   static const String _cleCodePoste = 'sync.code_poste';
   static const String _cleCodeAttribue = 'poste.code_attribue';
+  static const String _cleCatalogueAdopte = 'sync.catalogue_adopte';
   static const String _cleCompteAppaire = 'sync.compte';
   static const String _cleAppaireLe = 'sync.appaire_le';
   static const String _cleCurseurTirage = 'sync.curseur';
@@ -124,6 +125,12 @@ class PreferencesPosteRepository {
   /// même après une déconnexion. `null` : poste jamais appairé (références au
   /// format sans code, `V-AAAA-NNN`).
   Future<String?> codeAttribue() => _lire(_cleCodeAttribue);
+
+  /// Le catalogue local a-t-il déjà été proposé au serveur (une seule fois) ?
+  Future<bool> catalogueAdopte() async =>
+      await _lire(_cleCatalogueAdopte) == '1';
+
+  Future<void> definirCatalogueAdopte() => _ecrire(_cleCatalogueAdopte, '1');
 
   /// Compte WEB utilisé pour l'appairage — jamais son mot de passe.
   Future<String?> compteAppaire() => _lire(_cleCompteAppaire);

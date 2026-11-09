@@ -20,7 +20,7 @@ administration. Interface et code métier **entièrement en français**.
 ```bash
 flutter pub get
 flutter analyze                     # doit rester à "No issues found!"
-flutter test                        # ~1242 tests (+9 d'intégration ignorés sans serveur), ~2 min
+flutter test                        # ~1297 tests (+11 d'intégration ignorés sans serveur), ~2 min
 flutter test test/elevage/          # un dossier / un fichier
 dart run build_runner build --delete-conflicting-outputs   # après toute modif de table Drift
 flutter build windows --release

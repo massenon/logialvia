@@ -10,6 +10,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_modal.dart';
+import '../../../domain/entities/client.dart';
 import '../../../domain/entities/livraison.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/tour/tour_guide.dart';
@@ -237,17 +238,7 @@ class _Panier extends StatelessWidget {
             for (var i = 0; i < vm.panier.length; i++)
               _LignePanier(ligne: vm.panier[i], index: i),
           const Divider(height: AppSpacing.lg),
-          SizedBox(
-            height: 40,
-            child: TextField(
-              onChanged: (v) => vm.client = v,
-              style: _texte,
-              decoration: _decoration.copyWith(
-                labelText: 'Client',
-                hintText: 'Client Comptant',
-              ),
-            ),
-          ),
+          _ChampClient(vm: vm),
           const SizedBox(height: AppSpacing.sm),
           CibleTour(
             nom: 'mode-reglement',
@@ -995,4 +986,98 @@ Future<void> ouvrirModaleLivraison(
   fraisCtrl.dispose();
   adresseCtrl.dispose();
   contactCtrl.dispose();
+}
+
+
+/// Le client de la vente : saisie libre, avec des suggestions tirées des clients
+/// enregistrés.
+///
+/// ## Pourquoi pas un simple champ texte
+///
+/// Deux clientes peuvent s'appeler « Mama Rita ». Avec un nom libre, la vente ne
+/// saurait pas laquelle a acheté, ni à qui rattacher sa créance. La liste montre
+/// le **téléphone** à côté du nom : c'est lui qui les distingue. Choisir dans la
+/// liste mémorise l'identifiant du client ; retoucher le texte l'oublie. Un nom
+/// libre (« Client Comptant ») reste possible : la vente n'a alors pas de client.
+class _ChampClient extends StatelessWidget {
+  const _ChampClient({required this.vm});
+
+  final VentesViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 40,
+          child: Autocomplete<ClientChoix>(
+            displayStringForOption: (c) => c.nom,
+            optionsBuilder: (texte) => vm.suggestionsClients(texte.text),
+            onSelected: vm.choisirClient,
+            fieldViewBuilder: (context, controleur, focus, soumettre) {
+              return TextField(
+                key: const Key('pos-client'),
+                controller: controleur,
+                focusNode: focus,
+                onChanged: (v) => vm.client = v,
+                style: _texte,
+                decoration: _decoration.copyWith(
+                  labelText: 'Client',
+                  hintText: 'Client Comptant',
+                ),
+              );
+            },
+            optionsViewBuilder: (context, choisir, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: AppRadius.cardRadius,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 240,
+                      maxWidth: 360,
+                    ),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      children: [
+                        for (final c in options)
+                          ListTile(
+                            key: Key('pos-client-${c.id}'),
+                            dense: true,
+                            title: Text(c.nom, style: _texte),
+                            subtitle: Text(
+                              c.telephone == null || c.telephone!.isEmpty
+                                  ? 'Sans téléphone'
+                                  : c.telephone!,
+                              style: _texte.copyWith(color: AppColors.outline),
+                            ),
+                            onTap: () => choisir(c),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (vm.clientAmbigu)
+          Padding(
+            key: const Key('pos-client-ambigu'),
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Text(
+              'Plusieurs clients portent ce nom : choisissez-en un dans la '
+              'liste, sinon la vente ne sera rattachée à aucun.',
+              style: _texte.copyWith(
+                fontSize: 11,
+                color: AppColors.errorDeep,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }

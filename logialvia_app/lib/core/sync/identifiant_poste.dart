@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 
 /// UUID v4 (RFC 4122) tiré du générateur cryptographique.
 ///
@@ -25,3 +28,21 @@ String nouvelUuid() => genererUuidV4();
 /// seconde, trop grossier pour « dernier écrivain gagne ».
 String instantSaisie([DateTime? maintenant]) =>
     (maintenant ?? DateTime.now()).toUtc().toIso8601String();
+
+/// UUID **déterministe** (version 5, SHA-1) calculé depuis une clé métier.
+///
+/// Pour les données SEMÉES identiquement sur tous les postes (le catalogue) : deux
+/// postes installés du même programme doivent donner le MÊME identifiant au même
+/// produit, sinon « Goliath mature » existerait en double sur le serveur. Une
+/// donnée créée par l'utilisatrice reçoit un UUID aléatoire ([nouvelUuid]).
+String uuidDeterministe(String cle) {
+  final octets = sha1
+      .convert(utf8.encode('logialvia:$cle'))
+      .bytes
+      .sublist(0, 16);
+  octets[6] = (octets[6] & 0x0f) | 0x50; // version 5
+  octets[8] = (octets[8] & 0x3f) | 0x80; // variante RFC 4122
+  final hex = octets.map((o) => o.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+}

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
+import '../repositories/preferences_poste_repository.dart';
 
 /// La file des demandes de modification de référentiel (voir
 /// `DemandesReferentiel`). Écrite par les dépôts qui modifient un module ou les
@@ -21,6 +22,24 @@ class DepotDemandesReferentiel {
   static const String typeModule = 'module_actif';
   static const String typeParametres = 'parametres_entreprise';
   static const String cleParametres = 'parametres';
+  static const String typeProduit = 'produit_vendable';
+
+  /// Champs d'un produit proposes au serveur. JAMAIS le stock : donnee derivee
+  /// (ventes, achats), propre a chaque poste.
+  static Map<String, Object?> champsProduit(ProduitVendableRow p) => {
+    'id': p.id,
+    'sku': p.sku,
+    'name': p.name,
+    'cat': p.cat,
+    'price': p.price,
+    'price_max': p.priceMax,
+    'unit': p.unit,
+    'icon': p.icon,
+    'cout_revient': p.coutRevient,
+    'groupe_taxe': p.groupeTaxe,
+    'threshold': p.threshold,
+    'espece': p.espece,
+  };
 
   /// Champs de `parametres_entreprise` que le poste propose. Jamais les chemins
   /// du logo et du favicon (propres à cette machine), ni `mode_donnees_test`
@@ -95,6 +114,34 @@ class DepotDemandesReferentiel {
       cle: cleParametres,
       donnees: champsParametres(ligne),
     );
+  }
+
+  /// Propose l'état ACTUEL d'un produit (relu en base).
+  Future<void> proposerProduit(String produitId) async {
+    final ligne = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produitId))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(
+      type: typeProduit,
+      cle: produitId,
+      donnees: champsProduit(ligne),
+    );
+  }
+
+  /// Une seule fois : propose TOUT le catalogue local au serveur. Les produits
+  /// semés ont le même UUID sur tous les postes et le serveur accepte sans conflit
+  /// ce qu'il connaît déjà à l'identique ; ceux que ce poste a créés seuls sont ainsi
+  /// connus du serveur AVANT que leurs ventes n'arrivent (sinon elles seraient
+  /// refusées : « produit inconnu »).
+  Future<void> adopterCatalogueSiBesoin(
+    PreferencesPosteRepository preferences,
+  ) async {
+    if (await preferences.catalogueAdopte()) return;
+    for (final p in await _db.select(_db.produitsVendables).get()) {
+      await proposer(type: typeProduit, cle: p.id, donnees: champsProduit(p));
+    }
+    await preferences.definirCatalogueAdopte();
   }
 
   /// La demande **en attente** de cette clé, s'il y en a une.
