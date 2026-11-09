@@ -190,7 +190,7 @@
             @endif
         </div>
         <p class="mb-md text-xs text-outline">
-            Le <strong>décès</strong> d'un sujet se déclare sur le poste : il porte la perte sur la fiche d'élevage, ce que le web ne fait pas.
+            Le <strong>décès</strong> d'un sujet se déclare ici : choisissez la catégorie d'effectif pour porter la perte sur la fiche d'élevage du jour (sans catégorie, la fiche n'est pas touchée).
         </p>
 
         @if ($entrees->isEmpty())

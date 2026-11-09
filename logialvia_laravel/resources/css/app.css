@@ -108,3 +108,9 @@
         break-inside: avoid;
     }
 }
+
+/* Listes deroulantes (47n_) : `px-sm` ecrase le `padding-right` du plugin forms, et la fleche venait se poser
+   sur le texte (« Tous les statuts▾ »). On reserve la place de la fleche, quel que soit le padding de l'ecran. */
+select:not([multiple]) {
+    padding-right: 2.25rem !important;
+}

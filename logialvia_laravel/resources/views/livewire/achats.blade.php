@@ -115,7 +115,8 @@
                                 <span class="text-outline">—</span>
                             @endif
                         </td>
-                        <td class="whitespace-nowrap px-md py-sm text-right">
+                        <td class="px-md py-sm text-right">
+                            <div class="flex flex-wrap justify-end gap-xs">
                             <button type="button" wire:click="basculer('{{ $a->id }}')" aria-expanded="{{ $detail?->id === $a->id ? 'true' : 'false' }}"
                                     class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">
                                 {{ $detail?->id === $a->id ? 'Masquer' : 'Lignes' }}</button>
@@ -135,6 +136,7 @@
                                 <button type="button" wire:click="demanderAnnulation('{{ $a->id }}')" data-action="annuler-commande"
                                         class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">Annuler</button>
                             @endif
+                            </div>
                         </td>
                     </tr>
                     @if ($detail?->id === $a->id)
