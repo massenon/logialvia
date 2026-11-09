@@ -79,7 +79,11 @@ void main() {
 
   final postes = <_Poste>[];
   tearDown(() async {
-    await regles([]);
+    try {
+      await regles([]);
+    } on Exception {
+      // mandataire absent (essai ciblé sur un serveur Apache réel) : rien à remettre à zéro
+    }
     for (final p in postes) {
       await p.db.close();
     }

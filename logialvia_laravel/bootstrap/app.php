@@ -6,6 +6,7 @@ use App\Http\Middleware\CompteActif;
 use App\Http\Middleware\EnregistrerContactPoste;
 use App\Http\Middleware\PosteDuJeton;
 use App\Http\Middleware\RestaurerEnTeteAutorisation;
+use App\Support\ServeurOccupe;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -69,6 +70,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Ce poste n\'est plus appairé : le jeton a été révoqué ou a expiré.',
                     'code' => 'jeton_invalide',
                 ], 401);
+            }
+        });
+
+        // 47r : interblocage persistant de la base -> 503 + Retry-After, jamais 500 : le poste rejoue.
+        $exceptions->render(function (ServeurOccupe $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'code' => 'serveur_occupe',
+                ], 503, ['Retry-After' => 1]);
             }
         });
 

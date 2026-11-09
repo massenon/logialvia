@@ -39,7 +39,7 @@ class DemandesSynchronisationService
      */
     public function lirePour(string $deviceId): bool
     {
-        return DB::transaction(function () use ($deviceId) {
+        return \App\Support\TransactionRejouee::executer(function () use ($deviceId) {
             $ids = DB::table('demandes_synchronisation as d')
                 ->where('d.expire_le', '>', now())
                 ->where(fn ($q) => $q->whereNull('d.device_id')->orWhere('d.device_id', $deviceId))

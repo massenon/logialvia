@@ -64,7 +64,7 @@ class DemandesReferentiel
             $demande = (array) $demande;
             $id = is_string($demande['id'] ?? null) ? $demande['id'] : '';
 
-            $issue = DB::transaction(fn () => $this->une($utilisateur, $deviceId, $demande), 3);
+            $issue = \App\Support\TransactionRejouee::executer(fn () => $this->une($utilisateur, $deviceId, $demande));
 
             if ($issue === null) {
                 $accepted[] = $id;

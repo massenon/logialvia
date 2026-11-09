@@ -63,6 +63,32 @@ class PortabiliteMysqlTest extends TestCase
         $this->assertNotNull(Poste::query()->where('device_id', $a['device'])->first()->curseur_tirage);
     }
 
+    public function test_le_json_est_conserve_octet_pour_octet(): void
+    {
+        // Le type JSON de MySQL 8 reordonne les clefs et refait les espaces ; sur SQLite/MariaDB
+        // le texte est intact. Les colonnes sont donc du LONGTEXT (migration json_en_texte).
+        $texte = '{"zzz":1,"a":[3,2,1],"m": {"y":1,"b":2}}';
+        DB::table('audit_logs')->insert(['id' => (string) \Illuminate\Support\Str::uuid(), 'action' => 'essai', 'detail' => $texte]);
+
+        $this->assertSame($texte, DB::table('audit_logs')->where('action', 'essai')->value('detail'));
+    }
+
+    public function test_la_session_mysql_est_en_utc(): void
+    {
+        // Serveur en Europe/Paris : « 2026-03-29 02:30 » n'existe pas (saut d'heure) et un
+        // TIMESTAMP le refuse (« Incorrect datetime value ») si la session n'est pas en UTC.
+        foreach (['mysql', 'mariadb'] as $pilote) {
+            $this->assertSame('+00:00', config("database.connections.$pilote.timezone"));
+        }
+
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            $this->assertSame('+00:00', DB::selectOne('select @@session.time_zone as tz')->tz);
+            DB::statement('create temporary table tz_essai (a timestamp null)');
+            DB::table('tz_essai')->insert(['a' => '2026-03-29 02:30:00']);
+            $this->assertSame('2026-03-29 02:30:00', DB::table('tz_essai')->value('a'));
+        }
+    }
+
     public function test_les_lignes_gardent_l_ordre_du_poste_et_non_celui_des_uuid(): void
     {
         // InnoDB range par cle primaire (UUID aleatoire) ; SQLite par insertion : sans

@@ -114,7 +114,7 @@ class MoteurSynchronisation
             ]];
         }
 
-        $reponse = DB::transaction(function () use ($utilisateur, $deviceId, $lot) {
+        $reponse = \App\Support\TransactionRejouee::executer(function () use ($utilisateur, $deviceId, $lot) {
             $reponse = [];
             $connues = [];
 
@@ -136,7 +136,7 @@ class MoteurSynchronisation
             }
 
             return $reponse;
-        }, 3);
+        });
 
         $this->journaliser($utilisateur, $deviceId, $reponse);
 
