@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/formatage/formats.dart';
 import '../../../../core/sync/moteur_synchronisation.dart';
+import '../../../../core/sync/droits_poste.dart';
 import '../../../../core/sync/service_appairage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -71,6 +72,10 @@ class OngletAppairage extends StatelessWidget {
             ],
           ),
         ),
+        if (etat.appaire) ...[
+          const SizedBox(height: AppSpacing.md),
+          _CarteDroits(vm: vm, etat: etat),
+        ],
         const SizedBox(height: AppSpacing.md),
         if (etat.appaire)
           _CarteAppaire(vm: vm)
@@ -85,6 +90,113 @@ class OngletAppairage extends StatelessWidget {
           _Message(resultat: vm.dernierResultat!),
         ],
       ],
+    );
+  }
+}
+
+/// Libellés des rôles du serveur (`config/logialvia.php`, DV-07).
+const Map<String, String> _libellesRoles = {
+  'admin': 'Administrateur',
+  'comptable': 'Comptable',
+  'caissier': 'Agent de Vente',
+  'animalier': 'Agent d\'Élevage',
+};
+
+/// État de droits et d'horloge du poste (`47g_`) : compte appairé, droits effectifs, ce qui
+/// attend un droit, écart d'horloge avec le serveur, et « Réessayer ».
+class _CarteDroits extends StatelessWidget {
+  const _CarteDroits({required this.vm, required this.etat});
+
+  final AppairageViewModel vm;
+  final EtatAppairage etat;
+
+  @override
+  Widget build(BuildContext context) {
+    final droits = vm.droits?.droits ?? etat.droits;
+    final enAttente = vm.droits?.enAttenteDeDroit ?? 0;
+    final decalage = vm.droits?.decalageHorloge ?? etat.decalageHorloge;
+    final horloge = decalage == null ? null : analyserHorloge(decalage);
+
+    return CarteSection(
+      titre: 'Droits et horloge',
+      icone: Symbols.shield_person,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (droits == null)
+            const _Ligne(
+              'Droits',
+              'Non communiqués par le serveur : le poste propose tout et le '
+                  'serveur tranche.',
+            )
+          else ...[
+            _Ligne('Compte', droits.compte),
+            _Ligne(
+              'Rôle',
+              droits.roles.isEmpty
+                  ? 'Aucun rôle'
+                  : droits.roles.map((r) => _libellesRoles[r] ?? r).join(', '),
+            ),
+            _Ligne(
+              'Peut envoyer',
+              '${droits.tablesEcrites.length} table(s) de saisies, '
+                  '${droits.demandes.length} type(s) de réglages',
+            ),
+          ],
+          _Ligne(
+            'En attente de droit',
+            enAttente == 0
+                ? 'Rien'
+                : '$enAttente saisie(s) ou demande(s) que ce compte ne peut '
+                      'pas envoyer. Elles ne sont pas perdues : elles partiront '
+                      'dès qu\'un compte qui en a le droit synchronisera.',
+          ),
+          _Ligne(
+            'Horloge',
+            decalage == null
+                ? 'Pas encore mesurée'
+                : horloge!.etat == EtatHorloge.juste
+                ? 'Juste (écart ${formaterDuree(decalage)})'
+                : decalage.isNegative
+                ? 'En retard de ${formaterDuree(decalage)}'
+                : 'En avance de ${formaterDuree(decalage)}',
+          ),
+          if (horloge != null && horloge.aAvertir)
+            Container(
+              key: const Key('appairage-horloge'),
+              margin: const EdgeInsets.only(top: AppSpacing.xs),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.errorContainer,
+                borderRadius: AppRadius.cardRadius,
+              ),
+              child: Text(
+                horloge.message!,
+                style: _texte.copyWith(
+                  color: AppColors.errorDeep,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          if (vm.peutSynchroniser)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton(
+                key: const Key('appairage-reessayer'),
+                label: vm.synchronisationEnCours
+                    ? 'Synchronisation…'
+                    : 'Réessayer',
+                icon: Symbols.refresh,
+                variant: AppButtonVariant.outline,
+                onPressed: vm.occupe || vm.synchronisationEnCours
+                    ? null
+                    : vm.reessayer,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -222,7 +334,11 @@ class _MessageSynchro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bon = rapport.reussie && rapport.refusees == 0;
+    final bon =
+        rapport.reussie &&
+        rapport.refusees == 0 &&
+        !rapport.envoiSuspendu &&
+        !rapport.horlogeAAvertir;
     final neutre = rapport.issue == IssueSynchronisation.horsLigne;
     final teinte = bon
         ? AppColors.successDeep

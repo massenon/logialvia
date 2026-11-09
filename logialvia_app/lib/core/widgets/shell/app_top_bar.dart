@@ -14,6 +14,8 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
+import '../app_button.dart';
+import '../app_modal.dart';
 import 'recherche_globale.dart';
 
 /// Barre du haut — `<header class="h-16 ...">` commun aux 28 ecrans internes.
@@ -157,8 +159,14 @@ class IndicateurSynchro extends StatelessWidget {
       texte =
           'Hors ligne : vos saisies sont conservées et partiront à la '
           'reconnexion.';
-    } else if (!rapport.reussie || rapport.refusees > 0) {
-      icone = Symbols.sync_problem;
+    } else if (!rapport.reussie ||
+        rapport.refusees > 0 ||
+        rapport.envoiSuspendu ||
+        rapport.horlogeAAvertir) {
+      // `47g_` : une horloge à corriger se dit aussi ici (et dans la modale au clic).
+      icone = rapport.envoiSuspendu || rapport.horlogeAAvertir
+          ? Symbols.schedule
+          : Symbols.sync_problem;
       couleur = AppColors.errorDeep;
       texte = rapport.message;
     } else {
@@ -175,7 +183,36 @@ class IndicateurSynchro extends StatelessWidget {
       tooltip: '$texte\nCliquer pour synchroniser maintenant.',
       onPressed: planificateur.enCours
           ? null
-          : () => planificateur.synchroniserMaintenant(),
+          : () async {
+              final r = await planificateur.synchroniserMaintenant();
+              // `47g_` : une horloge à corriger est dite dans la modale de synchronisation.
+              final alerte = r?.horloge?.message;
+              if (alerte == null || !context.mounted) return;
+              await AppModal.show<void>(
+                context,
+                title: 'Synchronisation : horloge du poste',
+                maxWidth: 480,
+                child: Text(
+                  alerte,
+                  key: const Key('synchro-modale-horloge'),
+                  style: const TextStyle(
+                    fontFamily: AppTypography.fontFamily,
+                    fontSize: AppTypography.textXs,
+                    color: AppColors.errorDeep,
+                    fontWeight: FontWeight.w600,
+                    height: 1.5,
+                  ),
+                ),
+                actions: [
+                  Builder(
+                    builder: (ctx) => AppButton(
+                      label: 'Compris',
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ),
+                ],
+              );
+            },
       icon: Icon(icone, color: couleur, size: 22),
     );
   }

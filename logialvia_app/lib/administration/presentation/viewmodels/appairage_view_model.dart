@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../core/sync/moteur_synchronisation.dart';
@@ -10,7 +12,7 @@ import '../../../core/sync/service_appairage.dart';
 /// saisie et le remet au service au moment de se connecter, puis le vide.
 class AppairageViewModel extends ChangeNotifier {
   AppairageViewModel(this._service, [this._planificateur]) {
-    _planificateur?.addListener(_notifier);
+    _planificateur?.addListener(_surPlanificateur);
   }
 
   final ServiceAppairage _service;
@@ -32,7 +34,33 @@ class AppairageViewModel extends ChangeNotifier {
     await planificateur.synchroniserMaintenant();
     // Un 401 a effacé le jeton : l'état affiché doit le refléter.
     _etat = await _service.etat();
+    await _chargerDroits();
     _notifier();
+  }
+
+  /// « Réessayer » (`47g_`) : resynchronise tout de suite. Le tirage rafraîchit les droits du
+  /// compte ; ce qui attendait un droit que le compte a maintenant (droit accordé au serveur,
+  /// autre compte appairé) part dans le même cycle.
+  Future<void> reessayer() => synchroniser();
+
+  EtatDroitsPoste? _droits;
+
+  /// Droits du compte appairé, demandes et saisies en attente de droit, écart d'horloge.
+  /// `null` tant que non chargé (ou sans planificateur).
+  EtatDroitsPoste? get droits => _droits;
+
+  Future<void> _chargerDroits() async {
+    _droits = await _planificateur?.moteur.etatDroits();
+  }
+
+  /// Une synchronisation (déclenchée ici ou par le planificateur) vient de changer l'état :
+  /// les droits du compte et l'écart d'horloge sont relus à sa fin.
+  void _surPlanificateur() {
+    _notifier();
+    if (_planificateur?.enCours ?? true) return;
+    unawaited(
+      _chargerDroits().then((_) => _notifier(), onError: (Object _) {}),
+    );
   }
 
   EtatAppairage? _etat;
@@ -51,6 +79,7 @@ class AppairageViewModel extends ChangeNotifier {
 
   Future<void> charger() async {
     _etat = await _service.etat();
+    await _chargerDroits();
     _notifier();
   }
 
@@ -84,6 +113,7 @@ class AppairageViewModel extends ChangeNotifier {
         _planificateur?.reprendre();
       }
       _etat = await _service.etat();
+      await _chargerDroits();
       return resultat;
     } finally {
       _occupe = false;
@@ -97,7 +127,7 @@ class AppairageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _planificateur?.removeListener(_notifier);
+    _planificateur?.removeListener(_surPlanificateur);
     _disposed = true;
     super.dispose();
   }
