@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Auth\ChangerMotDePasse;
+use App\Livewire\Catalogue;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\PostesAppairage;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
                 return view('a-venir', ['titre' => \App\Support\Navigation::libelle($route) ?? 'Écran']);
             })->middleware($permission ? "can:$permission" : [])->name('a-venir.'.ltrim($route, '/'));
         }
+
+        // Ecrans convertis du Dart (liste : `routes_web_implementees`). Droit verifie a la route
+        // ET dans chaque methode qui ecrit.
+        Route::get('/catalogue', Catalogue::class)->middleware('can:view-stocks')->name('catalogue');
 
         // Ecran web propre au serveur : l'onglet « Postes & Appairage » des Parametres.
         Route::get('/parametres/postes', PostesAppairage::class)

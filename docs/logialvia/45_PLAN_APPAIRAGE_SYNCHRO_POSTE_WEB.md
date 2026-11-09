@@ -224,7 +224,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1, 3 et 4 faits** : `clients` (v31), produits, lignes de vente, ventes (v33-v34), fournisseurs, achats, lignes d'achat (v35), références à préfixe de poste ; voir §6d-§6i. Restent 16 fichiers de tables |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
 | P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait** pour modules, paramètres, produits, clients, ventes (§6d-§6h) ; reste les autres tables |
-| W4+ | Écrans web par module, conformes au Dart | W1 | en attente |
+| W4+ | Écrans web par module, conformes au Dart | W1 | **en cours** : W4a coque, W4b Catalogue (§7) ; reste les autres écrans |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait
 sans avoir tourné.
@@ -244,3 +244,21 @@ Essais : `journal_produits_sync_poste_test.dart` (19), `migration_v37_mouvements
 
 Limites levées après P6 : motif de correction saisi au formulaire ; suppression de produit propagée par pierre tombale
 (`archive_le`, voir `46_` §15). Essais : `suppression_produit_sync_poste_test.dart` (8), `ProduitsDemandesTest.php` (+6).
+
+## 7. W4+ — Écrans web (09/11/2026)
+
+**W4a — La coque.** Barre laterale `config/navigation.php`, **transcrite du Dart** (`navigation_model.dart`) et comparee a lui par
+`ConformiteNavigationDartTest` (groupes, ordre, libelles, icones, routes, modules). Une entree est visible quand le compte a le droit
+de sa route (matrice `config/logialvia.php`) ET que son module est actif (filieres optionnelles inactives par defaut ; `mecef` suit le
+reglage de l'entreprise). Chaque route du poste a son adresse web : tant que l'ecran n'est pas converti, la page « bientot » la
+tient, droit et module deja verifies (403 / 404). `/` mene a `/dashboard`. Liste des ecrans convertis : `routes_web_implementees`.
+
+**W4b — Catalogue & Seuils** (`/catalogue`, droit `view-stocks` ; ecriture `manage-ventes`). Liste, recherche, filtre de categorie,
+ajout / modification / suppression par modales. Toute ecriture passe par `DemandesReferentiel::traiter` : memes regles que pour un
+poste (validation, droit, dernier ecrivain gagne, audit, historique, poste « web » = UUID nul). La suppression pose la pierre tombale
+(`46_` §15) que les postes archivent a leur tour. **Ecarts assumes avec le Dart** : pas de colonne « Stock », de « valeur du catalogue »
+ni de tableau des seuils critiques (le stock est propre a chaque poste) ; pas d'icones Material Symbols (police non embarquee) ;
+l'icone d'un produit cree au web est `category`.
+
+**Reste a convertir** (page « bientot ») : tableau de bord, filieres d'elevage, ventes, clients, inventaire, factures MeCeF, achats,
+fournisseurs, depenses, gestion des stocks, comptabilite (6 ecrans), rapports, parametres, profil, aide, contact.

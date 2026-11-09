@@ -63,7 +63,7 @@ return [
     /*
     | Routes dont l'ecran web est converti (les autres montrent la page « bientot »).
     */
-    'routes_web_implementees' => [],
+    'routes_web_implementees' => ['/catalogue'],
 
     /*
     | Modules basculables et fiche associee — miroir de `ModulesActifsSeeder`
