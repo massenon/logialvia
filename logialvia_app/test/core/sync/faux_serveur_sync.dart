@@ -89,6 +89,16 @@ class FauxServeurSync {
   /// `DevisTable` du vrai serveur).
   final Map<String, Map<String, dynamic>> devis = {};
 
+  /// Réservations de transmission des factures émises au web (`47a2_`) : facture ->
+  /// poste détenteur. Rejoue `FacturesTable::reserverTransmission` du vrai serveur.
+  final Map<String, String> reservations = {};
+
+  /// Les appels de réservation reçus : `{device_id, facture_id}`.
+  final List<Map<String, dynamic>> demandesReservation = [];
+
+  /// Non nul : le serveur refuse toute réservation avec ce motif (HTTP 409).
+  String? refuserReservation;
+
   /// Elevage (palier 7a) : fiches journalieres, compteurs de ventes du jour (une
   /// ligne par poste) et bandes.
   final Map<String, Map<String, dynamic>> fichesJournee = {};
@@ -308,6 +318,7 @@ class FauxServeurSync {
       acquittements++;
       return _json(200, {'message': 'Resynchronisation acquittée.'});
     }
+    if (r.url.path == '/api/sync/factures/reserver') return _reserver(r);
     if (r.url.path == '/api/sync/demandes') return _demandes(r);
     if (r.url.path == '/api/sync/pull') return _pull(r);
     if (r.url.path == '/api/sync/push') return _push(r);
@@ -2073,6 +2084,35 @@ class FauxServeurSync {
     };
   }
 
+
+  static const posteWeb = '00000000-0000-0000-0000-000000000000';
+
+  http.Response _reserver(http.Request r) {
+    final corps = jsonDecode(r.body) as Map<String, dynamic>;
+    demandesReservation.add(corps);
+    if (refuserReservation != null) {
+      return _json(409, {'message': refuserReservation});
+    }
+    final f = factures[corps['facture_id']];
+    if (f == null) return _json(404, {'message': 'Facture inconnue du serveur.'});
+    if (f['device_id'] != posteWeb) {
+      return _json(422, {
+        'message': 'Cette facture a été émise par un poste : seul ce poste la transmet.',
+      });
+    }
+    if (f['statut'] == 'normalisee') {
+      return _json(409, {'message': 'Cette facture est déjà normalisée.'});
+    }
+    final detenteur = reservations[corps['facture_id']];
+    if (detenteur != null && detenteur != corps['device_id']) {
+      return _json(409, {
+        'message': 'Cette facture est en cours de transmission depuis un autre poste.',
+      });
+    }
+    reservations[corps['facture_id'] as String] = corps['device_id'] as String;
+    return _json(200, {'message': 'Transmission réservée.'});
+  }
+
   static const _rang = {'a_transmettre': 0, 'rejetee': 1, 'normalisee': 2};
 
   /// Un devis déjà reçu par le serveur, émis par un autre poste (ou le web).
@@ -2197,7 +2237,7 @@ class FauxServeurSync {
     final acceptees = <String>[];
     final refusees = <Map<String, String>>[];
     bool codee(String? ref) =>
-        ref != null && RegExp(r'^[A-Z]{2}-P\d+-\d{4}-\d{3,}$').hasMatch(ref);
+        ref != null && RegExp(r'^[A-Z]{2}-(P\d+|WEB)-\d{4}-\d{3,}$').hasMatch(ref);
 
     for (final f in lot) {
       final id = f['id'] as String;
@@ -2274,6 +2314,17 @@ class FauxServeurSync {
         refusees.add({
           'id': id,
           'motif': 'Une facture émise ne se modifie pas : émettez un avoir.',
+        });
+        continue;
+      }
+      if (existante['device_id'] == posteWeb &&
+          deviceId != posteWeb &&
+          reservations[id] != deviceId) {
+        refusees.add({
+          'id': id,
+          'motif':
+              'Cette facture a été émise au web : sa transmission doit être '
+              'réservée au serveur avant d\'être envoyée.',
         });
         continue;
       }

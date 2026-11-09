@@ -10,6 +10,12 @@
 /// la vente disparaisse.
 library;
 
+/// Identifiant du « poste » web : émetteur des factures émises depuis le web
+/// (`47a2_`). Le web n'a ni jeton ni accès à e-MECeF : ces factures se transmettent
+/// depuis un poste appairé, après une réservation au serveur (verrou contre la double
+/// normalisation).
+const String identifiantPosteWeb = '00000000-0000-0000-0000-000000000000';
+
 /// Nature de la pièce.
 enum TypeFacture {
   /// Facture de vente.
@@ -154,8 +160,11 @@ class FactureMecef {
     this.dateNormalisation,
     this.erreurTransmission,
     this.origine,
+    this.id = '',
   });
 
+  /// UUID de la facture (DV-19) : son identité synchronisée.
+  final String id;
   final String reference;
   final TypeFacture type;
   final DateTime date;
@@ -185,7 +194,15 @@ class FactureMecef {
 
   /// Une facture absorbée du serveur : lisible, imprimable, mais **jamais
   /// transmise d'ici** (un seul poste normalise, `46e_` §3).
-  bool get estDUnAutrePoste => origine != null;
+  ///
+  /// Une facture émise au **web** n'est PAS « d'un autre poste » : n'ayant pas de poste
+  /// émetteur, elle peut être transmise par n'importe quel poste appairé (après
+  /// réservation au serveur, voir [estWeb]).
+  bool get estDUnAutrePoste =>
+      origine != null && origine != identifiantPosteWeb;
+
+  /// Émise depuis le web : sa transmission passe par une réservation serveur.
+  bool get estWeb => origine == identifiantPosteWeb;
 
   double get totalHt => lignes.fold(0, (s, l) => s + l.montantHt);
   double get totalTaxe => lignes.fold(0, (s, l) => s + l.montantTaxe);

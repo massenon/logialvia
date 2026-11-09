@@ -44,7 +44,9 @@ class TableFacturesPoste implements TablePoste {
   static final RegExp _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
-  static final RegExp _reference = RegExp(r'^(FV|FA)-(P\d+-)?\d{4}-\d{3,}$');
+  static final RegExp _reference = RegExp(
+    r'^(FV|FA)-(P\d+-|WEB-)?\d{4}-\d{3,}$',
+  );
   static final RegExp _lettre = RegExp(r'^[A-Z]$');
 
   /// Tolérance d'arrondi entre un total et la somme de ses lignes (en FCFA).
@@ -355,7 +357,10 @@ class TableFacturesPoste implements TablePoste {
     final factures =
         await (_db.select(_db.factures)
               ..where(
-                (f) => f.syncStatus.equals('pending') & f.origine.isNull(),
+                (f) =>
+                    f.syncStatus.equals('pending') &
+                    (f.origine.isNull() |
+                        f.origine.equals(identifiantPosteWeb)),
               )
               ..orderBy([(f) => OrderingTerm.asc(f.updatedAt)]))
             .get();
@@ -467,12 +472,15 @@ class TableFacturesPoste implements TablePoste {
     await (_db.delete(
       _db.factures,
     )..where((f) => f.statut.isNotValue(normalisee))).go();
-    await (_db.update(_db.factures)..where((f) => f.origine.isNull())).write(
-      const FacturesCompanion(
-        syncStatus: Value('pending'),
-        syncMotif: Value(null),
-      ),
-    );
+    await (_db.update(_db.factures)..where(
+          (f) => f.origine.isNull() | f.origine.equals(identifiantPosteWeb),
+        ))
+        .write(
+          const FacturesCompanion(
+            syncStatus: Value('pending'),
+            syncMotif: Value(null),
+          ),
+        );
     return perdues;
   }
 }

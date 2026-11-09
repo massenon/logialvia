@@ -8,6 +8,7 @@ import '../../administration/data/sync/depot_demandes_referentiel.dart';
 import 'depot_jeton_sync.dart';
 import 'service_appairage.dart';
 import 'table_poste.dart';
+import '../resultat/resultat.dart';
 
 enum IssueSynchronisation {
   /// Pull puis push se sont terminés.
@@ -263,6 +264,55 @@ class MoteurSynchronisationPoste {
     return reponse != null &&
         reponse.statusCode >= 200 &&
         reponse.statusCode < 300;
+  }
+
+  /// Réserve auprès du serveur la TRANSMISSION d'une facture émise au web (`47a2_`).
+  ///
+  /// Le web n'a ni jeton ni accès à e-MECeF : une facture web se transmet depuis un
+  /// poste appairé. Pour qu'elle ne soit pas normalisée deux fois (deux postes qui
+  /// transmettent en même temps), le serveur n'accorde la réservation qu'à UN poste à
+  /// la fois (15 minutes) ; seul le détenteur peut ensuite envoyer sa normalisation.
+  /// Sans réseau ni appairage, pas de réservation : le poste ne transmet pas.
+  Future<Resultat<void>> reserverTransmission(String factureId) async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const Echec(
+        'Une facture émise au web se transmet depuis un poste appairé : '
+        'appairez ce poste au serveur.',
+      );
+    }
+    final reponse = await _appeler(
+      (c) async => c.post(
+        Uri.parse('$adresse/api/sync/factures/reserver'),
+        headers: _entetes(jeton),
+        body: jsonEncode({
+          'device_id': await preferences.identifiantPoste(),
+          'facture_id': factureId,
+        }),
+      ),
+    );
+    if (reponse == null) {
+      return const Echec(
+        'Serveur injoignable : une facture émise au web ne se transmet pas hors '
+        'ligne (le serveur doit réserver sa transmission).',
+      );
+    }
+    if (reponse.statusCode == 401) {
+      await appairage.oublierLocalement();
+      return const Echec(
+        'Ce poste n\'est plus appairé : reconnectez-vous (Paramètres > Appairage).',
+      );
+    }
+    if (reponse.statusCode >= 200 && reponse.statusCode < 300) {
+      return const Succes(null);
+    }
+    final m = _json(reponse.body)?['message'];
+    return Echec(
+      m is String && m.isNotEmpty
+          ? m
+          : 'Le serveur a refusé la réservation (HTTP ${reponse.statusCode}).',
+    );
   }
 
   /// Une saisie attend-elle d'être envoyée ? (garde « rien à envoyer »)

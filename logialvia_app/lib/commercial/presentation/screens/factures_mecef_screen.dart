@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/sync/planificateur_synchronisation.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -40,9 +41,20 @@ class PageFacturesMecef extends StatelessWidget {
       create: (ctx) => FacturesMecefViewModel(
         FacturesMecefRepositoryDrift(ctx.read<AppDatabase>()),
         ctx.read<AppDatabase>(),
+        // Une facture émise au web se transmet après réservation au serveur (`47a2_`).
+        reserverTransmission: _reservation(ctx),
       )..charger(),
       child: const _Ecran(),
     );
+  }
+}
+
+/// La réservation du moteur de synchronisation, s'il existe (absent des tests d'écran).
+Future<Resultat<void>> Function(String)? _reservation(BuildContext ctx) {
+  try {
+    return ctx.read<PlanificateurSynchronisation>().moteur.reserverTransmission;
+  } on ProviderNotFoundException {
+    return null;
   }
 }
 

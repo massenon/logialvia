@@ -25,7 +25,12 @@ class FacturesMecefViewModel extends ChangeNotifier {
       String? ifuEmetteur,
     })?
     fabriqueClient,
+    this.reserverTransmission,
   }) : _fabriqueClient = fabriqueClient ?? _clientHttp;
+
+  /// Réservation serveur de la transmission d'une facture émise au web (`47a2_`).
+  /// `null` : poste sans synchronisation (une facture du web n'y est pas transmissible).
+  final Future<Resultat<void>> Function(String factureId)? reserverTransmission;
 
   final FacturesMecefRepositoryDrift _repository;
   final AppDatabase _db;
@@ -188,6 +193,8 @@ class FacturesMecefViewModel extends ChangeNotifier {
     if (aTransmettre != null && aTransmettre.estDUnAutrePoste) {
       return const Echec(messageAutrePoste);
     }
+    final refusWeb = await _reserverSiWeb(aTransmettre);
+    if (refusWeb != null) return Echec(refusWeb);
     if (!transmissionConfiguree) {
       return const Echec(
         'Transmission non configurée : renseignez l\'URL e-MECeF et le jeton '
@@ -227,6 +234,18 @@ class FacturesMecefViewModel extends ChangeNotifier {
     }
   }
 
+  /// Une facture émise au web se transmet après réservation au serveur : un seul poste
+  /// à la fois, jamais deux normalisations. Renvoie le motif du refus, ou `null`.
+  Future<String?> _reserverSiWeb(FactureMecef? facture) async {
+    if (facture == null || !facture.estWeb) return null;
+    final reservation = reserverTransmission;
+    if (reservation == null) {
+      return 'Une facture émise au web se transmet depuis un poste appairé.';
+    }
+    final r = await reservation(facture.id);
+    return r is Echec<void> ? r.message : null;
+  }
+
   /// Reporte à la main le retour de la DGI, quand la transmission a eu lieu
   /// par un autre canal.
   Future<Resultat<void>> normaliserManuellement({
@@ -237,6 +256,10 @@ class FacturesMecefViewModel extends ChangeNotifier {
     String? lienVerification,
   }) async {
     try {
+      final refusWeb = await _reserverSiWeb(
+        await _repository.parReference(reference),
+      );
+      if (refusWeb != null) return Echec(refusWeb);
       await _repository.normaliser(
         reference: reference,
         codeMecef: codeMecef,

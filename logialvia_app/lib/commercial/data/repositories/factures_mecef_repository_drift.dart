@@ -211,6 +211,22 @@ class FacturesMecefRepositoryDrift {
     }
 
     final aReprendre = lignes.isEmpty ? origine.lignes : lignes;
+
+    // Un avoir ne dépasse jamais la facture qu'il corrige : avec les avoirs déjà
+    // émis sur elle, le cumul reste dans son total TTC (tolérance d'arrondi 0,01).
+    final nouveauTtc = aReprendre.fold<double>(0, (s, l) => s + l.montantTtc);
+    final dejaCredite = (await toutes())
+        .where(
+          (f) => f.type == TypeFacture.avoir && f.origineRef == factureOrigine,
+        )
+        .fold<double>(0, (s, f) => s + f.totalTtc);
+    if (dejaCredite + nouveauTtc > origine.totalTtc + 0.01) {
+      throw StateError(
+        'Les avoirs sur $factureOrigine dépasseraient la facture : '
+        '${dejaCredite.round()} FCFA déjà crédités, ${nouveauTtc.round()} demandés, '
+        'facture de ${origine.totalTtc.round()} FCFA.',
+      );
+    }
     return _inserer(
       type: TypeFacture.avoir,
       date: date ?? DateTime.now(),
@@ -251,7 +267,7 @@ class FacturesMecefRepositoryDrift {
         'modifiée. Pour la corriger, émettez un avoir.',
       );
     }
-    if (actuelle.origine != null) {
+    if (_estDUnAutrePoste(actuelle.origine)) {
       throw StateError(_refusAutrePoste(reference));
     }
     await (_db.update(
@@ -287,7 +303,7 @@ class FacturesMecefRepositoryDrift {
     if (StatutFacture.depuis(actuelle.statut) == StatutFacture.normalisee) {
       return;
     }
-    if (actuelle.origine != null) {
+    if (_estDUnAutrePoste(actuelle.origine)) {
       throw StateError(_refusAutrePoste(reference));
     }
     await (_db.update(
@@ -302,6 +318,10 @@ class FacturesMecefRepositoryDrift {
       ),
     );
   }
+
+  /// Une facture du web (poste émetteur « web ») n'est pas celle d'un autre poste.
+  static bool _estDUnAutrePoste(String? origine) =>
+      origine != null && origine != identifiantPosteWeb;
 
   static String _refusAutrePoste(String reference) =>
       'La facture $reference a été émise sur un autre poste : elle se '
@@ -392,6 +412,7 @@ class FacturesMecefRepositoryDrift {
 
   FactureMecef _versEntite(FactureRow e, List<LigneFactureRow> lignes) {
     return FactureMecef(
+      id: e.id,
       reference: e.ref,
       type: TypeFacture.depuis(e.type),
       date: e.dateFacture,
