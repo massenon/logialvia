@@ -152,6 +152,10 @@ return [
             \App\Sync\Tables\AchatsTable::class,
             \App\Sync\Tables\MouvementsIntrantTable::class,
             \App\Sync\Tables\MouvementsProduitTable::class,
+            // Elevage, palier 7a (`46a_`) : fiches journalieres, compteurs de ventes du jour, bandes.
+            \App\Sync\Tables\FichesJourneeTable::class,
+            \App\Sync\Tables\VentesJourTable::class,
+            \App\Sync\Tables\BandesTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),

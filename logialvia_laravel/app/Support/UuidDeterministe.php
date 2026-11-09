@@ -3,19 +3,32 @@
 namespace App\Support;
 
 /**
- * UUID deterministe (version 5, SHA-1) calcule depuis une cle metier, a l'IDENTIQUE du
- * poste (`uuidDeterministe` de `identifiant_poste.dart`) : meme cle, meme identifiant, sur
- * tous les postes et au serveur. Le test `GroupesTaxeTest` fige des valeurs calculees par le Dart.
+ * UUID DETERMINISTE (version 5, SHA-1) calcule depuis une cle metier : le MEME calcul que
+ * `uuidDeterministe` du poste (`core/sync/identifiant_poste.dart`). Deux postes qui
+ * saisissent la meme fiche journaliere (espece + date) obtiennent le meme identifiant ;
+ * le serveur le recalcule pour le verifier.
  */
 final class UuidDeterministe
 {
     public static function de(string $cle): string
     {
-        $octets = array_values(unpack('C16', substr(sha1('logialvia:'.$cle, true), 0, 16)));
-        $octets[6] = ($octets[6] & 0x0F) | 0x50; // version 5
-        $octets[8] = ($octets[8] & 0x3F) | 0x80; // variante RFC 4122
-        $hex = implode('', array_map(fn (int $o) => str_pad(dechex($o), 2, '0', STR_PAD_LEFT), $octets));
+        $octets = substr(sha1('logialvia:'.$cle, true), 0, 16);
+        $octets[6] = chr((ord($octets[6]) & 0x0f) | 0x50); // version 5
+        $octets[8] = chr((ord($octets[8]) & 0x3f) | 0x80); // variante RFC 4122
+        $hex = bin2hex($octets);
 
         return substr($hex, 0, 8).'-'.substr($hex, 8, 4).'-'.substr($hex, 12, 4).'-'.substr($hex, 16, 4).'-'.substr($hex, 20);
+    }
+
+    /** UUID de la fiche de cette filiere pour ce jour civil (`AAAA-MM-JJ`). */
+    public static function ficheJournee(string $espece, string $jour): string
+    {
+        return self::de("fiche_journee:$espece|$jour");
+    }
+
+    /** UUID du compteur de ventes du jour de ce POSTE (son `device_id`). */
+    public static function ventesJour(string $espece, string $jour, string $poste): string
+    {
+        return self::de("fiche_ventes_jour:$espece|$jour|$poste");
     }
 }

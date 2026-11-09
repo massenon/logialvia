@@ -266,4 +266,52 @@ trait PostesDeTest
             'date_normalisation' => now()->format('Y-m-d\TH:i:s.u\Z'),
         ], $surcharge));
     }
+
+    /** Une fiche journaliere telle qu'un poste l'enverrait (UUID deterministe de espece + date). */
+    protected function ligneFicheJournee(string $espece = 'goliaths', string $jour = '2026-11-05', array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => \App\Support\UuidDeterministe::ficheJournee($espece, $jour),
+            'espece' => $espece,
+            'date' => $jour,
+            'achat' => 0, 'ne' => 0, 'vente' => 0,
+            'mort_cat1' => 0, 'mort_cat2' => 0, 'mort_cat3' => 0, 'mort_cat4' => null,
+            'don_cat1' => 0, 'don_cat2' => 0, 'don_cat3' => 0, 'don_cat4' => null,
+            'effectif' => 10, 'eff_cat1_day' => 4, 'eff_cat2_day' => 3, 'eff_cat3_day' => 3, 'eff_cat4_day' => null,
+            'srh' => null, 'ts' => null, 'stock_final_oeufs' => null,
+            'oeufs_pondus' => null, 'oeufs_casses' => null, 'sorties_plateaux' => null,
+            'poids_general_g' => null,
+            'traitement_obs' => null,
+            'traitement_valide' => false,
+            'is_recorded' => true,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
+
+    /** Le compteur de ventes du jour d'UN poste (UUID deterministe de espece + date + poste). */
+    protected function ligneVentesJour(string $device, string $espece = 'goliaths', string $jour = '2026-11-05', array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => \App\Support\UuidDeterministe::ventesJour($espece, $jour, $device),
+            'espece' => $espece,
+            'date' => $jour,
+            'qte' => 2,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
+
+    /** Une bande telle qu'un poste l'enverrait. */
+    protected function ligneBande(string $code = 'B1', array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'espece' => 'goliaths',
+            'code' => $code,
+            'date_mise_en_bande' => '2026-10-01',
+            'effectif_initial' => 100,
+            'date_cloture' => null,
+            'observations' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge);
+    }
 }
