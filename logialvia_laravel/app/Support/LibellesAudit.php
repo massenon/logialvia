@@ -52,6 +52,20 @@ class LibellesAudit
         return self::ACTIONS[$code] ?? $code;
     }
 
+    /** Module d'origine d'une action (colonne « Module » du journal personnel du Dart). */
+    public static function module(string $code): string
+    {
+        return match (explode('.', $code)[0]) {
+            'web', 'api', 'login' => 'Authentification',
+            'utilisateur' => 'Administration',
+            'sync' => 'Synchronisation',
+            'comptabilite' => 'Comptabilité',
+            'corbeille', 'sauvegarde', 'parametres' => 'Paramètres',
+            'message_editeur' => 'Compte',
+            default => $code,
+        };
+    }
+
     /** @return list<string> « cle : valeur », secrets masques. */
     public static function detail(?array $detail): array
     {

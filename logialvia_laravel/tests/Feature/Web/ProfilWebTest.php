@@ -199,4 +199,85 @@ class ProfilWebTest extends TestCase
 
         $this->actingAs($u)->get('/profil')->assertRedirect();
     }
+
+    // ------------------------------------------- Metadonnees de session et journal (doc 47u §5)
+
+    private function trace(User $u, string $action, string $quand, array $detail = []): void
+    {
+        $l = AuditLog::query()->create(['action' => $action, 'utilisateur_id' => $u->id, 'identifiant' => $u->username, 'detail' => $detail ?: null]);
+        $l->forceFill(['created_at' => $quand])->save();
+    }
+
+    public function test_premiere_connexion_quand_il_n_y_en_a_qu_une(): void
+    {
+        $u = $this->utilisateur('caissier');
+        $this->trace($u, 'web.login', '2026-11-05 08:00:00');
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->assertSeeHtml('data-profil="derniere-connexion">Première connexion<')->assertSeeHtml('data-profil="connexions">1<')
+            ->assertSeeHtml('data-profil="statut">Actif<');
+    }
+
+    public function test_la_derniere_connexion_est_la_precedente_web_ou_poste_et_elles_sont_comptees(): void
+    {
+        $u = $this->utilisateur('caissier');
+        $autre = $this->utilisateur('admin', 'autre', 'Autre');
+        $this->trace($u, 'web.login', '2026-11-01 08:00:00');
+        $this->trace($u, 'api.login', '2026-11-03 22:30:00'); // 23h30 a Natitingou : la precedente
+        $this->trace($u, 'web.login', '2026-11-05 08:00:00'); // la session en cours
+        $this->trace($u, 'login.failed', '2026-11-06 08:00:00'); // pas une connexion
+        $this->trace($autre, 'web.login', '2026-11-07 08:00:00'); // celle d'un autre compte
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->assertSeeHtml('data-profil="derniere-connexion">03/11/2026 23:30<')->assertSeeHtml('data-profil="connexions">3<');
+    }
+
+    public function test_le_journal_personnel_ne_montre_que_ses_propres_actions_avec_module_et_libelle(): void
+    {
+        $u = $this->utilisateur('caissier');
+        $autre = $this->utilisateur('admin', 'autre', 'Autre');
+        $this->trace($u, 'web.login', '2026-11-05 08:00:00');
+        $this->trace($u, 'web.mot_de_passe_change', '2026-11-05 09:00:00');
+        $this->trace($autre, 'utilisateur.cree', '2026-11-05 10:00:00', ['cible' => 'secret-cible']);
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->assertSeeHtml('data-ligne-journal="web.login"')->assertSee('Connexion web')->assertSee('Mot de passe changé (web)')
+            ->assertSee('Authentification')->assertSee('05/11/2026 10:00')
+            ->assertDontSeeHtml('data-ligne-journal="utilisateur.cree"')->assertDontSee('secret-cible');
+    }
+
+    public function test_le_journal_est_limite_aux_vingt_dernieres_actions_du_plus_recent_au_plus_ancien(): void
+    {
+        $u = $this->utilisateur('caissier');
+        for ($i = 1; $i <= 25; $i++) {
+            $this->trace($u, 'web.login', now()->subMinutes(100 - $i)->format('Y-m-d H:i:s'));
+        }
+
+        $c = Livewire::actingAs($u)->test(Profil::class);
+        $this->assertCount(20, $c->viewData('journal'));
+        $this->assertSame(25, $c->viewData('nombreConnexions'));
+    }
+
+    public function test_journal_vide_et_aucun_detail_technique_expose(): void
+    {
+        $u = $this->utilisateur('caissier');
+        $this->trace($u, 'sync.push', '2026-11-05 08:00:00', ['jeton' => 'SECRET-JETON', 'poste' => 'P1']);
+
+        $html = Livewire::actingAs($u)->test(Profil::class)->html();
+        $this->assertStringNotContainsString('SECRET-JETON', $html);
+        Livewire::actingAs($this->utilisateur('animalier', 'ali', 'Ali'))->test(Profil::class)->assertSee('Aucune action enregistrée pour ce compte');
+    }
+
+    public function test_un_nouveau_mot_de_passe_identique_a_l_ancien_est_refuse(): void
+    {
+        $u = $this->utilisateur('caissier');
+
+        Livewire::actingAs($u)->test(Profil::class)
+            ->set('actuel', 'Ancien-mot-de-passe-1')->set('nouveau', 'Ancien-mot-de-passe-1')->set('confirmation', 'Ancien-mot-de-passe-1')
+            ->call('enregistrer')->assertSet('erreur', 'Le nouveau mot de passe doit être différent de l\'ancien.');
+
+        $this->assertTrue(Hash::check('Ancien-mot-de-passe-1', $u->fresh()->password));
+        $this->assertSame(0, AuditLog::query()->where('action', 'web.mot_de_passe_change')->count());
+    }
 }
+

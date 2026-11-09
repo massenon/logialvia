@@ -42,6 +42,12 @@ class ChangerMotDePasse extends Component
 
             return;
         }
+        // Regle du Dart (`CompteViewModel.changerMotDePasse`) : un changement qui ne change rien est refuse.
+        if ($this->nouveau === $this->actuel) {
+            $this->erreur = 'Le nouveau mot de passe doit être différent de l\'ancien.';
+
+            return;
+        }
 
         $utilisateur->forceFill(['password' => $this->nouveau, 'must_change_password' => false])->save();
         // Les postes de cet utilisateur devront se reconnecter.
