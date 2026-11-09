@@ -217,6 +217,45 @@ class SoinsCalendrierWebTest extends TestCase
         $this->assertTrue($s->serveur_modifie_le->greaterThanOrEqualTo(now()->subSeconds(2)), 'le curseur de tirage avance : les postes la recevront');
     }
 
+    private function bande(string $espece, string $code): \App\Models\Bande
+    {
+        return \App\Models\Bande::query()->create([
+            'id' => (string) Str::uuid(), 'device_id' => (string) Str::uuid(), 'espece' => $espece, 'code' => $code,
+            'date_mise_en_bande' => '2026-10-01', 'updated_at' => now(), 'serveur_modifie_le' => now(),
+        ]);
+    }
+
+    public function test_le_soin_garde_le_lien_de_sa_bande_et_le_registre_l_affiche(): void
+    {
+        $b = $this->bande('goliaths', 'B7');
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('nouveauSoin')
+            ->set('espece', 'goliaths')->assertSeeHtml('data-champ="bande-soin"')
+            ->set('bandeId', $b->id)->set('dateSoin', '2026-11-05')->set('typeSoin', 'Vermifuge')->call('enregistrerSoin')
+            ->assertSet('erreur', null)->assertSeeHtml('data-bande-soin')->assertSee('B7');
+
+        $this->assertSame($b->id, SoinCalendrier::query()->firstOrFail()->bande_id);
+    }
+
+    public function test_une_bande_d_une_autre_filiere_est_refusee_et_changer_de_lot_l_efface(): void
+    {
+        $autre = $this->bande('pintades', 'P1');
+        $c = Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('nouveauSoin')
+            ->set('espece', 'goliaths')->set('bandeId', $autre->id)->set('dateSoin', '2026-11-05')->set('typeSoin', 'Vermifuge')
+            ->call('enregistrerSoin')->assertSet('erreur', 'Cette bande n\'appartient pas à cette filière.');
+        $this->assertSame(0, SoinCalendrier::query()->count());
+
+        $c->set('espece', 'pintades')->set('bandeId', $autre->id)->set('espece', 'goliaths')->assertSet('bandeId', '');
+    }
+
+    public function test_un_soin_sans_bande_reste_libre(): void
+    {
+        $this->bande('goliaths', 'B7');
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('nouveauSoin')
+            ->set('espece', 'goliaths')->set('dateSoin', '2026-11-05')->set('typeSoin', 'Vermifuge')->call('enregistrerSoin');
+
+        $this->assertNull(SoinCalendrier::query()->firstOrFail()->bande_id);
+    }
+
     public function test_sans_la_case_le_soin_est_planifie(): void
     {
         Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('nouveauSoin')
@@ -303,12 +342,12 @@ class SoinsCalendrierWebTest extends TestCase
         $this->assertSame(Catalogue::POSTE_WEB, $e->device_id);
     }
 
-    public function test_reintegrer_cloture_l_entree_et_le_deces_n_existe_pas_au_web(): void
+    public function test_reintegrer_cloture_l_entree(): void
     {
         $e = $this->entree();
 
         $c = Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('choisirOnglet', 'infirmerie')
-            ->assertSee('Réintégrer')->assertDontSee('Décès');
+            ->assertSee('Réintégrer')->assertSee('Décès');
         $c->call('reintegrer', $e->id)->assertSee('Entrée clôturée : réintégré.');
 
         $e->refresh();
@@ -317,6 +356,127 @@ class SoinsCalendrierWebTest extends TestCase
         $this->assertNull($e->categorie_mortalite);
 
         $c->call('reintegrer', $e->id)->assertSee('Cette entrée est déjà clôturée.');
+    }
+
+    // ------------------------------------------------ deces avec report (`47e_`)
+
+    private function ficheGoliaths(string $jour, array $surcharge = []): \App\Models\FicheJournee
+    {
+        $f = (new \App\Models\FicheJournee)->forceFill(array_merge([
+            'id' => \App\Support\UuidDeterministe::ficheJournee('goliaths', $jour), 'device_id' => (string) Str::uuid(),
+            'espece' => 'goliaths', 'date' => $jour, 'achat' => 0, 'ne' => 0, 'vente' => 0,
+            'mort_cat1' => 0, 'mort_cat2' => 0, 'mort_cat3' => 0, 'mort_cat4' => null,
+            'don_cat1' => 0, 'don_cat2' => 0, 'don_cat3' => 0, 'don_cat4' => null,
+            'effectif' => 0, 'eff_cat1_day' => 0, 'eff_cat2_day' => 0, 'eff_cat3_day' => 0, 'eff_cat4_day' => null,
+            'traitement_valide' => false, 'is_recorded' => true,
+            'updated_at' => now()->subDay(), 'serveur_modifie_le' => now()->subDay(),
+        ], $surcharge));
+        $f->save();
+
+        return $f;
+    }
+
+    public function test_un_deces_porte_la_perte_sur_la_fiche_et_se_memorise(): void
+    {
+        $veille = $this->aujourdhui()->subDay()->format('Y-m-d');
+        $this->ficheGoliaths($veille, ['effectif' => 30, 'eff_cat1_day' => 10, 'eff_cat2_day' => 10, 'eff_cat3_day' => 10]);
+        $e = $this->entree();
+
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)->call('choisirOnglet', 'infirmerie')
+            ->call('ouvrirDeces', $e->id)->assertSeeHtml('data-deces-formulaire')
+            ->set('decesCategorie', '2')->call('declarerDeces')
+            ->assertSet('message', 'Décès enregistré : la perte est portée sur la fiche d\'élevage.');
+
+        $e->refresh();
+        $this->assertSame('Décédé', $e->statut);
+        $this->assertSame(2, $e->categorie_mortalite);
+        $this->assertSame($this->aujourdhui()->format('Y-m-d'), $e->date_sortie->format('Y-m-d'));
+        // La fiche du jour : 1 mort en categorie 3, effectif 29, jour marque saisi.
+        $jour = \App\Models\FicheJournee::query()->where('date', $this->aujourdhui()->format('Y-m-d'))->sole();
+        $this->assertSame([0, 0, 1], [$jour->mort_cat1, $jour->mort_cat2, $jour->mort_cat3]);
+        $this->assertSame(29, $jour->effectif);
+        $this->assertSame([10, 10, 9], [$jour->eff_cat1_day, $jour->eff_cat2_day, $jour->eff_cat3_day]);
+        $this->assertTrue($jour->is_recorded);
+    }
+
+    public function test_le_deces_s_ajoute_aux_mouvements_deja_saisis_et_la_cascade_suit(): void
+    {
+        $aujourdhui = $this->aujourdhui()->format('Y-m-d');
+        $demain = $this->aujourdhui()->addDay()->format('Y-m-d');
+        $this->ficheGoliaths($aujourdhui, ['achat' => 20, 'mort_cat1' => 2, 'effectif' => 18, 'eff_cat1_day' => 18]);
+        $this->ficheGoliaths($demain, ['effectif' => 18, 'eff_cat1_day' => 18]);
+        $e = $this->entree();
+
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $e->id)->set('decesCategorie', '0')->call('declarerDeces');
+
+        $j = \App\Models\FicheJournee::query()->where('date', $aujourdhui)->sole();
+        $this->assertSame([20, 3, 17], [$j->achat, $j->mort_cat1, $j->effectif], 'achats conserves, mort ajoutee');
+        $this->assertSame(17, \App\Models\FicheJournee::query()->where('date', $demain)->sole()->effectif, 'cascade sur le lendemain');
+    }
+
+    public function test_un_deces_sans_fiche_remplie_se_declare_quand_meme(): void
+    {
+        // Aucune entree sur la fiche : la mort depasse l'effectif connu, mais un deces sanitaire se declare toujours.
+        $e = $this->entree();
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $e->id)->set('decesCategorie', '0')->call('declarerDeces')->assertSet('erreur', null);
+
+        $this->assertSame('Décédé', $e->fresh()->statut);
+        $this->assertSame(0, \App\Models\FicheJournee::query()->where('date', $this->aujourdhui()->format('Y-m-d'))->sole()->effectif);
+    }
+
+    public function test_un_deces_sans_categorie_laisse_la_fiche_inchangee(): void
+    {
+        $e = $this->entree();
+        Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $e->id)->call('declarerDeces')
+            ->assertSet('message', 'Décès enregistré : la fiche d\'élevage est inchangée.');
+
+        $e->refresh();
+        $this->assertSame('Décédé', $e->statut);
+        $this->assertNull($e->categorie_mortalite);
+        $this->assertSame(0, \App\Models\FicheJournee::query()->count());
+    }
+
+    public function test_un_deces_ne_se_compte_pas_deux_fois(): void
+    {
+        $e = $this->entree();
+        $c = Livewire::actingAs($this->admin())->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $e->id)->set('decesCategorie', '0')->call('declarerDeces');
+        $c->call('ouvrirDeces', $e->id)->set('decesCategorie', '0')->call('declarerDeces')->assertSet('message', 'Cette entrée est déjà clôturée.');
+
+        $this->assertSame(1, \App\Models\FicheJournee::query()->sole()->mort_cat1);
+    }
+
+    public function test_une_categorie_hors_filiere_ou_une_entree_sans_filiere_est_refusee(): void
+    {
+        $e = $this->entree();
+        $admin = $this->admin();
+        Livewire::actingAs($admin)->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $e->id)->set('decesCategorie', '7')->call('declarerDeces')
+            ->assertSet('erreur', "Catégorie d'effectif inconnue pour cette filière.");
+        $this->assertSame('En cours', $e->fresh()->statut);
+
+        $sans = $this->entree(['espece' => null]);
+        Livewire::actingAs($admin)->test(SoinsCalendrier::class)
+            ->call('ouvrirDeces', $sans->id)->set('decesCategorie', '0')->call('declarerDeces')
+            ->assertSet('erreur', 'Cette entrée ne désigne aucune filière : le décès ne peut être porté sur aucune fiche.');
+        $this->assertSame('En cours', $sans->fresh()->statut);
+        $this->assertSame(0, \App\Models\FicheJournee::query()->count());
+    }
+
+    public function test_declarer_un_deces_exige_le_droit_de_gerer(): void
+    {
+        $e = $this->entree();
+        $role = \Spatie\Permission\Models\Role::create(['name' => 'lecteur-elevage', 'guard_name' => 'web']);
+        $role->givePermissionTo('view-elevage');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $lecteur = $this->utilisateur('lecteur-elevage', 'lecteur');
+
+        Livewire::actingAs($lecteur)->test(SoinsCalendrier::class)->call('ouvrirDeces', $e->id)->assertForbidden();
+        Livewire::actingAs($lecteur)->test(SoinsCalendrier::class)->set('decesEntreeId', $e->id)->call('declarerDeces')->assertForbidden();
+        $this->assertSame('En cours', $e->fresh()->statut);
     }
 
     public function test_un_deces_declare_au_poste_garde_sa_marque_apres_un_geste_du_web(): void

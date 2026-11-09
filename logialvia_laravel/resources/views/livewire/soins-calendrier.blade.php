@@ -81,7 +81,7 @@
                     @forelse ($soins as $s)
                         <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-soin="{{ $s->id }}">
                             <td class="px-md py-sm">{{ $s->date_prevue->format('d/m/Y') }}</td>
-                            <td class="px-md py-sm">{{ $toutesEspeces[$s->espece] ?? $s->espece }}</td>
+                            <td class="px-md py-sm">{{ $toutesEspeces[$s->espece] ?? $s->espece }}@if ($s->bande_id && isset($codesBande[$s->bande_id])) <span class="text-caption text-outline" data-bande-soin>· {{ $codesBande[$s->bande_id] }}</span>@endif</td>
                             <td class="px-md py-sm">{{ $s->type_soin }}</td>
                             <td class="px-md py-sm">{{ $s->produit ?? '—' }}</td>
                             <td class="px-md py-sm">{{ $s->dose ?? '—' }}</td>
@@ -220,6 +220,21 @@
                                     @if ($e->statut === 'En cours')
                                         @if ($peutGerer)
                                             <button type="button" wire:click="reintegrer('{{ $e->id }}')" class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Réintégrer</button>
+                                            <button type="button" wire:click="ouvrirDeces('{{ $e->id }}')" data-action="deces" class="rounded-lg border border-error-deep/40 px-sm py-xs font-semibold text-error-deep hover:bg-error-container">Décès</button>
+                                            @if ($decesEntreeId === $e->id)
+                                                <div class="mt-xs flex flex-wrap items-center justify-end gap-xs text-left" data-deces-formulaire>
+                                                    <select wire:model="decesCategorie" data-champ="deces-categorie" class="rounded-lg border border-outline-variant px-sm py-xs text-xs">
+                                                        <option value="">Ne pas toucher la fiche d'élevage</option>
+                                                        @if ($e->espece && \App\Support\FilieresElevage::existe($e->espece))
+                                                            @foreach (\App\Support\FilieresElevage::configuration($e->espece)['categories'] as $i => $categorie)
+                                                                <option value="{{ $i }}">Porter la perte sur : {{ $categorie[0] }}</option>
+                                                            @endforeach
+                                                        @endif
+                                                    </select>
+                                                    <button type="button" wire:click="declarerDeces" class="rounded-lg bg-error-deep px-sm py-xs font-semibold text-white">Confirmer le décès</button>
+                                                    <button type="button" wire:click="annulerDeces" class="rounded-lg border border-outline-variant px-sm py-xs font-semibold">Annuler</button>
+                                                </div>
+                                            @endif
                                         @endif
                                     @else
                                         <span class="text-outline">Clôturé le {{ $e->date_sortie?->format('d/m/Y') }}</span>
@@ -257,10 +272,17 @@
                 <h2 id="titre-modale" class="mb-md text-modal-title font-bold">{{ $modale === 'soin' ? 'Nouveau Soin' : 'Planifier une Intervention' }}</h2>
                 <div class="grid grid-cols-1 gap-sm sm:grid-cols-2">
                     <label class="text-xs sm:col-span-2">Lot / Bande *
-                        <select wire:model="espece" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                        <select wire:model.live="espece" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
                             <option value="">-- Sélectionner --</option>
                             @foreach ($especes as $id => $libelle)<option value="{{ $id }}">{{ $libelle }}</option>@endforeach
                         </select></label>
+                    @if ($bandesDeLaFiliere->isNotEmpty())
+                        <label class="text-xs sm:col-span-2">Bande concernée
+                            <select wire:model="bandeId" data-champ="bande-soin" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                                <option value="">Aucune bande précise</option>
+                                @foreach ($bandesDeLaFiliere as $b)<option value="{{ $b->id }}">{{ $b->code }}{{ $b->date_cloture ? ' (clôturée)' : '' }}</option>@endforeach
+                            </select></label>
+                    @endif
                     <label class="text-xs">{{ $modale === 'soin' ? 'Date du Soin *' : 'Date Prévue' }}
                         <input type="date" wire:model="dateSoin" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
                     @if ($modale === 'soin')

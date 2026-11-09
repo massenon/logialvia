@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\EntreeInfirmerie;
+use App\Services\FichesElevage;
 use App\Models\SoinCalendrier;
 use App\Support\FilieresElevage;
 use App\Sync\Tables\InfirmerieTable;
@@ -45,6 +46,9 @@ class SoinsCalendrier extends Component
 
     public string $dateSoin = '';
 
+    /** Bande du soin (facultatif) : le lien soin -> bande voyage avec le soin (`47e_`). */
+    public string $bandeId = '';
+
     public string $typeSoin = '';
 
     public string $produit = '';
@@ -68,6 +72,12 @@ class SoinsCalendrier extends Component
     public string $motif = '';
 
     public string $niveau = 'Simple surveillance';
+
+    /** Entree dont on declare le deces (la categorie d'effectif se choisit avant de confirmer). */
+    public ?string $decesEntreeId = null;
+
+    /** Index de la categorie d'effectif ou porter la perte ; `''` = ne pas toucher la fiche. */
+    public string $decesCategorie = '';
 
     public ?string $erreur = null;
 
@@ -173,8 +183,15 @@ class SoinsCalendrier extends Component
             'symptomes' => $this->texte($this->symptomes),
             'cout_fcfa' => $cout,
             'echeance_prophylaxie_id' => null,
+            'bande_id' => $this->bandeId !== '' ? $this->bandeId : null,
             'updated_at' => $this->instant(),
         ];
+    }
+
+    /** Changer de lot efface la bande choisie : elle appartenait a l'ancienne filiere. */
+    public function updatedEspece(): void
+    {
+        $this->bandeId = '';
     }
 
     private function ecrireSoin(array $ligne): ?string
@@ -199,6 +216,11 @@ class SoinsCalendrier extends Component
         }
         if (! $this->dateValide()) {
             $this->erreur = 'La date du soin est obligatoire.';
+
+            return;
+        }
+        if ($this->bandeId !== '' && ! \App\Models\Bande::query()->where('espece', $this->espece)->whereKey($this->bandeId)->exists()) {
+            $this->erreur = 'Cette bande n\'appartient pas à cette filière.';
 
             return;
         }
@@ -384,6 +406,100 @@ class SoinsCalendrier extends Component
         $this->message = $motif ?? 'Entrée clôturée : réintégré.';
     }
 
+    // -------------------------------------------------------------------- deces
+
+    public function ouvrirDeces(string $id): void
+    {
+        $this->verifierDroitDeGerer();
+        $this->decesEntreeId = $id;
+        $this->decesCategorie = '';
+        $this->message = $this->erreur = null;
+    }
+
+    public function annulerDeces(): void
+    {
+        $this->decesEntreeId = null;
+        $this->decesCategorie = '';
+    }
+
+    /**
+     * Declare le deces d'un sujet de l'infirmerie, et porte la perte sur la fiche d'elevage de la
+     * filiere (cascade comprise) si une categorie est choisie. Comme le poste : la cloture est ecrite
+     * AVANT le report, la marque « reportee » APRES lui — un echec en cours de route laisse une
+     * entree close et non reportee (etat honnete), jamais une perte comptee deux fois.
+     */
+    public function declarerDeces(): void
+    {
+        $this->verifierDroitDeGerer();
+        $this->message = $this->erreur = null;
+        $entree = $this->decesEntreeId === null ? null : EntreeInfirmerie::query()->find($this->decesEntreeId);
+        if ($entree === null) {
+            return;
+        }
+        if ($entree->statut !== 'En cours') {
+            $this->message = 'Cette entrée est déjà clôturée.';
+            $this->decesEntreeId = null;
+
+            return;
+        }
+        $categorie = trim($this->decesCategorie) === '' ? null : (ctype_digit(trim($this->decesCategorie)) ? (int) trim($this->decesCategorie) : -1);
+        if ($categorie === -1) {
+            $this->erreur = "Catégorie d'effectif inconnue pour cette filière.";
+
+            return;
+        }
+        $espece = $entree->espece;
+        if ($categorie !== null && ($espece === null || ! FilieresElevage::existe($espece))) {
+            $this->erreur = 'Cette entrée ne désigne aucune filière : le décès ne peut être porté sur aucune fiche.';
+
+            return;
+        }
+        if ($categorie !== null && $categorie >= FilieresElevage::nombreCategories($espece)) {
+            $this->erreur = "Catégorie d'effectif inconnue pour cette filière.";
+
+            return;
+        }
+
+        $sortie = max($this->aujourdhui(), $entree->date_entree->format('Y-m-d'));
+        $ligne = [
+            'id' => $entree->id,
+            'date_entree' => $entree->date_entree->format('Y-m-d'),
+            'sujet' => $entree->sujet, 'motif' => $entree->motif, 'niveau_isolement' => $entree->niveau_isolement,
+            'statut' => 'Décédé', 'date_sortie' => $sortie, 'espece' => $espece,
+            'categorie_mortalite' => null,
+            'updated_at' => $this->instant($entree->updated_at),
+        ];
+        $motif = app(InfirmerieTable::class)->absorber(Catalogue::POSTE_WEB, $ligne);
+        if ($motif !== null) {
+            $this->erreur = $motif;
+
+            return;
+        }
+
+        if ($categorie !== null) {
+            $report = (new FichesElevage($espece))->reporterDeces($categorie, $this->aujourdhui());
+            if ($report !== null) {
+                $this->erreur = "Entrée clôturée, mais la perte n'a pas été portée sur la fiche ($report) Saisissez-la sur la fiche d'élevage.";
+                $this->decesEntreeId = null;
+
+                return;
+            }
+            $ligne['categorie_mortalite'] = $categorie;
+            $ligne['updated_at'] = $this->instant(EntreeInfirmerie::query()->find($entree->id)->updated_at);
+            $motif = app(InfirmerieTable::class)->absorber(Catalogue::POSTE_WEB, $ligne);
+            if ($motif !== null) {
+                $this->erreur = $motif;
+                $this->decesEntreeId = null;
+
+                return;
+            }
+        }
+
+        $this->message = $categorie === null ? 'Décès enregistré : la fiche d\'élevage est inchangée.' : 'Décès enregistré : la perte est portée sur la fiche d\'élevage.';
+        $this->decesEntreeId = null;
+        $this->decesCategorie = '';
+    }
+
     // -------------------------------------------------------------------- rendu
 
     public function render()
@@ -426,6 +542,8 @@ class SoinsCalendrier extends Component
 
         return view('livewire.soins-calendrier', [
             'soins' => $soins,
+            'bandesDeLaFiliere' => $this->espece === '' ? collect() : \App\Models\Bande::query()->where('espece', $this->espece)->orderByDesc('date_mise_en_bande')->get(),
+            'codesBande' => \App\Models\Bande::query()->pluck('code', 'id')->all(),
             'entrees' => $entrees,
             'kpi' => $kpi,
             'remanences' => $remanences,

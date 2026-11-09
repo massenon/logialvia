@@ -300,6 +300,38 @@ class FichesElevage
         }
     }
 
+    // ----------------------------------------------- Deces d'infirmerie (`47e_`)
+
+    /**
+     * Porte UN deces d'infirmerie dans la fiche du jour (Dart : `ReporterDecesInfirmerieUseCase`) :
+     * la mort est AJOUTEE aux mouvements deja saisis (jamais substituee), les effectifs sont
+     * recalcules et la cascade propagee. La journee est creee si elle n'existe pas. Le controle de
+     * vraisemblance est suspendu : un deces sanitaire se declare toujours.
+     *
+     * @return string|null Le motif d'echec, ou `null` si la perte est portee.
+     */
+    public function reporterDeces(int $categorie, string $jour): ?string
+    {
+        $n = $this->nombreCategories();
+        if ($categorie < 0 || $categorie >= $n) {
+            return "Catégorie d'effectif inconnue pour cette filière.";
+        }
+        $existante = $this->journee($jour);
+        $d = $existante ? $this->versDomaine($existante) : null;
+        $morts = array_pad($d['morts'] ?? [], $n, 0);
+        $morts[$categorie]++;
+        $oeufs = $this->espece === 'pondeuses' ? [
+            'pondus' => $d['oeufs_pondus'] ?? 0, 'casses' => $d['oeufs_casses'] ?? 0, 'sorties' => $d['sorties_plateaux'] ?? 0,
+        ] : null;
+
+        return $this->enregistrer($jour, [
+            'achat' => $d['achat'] ?? 0, 'ne' => $d['ne'] ?? 0,
+            // Les ventes viennent du POS, jamais de la fiche : les relire evite de les remettre a zero.
+            'vente' => $this->venteDuJour($jour),
+            'morts' => $morts, 'dons' => array_pad($d['dons'] ?? [], $n, 0),
+        ], $d['poids_general_g'] ?? null, $d['traitement_obs'] ?? null, (bool) ($d['traitement_valide'] ?? false), $oeufs, false);
+    }
+
     // ------------------------------------------------- Rationnement (`47e_`)
 
     /** @return array<string, int> stade => g/tete/jour des baremes actifs de la filiere. */
