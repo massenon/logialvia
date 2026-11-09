@@ -6,7 +6,7 @@ import { lancerNavigateur, fermerNavigateur, executerScenarios, DOSSIER } from '
 const filtre = process.argv[2] ?? '';
 await lancerNavigateur();
 // L'ordre des fichiers est celui de la suite : fumee -> parcours -> transversaux.
-for (const f of ['fumee', 'parcours_commerce', 'parcours_documents', 'parcours_achats', 'parcours_elevage', 'parcours_compta', 'parcours_admin', 'transversaux']) {
+for (const f of ['fumee', 'parcours_commerce', 'parcours_documents', 'parcours_achats', 'parcours_elevage', 'parcours_compta', 'parcours_admin', 'parcours_postes', 'transversaux', 'transversaux_ui', 'transversaux_ecrans']) {
   if (fs.existsSync(new URL(`./${f}.mjs`, import.meta.url))) await import(`./${f}.mjs`);
 }
 console.log(`\nSuite navigateur LogiALVIA${filtre ? ` (filtre « ${filtre} »)` : ''}\n`);

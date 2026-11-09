@@ -106,7 +106,8 @@ scenario('depenses : saisie (SYSCOHADA), validation, correction, annulation', as
     egal([somme.d, somme.c], [18500, 18500], 'piece equilibree');
     // Correction : charge la depense dans le formulaire, change le montant.
     await page.locator(`tr[data-depense="${piece.numero_piece}"] [data-action=corriger-depense]`).click();
-    await calme(page); // la reponse du serveur remplit le formulaire : on attend avant de retaper le montant
+    // la reponse du serveur remplit le formulaire : on attend qu'il porte l'ancien montant avant de le retaper
+    await page.waitForFunction(() => /^18\s?500/.test(document.querySelector('#montant').value));
     await form.locator('#montant').fill('19000');
     await form.locator('[data-action=enregistrer]').click();
     await attendreTexte(page, '19 000', { zone: '[data-table=depenses]' });

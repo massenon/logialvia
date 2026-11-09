@@ -36,7 +36,7 @@ scenario('fiche goliaths : saisie du jour (mortalite), controle de vraisemblance
     await page.fill('[data-champ=observation]', 'RAS - ration normale');
     await attendreTexte(page, String(veille.effectif - 3), { zone: '[data-total=effectif]' }); // effectif calcule en direct
     await page.click('button:has-text("Enregistrer")');
-    await page.waitForFunction(() => /enregistr/i.test(document.body.innerText));
+    await attendreTexte(page, /enregistrée avec succès/);
     const f = un("select * from fiche_journee where espece='goliaths' and substr(date,1,10)=?", [iso()]);
     verifier(f && f.mort_cat1 === 2 && f.don_cat1 === 1 && f.effectif === veille.effectif - 3, `fiche du jour en base : ${JSON.stringify(f)}`);
     egal(f.observation ?? f.traitement_obs ?? 'RAS - ration normale', 'RAS - ration normale', 'observation');

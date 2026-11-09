@@ -32,7 +32,7 @@ foreach (['bovins', 'pisciculture', 'cuniculture', 'heliciculture', 'aviculture_
 }
 ParametresEntreprise::query()->update([
     'raison_sociale' => 'ALLMANY ET COMPAGNIE', 'adresse_siege' => 'Cotonou, Benin', 'telephone' => '+229 01 97 00 00 00',
-    'ifu' => '3202000000001', 'mecef_actif' => true, 'mecef_url' => 'http://127.0.0.1:9/mecef', 'mecef_nim' => 'NIM123',
+    'ifu' => '3202000000001', 'rccm' => 'RB/COT/26 A 0001', 'mecef_actif' => true, 'mecef_url' => 'http://127.0.0.1:9/mecef', 'mecef_nim' => 'NIM123',
 ]);
 
 $produits = [
@@ -110,4 +110,10 @@ foreach (['goliaths', 'pintades'] as $esp) {
         }
     }
 }
+// Un poste appaire (ecran « Postes & Appairage »).
+\App\Models\Poste::query()->create([
+    'device_id' => '11111111-2222-4333-8444-555555555555', 'code' => 'P1', 'dernier_utilisateur_id' => $u['admin']->id,
+    'appaire_le' => now()->subDays(3), 'dernier_contact_le' => now()->subHour(),
+]);
+$u['admin']->createToken('11111111-2222-4333-8444-555555555555', ['*'], now()->addDays(30)); // jeton du poste : etat « appaire »
 echo "donnees ok\n";
