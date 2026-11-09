@@ -74,6 +74,7 @@
                             <th class="px-md py-sm text-right">Montant</th>
                             <th class="px-md py-sm text-right">Expire le</th>
                             <th class="px-md py-sm">Statut</th>
+                            <th class="px-md py-sm">Document</th>
                             @if ($peutGerer)<th class="px-md py-sm text-right">Actions</th>@endif
                         </tr>
                     </thead>
@@ -86,6 +87,8 @@
                                 <td class="px-md py-sm text-right">{{ number_format($d->montant_estime, 0, ',', ' ') }}</td>
                                 <td class="px-md py-sm text-right">{{ $d->dateExpiration()->timezone($fuseau)->format('d/m/Y') }}</td>
                                 <td class="px-md py-sm"><span class="rounded-full px-sm py-xs font-bold {{ $badge($d) }}">{{ $libelles($d) }}</span></td>
+                                <td class="px-md py-sm"><a href="{{ route('ventes.devis.imprimer', $d->id) }}" target="_blank" rel="noopener" data-action="imprimer"
+                                       class="rounded-lg border border-outline-variant px-sm py-xs font-semibold text-brand-navy hover:bg-surface-zebra">Imprimer / PDF</a></td>
                                 @if ($peutGerer)
                                     <td class="px-md py-sm text-right">
                                         <div class="flex flex-wrap justify-end gap-xs">
@@ -119,6 +122,7 @@
                         <p class="text-xs">{{ $d->client }} · {{ $d->objet }}</p>
                         <p class="font-bold">{{ number_format($d->montant_estime, 0, ',', ' ') }} FCFA</p>
                         <p class="text-caption text-outline">Expire le {{ $d->dateExpiration()->timezone($fuseau)->format('d/m/Y') }}</p>
+                        <p class="mt-xs"><a href="{{ route('ventes.devis.imprimer', $d->id) }}" target="_blank" rel="noopener" class="text-xs font-semibold text-brand-navy underline">Imprimer / PDF</a></p>
                         @if ($peutGerer)
                             <div class="mt-sm flex flex-wrap gap-sm">
                                 @if ($d->statut === 'emis')

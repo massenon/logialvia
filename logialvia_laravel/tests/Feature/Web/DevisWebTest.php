@@ -339,6 +339,46 @@ class DevisWebTest extends TestCase
         }
     }
 
+    // ------------------------------------------------------------ Vue imprimable
+
+    public function test_la_vue_imprimable_d_un_devis_exige_connexion_et_view_ventes(): void
+    {
+        $d = $this->devis(['client' => 'DOSSOU Félicité', 'objet' => 'Poulailler 20 m²', 'montant_estime' => 1500000, 'validite_jours' => 30,
+            'date_emission' => CarbonImmutable::parse('2026-11-05 10:00:00', 'UTC')]);
+        $url = route('ventes.devis.imprimer', $d->id);
+
+        $this->get($url)->assertRedirect(route('login'));
+        $this->actingAs($this->utilisateur('animalier', 'eleveur'))->get($url)->assertForbidden();
+        $this->actingAs($this->utilisateur('comptable', 'compta'))->get($url)->assertOk();
+        $r = $this->actingAs($this->utilisateur('caissier', 'amina'))->get($url)->assertOk();
+
+        $r->assertSee('Devis — DV-P1-2026-001')->assertSee('DOSSOU Félicité')->assertSee('Poulailler 20 m²')
+            ->assertSeeHtml('data-champ="montant">1 500 000 FCFA<')->assertSee('Émis le 05/11/2026')
+            ->assertSee('30 jours, jusqu\'au 05/12/2026', false)->assertSeeHtml('data-champ="statut">Émis<')
+            ->assertSeeHtml('data-mention="sans-valeur-de-facture"')->assertDontSeeHtml('data-mention="expire"')
+            ->assertSee('Imprimer / PDF')->assertSee('@media print')->assertSee('window.print()');
+    }
+
+    public function test_la_vue_imprimable_dit_expire_accepte_et_ignore_les_devis_supprimes(): void
+    {
+        $vieux = $this->devis(['date_emission' => now()->subDays(40), 'validite_jours' => 15]);
+        $accepte = $this->devis(['reference' => 'DV-P1-2026-002', 'statut' => 'accepte', 'date_emission' => now()->subDays(40), 'validite_jours' => 15]);
+        $supprime = $this->devis(['reference' => 'DV-P1-2026-003', 'supprime_le' => now()]);
+        $this->actingAs($this->utilisateur('caissier', 'amina'));
+
+        $this->get(route('ventes.devis.imprimer', $vieux->id))->assertSeeHtml('data-mention="expire"')->assertSeeHtml('data-champ="statut">Expiré<');
+        $this->get(route('ventes.devis.imprimer', $accepte->id))->assertDontSeeHtml('data-mention="expire"')->assertSeeHtml('data-champ="statut">Accepté<');
+        $this->get(route('ventes.devis.imprimer', $supprime->id))->assertNotFound();
+        $this->get(route('ventes.devis.imprimer', (string) Str::uuid()))->assertNotFound();
+    }
+
+    public function test_la_liste_propose_imprimer_a_tout_lecteur(): void
+    {
+        $d = $this->devis();
+        Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Devis::class)
+            ->assertSeeHtml('data-action="imprimer"')->assertSee(route('ventes.devis.imprimer', $d->id));
+    }
+
     // ------------------------------------------------------------------- XLSX
 
     public function test_export_xlsx_meme_contenu_que_l_ecran_filtres_compris(): void

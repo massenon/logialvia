@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DevisImprimableController;
 use App\Livewire\Devis;
 use Illuminate\Support\Facades\Route;
 
@@ -7,3 +8,7 @@ use Illuminate\Support\Facades\Route;
 // la matrice `config/logialvia.php` : cette matrice doit rester egale aux routes du poste (conformite Dart),
 // et le poste n'a pas de route a part pour cet onglet. Meme droit que `/ventes` : `view-ventes`.
 Route::get('/ventes/devis', Devis::class)->middleware('can:view-ventes')->name('ventes.devis');
+
+// Vue imprimable d'un devis (rangee en PDF par « Imprimer » du navigateur).
+Route::get('/ventes/devis/{devis}/imprimer', DevisImprimableController::class)
+    ->middleware('can:view-ventes')->name('ventes.devis.imprimer');
