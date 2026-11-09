@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Validator;
  *  - une vente et ses lignes forment UN lot : acceptees ou refusees ensemble (le tout
  *    dans la transaction du lot), servies ensemble au tirage (`lignes` imbriquees) ;
  *  - `reference` est le numero OFFICIEL (DV-21) : unique pour tous quand elle porte un
- *    code de poste (`V-P2-2026-001`), unique PAR POSTE quand elle n'en porte pas
+ *    code de poste (`V-P2-2026-001`) ou celui du web (`V-WEB-2026-001`), unique PAR POSTE
+ *    quand elle n'en porte pas
  *    (`V-2026-001`, ventes d'avant l'appairage : deux postes peuvent l'avoir) ;
  *  - les lignes sont IMMUABLES apres creation ; l'entete suit « dernier ecrivain gagne » ;
  *  - ni stock, ni ecriture comptable : le serveur enregistre le fait (`46_` §2.3).
@@ -60,10 +61,13 @@ class VentesTable extends TableSync
         return 'manage-ventes';
     }
 
-    /** Une reference a code de poste est globale ; sans code, elle est propre au poste. */
+    /** Code de poste de la vente saisie au web : `V-WEB-2026-001` (comme `OD-WEB-2026-0001`). */
+    public const CODE_WEB = 'WEB';
+
+    /** Une reference a code de poste (`P2`) ou du web (`WEB`) est globale ; sans code, propre au poste. */
     public static function porteeReference(string $reference, string $deviceId): string
     {
-        return preg_match('/^V-P\d+-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
+        return preg_match('/^V-(P\d+|WEB)-\d{4}-\d{3,}$/', $reference) === 1 ? '' : $deviceId;
     }
 
     public function exporter(Model $ligne): array
@@ -81,7 +85,7 @@ class VentesTable extends TableSync
     {
         $v = Validator::make($ligne, [
             'id' => ['required', 'uuid'],
-            'reference' => ['required', 'string', 'regex:/^V-(P\d+-)?\d{4}-\d{3,}$/'],
+            'reference' => ['required', 'string', 'regex:/^V-((P\d+|WEB)-)?\d{4}-\d{3,}$/'],
             'client' => ['required', 'string', 'max:255'],
             'client_id' => ['nullable', 'uuid'],
             'date_vente' => ['required', 'date'],
@@ -142,6 +146,7 @@ class VentesTable extends TableSync
 
         $saisie = CarbonImmutable::parse($ligne['updated_at'])->utc();
         $existante = Vente::query()->find($ligne['id']);
+        $ancienClient = $existante?->client_id; // lu AVANT l'ecriture : le modele est modifie en place
 
         $portee = self::porteeReference($ligne['reference'], $deviceId);
         $doublon = Vente::query()
@@ -200,7 +205,12 @@ class VentesTable extends TableSync
             ])->save();
         }
 
+        // Les DEUX clients : celui qui perd la vente (rattachee a un autre, ou a personne)
+        // et celui qui la recoit. Sans cela le solde de l'ancien client restait faux.
         $this->recalculerSolde($ligne['client_id'] ?? null);
+        if ($ancienClient !== null && $ancienClient !== ($ligne['client_id'] ?? null)) {
+            $this->recalculerSolde($ancienClient);
+        }
 
         return null;
     }
