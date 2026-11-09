@@ -173,6 +173,8 @@ return [
             \App\Sync\Tables\NotesAnnexesTable::class,
             \App\Sync\Tables\CloturesPeriodiquesTable::class,
             \App\Sync\Tables\ClotureExerciceTable::class,
+            // Messages a l'editeur (doc 47u §4) : un fait ouvert a tout compte.
+            \App\Sync\Tables\MessagesEditeurTable::class,
         ],
         // Lignes par table et par page de tirage.
         'lignes_par_page' => (int) env('SYNC_LIGNES_PAR_PAGE', 200),
