@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
+import 'package:logialvia_app/elevage/domain/entities/cycle_incubation.dart';
 import 'package:logialvia_app/core/database/seed/seed_initial.dart';
 import 'package:logialvia_app/rapports/data/repositories/inventaire_repository_drift.dart';
 import 'package:logialvia_app/rapports/domain/entities/inventaire.dart';
@@ -306,6 +307,39 @@ void main() {
         );
       }
       expect(inv.oeufsEnIncubation, 0);
+    });
+
+    test('les œufs d\'un lot « En Incubation » sont comptés (le statut réel, '
+        'avec sa majuscule)', () async {
+      await db
+          .into(db.cycleCouveuse)
+          .insert(
+            CycleCouveuseCompanion.insert(
+              espece: const Value('goliath'),
+              dateIncubation: DateTime(2026, 8, 1),
+              codeIncubation: 'C-TEST-1',
+              oeufsCouves: 200,
+              statut: StatutCycle.enIncubation,
+            ),
+          );
+      await db
+          .into(db.cycleCouveuse)
+          .insert(
+            CycleCouveuseCompanion.insert(
+              espece: const Value('goliath'),
+              dateIncubation: DateTime(2026, 8, 1),
+              codeIncubation: 'C-TEST-2',
+              oeufsCouves: 50,
+              statut: StatutCycle.eclosionEffectuee,
+            ),
+          );
+
+      final inv = await depot.construire(
+        debut: DateTime(2026, 11, 1),
+        fin: DateTime(2026, 11, 2),
+      );
+
+      expect(inv.oeufsEnIncubation, 200, reason: 'un lot éclos ne compte pas');
     });
   });
 

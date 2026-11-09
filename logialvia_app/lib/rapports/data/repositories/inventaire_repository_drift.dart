@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../elevage/domain/entities/configuration_espece.dart';
+import '../../../elevage/domain/entities/cycle_incubation.dart';
 import '../../domain/entities/inventaire.dart';
 
 /// Construit l'inventaire à une date, depuis les mouvements réellement tracés.
@@ -183,7 +184,8 @@ class InventaireRepositoryDrift {
     return lots
         .where(
           (l) =>
-              l.dateIncubation.isBefore(jusqua) && l.statut == 'En incubation',
+              l.dateIncubation.isBefore(jusqua) &&
+              l.statut == StatutCycle.enIncubation,
         )
         .fold<int>(
           0,
