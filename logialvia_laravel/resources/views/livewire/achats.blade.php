@@ -7,12 +7,35 @@
 
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
         <h1 class="text-page-title font-bold">Achats &amp; Commandes</h1>
+        <div class="flex flex-wrap gap-sm">
+            <a href="{{ url('/achats/impression') }}?statut={{ urlencode($statut) }}&amp;recherche={{ urlencode($recherche) }}" target="_blank" rel="noopener" data-action="imprimer-liste"
+               class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
+            <button type="button" wire:click="exporter" data-action="exporter"
+                    class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            @if ($peutGerer)
+                <button type="button" wire:click="nouveau" data-action="nouvelle-commande"
+                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Nouvelle commande</button>
+            @endif
+        </div>
     </div>
 
-    <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="lecture-seule">
-        Consultation seule. La commande d'achat, la réception (entrée en stock, PMP) et le règlement d'une dette
-        s'enregistrent sur le poste : le stock et le PMP lui sont propres.
-    </p>
+    @if ($peutGerer)
+        <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="stock-poste">
+            Le stock et le PMP sont propres à chaque poste. Ici, la réception inscrit les entrées au <strong>journal partagé</strong>
+            (poste d'origine : Web) mais ne met <strong>aucun stock ni PMP à jour</strong> : le poste qui a la marchandise ajuste son propre stock.
+        </p>
+    @else
+        <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="lecture-seule">
+            Consultation seule : seul l'administrateur passe, modifie, réceptionne, règle ou annule une commande.
+        </p>
+    @endif
+
+    @if ($message)
+        <p role="status" class="mb-md rounded-lg bg-success-container p-sm text-xs font-bold text-success-deep" data-message>{{ $message }}</p>
+    @endif
+    @if ($erreur && ! $formulaire && ! $aAnnuler)
+        <p role="alert" class="mb-md rounded-lg bg-error-container p-sm text-xs font-bold text-error-deep" data-erreur>{{ $erreur }}</p>
+    @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
         <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
@@ -56,7 +79,7 @@
                     <th class="px-md py-sm text-right">Payé</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
                     <th class="px-md py-sm text-center">Ancienneté</th>
-                    <th class="px-md py-sm text-right">Détail</th>
+                    <th class="px-md py-sm text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,7 +94,7 @@
                         <td class="px-md py-sm">{{ $noms[$a->fournisseur_id] ?? '—' }}</td>
                         <td class="px-md py-sm">{{ $a->mode ?: '—' }}</td>
                         <td class="px-md py-sm text-center">
-                            <span class="rounded-full px-sm py-xs font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : 'bg-brand-gold/20 text-brand-navy' }}" data-statut>{{ $a->statut }}</span>
+                            <span class="rounded-full px-sm py-xs font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : ($a->statut === 'Annulé' ? 'bg-error-container text-error-deep' : 'bg-brand-gold/20 text-brand-navy') }}" data-statut>{{ $a->statut }}</span>
                         </td>
                         <td class="px-md py-sm text-right">{{ $nombre($a->total) }}</td>
                         <td class="px-md py-sm text-right">{{ $nombre($a->paye) }}</td>
@@ -84,15 +107,32 @@
                                 <span class="text-outline">—</span>
                             @endif
                         </td>
-                        <td class="px-md py-sm text-right">
+                        <td class="whitespace-nowrap px-md py-sm text-right">
                             <button type="button" wire:click="basculer('{{ $a->id }}')" aria-expanded="{{ $detail?->id === $a->id ? 'true' : 'false' }}"
                                     class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">
                                 {{ $detail?->id === $a->id ? 'Masquer' : 'Lignes' }}</button>
+                            <a href="{{ url('/achats/'.$a->id.'/bon') }}" target="_blank" rel="noopener" data-action="bon-de-commande"
+                               class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Bon</a>
+                            @if ($peutGerer && $a->statut !== 'Annulé')
+                                @if ($a->statut === 'Commandé')
+                                    <button type="button" wire:click="modifier('{{ $a->id }}')" data-action="modifier"
+                                            class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Modifier</button>
+                                    <button type="button" wire:click="demanderReception('{{ $a->id }}')" data-action="receptionner"
+                                            class="rounded-lg border border-brand-navy px-sm py-xs font-semibold text-brand-navy hover:bg-surface-zebra">Réceptionner</button>
+                                @endif
+                                @if ($solde > 0)
+                                    <button type="button" wire:click="demanderReglement('{{ $a->id }}')" data-action="regler"
+                                            class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Régler</button>
+                                @endif
+                                <button type="button" wire:click="demanderAnnulation('{{ $a->id }}')" data-action="annuler-commande"
+                                        class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">Annuler</button>
+                            @endif
                         </td>
                     </tr>
                     @if ($detail?->id === $a->id)
                         <tr data-lignes-de="{{ $a->reference }}">
                             <td colspan="10" class="bg-surface-zebra px-md py-sm">
+                                <p class="mb-xs text-caption text-outline" data-echeance>Échéance : {{ $a->echeance ? $a->echeance->timezone($fuseau)->format('d/m/Y') : 'aucune convenue' }}</p>
                                 <table class="w-full text-left text-xs">
                                     <thead class="text-caption uppercase text-outline">
                                         <tr>
@@ -118,7 +158,7 @@
                     @endif
                 @empty
                     <tr><td colspan="10" class="px-md py-lg text-center text-outline">
-                        {{ $aucunAchat ? 'Aucune commande enregistrée. Les commandes se composent sur le poste.' : 'Aucun achat ne correspond.' }}</td></tr>
+                        {{ $aucunAchat ? 'Aucune commande enregistrée. Composez-en une avec « Nouvelle commande ».' : 'Aucun achat ne correspond.' }}</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -133,7 +173,7 @@
             <article class="rounded-lg border border-outline-variant bg-surface-card p-md" data-carte-achat="{{ $a->reference }}">
                 <div class="flex items-center justify-between gap-sm">
                     <p class="font-mono font-bold text-brand-navy">{{ $a->reference }}</p>
-                    <span class="rounded-full px-sm py-xs text-caption font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : 'bg-brand-gold/20 text-brand-navy' }}">{{ $a->statut }}</span>
+                    <span class="rounded-full px-sm py-xs text-caption font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : ($a->statut === 'Annulé' ? 'bg-error-container text-error-deep' : 'bg-brand-gold/20 text-brand-navy') }}">{{ $a->statut }}</span>
                 </div>
                 <p class="text-caption text-outline">{{ $a->date_achat->timezone($fuseau)->format('d/m/Y') }} · {{ $noms[$a->fournisseur_id] ?? '—' }} · {{ $a->mode ?: '—' }}</p>
                 <p class="text-xs">Montant {{ $nombre($a->total) }} F · Payé {{ $nombre($a->paye) }} F</p>
@@ -142,6 +182,19 @@
                 <button type="button" wire:click="basculer('{{ $a->id }}')"
                         class="mt-sm w-full rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold">
                     {{ $detail?->id === $a->id ? 'Masquer les lignes' : 'Voir les lignes' }}</button>
+                <div class="mt-sm flex flex-wrap gap-sm">
+                    <a href="{{ url('/achats/'.$a->id.'/bon') }}" target="_blank" rel="noopener" class="rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold">Bon de commande</a>
+                    @if ($peutGerer && $a->statut !== 'Annulé')
+                        @if ($a->statut === 'Commandé')
+                            <button type="button" wire:click="modifier('{{ $a->id }}')" class="rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold">Modifier</button>
+                            <button type="button" wire:click="demanderReception('{{ $a->id }}')" class="rounded-lg border border-brand-navy px-sm py-sm text-xs font-semibold text-brand-navy">Réceptionner</button>
+                        @endif
+                        @if ($solde > 0)
+                            <button type="button" wire:click="demanderReglement('{{ $a->id }}')" class="rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold">Régler</button>
+                        @endif
+                        <button type="button" wire:click="demanderAnnulation('{{ $a->id }}')" class="rounded-lg border border-error-deep px-sm py-sm text-xs font-semibold text-error-deep">Annuler</button>
+                    @endif
+                </div>
                 @if ($detail?->id === $a->id)
                     <ul class="mt-sm text-xs" data-lignes-carte="{{ $a->reference }}">
                         @foreach ($detail->lignes as $l)
@@ -155,7 +208,125 @@
             </article>
         @empty
             <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">
-                {{ $aucunAchat ? 'Aucune commande enregistrée. Les commandes se composent sur le poste.' : 'Aucun achat ne correspond.' }}</p>
+                {{ $aucunAchat ? 'Aucune commande enregistrée. Composez-en une avec « Nouvelle commande ».' : 'Aucun achat ne correspond.' }}</p>
         @endforelse
     </div>
+
+    @include('livewire.achats._reglement')
+
+    @if ($formulaire)
+        <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-commande" data-modale="commande">
+            <form wire:submit="enregistrer" class="my-md w-full max-w-2xl rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-commande" class="mb-md text-modal-title font-bold">{{ $achatId ? 'Modifier la commande' : 'Nouvelle commande' }}</h2>
+
+                <h3 class="mb-xs text-xs font-bold uppercase text-outline">Panier d'Achat</h3>
+                <div class="mb-sm flex gap-sm">
+                    <select wire:model="intrantAjoute" aria-label="Intrant à commander" class="min-w-0 flex-1 rounded-lg border border-outline-variant px-sm py-sm text-xs" data-champ="intrant">
+                        <option value="">Intrant à commander…</option>
+                        @foreach ($intrants as $i)
+                            <option value="{{ $i->code }}">{{ $i->name }} ({{ $i->unit }})</option>
+                        @endforeach
+                    </select>
+                    <button type="button" wire:click="ajouterIntrant" data-action="ajouter-intrant" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Ajouter</button>
+                </div>
+                @if (count($lignes) === 0)
+                    <p class="mb-sm rounded-lg bg-surface-zebra p-sm text-xs text-outline">Choisissez un intrant pour l'ajouter. Le prix unitaire est à saisir : le PMP est propre à chaque poste.</p>
+                @endif
+                @foreach ($lignes as $i => $l)
+                    <div class="mb-xs flex items-center gap-sm" data-ligne-panier="{{ $l['intrant_code'] }}">
+                        <span class="min-w-0 flex-1 truncate text-xs font-bold">{{ $intrantsParCode[$l['intrant_code']]->name ?? $l['intrant_code'] }}
+                            <span class="font-normal text-outline">({{ $intrantsParCode[$l['intrant_code']]->unit ?? '' }})</span></span>
+                        <input type="text" inputmode="numeric" wire:model.live.debounce.300ms="lignes.{{ $i }}.qte" aria-label="Quantité" placeholder="Qté"
+                               class="w-16 rounded-lg border border-outline-variant px-sm py-xs text-center text-xs">
+                        <input type="text" inputmode="decimal" wire:model.live.debounce.300ms="lignes.{{ $i }}.pu" aria-label="Prix unitaire" placeholder="Prix unitaire"
+                               class="w-24 rounded-lg border border-outline-variant px-sm py-xs text-center text-xs">
+                        <button type="button" wire:click="retirerLigne({{ $i }})" aria-label="Retirer la ligne" class="px-xs text-error-deep">✕</button>
+                    </div>
+                @endforeach
+
+                <div class="mt-md grid grid-cols-1 gap-sm sm:grid-cols-2">
+                    <label class="block text-xs">Fournisseur *
+                        <select wire:model="fournisseurId" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm" data-champ="fournisseur">
+                            <option value="">-- Sélectionner --</option>
+                            @foreach ($fournisseurs as $f)
+                                <option value="{{ $f->id }}">{{ $f->nom }}</option>
+                            @endforeach
+                        </select>
+                        @if ($fournisseurs->isEmpty())
+                            <span class="text-caption text-error-deep">Créez d'abord un fournisseur depuis l'écran Fournisseurs.</span>
+                        @endif
+                    </label>
+                    <label class="block text-xs">Mode de règlement
+                        <select wire:model="mode" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                            @foreach ($modes as $m)
+                                <option value="{{ $m }}">{{ $m }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block text-xs">Montant réglé
+                        <input type="text" inputmode="decimal" wire:model="paye" {{ $achatId ? 'disabled' : '' }} class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm disabled:bg-surface-zebra">
+                        @if ($achatId)<span class="text-caption text-outline">Un règlement se saisit par « Régler ».</span>@endif
+                    </label>
+                    <label class="block text-xs">Échéance de la dette (facultatif)
+                        <input type="date" wire:model="echeance" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm" data-champ="echeance">
+                    </label>
+                </div>
+                @unless ($achatId)
+                    <label class="mt-sm flex items-center gap-sm text-xs">
+                        <input type="checkbox" wire:model="livree" class="rounded border-outline-variant">
+                        Livrée immédiatement (inscrit les entrées au journal ; le stock et le PMP restent propres à chaque poste)
+                    </label>
+                @endunless
+
+                <p class="mt-md text-right text-section-title font-bold" data-total-panier>TOTAL {{ number_format($totalPanier, 0, ',', ' ') }} FCFA</p>
+
+                @if ($erreur)
+                    <p role="alert" class="mt-sm text-xs font-bold text-error-deep" data-erreur-formulaire>{{ $erreur }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="annulerFormulaire" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" data-action="valider-commande" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">{{ $achatId ? 'Enregistrer la modification' : 'Valider la Commande' }}</button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    @if ($confirmationReception)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-reception" data-modale="reception">
+            <div class="w-full max-w-md rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-reception" class="mb-sm text-modal-title font-bold">Réceptionner {{ $confirmationReception->reference }} ?</h2>
+                <p class="mb-md text-xs">Une entrée par ligne est inscrite au journal partagé. <strong>Le stock et le PMP ne sont pas modifiés</strong> : ils sont propres à chaque poste
+                    (si la commande a été passée sur un poste, ce poste n'augmente pas son stock du fait d'une réception faite ici).</p>
+                <div class="flex justify-end gap-sm">
+                    <button type="button" wire:click="annulerReception" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="button" wire:click="confirmerReception" data-action="confirmer-reception" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Réceptionner</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($confirmationAnnulation)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-annulation" data-modale="annulation">
+            <div class="w-full max-w-md rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-annulation" class="mb-sm text-modal-title font-bold">Annuler {{ $confirmationAnnulation->reference }} ?</h2>
+                <p class="mb-sm text-xs">Les écritures de la commande sont <strong>extournées</strong> (écritures inverses, elles ne sont pas supprimées).
+                    @if ($confirmationAnnulation->paye > 0)
+                        <strong class="text-error-deep">{{ number_format($confirmationAnnulation->paye, 0, ',', ' ') }} FCFA ont été réglés : l'extourne suppose que le fournisseur les rembourse.</strong>
+                    @endif
+                    @if ($confirmationAnnulation->statut === 'Livré')
+                        La commande est livrée : une sortie par ligne est inscrite au journal (stock des postes inchangé).
+                    @endif
+                </p>
+                <label class="block text-xs">Motif de l'annulation *
+                    <input type="text" wire:model="motifAnnulation" maxlength="120" data-champ="motif" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                @if ($erreur)
+                    <p role="alert" class="mt-sm text-xs font-bold text-error-deep" data-erreur-annulation>{{ $erreur }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="renoncerAnnulation" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Renoncer</button>
+                    <button type="button" wire:click="confirmerAnnulation" data-action="confirmer-annulation" class="rounded-lg bg-error-deep px-md py-sm text-xs font-semibold text-white">Annuler la commande</button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

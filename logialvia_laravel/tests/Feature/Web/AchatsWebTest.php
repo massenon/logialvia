@@ -83,14 +83,25 @@ class AchatsWebTest extends TestCase
         $this->actingAs($this->utilisateur('caissier', 'amina'))->get('/achats')->assertForbidden();
     }
 
-    public function test_l_admin_et_le_comptable_l_ouvrent_en_lecture_seule(): void
+    public function test_le_comptable_consulte_sans_aucune_action_et_l_admin_voit_la_declaration_du_stock(): void
     {
-        foreach ([['admin', 'chef'], ['comptable', 'compta']] as [$role, $nom]) {
-            $this->actingAs($this->utilisateur($role, $nom))->get('/achats')->assertOk()
-                ->assertSee('Achats &amp; Commandes', false)->assertDontSee('arrive bientôt')
-                ->assertSeeHtml('data-ecart="lecture-seule"')
-                ->assertDontSee('Valider la Commande')->assertDontSee('Réceptionner')->assertDontSee('Régler');
-        }
+        $f = $this->fournisseur();
+        $a = $this->achat($f, ['statut' => 'Commandé', 'total' => 8000, 'paye' => 0]);
+        $this->ligne($a);
+
+        $this->actingAs($this->utilisateur('comptable', 'compta'))->get('/achats')->assertOk()
+            ->assertSee('Achats &amp; Commandes', false)->assertDontSee('arrive bientôt')
+            ->assertSeeHtml('data-ecart="lecture-seule"')->assertDontSeeHtml('data-ecart="stock-poste"')
+            ->assertDontSee('Nouvelle commande')->assertDontSee('Réceptionner')->assertDontSee('Régler')
+            ->assertDontSeeHtml('data-action="modifier"')->assertDontSeeHtml('data-action="annuler-commande"')
+            ->assertSee('Imprimer / PDF')->assertSeeHtml('data-action="bon-de-commande"');
+
+        $this->actingAs($this->utilisateur('admin', 'chef'))->get('/achats')->assertOk()
+            ->assertSeeHtml('data-ecart="stock-poste"')->assertDontSeeHtml('data-ecart="lecture-seule"')
+            ->assertSee('aucun stock ni PMP à jour', false)
+            ->assertSeeHtml('data-action="nouvelle-commande"')->assertSeeHtml('data-action="receptionner"')
+            ->assertSeeHtml('data-action="modifier"')->assertSeeHtml('data-action="annuler-commande"')
+            ->assertSeeHtml('data-action="regler"');
     }
 
     // ----------------------------------------------------------------- Lecture
@@ -255,17 +266,13 @@ class AchatsWebTest extends TestCase
         $this->ligne($a);
         $avant = $a->fresh()->getAttributes();
 
-        $c = Livewire::actingAs($this->utilisateur('admin', 'chef'))->test(Achats::class)
+        $c = Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Achats::class)
             ->assertDontSee('Réceptionner')->assertDontSee('Valider la Commande')->assertDontSee('Régler')
-            ->assertDontSee('Ajouter')->assertDontSee('Supprimer');
+            ->assertDontSee('Nouvelle commande')->assertDontSee('Supprimer');
         $c->call('basculer', $a->id);
 
         $this->assertSame($avant, $a->fresh()->getAttributes());
         $this->assertSame(1, Achat::query()->count());
         $this->assertSame(1, LigneAchat::query()->count());
-        $this->assertSame([], array_values(array_filter(
-            get_class_methods(Achats::class),
-            fn (string $m) => in_array($m, ['enregistrer', 'receptionner', 'regler', 'modifier', 'supprimer'], true),
-        )), 'le composant n\'expose aucune methode d\'ecriture');
     }
 }
