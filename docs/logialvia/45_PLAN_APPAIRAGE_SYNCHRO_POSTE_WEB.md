@@ -224,7 +224,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | P1a | Poste : migration UUID par paliers (DV-19) et références à préfixe de poste (DV-21) | — | **paliers 1, 3 et 4 faits** : `clients` (v31), produits, lignes de vente, ventes (v33-v34), fournisseurs, achats, lignes d'achat (v35), références à préfixe de poste ; voir §6d-§6i. Restent 16 fichiers de tables |
 | P1b | Poste : appairage (identifiant de poste, adresse, jeton au coffre, onglet Appairage) | W2 (ou faux serveur) | **fait** (09/11/2026) : voir §6c |
 | P2 | Poste : moteur de synchronisation (pending, envoi, réception, descente) + bouton et modale | W3 (ou faux serveur) | **moteur fait** pour modules, paramètres, produits, clients, ventes (§6d-§6h) ; reste les autres tables |
-| W4+ | Écrans web par module, conformes au Dart | W1 | **en cours** : W4a coque, W4b Catalogue (§7) ; reste les autres écrans |
+| W4+ | Écrans web par module, conformes au Dart | W1 | **en cours** : W4a coque, W4b Catalogue, W4c Clients (§7) ; recette §8 ; reste les autres écrans |
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait
 sans avoir tourné.
@@ -262,3 +262,30 @@ l'icone d'un produit cree au web est `category`.
 
 **Reste a convertir** (page « bientot ») : tableau de bord, filieres d'elevage, ventes, clients, inventaire, factures MeCeF, achats,
 fournisseurs, depenses, gestion des stocks, comptabilite (6 ecrans), rapports, parametres, profil, aide, contact.
+
+**W4c — Clients et Créances** (`/clients`, lecture `view-ventes`, écriture `manage-ventes`). KPI (clients, solde total dû, soldes
+anciens > 10 j, événements CRM 7 j), liste avec recherche, ajout / modification / suppression douce (`supprime_le`), créances
+ouvertes (ventes `Avance` avec reste dû), anniversaires à venir. Les écritures passent par `ClientsTable::absorber` (même validation
+et même règle du dernier écrivain gagne que pour un poste) ; le solde reste dérivé des ventes. **Écart assumé** : l'enregistrement
+d'un recouvrement reste au poste (il modifie une vente) ; pas d'export PDF.
+
+**Registre des écrans.** Un écran = UN fichier `routes/ecrans/<nom>.php` qui appelle `Ecrans::declarer('/route', Composant::class)`
+(`app/Support/Ecrans.php`) : droit et module actif posés d'office (middleware `ecran.actif`). Ce qui n'est pas déclaré garde la page
+« bientôt ». Plusieurs écrans peuvent donc être convertis en parallèle sans toucher aux mêmes lignes.
+
+## 8. Recette de conversion d'un écran (à suivre à la lettre)
+
+1. **Lire le Dart d'abord** : l'écran (`logialvia_app/lib/<contexte>/presentation/screens/`), son view-model, ses libellés exacts
+   (titres, colonnes, KPI, messages d'erreur). Le Dart est la source.
+2. **Données** : l'écran n'affiche que ce que le serveur possède (tables de `config/logialvia.php` › `sync.tables`). Une donnée absente
+   du serveur (stock, fiches d'élevage, comptabilité…) n'est **pas inventée** : l'écart est déclaré dans l'écran et dans §7.
+3. **Écritures** : jamais d'`update` direct. Référentiel → `DemandesReferentiel::traiter` ; fait → `TableSync::absorber` de la table
+   (device `Catalogue::POSTE_WEB`, `updated_at` = maintenant à la microseconde). Mêmes validations et mêmes messages que pour un poste.
+4. **Droits** : route déclarée par `Ecrans::declarer` ET `abort_unless(can(...), 403)` dans **chaque** méthode Livewire qui écrit.
+   Lecture seule pour qui n'a que `view-*` (aucun bouton).
+5. **Design** : classes Tailwind aux jetons du Dart (`brand-navy`, `surface-card`, `text-page-title`…), jamais de couleur en dur.
+   Tableau ≥ 640 px, cartes en dessous (aucun défilement horizontal caché). Suppression par modale de confirmation.
+6. **Tests** (`tests/Feature/Web/<Ecran>WebTest.php`) : accès (visiteur, rôle refusé, rôle admis), contenu (KPI, listes, filtres),
+   chaque règle de validation avec son message, écriture en base (device web, curseur de tirage avancé), droits des méthodes (un
+   composant neuf par appel interdit), puis **mutations** : casser chaque garde et voir un test rougir.
+7. **Fin** : `php artisan test` entier vert, `npm run build`, doc §7 mise à jour, **un commit** par écran, chemins explicites.

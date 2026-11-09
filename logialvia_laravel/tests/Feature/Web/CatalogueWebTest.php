@@ -207,7 +207,8 @@ class CatalogueWebTest extends TestCase
 
     public function test_les_ecrans_convertis_ont_tous_une_vraie_route(): void
     {
-        foreach (config('logialvia.routes_web_implementees') as $route) {
+        $this->assertContains('/catalogue', \App\Support\Ecrans::declarees());
+        foreach (\App\Support\Ecrans::declarees() as $route) {
             $this->assertNotNull(
                 collect(app('router')->getRoutes()->getRoutes())->first(fn ($r) => '/'.$r->uri() === $route && ! str_starts_with((string) $r->getName(), 'a-venir.')),
                 "Écran déclaré converti sans route propre : $route",

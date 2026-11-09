@@ -1,9 +1,10 @@
 <?php
 
 use App\Livewire\Auth\ChangerMotDePasse;
-use App\Livewire\Catalogue;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\PostesAppairage;
+use App\Support\Ecrans;
+use App\Support\Navigation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -25,23 +26,25 @@ Route::middleware('auth')->group(function () {
     Route::middleware('mdp.web')->group(function () {
         Route::redirect('/', '/dashboard')->name('accueil');
 
+        // Ecrans convertis du Dart : UN fichier par ecran dans `routes/ecrans/` (droit et module
+        // poses par `Ecrans::declarer`). Charges AVANT la page « bientot » qui tient le reste.
+        foreach (glob(base_path('routes/ecrans/*.php')) as $fichier) {
+            require $fichier;
+        }
+
         // Chaque route du poste a son adresse ici. Tant qu'un ecran n'est pas converti, la
         // page « bientot » la tient : droit ET module restent verifies des maintenant.
         foreach (array_keys(config('logialvia.routes')) as $route) {
-            if (in_array($route, config('logialvia.routes_web_implementees', []), true)) {
+            if (in_array($route, Ecrans::declarees(), true)) {
                 continue;
             }
             [$permission] = config('logialvia.routes')[$route];
             Route::get($route, function () use ($route) {
-                abort_unless(\App\Support\Navigation::moduleDeRouteActif($route), 404);
+                abort_unless(Navigation::moduleDeRouteActif($route), 404);
 
-                return view('a-venir', ['titre' => \App\Support\Navigation::libelle($route) ?? 'Écran']);
+                return view('a-venir', ['titre' => Navigation::libelle($route) ?? 'Écran']);
             })->middleware($permission ? "can:$permission" : [])->name('a-venir.'.ltrim($route, '/'));
         }
-
-        // Ecrans convertis du Dart (liste : `routes_web_implementees`). Droit verifie a la route
-        // ET dans chaque methode qui ecrit.
-        Route::get('/catalogue', Catalogue::class)->middleware('can:view-stocks')->name('catalogue');
 
         // Ecran web propre au serveur : l'onglet « Postes & Appairage » des Parametres.
         Route::get('/parametres/postes', PostesAppairage::class)

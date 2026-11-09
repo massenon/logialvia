@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'compte.actif' => CompteActif::class,
+            'ecran.actif' => \App\Http\Middleware\EcranActif::class,
             'mdp.change' => ChangementMotDePasseObligatoireApi::class,
             'mdp.web' => ChangementMotDePasseObligatoireWeb::class,
             'contact.poste' => EnregistrerContactPoste::class,
