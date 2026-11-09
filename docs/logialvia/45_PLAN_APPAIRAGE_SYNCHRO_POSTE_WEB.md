@@ -306,7 +306,13 @@ Chaque tranche a fait le parcours complet : migration UUID au poste (schémas v3
 | P8 comptabilité, dépenses | v41 | 9 écrans de comptabilité, dépenses | `46d_` |
 | P9 factures e-MECeF | v42 | factures MeCeF (lecture) | `46e_` |
 
-**Reste en « bientôt » : `/inventaire` et `/rapports`** — ils dépendent du stock propre à chaque poste ou agrègent les données ci-dessus.
+**Plus aucun écran en « bientôt »** : `/inventaire` et `/rapports` (W5) sont convertis, en lecture seule. Un test
+(`CoqueNavigationTest`) échoue si une route du poste n'a pas son écran web.
+
+| Écran | Ce que fait le web | Écarts avec le Dart |
+|---|---|---|
+| Inventaire | Mouvements de la période (entrées, sorties, ajustements, achats, ventes, corrections) de TOUS les postes avec leur poste d'origine ; animaux sur pied ; œufs en incubation | **Aucun stock, PMP ni valeur** (propres à chaque poste) : encarts « Disponible sur le poste » ; pas d'export PDF |
+| Rapports & États | Six onglets (recettes, trésorerie, créances, dettes, élevage, stocks) avec les filtres et calculs du Dart ; export CSV (`export-rapports`) | Onglet Stocks grisé ; pas de PDF/Excel ni de lettre de relance ; codes clients/fournisseurs `CLI-xxxxxxxx` (8 premiers caractères de l'UUID) |
 Chaque doc porte sa section « Décisions à valider par le client » : à relire avant la mise en service (voir `46f_`).
 
 **Points de fusion à connaître** : `soins_calendrier.bande_id` est un UUID (v38) mais ne voyage pas encore avec les soins (P7c l'a laissé

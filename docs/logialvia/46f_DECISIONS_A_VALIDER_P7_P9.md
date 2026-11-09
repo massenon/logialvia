@@ -13,3 +13,14 @@ est consigné dans le doc de sa tranche. **Rien ci-dessous n'est validé.** À r
 
 Limites communes : aucun essai contre le **vrai** serveur Laravel pour ces tables (le faux serveur de test rejoue les règles mais a été écrit
 de la même main) ; `/rapports` ordonne les mouvements de trésorerie du même jour par `id`, devenu un UUID (ordre stable mais arbitraire).
+
+## Écrans Inventaire et Rapports (W5)
+
+- **Corrigé au poste (bugs trouvés en comparant avec le serveur)** : l'inventaire cherchait le statut `En incubation` (réel : `En Incubation`) ;
+  les rapports comparaient des libellés périmés : achat `Annulée` (réel `Annulé`, les annulés comptaient dans les dettes), soin `Réalisé`
+  (réel `Effectué`), infirmerie `Sorti` (les sujets malades sont `En cours`), cycle `En cours` (réel `En Incubation`), cycle `Éclos` (réel
+  `Éclosion Effectuée`), incubation de la pintade 27 j (réel 28 j). Poste et web donnent désormais les mêmes chiffres.
+- **À valider** : codes `CLI-xxxxxxxx` / `FRN-xxxxxxxx` au web (le rang séquentiel du poste n'est pas reconstructible côté serveur) ;
+  le comptable voit les six onglets des rapports avec le seul droit `view-rapports` (comme au poste) ; « Achats livrés » se calcule sur la
+  date de commande (la date de réception n'est pas synchronisée) ; les œufs en incubation s'affichent en ligne à l'inventaire web (le poste
+  ne les met que sur le PDF).

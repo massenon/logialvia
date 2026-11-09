@@ -115,23 +115,24 @@ class CoqueNavigationTest extends TestCase
         $this->get('/ventes')->assertOk();
     }
 
-    public function test_un_ecran_non_converti_affiche_la_page_bientot(): void
+    public function test_toutes_les_routes_du_poste_ont_leur_ecran_web(): void
     {
         $this->connecte('admin');
 
-        // Une route du poste qu'aucun ecran n'a encore declaree (la comptabilite est convertie : le
-        // test ne depend d'aucun ecran en particulier, il prend la premiere restante).
-        $restantes = array_values(array_filter(
-            array_keys(config('logialvia.routes')),
-            fn (string $r) => ! in_array($r, \App\Support\Ecrans::declarees(), true)
-                && ! in_array($r, ['/profil', '/aide', '/contact'], true)
-                && (config('logialvia.routes')[$r][1] === null),
-        ));
-        $this->assertNotEmpty($restantes, 'Toutes les routes sont converties : ce test n\'a plus d\'objet.');
+        $sansEcran = array_values(array_diff(array_keys(config('logialvia.routes')), \App\Support\Ecrans::declarees()));
 
-        $this->get($restantes[0])->assertOk()
-            ->assertSee(\App\Support\Navigation::libelle($restantes[0]))
-            ->assertSee('Cet écran arrive bientôt sur le web');
+        $this->assertSame([], $sansEcran, 'Routes du poste encore sur la page « bientôt » : '.implode(', ', $sansEcran));
+    }
+
+    public function test_la_page_bientot_reste_un_repli_qui_s_affiche(): void
+    {
+        // Plus aucune route n'y mene : la vue sert de filet si une route du poste s'ajoute avant son ecran.
+        $this->connecte('admin');
+
+        $html = view('a-venir', ['titre' => 'Écran futur'])->render();
+
+        $this->assertStringContainsString('Écran futur', $html);
+        $this->assertStringContainsString('Cet écran arrive bientôt sur le web', $html);
     }
 
     public function test_l_entree_de_la_page_ouverte_est_marquee(): void

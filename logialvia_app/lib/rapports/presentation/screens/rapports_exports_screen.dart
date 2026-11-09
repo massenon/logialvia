@@ -1,3 +1,4 @@
+import '../../../elevage/domain/entities/cycle_incubation.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
@@ -1274,7 +1275,8 @@ class _OngletElevage extends StatelessWidget {
                               BadgeRapport(
                                 libelle: c.statut,
                                 alerte: false,
-                                succes: c.statut == 'Éclos',
+                                succes:
+                                    c.statut == StatutCycle.eclosionEffectuee,
                               ),
                               2,
                             ),

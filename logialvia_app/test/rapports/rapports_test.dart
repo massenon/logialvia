@@ -1,3 +1,5 @@
+import 'package:logialvia_app/approvisionnement/domain/entities/approvisionnement.dart';
+import 'package:logialvia_app/elevage/domain/entities/cycle_incubation.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/comptabilite/data/repositories/comptabilite_repository_drift.dart';
@@ -462,6 +464,27 @@ void main() {
       },
     );
 
+    test(
+      'un achat annulé n\'est jamais une dette (statut réel « Annulé »)',
+      () async {
+        await db
+            .into(db.achats)
+            .insert(
+              AchatsCompanion.insert(
+                ref: 'ACH-2026-042',
+                fournisseurId: 'f0000001-0000-4000-8000-000000000001',
+                dateAchat: DateTime(annee, 8, 7),
+                statut: StatutAchat.annule,
+                total: 90000,
+              ),
+            );
+        await vm.charger();
+
+        expect(vm.donnees.dettes, hasLength(1));
+        expect(vm.totalDettes, 12000);
+      },
+    );
+
     test('sans échéance convenue, une dette n\'est jamais urgente', () async {
       await (db.update(db.achats)..where((a) => a.ref.equals('ACH-2026-041')))
           .write(const AchatsCompanion(echeance: Value(null)));
@@ -509,7 +532,7 @@ void main() {
               dateIncubation: DateTime(annee, 7, 12),
               oeufsCouves: 200,
               poussinsNes: const Value(168),
-              statut: 'Éclos',
+              statut: StatutCycle.eclosionEffectuee,
             ),
           );
       await db
@@ -520,7 +543,7 @@ void main() {
               espece: const Value('pintade'),
               dateIncubation: DateTime(annee, 8, 1),
               oeufsCouves: 140,
-              statut: 'En cours',
+              statut: StatutCycle.enIncubation,
             ),
           );
       await vm.charger();
@@ -543,7 +566,7 @@ void main() {
     });
 
     test(
-      'l\'éclosion attendue dépend de l\'espèce — 21 j goliath, 27 j pintade',
+      'l\'éclosion attendue dépend de l\'espèce — 21 j goliath, 28 j pintade',
       () {
         final parCode = {for (final c in vm.donnees.couvoir) c.codeLot: c};
         expect(
@@ -552,7 +575,7 @@ void main() {
         );
         expect(
           parCode['C-2026-014']!.eclosionAttendue,
-          DateTime(annee, 8, 1).add(const Duration(days: 27)),
+          DateTime(annee, 8, 1).add(const Duration(days: 28)),
         );
       },
     );

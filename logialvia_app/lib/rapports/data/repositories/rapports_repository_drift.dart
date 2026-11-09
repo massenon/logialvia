@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../approvisionnement/domain/entities/approvisionnement.dart';
 import '../../../elevage/domain/entities/configuration_espece.dart';
+import '../../../elevage/domain/entities/cycle_incubation.dart';
 import '../../../elevage/domain/entities/parametres_elevage.dart';
+import '../../../elevage/domain/entities/soin.dart';
 import '../../../elevage/domain/services/calcul_fiche_journaliere.dart';
 import '../../domain/entities/rapports.dart';
 
@@ -276,7 +279,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
 
     return [
       for (final a in achats)
-        if (a.statut != 'Annulée')
+        if (a.statut != StatutAchat.annule)
           DetteFournisseur(
             code: 'FRN-${a.fournisseurId.toString().padLeft(3, '0')}',
             fournisseur: nomParId[a.fournisseurId] ?? 'Fournisseur inconnu',
@@ -437,15 +440,12 @@ class RapportsRepositoryDrift implements RapportsRepository {
       );
       // Meme calcul que la fiche : une filiere rationnee en % du poids vif doit
       // afficher le meme chiffre dans le rapport que sur son ecran.
-      final provende = calcul.provendeTotaleGrammes(
-        [
-          derniere.effCat1Day,
-          derniere.effCat2Day,
-          derniere.effCat3Day,
-          derniere.effCat4Day ?? 0,
-        ],
-        poidsTotalGrammes: derniere.poidsGeneralG,
-      );
+      final provende = calcul.provendeTotaleGrammes([
+        derniere.effCat1Day,
+        derniere.effCat2Day,
+        derniere.effCat3Day,
+        derniere.effCat4Day ?? 0,
+      ], poidsTotalGrammes: derniere.poidsGeneralG);
 
       resultat.add(
         LigneMouvementElevage(
@@ -483,7 +483,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
               ..where(
                 (s) =>
                     s.espece.equals(espece) &
-                    s.statut.equals('Réalisé') &
+                    s.statut.equals(StatutSoin.effectue) &
                     s.datePrevue.isBiggerOrEqualValue(debut) &
                     s.datePrevue.isSmallerOrEqualValue(fin),
               )
@@ -532,7 +532,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
           codeLot: c.codeIncubation,
           miseEnCouvoir: c.dateIncubation,
           // ⚠️ La duree d'incubation depend de l'espece (Doc F3, corrige) :
-          // Goliath 21 jours, Pintade 27 jours. Un `+21` universel avancerait
+          // Goliath 21 jours, Pintade 28 jours. Un `+21` universel avancerait
           // l'eclosion d'une pintade de 6 jours.
           eclosionAttendue: c.dateIncubation.add(
             Duration(days: DureesIncubation.pourEspece(c.espece)),
@@ -563,7 +563,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
 
   Future<int> _sujetsMalades({String? espece}) async {
     final requete = _db.select(_db.infirmerie)
-      ..where((i) => i.statut.equals('Sorti').not());
+      ..where((i) => i.statut.equals(StatutInfirmerie.enCours));
     if (espece != null) {
       requete.where((i) => i.espece.equals(espece));
     }
@@ -573,7 +573,7 @@ class RapportsRepositoryDrift implements RapportsRepository {
   Future<int> _cyclesEnCours() async {
     final cycles = await (_db.select(
       _db.cycleCouveuse,
-    )..where((c) => c.statut.equals('En cours'))).get();
+    )..where((c) => c.statut.equals(StatutCycle.enIncubation))).get();
     return cycles.length;
   }
 
@@ -635,7 +635,7 @@ class DureesIncubation {
   DureesIncubation._();
 
   static const int goliath = 21;
-  static const int pintade = 27;
+  static const int pintade = 28;
 
   static int pourEspece(String espece) {
     final normalise = espece.toLowerCase();
