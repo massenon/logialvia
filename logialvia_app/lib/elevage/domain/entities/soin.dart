@@ -62,7 +62,7 @@ class Soin {
 
   /// Bande dont ce soin decoule, quand il a ete planifie depuis le calendrier
   /// de prophylaxie d'une fiche. `null` pour un soin saisi a la main.
-  final int? bandeId;
+  final String? bandeId;
 
   /// Echeance du calendrier dont ce soin decoule.
   ///

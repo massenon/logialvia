@@ -17,7 +17,7 @@ void main() {
   final aujourdhui = DateTime(2026, 8, 20);
 
   Bande bande({
-    int id = 1,
+    String id = 'bande-1',
     String espece = 'goliaths',
     String code = 'B-2026-001',
     DateTime? cloture,
@@ -100,7 +100,7 @@ void main() {
         statut: StatutSoin.planifie,
         produit: 'ND-Lasota',
         remanenceJours: 0,
-        bandeId: 1,
+        bandeId: 'bande-1',
         echeanceProphylaxieId: 1,
       );
 
@@ -181,7 +181,7 @@ void main() {
       final rappels = RappelsProphylaxie(
         bandes: [
           bande(),
-          bande(id: 2, espece: 'pintades', code: 'B-2026-002'),
+          bande(id: 'bande-2', espece: 'pintades', code: 'B-2026-002'),
         ],
         echeances: [
           echeance(id: 1, jour: 5),

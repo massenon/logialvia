@@ -30,7 +30,7 @@ class SoinsRepositoryDrift implements SoinsRepository {
     String? veterinaire,
     String? symptomes,
     int coutFcfa = 0,
-    int? bandeId,
+    String? bandeId,
     int? echeanceProphylaxieId,
   }) async {
     final jour = DateTime(date.year, date.month, date.day);

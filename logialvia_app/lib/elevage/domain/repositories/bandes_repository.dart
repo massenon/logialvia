@@ -23,5 +23,5 @@ abstract class BandesRepository {
     String? observations,
   });
 
-  Future<void> cloturerBande({required int id, required DateTime dateCloture});
+  Future<void> cloturerBande({required String id, required DateTime dateCloture});
 }

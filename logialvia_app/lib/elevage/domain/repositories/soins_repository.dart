@@ -15,7 +15,7 @@ abstract class SoinsRepository {
     String? veterinaire,
     String? symptomes,
     int coutFcfa = 0,
-    int? bandeId,
+    String? bandeId,
     int? echeanceProphylaxieId,
   });
 

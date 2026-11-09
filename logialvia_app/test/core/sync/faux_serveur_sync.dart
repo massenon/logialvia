@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:logialvia_app/elevage/data/sync/identifiants_elevage.dart';
 
 /// Un faux serveur qui rejoue le CONTRAT de `logialvia_laravel`
 /// (`MoteurSynchronisation`, `46_` §4 et §6), pas seulement ses formats :
@@ -47,6 +48,12 @@ class FauxServeurSync {
   /// (référentiel, clé : la lettre). Le serveur ne transmet JAMAIS à la DGI.
   final Map<String, Map<String, dynamic>> factures = {};
   final Map<String, Map<String, dynamic>> groupesTaxe = {};
+
+  /// Elevage (palier 7a) : fiches journalieres, compteurs de ventes du jour (une
+  /// ligne par poste) et bandes.
+  final Map<String, Map<String, dynamic>> fichesJournee = {};
+  final Map<String, Map<String, dynamic>> ventesJour = {};
+  final Map<String, Map<String, dynamic>> bandes = {};
 
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
@@ -121,6 +128,9 @@ class FauxServeurSync {
     voir(mouvementsProduit.values);
     voir(factures.values);
     voir(groupesTaxe.values);
+    voir(fichesJournee.values);
+    voir(ventesJour.values);
+    voir(bandes.values);
     if (parametres != null) voir([parametres!]);
     return plusRecent.toIso8601String();
   }
@@ -132,6 +142,9 @@ class FauxServeurSync {
     fournisseurs.clear();
     mouvementsProduit.clear();
     factures.clear(); // la grille de taxation (référentiel) est préservée
+    fichesJournee.clear();
+    ventesJour.clear();
+    bandes.clear();
     mouvements.clear(); // les intrants (référentiel) sont préservés
     marque = 'rz-${++_horloge}';
   }
@@ -306,6 +319,18 @@ class FauxServeurSync {
           for (final f in factures.values)
             if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
         ],
+        'fiche_journee': [
+          for (final f in fichesJournee.values)
+            if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
+        ],
+        'fiche_ventes_jour': [
+          for (final f in ventesJour.values)
+            if (_dans(f['serveur_modifie_le'] as String, since, jusqua)) f,
+        ],
+        'bandes': [
+          for (final b in bandes.values)
+            if (_dans(b['serveur_modifie_le'] as String, since, jusqua)) b,
+        ],
       },
     });
   }
@@ -459,6 +484,24 @@ class FauxServeurSync {
     if (tables.containsKey('mouvements_produit')) {
       reponse['mouvements_produit'] = _mouvementsProduit(
         (tables['mouvements_produit'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('fiche_journee')) {
+      reponse['fiche_journee'] = _fichesJournee(
+        (tables['fiche_journee'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('fiche_ventes_jour')) {
+      reponse['fiche_ventes_jour'] = _ventesJour(
+        (tables['fiche_ventes_jour'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('bandes')) {
+      reponse['bandes'] = _bandes(
+        (tables['bandes'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -962,7 +1005,9 @@ class FauxServeurSync {
           rangRecu > rangServeur ||
           (rangRecu == rangServeur &&
               f['statut'] == 'rejetee' &&
-              saisie.isAfter(DateTime.parse(existante['updated_at'] as String)));
+              saisie.isAfter(
+                DateTime.parse(existante['updated_at'] as String),
+              ));
       if (applique) {
         for (final c in const [
           'statut',
@@ -978,6 +1023,234 @@ class FauxServeurSync {
         existante
           ..['updated_at'] = saisie.toUtc().toIso8601String()
           ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  // ----------------------------------------------------------------- Elevage
+
+  static const _especes = {
+    'goliaths',
+    'pintades',
+    'lapins',
+    'poissons-chats',
+    'poulets',
+    'pondeuses',
+    'escargots',
+    'bovins',
+  };
+
+  static const _entiersFiche = [
+    'achat',
+    'ne',
+    'vente',
+    'mort_cat1',
+    'mort_cat2',
+    'mort_cat3',
+    'don_cat1',
+    'don_cat2',
+    'don_cat3',
+    'effectif',
+    'eff_cat1_day',
+    'eff_cat2_day',
+    'eff_cat3_day',
+  ];
+
+  static const _entiersFacultatifs = [
+    'mort_cat4',
+    'don_cat4',
+    'eff_cat4_day',
+    'srh',
+    'ts',
+    'stock_final_oeufs',
+    'oeufs_pondus',
+    'oeufs_casses',
+    'sorties_plateaux',
+    'poids_general_g',
+  ];
+
+  static final RegExp _uuidServeur = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  /// `AAAA-MM-JJ` EXACT, aller-retour (comme `date_format:Y-m-d` du vrai serveur) :
+  /// « 2026-02-31 » et « 2026-11-05T10:00:00Z » sont refusés.
+  DateTime? _jourOuNull(Object? v) {
+    if (v is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v)) {
+      return null;
+    }
+    final d = DateTime.tryParse(v);
+    if (d == null) return null;
+    return jourCivil(d) == v ? d : null;
+  }
+
+  /// Rejoue `FichesJourneeTable` : identite = (espece, date), dernier ecrivain gagne,
+  /// ligne ENTIERE.
+  Map<String, dynamic> _fichesJournee(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final f in lot) {
+      final id = f['id'] as String;
+      String? motif;
+      final jour = _jourOuNull(f['date']);
+      if (!_uuidServeur.hasMatch(id)) {
+        motif = "L'identifiant de la fiche doit être un UUID.";
+      } else if (!_especes.contains(f['espece'])) {
+        motif = 'La filière « ${f['espece']} » est inconnue.';
+      } else if (jour == null) {
+        motif = 'La date de la fiche est invalide.';
+      } else if (id != identifiantFicheJournee(f['espece'] as String, jour)) {
+        motif =
+            "L'identifiant de la fiche ne correspond pas à sa filière et à sa date.";
+      } else {
+        for (final c in _entiersFiche) {
+          if (f[c] == null) {
+            motif = 'La valeur de « $c » est obligatoire.';
+            break;
+          }
+          if (f[c] is! int || (f[c] as int) < 0) {
+            motif = 'La valeur de « $c » doit être un entier positif ou nul.';
+            break;
+          }
+        }
+        for (final c in _entiersFacultatifs) {
+          if (motif != null) break;
+          if (f[c] != null && (f[c] is! int || (f[c] as int) < 0)) {
+            motif = 'La valeur de « $c » doit être un entier positif ou nul.';
+          }
+        }
+        for (final c in const ['traitement_valide', 'is_recorded']) {
+          if (motif != null) break;
+          if (f[c] is! bool) {
+            motif = "L'indicateur « $c » doit être vrai ou faux.";
+          }
+        }
+      }
+      if (motif != null) {
+        refusees.add({'id': id, 'motif': motif});
+        continue;
+      }
+      final saisie = DateTime.parse(f['updated_at'] as String);
+      final existante = fichesJournee[id];
+      if (existante == null ||
+          saisie.isAfter(DateTime.parse(existante['updated_at'] as String))) {
+        fichesJournee[id] = {
+          ...f,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Rejoue `VentesJourTable` : une ligne par (poste, espece, date), identifiant
+  /// calcule avec le poste qui envoie.
+  Map<String, dynamic> _ventesJour(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final f in lot) {
+      final id = f['id'] as String;
+      String? motif;
+      final jour = _jourOuNull(f['date']);
+      if (!_uuidServeur.hasMatch(id)) {
+        motif = "L'identifiant du compteur doit être un UUID.";
+      } else if (!_especes.contains(f['espece'])) {
+        motif = 'La filière « ${f['espece']} » est inconnue.';
+      } else if (jour == null) {
+        motif = 'La date du compteur est invalide.';
+      } else if (f['qte'] == null) {
+        motif = 'La quantité vendue est obligatoire.';
+      } else if (f['qte'] is! int || (f['qte'] as int) < 0) {
+        motif = 'La quantité vendue doit être un entier positif ou nul.';
+      } else if (id !=
+          identifiantVentesJour(f['espece'] as String, jour, deviceId)) {
+        motif =
+            "L'identifiant du compteur ne correspond pas à sa filière, à sa date et à son poste.";
+      }
+      if (motif != null) {
+        refusees.add({'id': id, 'motif': motif});
+        continue;
+      }
+      final saisie = DateTime.parse(f['updated_at'] as String);
+      final existante = ventesJour[id];
+      if (existante == null ||
+          saisie.isAfter(DateTime.parse(existante['updated_at'] as String))) {
+        ventesJour[id] = {
+          ...f,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Rejoue `BandesTable` : dernier ecrivain gagne par UUID, code unique par filiere.
+  Map<String, dynamic> _bandes(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final b in lot) {
+      final id = b['id'] as String;
+      String? motif;
+      final mise = _jourOuNull(b['date_mise_en_bande']);
+      final cloture = _jourOuNull(b['date_cloture']);
+      final code = b['code'];
+      if (!_uuidServeur.hasMatch(id)) {
+        motif = "L'identifiant de la bande doit être un UUID.";
+      } else if (!_especes.contains(b['espece'])) {
+        motif = 'La filière « ${b['espece']} » est inconnue.';
+      } else if (code is! String || code.trim().isEmpty) {
+        motif = 'Le code de la bande est obligatoire.';
+      } else if (mise == null) {
+        motif = 'La date de mise en place de la bande est invalide.';
+      } else if (b['date_cloture'] != null && cloture == null) {
+        motif = 'La date de clôture de la bande est invalide.';
+      } else if (cloture != null && cloture.isBefore(mise)) {
+        motif = 'La clôture ne peut pas précéder la mise en place de la bande.';
+      } else if (b['effectif_initial'] != null &&
+          b['effectif_initial'] is! int) {
+        motif = "L'effectif mis en place doit être un entier positif ou nul.";
+      } else if (b['effectif_initial'] != null &&
+          (b['effectif_initial'] as int) < 0) {
+        motif = "L'effectif mis en place ne peut pas être négatif.";
+      } else if (bandes.values.any(
+        (x) =>
+            x['id'] != id &&
+            x['espece'] == b['espece'] &&
+            (x['code'] as String).trim() == code.trim(),
+      )) {
+        motif = 'Ce code de bande est déjà utilisé pour cette filière.';
+      }
+      if (motif != null) {
+        refusees.add({'id': id, 'motif': motif});
+        continue;
+      }
+      final saisie = DateTime.parse(b['updated_at'] as String);
+      final existante = bandes[id];
+      if (existante == null ||
+          saisie.isAfter(DateTime.parse(existante['updated_at'] as String))) {
+        bandes[id] = {
+          ...b,
+          'device_id': deviceId,
+          'updated_at': saisie.toUtc().toIso8601String(),
+          'serveur_modifie_le': _instant(),
+        };
       }
       acceptees.add(id);
     }

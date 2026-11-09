@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/configuration_espece.dart';
 import '../../domain/entities/journee_elevage.dart';
 import '../../domain/repositories/fiche_elevage_repository.dart';
+import '../sync/identifiants_elevage.dart';
 
 /// Implementation Drift du depot des fiches d'elevage.
 ///
@@ -111,6 +113,9 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
     // (Doc D1), et chaque reenregistrement d'un meme jour creait une violation
     // au lieu d'une mise a jour. Le `target` doit etre explicite.
     final companion = FicheJourneeCompanion.insert(
+      // UUID deterministe de (espece, date) : deux postes qui saisissent le meme
+      // jour convergent sur la meme ligne (`46a_`).
+      id: Value(identifiantFicheJournee(journee.espece, journee.date)),
       espece: journee.espece,
       date: _minuit(journee.date),
       achat: Value(journee.achat),
@@ -139,6 +144,11 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
       traitementObs: Value(journee.traitementObs),
       traitementValide: Value(journee.traitementValide),
       isRecorded: Value(journee.isRecorded),
+      // Toute ecriture locale (saisie, cascade) remet la ligne a envoyer, avec son
+      // instant de SAISIE : c'est lui qui departage deux postes (`46_` §1).
+      syncStatus: const Value('pending'),
+      syncMotif: const Value(null),
+      updatedAt: Value(instantSaisie()),
     );
 
     await _db
@@ -152,17 +162,21 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
         );
   }
 
+  /// Ventes du jour : la **somme** des compteurs de tous les postes (le mien et
+  /// ceux des autres, `46a_`). Chaque poste ne tient que son propre compteur ; rien
+  /// n'est compte deux fois puisque la vente d'un autre poste n'incremente jamais
+  /// le mien.
   @override
   Future<int> venteDuJour({
     required String espece,
     required DateTime date,
   }) async {
-    final ligne =
+    final lignes =
         await (_db.select(_db.ficheVentesJour)..where(
               (f) => f.espece.equals(espece) & f.date.equals(_minuit(date)),
             ))
-            .getSingleOrNull();
-    return ligne?.qte ?? 0;
+            .get();
+    return lignes.fold<int>(0, (somme, l) => somme + l.qte);
   }
 
   // ---------------------------------------------------------------- internes

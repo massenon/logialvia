@@ -183,7 +183,7 @@ void main() {
       return RappelProphylaxie(
         espece: 'goliaths',
         bande: Bande(
-          id: 1,
+          id: 'bande-1',
           espece: 'goliaths',
           code: 'B-2026-001',
           dateMiseEnBande: DateTime(2026, 8, 10),

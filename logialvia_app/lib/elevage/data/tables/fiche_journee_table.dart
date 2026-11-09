@@ -1,13 +1,22 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `FICHE_JOURNEE` — Doc D1 §2. Une ligne par espece et par jour.
 ///
 /// `effectif` et les sous-effectifs `effCat*Day` sont **calcules, jamais
 /// saisis** (BR-ELV-007) : le formulaire de saisie journaliere ne doit pas
 /// exposer de champ editable pour eux (Doc E6 §3).
+///
+/// ## Synchronisation (schema v38, DV-19, `46a_`)
+///
+/// `id` est un UUID **deterministe** de (espece, date) : deux postes qui saisissent
+/// le meme jour convergent sur la MEME ligne (dernier ecrivain gagne, ligne entiere),
+/// jamais sur deux lignes qui violeraient `UNIQUE(espece, date)`. Voir
+/// `FicheElevageRepositoryDrift.identifiantDuJour`.
 @DataClassName('FicheJourneeRow')
 class FicheJournee extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
   TextColumn get espece => text()();
@@ -72,6 +81,21 @@ class FicheJournee extends Table {
 
   /// Distingue un jour reellement saisi d'un jour projete/vide.
   BoolColumn get isRecorded => boolean().withDefault(const Constant(false))();
+
+  // ------------------------------------------------------- Synchronisation
+  //
+  // Colonnes communes a toute table synchronisee (`46_` §1). `device_id` n'est
+  // PAS stocke : le serveur le deduit du jeton.
+
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de **saisie** (UTC, microsecondes) : il departage deux postes.
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 
   @override
   List<Set<Column>> get uniqueKeys => [

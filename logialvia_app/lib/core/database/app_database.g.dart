@@ -14328,16 +14328,13 @@ class $FicheJourneeTable extends FicheJournee
   $FicheJourneeTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -14654,6 +14651,41 @@ class $FicheJourneeTable extends FicheJournee
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -14685,6 +14717,9 @@ class $FicheJourneeTable extends FicheJournee
     traitementObs,
     traitementValide,
     isRecorded,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14900,6 +14935,24 @@ class $FicheJourneeTable extends FicheJournee
         isRecorded.isAcceptableOrUnknown(data['is_recorded']!, _isRecordedMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -14914,7 +14967,7 @@ class $FicheJourneeTable extends FicheJournee
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FicheJourneeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -15029,6 +15082,18 @@ class $FicheJourneeTable extends FicheJournee
         DriftSqlType.bool,
         data['${effectivePrefix}is_recorded'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -15039,7 +15104,7 @@ class $FicheJourneeTable extends FicheJournee
 }
 
 class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
-  final int id;
+  final String id;
 
   /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
   final String espece;
@@ -15090,6 +15155,11 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
 
   /// Distingue un jour reellement saisi d'un jour projete/vide.
   final bool isRecorded;
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de **saisie** (UTC, microsecondes) : il departage deux postes.
+  final String updatedAt;
   const FicheJourneeRow({
     required this.id,
     required this.espece,
@@ -15120,11 +15190,14 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     this.traitementObs,
     required this.traitementValide,
     required this.isRecorded,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['date'] = Variable<DateTime>(date);
     map['achat'] = Variable<int>(achat);
@@ -15175,6 +15248,11 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     }
     map['traitement_valide'] = Variable<bool>(traitementValide);
     map['is_recorded'] = Variable<bool>(isRecorded);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -15227,6 +15305,11 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           : Value(traitementObs),
       traitementValide: Value(traitementValide),
       isRecorded: Value(isRecorded),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -15236,7 +15319,7 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FicheJourneeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       date: serializer.fromJson<DateTime>(json['date']),
       achat: serializer.fromJson<int>(json['achat']),
@@ -15265,13 +15348,16 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       traitementObs: serializer.fromJson<String?>(json['traitementObs']),
       traitementValide: serializer.fromJson<bool>(json['traitementValide']),
       isRecorded: serializer.fromJson<bool>(json['isRecorded']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'date': serializer.toJson<DateTime>(date),
       'achat': serializer.toJson<int>(achat),
@@ -15300,11 +15386,14 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       'traitementObs': serializer.toJson<String?>(traitementObs),
       'traitementValide': serializer.toJson<bool>(traitementValide),
       'isRecorded': serializer.toJson<bool>(isRecorded),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   FicheJourneeRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     DateTime? date,
     int? achat,
@@ -15333,6 +15422,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     Value<String?> traitementObs = const Value.absent(),
     bool? traitementValide,
     bool? isRecorded,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => FicheJourneeRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -15371,6 +15463,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
         : this.traitementObs,
     traitementValide: traitementValide ?? this.traitementValide,
     isRecorded: isRecorded ?? this.isRecorded,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   FicheJourneeRow copyWithCompanion(FicheJourneeCompanion data) {
     return FicheJourneeRow(
@@ -15427,6 +15522,11 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       isRecorded: data.isRecorded.present
           ? data.isRecorded.value
           : this.isRecorded,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -15461,7 +15561,10 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           ..write('poidsGeneralG: $poidsGeneralG, ')
           ..write('traitementObs: $traitementObs, ')
           ..write('traitementValide: $traitementValide, ')
-          ..write('isRecorded: $isRecorded')
+          ..write('isRecorded: $isRecorded, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -15497,6 +15600,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     traitementObs,
     traitementValide,
     isRecorded,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -15530,11 +15636,14 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           other.poidsGeneralG == this.poidsGeneralG &&
           other.traitementObs == this.traitementObs &&
           other.traitementValide == this.traitementValide &&
-          other.isRecorded == this.isRecorded);
+          other.isRecorded == this.isRecorded &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<DateTime> date;
   final Value<int> achat;
@@ -15563,6 +15672,10 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
   final Value<String?> traitementObs;
   final Value<bool> traitementValide;
   final Value<bool> isRecorded;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const FicheJourneeCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -15593,6 +15706,10 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.traitementObs = const Value.absent(),
     this.traitementValide = const Value.absent(),
     this.isRecorded = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FicheJourneeCompanion.insert({
     this.id = const Value.absent(),
@@ -15624,10 +15741,14 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.traitementObs = const Value.absent(),
     this.traitementValide = const Value.absent(),
     this.isRecorded = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        date = Value(date);
   static Insertable<FicheJourneeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<DateTime>? date,
     Expression<int>? achat,
@@ -15656,6 +15777,10 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Expression<String>? traitementObs,
     Expression<bool>? traitementValide,
     Expression<bool>? isRecorded,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -15687,11 +15812,15 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       if (traitementObs != null) 'traitement_obs': traitementObs,
       if (traitementValide != null) 'traitement_valide': traitementValide,
       if (isRecorded != null) 'is_recorded': isRecorded,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FicheJourneeCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<DateTime>? date,
     Value<int>? achat,
@@ -15720,6 +15849,10 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Value<String?>? traitementObs,
     Value<bool>? traitementValide,
     Value<bool>? isRecorded,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return FicheJourneeCompanion(
       id: id ?? this.id,
@@ -15751,6 +15884,10 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       traitementObs: traitementObs ?? this.traitementObs,
       traitementValide: traitementValide ?? this.traitementValide,
       isRecorded: isRecorded ?? this.isRecorded,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -15758,7 +15895,7 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -15844,6 +15981,18 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     if (isRecorded.present) {
       map['is_recorded'] = Variable<bool>(isRecorded.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -15878,7 +16027,11 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
           ..write('poidsGeneralG: $poidsGeneralG, ')
           ..write('traitementObs: $traitementObs, ')
           ..write('traitementValide: $traitementValide, ')
-          ..write('isRecorded: $isRecorded')
+          ..write('isRecorded: $isRecorded, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -15892,16 +16045,13 @@ class $FicheVentesJourTable extends FicheVentesJour
   $FicheVentesJourTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -15931,8 +16081,63 @@ class $FicheVentesJourTable extends FicheVentesJour
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, espece, date, qte];
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    espece,
+    date,
+    qte,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -15970,21 +16175,41 @@ class $FicheVentesJourTable extends FicheVentesJour
         qte.isAcceptableOrUnknown(data['qte']!, _qteMeta),
       );
     }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {espece, date},
-  ];
-  @override
   FicheVenteJourRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FicheVenteJourRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -15999,6 +16224,22 @@ class $FicheVentesJourTable extends FicheVentesJour
         DriftSqlType.int,
         data['${effectivePrefix}qte'],
       )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -16010,25 +16251,43 @@ class $FicheVentesJourTable extends FicheVentesJour
 
 class FicheVenteJourRow extends DataClass
     implements Insertable<FicheVenteJourRow> {
-  final int id;
+  final String id;
   final String espece;
 
   /// Normalisee a minuit.
   final DateTime date;
   final int qte;
+
+  /// Identifiant du poste qui a vendu. `NULL` = CE poste (son compteur propre).
+  final String? origine;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const FicheVenteJourRow({
     required this.id,
     required this.espece,
     required this.date,
     required this.qte,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['date'] = Variable<DateTime>(date);
     map['qte'] = Variable<int>(qte);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -16038,6 +16297,14 @@ class FicheVenteJourRow extends DataClass
       espece: Value(espece),
       date: Value(date),
       qte: Value(qte),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -16047,33 +16314,49 @@ class FicheVenteJourRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FicheVenteJourRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       date: serializer.fromJson<DateTime>(json['date']),
       qte: serializer.fromJson<int>(json['qte']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'date': serializer.toJson<DateTime>(date),
       'qte': serializer.toJson<int>(qte),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   FicheVenteJourRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     DateTime? date,
     int? qte,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => FicheVenteJourRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
     date: date ?? this.date,
     qte: qte ?? this.qte,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   FicheVenteJourRow copyWithCompanion(FicheVentesJourCompanion data) {
     return FicheVenteJourRow(
@@ -16081,6 +16364,12 @@ class FicheVenteJourRow extends DataClass
       espece: data.espece.present ? data.espece.value : this.espece,
       date: data.date.present ? data.date.value : this.date,
       qte: data.qte.present ? data.qte.value : this.qte,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -16090,13 +16379,26 @@ class FicheVenteJourRow extends DataClass
           ..write('id: $id, ')
           ..write('espece: $espece, ')
           ..write('date: $date, ')
-          ..write('qte: $qte')
+          ..write('qte: $qte, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, espece, date, qte);
+  int get hashCode => Object.hash(
+    id,
+    espece,
+    date,
+    qte,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -16104,52 +16406,91 @@ class FicheVenteJourRow extends DataClass
           other.id == this.id &&
           other.espece == this.espece &&
           other.date == this.date &&
-          other.qte == this.qte);
+          other.qte == this.qte &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<DateTime> date;
   final Value<int> qte;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const FicheVentesJourCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
     this.date = const Value.absent(),
     this.qte = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FicheVentesJourCompanion.insert({
     this.id = const Value.absent(),
     required String espece,
     required DateTime date,
     this.qte = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        date = Value(date);
   static Insertable<FicheVenteJourRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<DateTime>? date,
     Expression<int>? qte,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (espece != null) 'espece': espece,
       if (date != null) 'date': date,
       if (qte != null) 'qte': qte,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FicheVentesJourCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<DateTime>? date,
     Value<int>? qte,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return FicheVentesJourCompanion(
       id: id ?? this.id,
       espece: espece ?? this.espece,
       date: date ?? this.date,
       qte: qte ?? this.qte,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -16157,7 +16498,7 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -16168,6 +16509,21 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
     if (qte.present) {
       map['qte'] = Variable<int>(qte.value);
     }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -16177,7 +16533,12 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
           ..write('id: $id, ')
           ..write('espece: $espece, ')
           ..write('date: $date, ')
-          ..write('qte: $qte')
+          ..write('qte: $qte, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -17526,11 +17887,11 @@ class $SoinsCalendrierTable extends SoinsCalendrier
     'bandeId',
   );
   @override
-  late final GeneratedColumn<int> bandeId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> bandeId = GeneratedColumn<String>(
     'bande_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _echeanceProphylaxieIdMeta =
@@ -17731,7 +18092,7 @@ class $SoinsCalendrierTable extends SoinsCalendrier
         data['${effectivePrefix}cout_fcfa'],
       )!,
       bandeId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}bande_id'],
       ),
       echeanceProphylaxieId: attachedDatabase.typeMapping.read(
@@ -17774,7 +18135,8 @@ class SoinCalendrierRow extends DataClass
   final int coutFcfa;
 
   /// Bande dont ce soin decoule (`BANDES.id`).
-  final int? bandeId;
+  /// UUID de la bande (schema v38 : `bandes.id` est desormais un UUID).
+  final String? bandeId;
 
   /// Echeance du calendrier dont ce soin decoule
   /// (`CALENDRIER_PROPHYLAXIE.id`).
@@ -17827,7 +18189,7 @@ class SoinCalendrierRow extends DataClass
     }
     map['cout_fcfa'] = Variable<int>(coutFcfa);
     if (!nullToAbsent || bandeId != null) {
-      map['bande_id'] = Variable<int>(bandeId);
+      map['bande_id'] = Variable<String>(bandeId);
     }
     if (!nullToAbsent || echeanceProphylaxieId != null) {
       map['echeance_prophylaxie_id'] = Variable<int>(echeanceProphylaxieId);
@@ -17884,7 +18246,7 @@ class SoinCalendrierRow extends DataClass
       veterinaire: serializer.fromJson<String?>(json['veterinaire']),
       symptomes: serializer.fromJson<String?>(json['symptomes']),
       coutFcfa: serializer.fromJson<int>(json['coutFcfa']),
-      bandeId: serializer.fromJson<int?>(json['bandeId']),
+      bandeId: serializer.fromJson<String?>(json['bandeId']),
       echeanceProphylaxieId: serializer.fromJson<int?>(
         json['echeanceProphylaxieId'],
       ),
@@ -17906,7 +18268,7 @@ class SoinCalendrierRow extends DataClass
       'veterinaire': serializer.toJson<String?>(veterinaire),
       'symptomes': serializer.toJson<String?>(symptomes),
       'coutFcfa': serializer.toJson<int>(coutFcfa),
-      'bandeId': serializer.toJson<int?>(bandeId),
+      'bandeId': serializer.toJson<String?>(bandeId),
       'echeanceProphylaxieId': serializer.toJson<int?>(echeanceProphylaxieId),
     };
   }
@@ -17924,7 +18286,7 @@ class SoinCalendrierRow extends DataClass
     Value<String?> veterinaire = const Value.absent(),
     Value<String?> symptomes = const Value.absent(),
     int? coutFcfa,
-    Value<int?> bandeId = const Value.absent(),
+    Value<String?> bandeId = const Value.absent(),
     Value<int?> echeanceProphylaxieId = const Value.absent(),
   }) => SoinCalendrierRow(
     id: id ?? this.id,
@@ -18044,7 +18406,7 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
   final Value<String?> veterinaire;
   final Value<String?> symptomes;
   final Value<int> coutFcfa;
-  final Value<int?> bandeId;
+  final Value<String?> bandeId;
   final Value<int?> echeanceProphylaxieId;
   const SoinsCalendrierCompanion({
     this.id = const Value.absent(),
@@ -18094,7 +18456,7 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     Expression<String>? veterinaire,
     Expression<String>? symptomes,
     Expression<int>? coutFcfa,
-    Expression<int>? bandeId,
+    Expression<String>? bandeId,
     Expression<int>? echeanceProphylaxieId,
   }) {
     return RawValuesInsertable({
@@ -18129,7 +18491,7 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     Value<String?>? veterinaire,
     Value<String?>? symptomes,
     Value<int>? coutFcfa,
-    Value<int?>? bandeId,
+    Value<String?>? bandeId,
     Value<int?>? echeanceProphylaxieId,
   }) {
     return SoinsCalendrierCompanion(
@@ -18191,7 +18553,7 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
       map['cout_fcfa'] = Variable<int>(coutFcfa.value);
     }
     if (bandeId.present) {
-      map['bande_id'] = Variable<int>(bandeId.value);
+      map['bande_id'] = Variable<String>(bandeId.value);
     }
     if (echeanceProphylaxieId.present) {
       map['echeance_prophylaxie_id'] = Variable<int>(
@@ -18811,16 +19173,13 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
   $BandesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -18885,6 +19244,41 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -18894,6 +19288,9 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     effectifInitial,
     dateCloture,
     observations,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -18964,6 +19361,24 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -18978,7 +19393,7 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return BandeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -19005,6 +19420,18 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
         DriftSqlType.string,
         data['${effectivePrefix}observations'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -19015,7 +19442,7 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
 }
 
 class BandeRow extends DataClass implements Insertable<BandeRow> {
-  final int id;
+  final String id;
 
   /// Identifiant de filière — même valeur que `FICHE_JOURNEE.espece`.
   final String espece;
@@ -19035,6 +19462,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
   /// `null` = bande en cours.
   final DateTime? dateCloture;
   final String? observations;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const BandeRow({
     required this.id,
     required this.espece,
@@ -19043,11 +19473,14 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     this.effectifInitial,
     this.dateCloture,
     this.observations,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['code'] = Variable<String>(code);
     map['date_mise_en_bande'] = Variable<DateTime>(dateMiseEnBande);
@@ -19060,6 +19493,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     if (!nullToAbsent || observations != null) {
       map['observations'] = Variable<String>(observations);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -19078,6 +19516,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
       observations: observations == null && nullToAbsent
           ? const Value.absent()
           : Value(observations),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -19087,37 +19530,46 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BandeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       code: serializer.fromJson<String>(json['code']),
       dateMiseEnBande: serializer.fromJson<DateTime>(json['dateMiseEnBande']),
       effectifInitial: serializer.fromJson<int?>(json['effectifInitial']),
       dateCloture: serializer.fromJson<DateTime?>(json['dateCloture']),
       observations: serializer.fromJson<String?>(json['observations']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'code': serializer.toJson<String>(code),
       'dateMiseEnBande': serializer.toJson<DateTime>(dateMiseEnBande),
       'effectifInitial': serializer.toJson<int?>(effectifInitial),
       'dateCloture': serializer.toJson<DateTime?>(dateCloture),
       'observations': serializer.toJson<String?>(observations),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   BandeRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     String? code,
     DateTime? dateMiseEnBande,
     Value<int?> effectifInitial = const Value.absent(),
     Value<DateTime?> dateCloture = const Value.absent(),
     Value<String?> observations = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => BandeRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -19128,6 +19580,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
         : this.effectifInitial,
     dateCloture: dateCloture.present ? dateCloture.value : this.dateCloture,
     observations: observations.present ? observations.value : this.observations,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   BandeRow copyWithCompanion(BandesCompanion data) {
     return BandeRow(
@@ -19146,6 +19601,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
       observations: data.observations.present
           ? data.observations.value
           : this.observations,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -19158,7 +19618,10 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
           ..write('dateMiseEnBande: $dateMiseEnBande, ')
           ..write('effectifInitial: $effectifInitial, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('observations: $observations')
+          ..write('observations: $observations, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -19172,6 +19635,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     effectifInitial,
     dateCloture,
     observations,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -19183,17 +19649,24 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
           other.dateMiseEnBande == this.dateMiseEnBande &&
           other.effectifInitial == this.effectifInitial &&
           other.dateCloture == this.dateCloture &&
-          other.observations == this.observations);
+          other.observations == this.observations &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class BandesCompanion extends UpdateCompanion<BandeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<String> code;
   final Value<DateTime> dateMiseEnBande;
   final Value<int?> effectifInitial;
   final Value<DateTime?> dateCloture;
   final Value<String?> observations;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const BandesCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -19202,6 +19675,10 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     this.effectifInitial = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.observations = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   BandesCompanion.insert({
     this.id = const Value.absent(),
@@ -19211,17 +19688,25 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     this.effectifInitial = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.observations = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        code = Value(code),
        dateMiseEnBande = Value(dateMiseEnBande);
   static Insertable<BandeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<String>? code,
     Expression<DateTime>? dateMiseEnBande,
     Expression<int>? effectifInitial,
     Expression<DateTime>? dateCloture,
     Expression<String>? observations,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -19231,17 +19716,25 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
       if (effectifInitial != null) 'effectif_initial': effectifInitial,
       if (dateCloture != null) 'date_cloture': dateCloture,
       if (observations != null) 'observations': observations,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   BandesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<String>? code,
     Value<DateTime>? dateMiseEnBande,
     Value<int?>? effectifInitial,
     Value<DateTime?>? dateCloture,
     Value<String?>? observations,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return BandesCompanion(
       id: id ?? this.id,
@@ -19251,6 +19744,10 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
       effectifInitial: effectifInitial ?? this.effectifInitial,
       dateCloture: dateCloture ?? this.dateCloture,
       observations: observations ?? this.observations,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -19258,7 +19755,7 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -19278,6 +19775,18 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     if (observations.present) {
       map['observations'] = Variable<String>(observations.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -19290,7 +19799,11 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
           ..write('dateMiseEnBande: $dateMiseEnBande, ')
           ..write('effectifInitial: $effectifInitial, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('observations: $observations')
+          ..write('observations: $observations, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -31776,7 +32289,7 @@ typedef $$MouvementsIntrantTableProcessedTableManager =
     >;
 typedef $$FicheJourneeTableCreateCompanionBuilder =
     FicheJourneeCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required DateTime date,
       Value<int> achat,
@@ -31805,10 +32318,14 @@ typedef $$FicheJourneeTableCreateCompanionBuilder =
       Value<String?> traitementObs,
       Value<bool> traitementValide,
       Value<bool> isRecorded,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$FicheJourneeTableUpdateCompanionBuilder =
     FicheJourneeCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<DateTime> date,
       Value<int> achat,
@@ -31837,6 +32354,10 @@ typedef $$FicheJourneeTableUpdateCompanionBuilder =
       Value<String?> traitementObs,
       Value<bool> traitementValide,
       Value<bool> isRecorded,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$FicheJourneeTableFilterComposer
@@ -31848,7 +32369,7 @@ class $$FicheJourneeTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -31992,6 +32513,21 @@ class $$FicheJourneeTableFilterComposer
     column: $table.isRecorded,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$FicheJourneeTableOrderingComposer
@@ -32003,7 +32539,7 @@ class $$FicheJourneeTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -32147,6 +32683,21 @@ class $$FicheJourneeTableOrderingComposer
     column: $table.isRecorded,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FicheJourneeTableAnnotationComposer
@@ -32158,7 +32709,7 @@ class $$FicheJourneeTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -32268,6 +32819,17 @@ class $$FicheJourneeTableAnnotationComposer
     column: $table.isRecorded,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$FicheJourneeTableTableManager
@@ -32301,7 +32863,7 @@ class $$FicheJourneeTableTableManager
               $$FicheJourneeTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> achat = const Value.absent(),
@@ -32330,6 +32892,10 @@ class $$FicheJourneeTableTableManager
                 Value<String?> traitementObs = const Value.absent(),
                 Value<bool> traitementValide = const Value.absent(),
                 Value<bool> isRecorded = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion(
                 id: id,
                 espece: espece,
@@ -32360,10 +32926,14 @@ class $$FicheJourneeTableTableManager
                 traitementObs: traitementObs,
                 traitementValide: traitementValide,
                 isRecorded: isRecorded,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required DateTime date,
                 Value<int> achat = const Value.absent(),
@@ -32392,6 +32962,10 @@ class $$FicheJourneeTableTableManager
                 Value<String?> traitementObs = const Value.absent(),
                 Value<bool> traitementValide = const Value.absent(),
                 Value<bool> isRecorded = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion.insert(
                 id: id,
                 espece: espece,
@@ -32422,6 +32996,10 @@ class $$FicheJourneeTableTableManager
                 traitementObs: traitementObs,
                 traitementValide: traitementValide,
                 isRecorded: isRecorded,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -32450,17 +33028,27 @@ typedef $$FicheJourneeTableProcessedTableManager =
     >;
 typedef $$FicheVentesJourTableCreateCompanionBuilder =
     FicheVentesJourCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required DateTime date,
       Value<int> qte,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$FicheVentesJourTableUpdateCompanionBuilder =
     FicheVentesJourCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<DateTime> date,
       Value<int> qte,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$FicheVentesJourTableFilterComposer
@@ -32472,7 +33060,7 @@ class $$FicheVentesJourTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -32491,6 +33079,26 @@ class $$FicheVentesJourTableFilterComposer
     column: $table.qte,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$FicheVentesJourTableOrderingComposer
@@ -32502,7 +33110,7 @@ class $$FicheVentesJourTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -32521,6 +33129,26 @@ class $$FicheVentesJourTableOrderingComposer
     column: $table.qte,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FicheVentesJourTableAnnotationComposer
@@ -32532,7 +33160,7 @@ class $$FicheVentesJourTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -32543,6 +33171,20 @@ class $$FicheVentesJourTableAnnotationComposer
 
   GeneratedColumn<int> get qte =>
       $composableBuilder(column: $table.qte, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$FicheVentesJourTableTableManager
@@ -32582,27 +33224,47 @@ class $$FicheVentesJourTableTableManager
               $$FicheVentesJourTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> qte = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheVentesJourCompanion(
                 id: id,
                 espece: espece,
                 date: date,
                 qte: qte,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required DateTime date,
                 Value<int> qte = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheVentesJourCompanion.insert(
                 id: id,
                 espece: espece,
                 date: date,
                 qte: qte,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -33444,7 +34106,7 @@ typedef $$SoinsCalendrierTableCreateCompanionBuilder =
       Value<String?> veterinaire,
       Value<String?> symptomes,
       Value<int> coutFcfa,
-      Value<int?> bandeId,
+      Value<String?> bandeId,
       Value<int?> echeanceProphylaxieId,
     });
 typedef $$SoinsCalendrierTableUpdateCompanionBuilder =
@@ -33461,7 +34123,7 @@ typedef $$SoinsCalendrierTableUpdateCompanionBuilder =
       Value<String?> veterinaire,
       Value<String?> symptomes,
       Value<int> coutFcfa,
-      Value<int?> bandeId,
+      Value<String?> bandeId,
       Value<int?> echeanceProphylaxieId,
     });
 
@@ -33534,7 +34196,7 @@ class $$SoinsCalendrierTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get bandeId => $composableBuilder(
+  ColumnFilters<String> get bandeId => $composableBuilder(
     column: $table.bandeId,
     builder: (column) => ColumnFilters(column),
   );
@@ -33614,7 +34276,7 @@ class $$SoinsCalendrierTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get bandeId => $composableBuilder(
+  ColumnOrderings<String> get bandeId => $composableBuilder(
     column: $table.bandeId,
     builder: (column) => ColumnOrderings(column),
   );
@@ -33678,7 +34340,7 @@ class $$SoinsCalendrierTableAnnotationComposer
   GeneratedColumn<int> get coutFcfa =>
       $composableBuilder(column: $table.coutFcfa, builder: (column) => column);
 
-  GeneratedColumn<int> get bandeId =>
+  GeneratedColumn<String> get bandeId =>
       $composableBuilder(column: $table.bandeId, builder: (column) => column);
 
   GeneratedColumn<int> get echeanceProphylaxieId => $composableBuilder(
@@ -33736,7 +34398,7 @@ class $$SoinsCalendrierTableTableManager
                 Value<String?> veterinaire = const Value.absent(),
                 Value<String?> symptomes = const Value.absent(),
                 Value<int> coutFcfa = const Value.absent(),
-                Value<int?> bandeId = const Value.absent(),
+                Value<String?> bandeId = const Value.absent(),
                 Value<int?> echeanceProphylaxieId = const Value.absent(),
               }) => SoinsCalendrierCompanion(
                 id: id,
@@ -33768,7 +34430,7 @@ class $$SoinsCalendrierTableTableManager
                 Value<String?> veterinaire = const Value.absent(),
                 Value<String?> symptomes = const Value.absent(),
                 Value<int> coutFcfa = const Value.absent(),
-                Value<int?> bandeId = const Value.absent(),
+                Value<String?> bandeId = const Value.absent(),
                 Value<int?> echeanceProphylaxieId = const Value.absent(),
               }) => SoinsCalendrierCompanion.insert(
                 id: id,
@@ -34091,23 +34753,31 @@ typedef $$InfirmerieTableProcessedTableManager =
     >;
 typedef $$BandesTableCreateCompanionBuilder =
     BandesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required String code,
       required DateTime dateMiseEnBande,
       Value<int?> effectifInitial,
       Value<DateTime?> dateCloture,
       Value<String?> observations,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$BandesTableUpdateCompanionBuilder =
     BandesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<String> code,
       Value<DateTime> dateMiseEnBande,
       Value<int?> effectifInitial,
       Value<DateTime?> dateCloture,
       Value<String?> observations,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$BandesTableFilterComposer
@@ -34119,7 +34789,7 @@ class $$BandesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -34153,6 +34823,21 @@ class $$BandesTableFilterComposer
     column: $table.observations,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$BandesTableOrderingComposer
@@ -34164,7 +34849,7 @@ class $$BandesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -34198,6 +34883,21 @@ class $$BandesTableOrderingComposer
     column: $table.observations,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BandesTableAnnotationComposer
@@ -34209,7 +34909,7 @@ class $$BandesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -34237,6 +34937,17 @@ class $$BandesTableAnnotationComposer
     column: $table.observations,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$BandesTableTableManager
@@ -34267,13 +34978,17 @@ class $$BandesTableTableManager
               $$BandesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<DateTime> dateMiseEnBande = const Value.absent(),
                 Value<int?> effectifInitial = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> observations = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BandesCompanion(
                 id: id,
                 espece: espece,
@@ -34282,16 +34997,24 @@ class $$BandesTableTableManager
                 effectifInitial: effectifInitial,
                 dateCloture: dateCloture,
                 observations: observations,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required String code,
                 required DateTime dateMiseEnBande,
                 Value<int?> effectifInitial = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> observations = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BandesCompanion.insert(
                 id: id,
                 espece: espece,
@@ -34300,6 +35023,10 @@ class $$BandesTableTableManager
                 effectifInitial: effectifInitial,
                 dateCloture: dateCloture,
                 observations: observations,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

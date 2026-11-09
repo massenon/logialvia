@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../administration/data/seed/modules_actifs_seeder.dart';
 import '../../elevage/data/seed/parametres_elevage_seeder.dart';
+import '../../elevage/data/sync/identifiants_elevage.dart';
+import '../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../administration/data/tables/audit_logs_table.dart';
 import '../../administration/data/tables/messages_editeur_table.dart';
 import '../../administration/data/tables/corbeille_table.dart';
@@ -422,6 +424,12 @@ class AppDatabase extends _$AppDatabase {
         // Palier 6 : journal des corrections de stock des produits vendables.
         await _creerTable(m, mouvementsProduit);
       }
+      if (from < 38) {
+        // DV-19, palier 7a : fiches journalieres, compteurs de ventes du jour et
+        // bandes en UUID, avec leurs colonnes de synchronisation. `soins_calendrier`
+        // suit (`bande_id`). Voir `46a_`.
+        await _elevageEnUuid(m);
+      }
       if (from < 42) {
         // DV-19, palier P9 : factures et lignes de facture en UUID, avec leurs
         // colonnes de synchronisation. Les references (`FV-2026-001`) ne changent
@@ -557,6 +565,144 @@ class AppDatabase extends _$AppDatabase {
     }
 
     await customStatement('DROP TABLE IF EXISTS _map_produits');
+  }
+
+  /// Vrai si `id` est deja du texte (migration deja jouee, restauration).
+  Future<bool> _idEstTexte(String table) async {
+    final colonnes = await customSelect('PRAGMA table_info("$table")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    return id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT';
+  }
+
+  /// Palier 7a : les trois tables d'elevage en UUID. Idempotent.
+  Future<void> _elevageEnUuid(Migrator m) async {
+    await _fichesJourneeEnUuid(m);
+    await _ventesJourEnUuid(m);
+    await _bandesEnUuid(m);
+  }
+
+  /// `fiche_journee` : UUID DETERMINISTE de (espece, date), pour que deux postes
+  /// convergent sur la meme ligne. Jamais de perte : meme nombre de lignes, memes
+  /// valeurs. Une fiche d'hier a ete SAISIE le jour qu'elle decrit : c'est son instant
+  /// de saisie (celui de la migration la ferait gagner contre une correction faite
+  /// ailleurs). Toutes sont `pending` : le serveur ne les a jamais vues.
+  Future<void> _fichesJourneeEnUuid(Migrator m) async {
+    if (await _idEstTexte('fiche_journee')) return;
+
+    await customStatement('DROP TABLE IF EXISTS _map_fiches');
+    await customStatement(
+      'CREATE TABLE _map_fiches (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+    );
+    final lignes = await customSelect(
+      'SELECT id, espece, date FROM fiche_journee ORDER BY id',
+    ).get();
+    for (final l in lignes) {
+      final jour = DateTime.fromMillisecondsSinceEpoch(l.read<int>('date') * 1000);
+      await customStatement(
+        'INSERT INTO _map_fiches (ancien, nouveau) VALUES (?, ?)',
+        [l.read<int>('id'), identifiantFicheJournee(l.read<String>('espece'), jour)],
+      );
+    }
+
+    await m.alterTable(
+      TableMigration(
+        ficheJournee,
+        columnTransformer: {
+          ficheJournee.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_fiches WHERE ancien = id)',
+          ),
+          ficheJournee.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', date, 'unixepoch')",
+          ),
+        },
+        newColumns: [ficheJournee.syncStatus, ficheJournee.syncMotif, ficheJournee.updatedAt],
+      ),
+    );
+    await customStatement('DROP TABLE IF EXISTS _map_fiches');
+  }
+
+  /// `fiche_ventes_jour` : un compteur par POSTE. Les lignes existantes sont celles
+  /// de CE poste (`origine` vide) ; leur UUID depend de (espece, date, identifiant du
+  /// poste), que la migration cree s'il n'existe pas encore.
+  Future<void> _ventesJourEnUuid(Migrator m) async {
+    if (await _idEstTexte('fiche_ventes_jour')) return;
+
+    final poste = await PreferencesPosteRepository(this).identifiantPoste();
+    await customStatement('DROP TABLE IF EXISTS _map_ventes_jour');
+    await customStatement(
+      'CREATE TABLE _map_ventes_jour (ancien INTEGER NOT NULL, nouveau TEXT NOT NULL)',
+    );
+    final lignes = await customSelect(
+      'SELECT id, espece, date FROM fiche_ventes_jour ORDER BY id',
+    ).get();
+    for (final l in lignes) {
+      final jour = DateTime.fromMillisecondsSinceEpoch(l.read<int>('date') * 1000);
+      await customStatement(
+        'INSERT INTO _map_ventes_jour (ancien, nouveau) VALUES (?, ?)',
+        [l.read<int>('id'), identifiantVentesJour(l.read<String>('espece'), jour, poste)],
+      );
+    }
+
+    await m.alterTable(
+      TableMigration(
+        ficheVentesJour,
+        columnTransformer: {
+          ficheVentesJour.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_ventes_jour WHERE ancien = id)',
+          ),
+          ficheVentesJour.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', date, 'unixepoch')",
+          ),
+        },
+        newColumns: [
+          ficheVentesJour.origine,
+          ficheVentesJour.syncStatus,
+          ficheVentesJour.syncMotif,
+          ficheVentesJour.updatedAt,
+        ],
+      ),
+    );
+    await customStatement('DROP TABLE IF EXISTS _map_ventes_jour');
+  }
+
+  /// `bandes` en UUID aleatoire (donnee saisie par l'utilisatrice) ; chaque soin
+  /// injecte garde sa bande (`soins_calendrier.bande_id` suit la table de
+  /// correspondance).
+  Future<void> _bandesEnUuid(Migrator m) async {
+    if (await _idEstTexte('bandes')) return;
+
+    await customStatement('DROP TABLE IF EXISTS _map_bandes');
+    await customStatement(
+      'CREATE TABLE _map_bandes AS SELECT id AS ancien, $_uuidSql AS nouveau FROM bandes',
+    );
+    await m.alterTable(
+      TableMigration(
+        bandes,
+        columnTransformer: {
+          bandes.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_bandes WHERE ancien = id)',
+          ),
+          // Dernier geste connu sur une bande : sa cloture, sinon sa mise en place.
+          bandes.updatedAt: const CustomExpression<String>(
+            "strftime('%Y-%m-%dT%H:%M:%fZ', COALESCE(date_cloture, date_mise_en_bande), 'unixepoch')",
+          ),
+        },
+        newColumns: [bandes.syncStatus, bandes.syncMotif, bandes.updatedAt],
+      ),
+    );
+    if (await _colonneExiste('soins_calendrier', 'bande_id')) {
+      await m.alterTable(
+        TableMigration(
+          soinsCalendrier,
+          columnTransformer: {
+            soinsCalendrier.bandeId: const CustomExpression<String>(
+              '(SELECT nouveau FROM _map_bandes WHERE ancien = bande_id)',
+            ),
+          },
+        ),
+      );
+    }
+    await customStatement('DROP TABLE IF EXISTS _map_bandes');
   }
 
   /// Le journal des mouvements d'intrants en UUID. Idempotent.

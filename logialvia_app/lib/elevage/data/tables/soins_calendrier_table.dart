@@ -39,7 +39,8 @@ class SoinsCalendrier extends Table {
   // a la main les laisse a NULL.
 
   /// Bande dont ce soin decoule (`BANDES.id`).
-  IntColumn get bandeId => integer().nullable()();
+  /// UUID de la bande (schema v38 : `bandes.id` est desormais un UUID).
+  TextColumn get bandeId => text().nullable()();
 
   /// Echeance du calendrier dont ce soin decoule
   /// (`CALENDRIER_PROPHYLAXIE.id`).

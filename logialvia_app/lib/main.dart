@@ -40,6 +40,9 @@ import 'commercial/data/sync/table_produits_poste.dart';
 import 'commercial/data/sync/table_factures_poste.dart';
 import 'commercial/data/sync/table_groupes_taxe_poste.dart';
 import 'commercial/data/sync/table_ventes_poste.dart';
+import 'elevage/data/sync/table_bandes_poste.dart';
+import 'elevage/data/sync/table_fiches_journee_poste.dart';
+import 'elevage/data/sync/table_ventes_jour_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
@@ -193,6 +196,11 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
       TableAchatsPoste(widget.database),
       TableMouvementsIntrantPoste(widget.database),
       TableMouvementsProduitPoste(widget.database),
+      // Palier 7a : fiches journalieres, compteurs de ventes du jour (une ligne par
+      // poste) et bandes (`46a_`).
+      TableFichesJourneePoste(widget.database),
+      TableVentesJourPoste(widget.database),
+      TableBandesPoste(widget.database),
     ],
   );
   late final PlanificateurSynchronisation

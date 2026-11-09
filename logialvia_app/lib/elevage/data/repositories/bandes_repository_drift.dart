@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/bande.dart';
 import '../../domain/repositories/bandes_repository.dart';
 
@@ -76,15 +77,22 @@ class BandesRepositoryDrift implements BandesRepository {
     String? observations,
   }) async {
     final jour = _minuit(dateMiseEnBande);
-    final id = await _db
+    // UUID aleatoire (DV-19) : une bande est une saisie de l'utilisatrice. Le code
+    // reste unique par filiere (`UNIQUE(espece, code)`) : deux postes qui declarent
+    // « B2 » ne se confondent pas, le second recoit un refus visible (`46a_`).
+    final id = nouvelUuid();
+    await _db
         .into(_db.bandes)
         .insert(
           BandesCompanion.insert(
+            id: Value(id),
             espece: espece,
             code: code,
             dateMiseEnBande: jour,
             effectifInitial: Value(effectifInitial),
             observations: Value(observations),
+            syncStatus: const Value('pending'),
+            updatedAt: Value(instantSaisie()),
           ),
         );
 
@@ -100,11 +108,17 @@ class BandesRepositoryDrift implements BandesRepository {
 
   @override
   Future<void> cloturerBande({
-    required int id,
+    required String id,
     required DateTime dateCloture,
   }) async {
     await (_db.update(_db.bandes)..where((b) => b.id.equals(id))).write(
-      BandesCompanion(dateCloture: Value(_minuit(dateCloture))),
+      BandesCompanion(
+        dateCloture: Value(_minuit(dateCloture)),
+        // Toute modification locale remet la bande a envoyer (`46_` §1).
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
+      ),
     );
   }
 

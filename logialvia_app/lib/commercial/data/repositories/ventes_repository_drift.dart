@@ -6,6 +6,7 @@ import '../../domain/services/numerotation_pieces.dart';
 import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../../core/sync/identifiant_poste.dart';
+import '../../../elevage/data/sync/identifiants_elevage.dart';
 import '../../../core/events/domain_event.dart';
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
@@ -647,17 +648,25 @@ class VentesRepositoryDrift implements VentesRepository {
     );
   }
 
-  /// `FICHE_VENTES_JOUR` — `UNIQUE(espece, date)`, incrément cumulatif.
+  /// `FICHE_VENTES_JOUR` — compteur cumulatif **de CE poste** (`46a_`) : une ligne par
+  /// (espece, date) avec `origine` vide. Les compteurs des autres postes sont des
+  /// lignes a part (leur `origine`) que cette methode ne touche JAMAIS : la vente d'un
+  /// autre poste n'incremente pas mon compteur, elle arrive par sa propre ligne.
   Future<void> _ajusterFicheVentesJour({
     required String espece,
     required DateTime date,
     required int delta,
   }) async {
     final jour = DateTime(date.year, date.month, date.day);
+    final poste = await PreferencesPosteRepository(_db).identifiantPoste();
 
     final existant =
-        await (_db.select(_db.ficheVentesJour)
-              ..where((f) => f.espece.equals(espece) & f.date.equals(jour)))
+        await (_db.select(_db.ficheVentesJour)..where(
+              (f) =>
+                  f.espece.equals(espece) &
+                  f.date.equals(jour) &
+                  f.origine.isNull(),
+            ))
             .getSingleOrNull();
 
     if (existant == null) {
@@ -666,9 +675,13 @@ class VentesRepositoryDrift implements VentesRepository {
           .into(_db.ficheVentesJour)
           .insert(
             FicheVentesJourCompanion.insert(
+              // Deterministe : (espece, date, poste). Un compteur jamais duplique.
+              id: Value(identifiantVentesJour(espece, jour, poste)),
               espece: espece,
               date: jour,
               qte: Value(delta),
+              syncStatus: const Value('pending'),
+              updatedAt: Value(instantSaisie()),
             ),
           );
       return;
@@ -679,6 +692,9 @@ class VentesRepositoryDrift implements VentesRepository {
     )..where((f) => f.id.equals(existant.id))).write(
       FicheVentesJourCompanion(
         qte: Value((existant.qte + delta).clamp(0, 1 << 30)),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }

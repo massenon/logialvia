@@ -14,7 +14,7 @@ class Bande {
     this.observations,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final String code;
 
