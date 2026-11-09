@@ -128,6 +128,11 @@ return [
     ],
 
     /*
+    | Duree de vie du jeton d'un poste (blueprint : 90 jours).
+    */
+    'jeton_duree_jours' => (int) env('SANCTUM_EXPIRATION_JOURS', 90),
+
+    /*
     | Premier administrateur (AdminSeeder). Le mot de passe vient de
     | l'environnement, jamais du code.
     */
