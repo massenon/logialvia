@@ -89,7 +89,7 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 | # | Étape | Dépend de | État |
 |---|---|---|---|
 | W0 | Squelette Laravel 12 + jetons de design copiés du Dart + test de conformité Tailwind↔Dart | installation par clonage git (§3) | **fait** (09/11/2026) : Laravel 12.71, Livewire 3.8, Sanctum 4.3, Spatie Permission 7.4, DomPDF 3.1, Tailwind 3.4 ; test de conformité vérifié par mutation |
-| W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | en attente |
+| W1 | Modèle UUID, rôles, modules actifs, paramètres | W0 | **fait** (09/11/2026) : utilisateurs UUID + suppression logique, jetons Sanctum et rôles Spatie en UUID, 4 rôles et 22 droits, 5 modules désactivés, paramètres (ligne unique), premier administrateur par variable d'environnement ; tests de conformité des droits et des valeurs par défaut au Dart (31 tests, vérifiés par mutation) |
 | W2 | API d'appairage (login par poste, jeton, révocation) + écran web « Postes & Appairage » | W1 | en attente |
 | W3 | Contrat et moteur `pull`/`push` serveur, essai multipostes | W2 | en attente |
 | P0 | **Contrat de synchronisation** écrit (tables, ordre, règles par donnée) | — | à faire, sans réseau |
