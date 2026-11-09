@@ -2,6 +2,7 @@ import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../../core/events/domain_event.dart';
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
@@ -420,10 +421,12 @@ class VentesRepositoryDrift implements VentesRepository {
 
   @override
   Future<ProduitVendable> creerProduit(ProduitVendable produit) async {
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.produitsVendables)
         .insert(
           ProduitsVendablesCompanion.insert(
+            id: Value(id),
             sku: Value(produit.sku),
             name: produit.nom,
             cat: produit.categorie,
@@ -475,7 +478,7 @@ class VentesRepositoryDrift implements VentesRepository {
 
   @override
   Future<void> supprimerProduit(
-    int produitId, {
+    String produitId, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
@@ -509,7 +512,7 @@ class VentesRepositoryDrift implements VentesRepository {
     return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
   }
 
-  Future<void> _decrementerStock(int produitId, int quantite) async {
+  Future<void> _decrementerStock(String produitId, int quantite) async {
     final produit = await (_db.select(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();
@@ -524,7 +527,7 @@ class VentesRepositoryDrift implements VentesRepository {
     );
   }
 
-  Future<void> _incrementerStock(int produitId, int quantite) async {
+  Future<void> _incrementerStock(String produitId, int quantite) async {
     final produit = await (_db.select(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();

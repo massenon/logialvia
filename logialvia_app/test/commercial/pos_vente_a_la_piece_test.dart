@@ -123,7 +123,8 @@ void main() {
     test('un produit épuisé est refusé', () async {
       final goliath = produit('Goliath mature');
       await db.customStatement(
-        'UPDATE produits_vendables SET stock = 0 WHERE id = ${goliath.id}',
+        'UPDATE produits_vendables SET stock = 0 WHERE id = ?',
+        [goliath.id],
       );
       await vm.charger();
 

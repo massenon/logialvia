@@ -219,7 +219,7 @@ void main() {
             panier: [
               ligne(goliath, 1),
               const LignePanier(
-                produitId: 99999,
+                produitId: 'aaaaaaaa-0000-4000-8000-000000000000',
                 nom: 'Produit fantôme',
                 montantGlobal: 100,
                 quantite: 1,
@@ -399,7 +399,7 @@ void main() {
     test('création, modification et suppression persistent', () async {
       final cree = await repository.creerProduit(
         const ProduitVendable(
-          id: 0,
+          id: '',
           nom: 'Œufs fertiles goliath (lot)',
           categorie: 'Avicole',
           prix: 5000,

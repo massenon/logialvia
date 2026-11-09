@@ -19,7 +19,7 @@ class ProduitVendable {
     this.coutRevient,
   });
 
-  final int id;
+  final String id;
 
   /// Référence catalogue affichée en 1ʳᵉ colonne (`catalogue-produits.html`).
   final String? sku;

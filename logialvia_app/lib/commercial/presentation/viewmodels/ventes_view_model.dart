@@ -277,7 +277,7 @@ class VentesViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void retirerDuPanier(int produitId) {
+  void retirerDuPanier(String produitId) {
     _panier.removeWhere((l) => l.produitId == produitId);
     notifyListeners();
   }

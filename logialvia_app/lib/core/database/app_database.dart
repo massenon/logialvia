@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -98,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 32;
+  static const int versionSchema = 33;
 
   @override
   int get schemaVersion => versionSchema;
@@ -394,6 +395,12 @@ class AppDatabase extends _$AppDatabase {
         // nouvelle, aucune donnee a reprendre.
         await _creerTable(m, demandesReferentiel);
       }
+      if (from < 33) {
+        // DV-19, palier 3a : `produits_vendables` et `lignes_vente` passent en
+        // UUID ; `lignes_vente.produit_id` suit. Les lignes d'une vente
+        // d'hier pointent vers le NOUVEL identifiant de leur produit.
+        await _produitsEtLignesEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -433,6 +440,79 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _creerTable(Migrator m, TableInfo table) async {
     if (await _tableExiste(table.actualTableName)) return;
     await m.createTable(table);
+  }
+
+  /// Expression SQLite d'un UUID v4 (une valeur distincte par ligne).
+  static const String _uuidSql =
+      "lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || "
+      "'-4' || substr(lower(hex(randomblob(2))), 2) || '-' || "
+      "substr('89ab', abs(random()) % 4 + 1, 1) || "
+      "substr(lower(hex(randomblob(2))), 2) || '-' || "
+      "lower(hex(randomblob(6)))";
+
+  /// Reconstruit `produits_vendables` et `lignes_vente` en UUID, en gardant le
+  /// lien entre chaque ligne de vente et son produit. Idempotent.
+  Future<void> _produitsEtLignesEnUuid(Migrator m) async {
+    final colonnes = await customSelect(
+      'PRAGMA table_info("produits_vendables")',
+    ).get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT') {
+      return;
+    }
+
+    // Table de correspondance ancien entier -> nouvel UUID, le temps de la
+    // migration : les lignes de vente la consultent pour retrouver leur produit.
+    await customStatement('DROP TABLE IF EXISTS _map_produits');
+    await customStatement(
+      'CREATE TABLE _map_produits AS '
+      'SELECT id AS ancien, $_uuidSql AS nouveau FROM produits_vendables',
+    );
+
+    await m.alterTable(
+      TableMigration(
+        produitsVendables,
+        columnTransformer: {
+          produitsVendables.id: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_produits WHERE ancien = id)',
+          ),
+        },
+      ),
+    );
+    await m.alterTable(
+      TableMigration(
+        lignesVente,
+        columnTransformer: {
+          lignesVente.id: const CustomExpression<String>(_uuidSql),
+          lignesVente.produitId: const CustomExpression<String>(
+            '(SELECT nouveau FROM _map_produits WHERE ancien = produit_id)',
+          ),
+        },
+      ),
+    );
+
+    // Les produits deja archives en corbeille portent leur ancien entier dans
+    // leur instantane : restaures tels quels, ils reviendraient sans UUID.
+    final archives = await customSelect(
+      "SELECT id, donnees_json FROM corbeille WHERE nom_table = 'produits_vendables'",
+    ).get();
+    for (final a in archives) {
+      final donnees = jsonDecode(a.read<String>('donnees_json')) as Map<String, Object?>;
+      final ancien = donnees['id'];
+      final nouveau = await customSelect(
+        'SELECT nouveau FROM _map_produits WHERE ancien = ?',
+        variables: [Variable(ancien)],
+      ).getSingleOrNull();
+      // Un produit archive n'est plus dans `produits_vendables` : pas de
+      // correspondance, on lui en donne un neuf.
+      donnees['id'] = nouveau?.read<String>('nouveau') ?? nouvelUuid();
+      await customStatement(
+        'UPDATE corbeille SET donnees_json = ? WHERE id = ?',
+        [jsonEncode(donnees), a.read<int>('id')],
+      );
+    }
+
+    await customStatement('DROP TABLE IF EXISTS _map_produits');
   }
 
   /// Reconstruit `clients` en UUID. Idempotent : une base dont `clients.id` est

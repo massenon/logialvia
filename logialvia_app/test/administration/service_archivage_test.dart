@@ -24,11 +24,11 @@ void main() {
     return ligne.read<int>('n');
   }
 
-  Future<int> premierProduitId() async {
+  Future<String> premierProduitId() async {
     final ligne = await db
         .customSelect('SELECT id FROM produits_vendables LIMIT 1')
         .getSingle();
-    return ligne.read<int>('id');
+    return ligne.read<String>('id');
   }
 
   group('Archiver ne détruit rien', () {
@@ -101,7 +101,7 @@ void main() {
       final avant = await db
           .customSelect(
             'SELECT * FROM produits_vendables WHERE id = ?',
-            variables: [Variable.withInt(id)],
+            variables: [Variable.withString(id)],
           )
           .getSingle();
 
@@ -116,7 +116,7 @@ void main() {
       final apres = await db
           .customSelect(
             'SELECT * FROM produits_vendables WHERE id = ?',
-            variables: [Variable.withInt(id)],
+            variables: [Variable.withString(id)],
           )
           .getSingle();
 

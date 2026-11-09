@@ -65,7 +65,7 @@ abstract class VentesRepository {
   Future<void> mettreAJourProduit(ProduitVendable produit);
 
   Future<void> supprimerProduit(
-    int produitId, {
+    String produitId, {
     String? utilisateurId,
     String? utilisateurNom,
   });

@@ -110,7 +110,7 @@ class InventaireRepositoryDrift {
       innerJoin(_db.ventes, _db.ventes.ref.equalsExp(_db.lignesVente.venteRef)),
     ])..where(_db.ventes.status.equals('Annulée').not())).get();
 
-    double vendu(int produitId, bool Function(DateTime) filtre) => jointure
+    double vendu(String produitId, bool Function(DateTime) filtre) => jointure
         .where(
           (l) =>
               l.readTable(_db.lignesVente).produitId == produitId &&

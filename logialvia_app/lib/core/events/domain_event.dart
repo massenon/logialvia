@@ -19,7 +19,7 @@ class LigneVenteInfo {
     this.espece,
   });
 
-  final int produitId;
+  final String produitId;
   final double quantite;
 
   /// Renseignée si le produit est un animal vivant — déclenche la répercussion

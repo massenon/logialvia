@@ -5163,16 +5163,13 @@ class $ProduitsVendablesTable extends ProduitsVendables
   $ProduitsVendablesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _skuMeta = const VerificationMeta('sku');
   @override
@@ -5421,7 +5418,7 @@ class $ProduitsVendablesTable extends ProduitsVendables
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ProduitVendableRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       sku: attachedDatabase.typeMapping.read(
@@ -5483,7 +5480,10 @@ class $ProduitsVendablesTable extends ProduitsVendables
 
 class ProduitVendableRow extends DataClass
     implements Insertable<ProduitVendableRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46_`) : un produit cree sur deux postes ne
+  /// peut pas porter le meme entier. Les anciens produits recoivent le leur a la
+  /// migration v33.
+  final String id;
 
   /// ⚠️ AJOUTEE — colonne « SKU », 1ʳᵉ du tableau de `catalogue-produits.html`
   /// (l.126) et absente de Doc D1. Genere sous la forme 'PRD-001' faute de
@@ -5548,7 +5548,7 @@ class ProduitVendableRow extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     if (!nullToAbsent || sku != null) {
       map['sku'] = Variable<String>(sku);
     }
@@ -5602,7 +5602,7 @@ class ProduitVendableRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ProduitVendableRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       sku: serializer.fromJson<String?>(json['sku']),
       name: serializer.fromJson<String>(json['name']),
       cat: serializer.fromJson<String>(json['cat']),
@@ -5621,7 +5621,7 @@ class ProduitVendableRow extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'sku': serializer.toJson<String?>(sku),
       'name': serializer.toJson<String>(name),
       'cat': serializer.toJson<String>(cat),
@@ -5638,7 +5638,7 @@ class ProduitVendableRow extends DataClass
   }
 
   ProduitVendableRow copyWith({
-    int? id,
+    String? id,
     Value<String?> sku = const Value.absent(),
     String? name,
     String? cat,
@@ -5744,7 +5744,7 @@ class ProduitVendableRow extends DataClass
 }
 
 class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String?> sku;
   final Value<String> name;
   final Value<String> cat;
@@ -5757,6 +5757,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
   final Value<int> stock;
   final Value<int> threshold;
   final Value<String?> espece;
+  final Value<int> rowid;
   const ProduitsVendablesCompanion({
     this.id = const Value.absent(),
     this.sku = const Value.absent(),
@@ -5771,6 +5772,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     this.stock = const Value.absent(),
     this.threshold = const Value.absent(),
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ProduitsVendablesCompanion.insert({
     this.id = const Value.absent(),
@@ -5786,6 +5788,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     required int stock,
     required int threshold,
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : name = Value(name),
        cat = Value(cat),
        price = Value(price),
@@ -5794,7 +5797,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
        stock = Value(stock),
        threshold = Value(threshold);
   static Insertable<ProduitVendableRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? sku,
     Expression<String>? name,
     Expression<String>? cat,
@@ -5807,6 +5810,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     Expression<int>? stock,
     Expression<int>? threshold,
     Expression<String>? espece,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5822,11 +5826,12 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
       if (stock != null) 'stock': stock,
       if (threshold != null) 'threshold': threshold,
       if (espece != null) 'espece': espece,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ProduitsVendablesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String?>? sku,
     Value<String>? name,
     Value<String>? cat,
@@ -5839,6 +5844,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     Value<int>? stock,
     Value<int>? threshold,
     Value<String?>? espece,
+    Value<int>? rowid,
   }) {
     return ProduitsVendablesCompanion(
       id: id ?? this.id,
@@ -5854,6 +5860,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
       stock: stock ?? this.stock,
       threshold: threshold ?? this.threshold,
       espece: espece ?? this.espece,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -5861,7 +5868,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (sku.present) {
       map['sku'] = Variable<String>(sku.value);
@@ -5899,6 +5906,9 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -5917,7 +5927,8 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
           ..write('groupeTaxe: $groupeTaxe, ')
           ..write('stock: $stock, ')
           ..write('threshold: $threshold, ')
-          ..write('espece: $espece')
+          ..write('espece: $espece, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -7419,16 +7430,13 @@ class $LignesVenteTable extends LignesVente
   $LignesVenteTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _venteRefMeta = const VerificationMeta(
     'venteRef',
@@ -7448,11 +7456,11 @@ class $LignesVenteTable extends LignesVente
     'produitId',
   );
   @override
-  late final GeneratedColumn<int> produitId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> produitId = GeneratedColumn<String>(
     'produit_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES produits_vendables (id)',
@@ -7572,7 +7580,7 @@ class $LignesVenteTable extends LignesVente
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneVenteRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       venteRef: attachedDatabase.typeMapping.read(
@@ -7580,7 +7588,7 @@ class $LignesVenteTable extends LignesVente
         data['${effectivePrefix}vente_ref'],
       )!,
       produitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}produit_id'],
       )!,
       name: attachedDatabase.typeMapping.read(
@@ -7609,9 +7617,10 @@ class $LignesVenteTable extends LignesVente
 }
 
 class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne de vente est un fait synchronise.
+  final String id;
   final String venteRef;
-  final int produitId;
+  final String produitId;
 
   /// Nom du produit **au moment de la vente** — denormalise volontairement,
   /// pour que l'historique reste fidele si le produit est renomme plus tard.
@@ -7633,9 +7642,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['vente_ref'] = Variable<String>(venteRef);
-    map['produit_id'] = Variable<int>(produitId);
+    map['produit_id'] = Variable<String>(produitId);
     map['name'] = Variable<String>(name);
     map['qte'] = Variable<double>(qte);
     map['pu'] = Variable<double>(pu);
@@ -7665,9 +7674,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneVenteRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       venteRef: serializer.fromJson<String>(json['venteRef']),
-      produitId: serializer.fromJson<int>(json['produitId']),
+      produitId: serializer.fromJson<String>(json['produitId']),
       name: serializer.fromJson<String>(json['name']),
       qte: serializer.fromJson<double>(json['qte']),
       pu: serializer.fromJson<double>(json['pu']),
@@ -7678,9 +7687,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'venteRef': serializer.toJson<String>(venteRef),
-      'produitId': serializer.toJson<int>(produitId),
+      'produitId': serializer.toJson<String>(produitId),
       'name': serializer.toJson<String>(name),
       'qte': serializer.toJson<double>(qte),
       'pu': serializer.toJson<double>(pu),
@@ -7689,9 +7698,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   }
 
   LigneVenteRow copyWith({
-    int? id,
+    String? id,
     String? venteRef,
-    int? produitId,
+    String? produitId,
     String? name,
     double? qte,
     double? pu,
@@ -7748,13 +7757,14 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
 }
 
 class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> venteRef;
-  final Value<int> produitId;
+  final Value<String> produitId;
   final Value<String> name;
   final Value<double> qte;
   final Value<double> pu;
   final Value<String?> espece;
+  final Value<int> rowid;
   const LignesVenteCompanion({
     this.id = const Value.absent(),
     this.venteRef = const Value.absent(),
@@ -7763,28 +7773,31 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
     this.qte = const Value.absent(),
     this.pu = const Value.absent(),
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesVenteCompanion.insert({
     this.id = const Value.absent(),
     required String venteRef,
-    required int produitId,
+    required String produitId,
     required String name,
     required double qte,
     required double pu,
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : venteRef = Value(venteRef),
        produitId = Value(produitId),
        name = Value(name),
        qte = Value(qte),
        pu = Value(pu);
   static Insertable<LigneVenteRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? venteRef,
-    Expression<int>? produitId,
+    Expression<String>? produitId,
     Expression<String>? name,
     Expression<double>? qte,
     Expression<double>? pu,
     Expression<String>? espece,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7794,17 +7807,19 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
       if (qte != null) 'qte': qte,
       if (pu != null) 'pu': pu,
       if (espece != null) 'espece': espece,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesVenteCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? venteRef,
-    Value<int>? produitId,
+    Value<String>? produitId,
     Value<String>? name,
     Value<double>? qte,
     Value<double>? pu,
     Value<String?>? espece,
+    Value<int>? rowid,
   }) {
     return LignesVenteCompanion(
       id: id ?? this.id,
@@ -7814,6 +7829,7 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
       qte: qte ?? this.qte,
       pu: pu ?? this.pu,
       espece: espece ?? this.espece,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -7821,13 +7837,13 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (venteRef.present) {
       map['vente_ref'] = Variable<String>(venteRef.value);
     }
     if (produitId.present) {
-      map['produit_id'] = Variable<int>(produitId.value);
+      map['produit_id'] = Variable<String>(produitId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -7841,6 +7857,9 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -7853,7 +7872,8 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
           ..write('name: $name, ')
           ..write('qte: $qte, ')
           ..write('pu: $pu, ')
-          ..write('espece: $espece')
+          ..write('espece: $espece, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -24318,7 +24338,7 @@ typedef $$DemandesReferentielTableProcessedTableManager =
     >;
 typedef $$ProduitsVendablesTableCreateCompanionBuilder =
     ProduitsVendablesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String?> sku,
       required String name,
       required String cat,
@@ -24331,10 +24351,11 @@ typedef $$ProduitsVendablesTableCreateCompanionBuilder =
       required int stock,
       required int threshold,
       Value<String?> espece,
+      Value<int> rowid,
     });
 typedef $$ProduitsVendablesTableUpdateCompanionBuilder =
     ProduitsVendablesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String?> sku,
       Value<String> name,
       Value<String> cat,
@@ -24347,6 +24368,7 @@ typedef $$ProduitsVendablesTableUpdateCompanionBuilder =
       Value<int> stock,
       Value<int> threshold,
       Value<String?> espece,
+      Value<int> rowid,
     });
 
 final class $$ProduitsVendablesTableReferences
@@ -24372,7 +24394,7 @@ final class $$ProduitsVendablesTableReferences
     final manager = $$LignesVenteTableTableManager(
       $_db,
       $_db.lignesVente,
-    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_lignesVenteRefsTable($_db));
     return ProcessedTableManager(
@@ -24390,7 +24412,7 @@ class $$ProduitsVendablesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -24490,7 +24512,7 @@ class $$ProduitsVendablesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -24565,7 +24587,7 @@ class $$ProduitsVendablesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get sku =>
@@ -24667,7 +24689,7 @@ class $$ProduitsVendablesTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String?> sku = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> cat = const Value.absent(),
@@ -24680,6 +24702,7 @@ class $$ProduitsVendablesTableTableManager
                 Value<int> stock = const Value.absent(),
                 Value<int> threshold = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ProduitsVendablesCompanion(
                 id: id,
                 sku: sku,
@@ -24694,10 +24717,11 @@ class $$ProduitsVendablesTableTableManager
                 stock: stock,
                 threshold: threshold,
                 espece: espece,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String?> sku = const Value.absent(),
                 required String name,
                 required String cat,
@@ -24710,6 +24734,7 @@ class $$ProduitsVendablesTableTableManager
                 required int stock,
                 required int threshold,
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ProduitsVendablesCompanion.insert(
                 id: id,
                 sku: sku,
@@ -24724,6 +24749,7 @@ class $$ProduitsVendablesTableTableManager
                 stock: stock,
                 threshold: threshold,
                 espece: espece,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -25542,23 +25568,25 @@ typedef $$VentesTableProcessedTableManager =
     >;
 typedef $$LignesVenteTableCreateCompanionBuilder =
     LignesVenteCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String venteRef,
-      required int produitId,
+      required String produitId,
       required String name,
       required double qte,
       required double pu,
       Value<String?> espece,
+      Value<int> rowid,
     });
 typedef $$LignesVenteTableUpdateCompanionBuilder =
     LignesVenteCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> venteRef,
-      Value<int> produitId,
+      Value<String> produitId,
       Value<String> name,
       Value<double> qte,
       Value<double> pu,
       Value<String?> espece,
+      Value<int> rowid,
     });
 
 final class $$LignesVenteTableReferences
@@ -25587,7 +25615,7 @@ final class $$LignesVenteTableReferences
       .createAlias('lignes_vente__produit_id__produits_vendables__id');
 
   $$ProduitsVendablesTableProcessedTableManager get produitId {
-    final $_column = $_itemColumn<int>('produit_id')!;
+    final $_column = $_itemColumn<String>('produit_id')!;
 
     final manager = $$ProduitsVendablesTableTableManager(
       $_db,
@@ -25610,7 +25638,7 @@ class $$LignesVenteTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -25691,7 +25719,7 @@ class $$LignesVenteTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -25772,7 +25800,7 @@ class $$LignesVenteTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
@@ -25863,13 +25891,14 @@ class $$LignesVenteTableTableManager
               $$LignesVenteTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> venteRef = const Value.absent(),
-                Value<int> produitId = const Value.absent(),
+                Value<String> produitId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<double> qte = const Value.absent(),
                 Value<double> pu = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesVenteCompanion(
                 id: id,
                 venteRef: venteRef,
@@ -25878,16 +25907,18 @@ class $$LignesVenteTableTableManager
                 qte: qte,
                 pu: pu,
                 espece: espece,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String venteRef,
-                required int produitId,
+                required String produitId,
                 required String name,
                 required double qte,
                 required double pu,
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesVenteCompanion.insert(
                 id: id,
                 venteRef: venteRef,
@@ -25896,6 +25927,7 @@ class $$LignesVenteTableTableManager
                 qte: qte,
                 pu: pu,
                 espece: espece,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -100,7 +100,7 @@ class CatalogueViewModel extends ChangeNotifier {
   }
 
   Future<Resultat<ProduitVendable>> enregistrer({
-    int? id,
+    String? id,
     required String nom,
     required String? categorie,
     required double? prix,
@@ -144,7 +144,8 @@ class CatalogueViewModel extends ChangeNotifier {
     }
 
     final produit = ProduitVendable(
-      id: id ?? 0,
+      // Vide = nouveau produit : le depot lui donne son UUID a la creation.
+      id: id ?? '',
       sku: id == null ? _prochainSku() : null,
       nom: nom.trim(),
       categorie: categorie,

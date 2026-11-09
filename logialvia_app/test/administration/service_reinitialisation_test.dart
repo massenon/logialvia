@@ -121,7 +121,7 @@ void main() {
           (await db
                   .customSelect('SELECT id FROM produits_vendables LIMIT 1')
                   .getSingle())
-              .read<int>('id');
+              .read<String>('id');
       await ServiceArchivage(
         db,
       ).archiver(type: TypeArchivable.produits, cle: id, designation: 'X');

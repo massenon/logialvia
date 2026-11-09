@@ -82,7 +82,7 @@ class LigneVente {
     this.unite,
   });
 
-  final int produitId;
+  final String produitId;
 
   /// Nom **au moment de la vente** — dénormalisé volontairement (Doc D1), pour
   /// que l'historique reste fidèle si le produit est renommé plus tard.
@@ -172,7 +172,7 @@ class LignePanier {
     this.unite,
   });
 
-  final int produitId;
+  final String produitId;
   final String nom;
 
   /// Montant total convenu pour cette ligne, saisi par l'utilisatrice.
