@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             ModulesActifsSeeder::class,
             ParametresEntrepriseSeeder::class,
+            GroupesTaxeSeeder::class,
             AdminSeeder::class,
         ]);
     }

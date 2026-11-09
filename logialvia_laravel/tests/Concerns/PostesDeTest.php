@@ -214,4 +214,56 @@ trait PostesDeTest
             'quantite' => -3,
         ], $surcharge);
     }
+
+    /** Une facture de vente (avec une ligne, groupe B a 18 %) telle qu'un poste l'enverrait. */
+    protected function ligneFacture(array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'reference' => 'FV-P1-2026-001',
+            'type' => 'FV',
+            'vente_ref' => null,
+            'origine_ref' => null,
+            'date_facture' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'client' => 'DOSSOU Félicité',
+            'client_ifu' => null,
+            'client_adresse' => null,
+            'total_ht' => 10000,
+            'total_taxe' => 1800,
+            'total_ttc' => 11800,
+            'motif' => null,
+            'statut' => 'a_transmettre',
+            'code_mecef' => null,
+            'nim' => null,
+            'compteur' => null,
+            'lien_verification' => null,
+            'date_normalisation' => null,
+            'erreur_transmission' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'lignes' => [[
+                'id' => (string) Str::uuid(),
+                'designation' => 'Goliath mature',
+                'quantite' => 1,
+                'unite' => 'u',
+                'prix_unitaire_ht' => 10000,
+                'groupe_taxe' => 'B',
+                'taux_taxe' => 18,
+                'montant_ht' => 10000,
+                'montant_taxe' => 1800,
+            ]],
+        ], $surcharge);
+    }
+
+    /** Une facture NORMALISEE (code et NIM rendus par la DGI). */
+    protected function ligneFactureNormalisee(array $surcharge = []): array
+    {
+        return $this->ligneFacture(array_merge([
+            'statut' => 'normalisee',
+            'code_mecef' => 'CODE-A',
+            'nim' => 'NIM-1',
+            'compteur' => '12/50',
+            'lien_verification' => 'https://dgi.example/v/1',
+            'date_normalisation' => now()->format('Y-m-d\TH:i:s.u\Z'),
+        ], $surcharge));
+    }
 }

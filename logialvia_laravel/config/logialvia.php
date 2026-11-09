@@ -147,6 +147,8 @@ return [
             \App\Sync\Tables\ClientsTable::class,
             \App\Sync\Tables\FournisseursTable::class,
             \App\Sync\Tables\VentesTable::class,
+            \App\Sync\Tables\GroupesTaxeTable::class,
+            \App\Sync\Tables\FacturesTable::class,
             \App\Sync\Tables\AchatsTable::class,
             \App\Sync\Tables\MouvementsIntrantTable::class,
             \App\Sync\Tables\MouvementsProduitTable::class,
