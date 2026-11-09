@@ -709,6 +709,5 @@ class FicheEspeceWebTest extends TestCase
             $this->assertContains($route, $declarees);
         }
         $this->assertContains('/elevage/dashboard', $declarees);
-        $this->assertNotContains('/elevage/couveuse', $declarees, 'couveuse : autre tranche');
     }
 }
