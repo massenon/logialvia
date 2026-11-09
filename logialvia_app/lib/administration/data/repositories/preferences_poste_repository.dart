@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/adresse_serveur.dart';
+import '../../../core/sync/droits_poste.dart';
 import '../../../core/sync/identifiant_poste.dart';
 
 /// Accès aux préférences locales du poste — voir `PreferencesPoste`.
@@ -27,6 +30,8 @@ class PreferencesPosteRepository {
   static const String _cleAppaireLe = 'sync.appaire_le';
   static const String _cleCurseurTirage = 'sync.curseur';
   static const String _cleMarqueRemiseAZero = 'sync.marque_remise_a_zero';
+  static const String _cleDroits = 'sync.droits';
+  static const String _cleDecalageHorloge = 'sync.decalage_horloge_ms';
 
   Future<String?> _lire(String cle) async {
     final ligne = await (_db.select(
@@ -182,7 +187,37 @@ class PreferencesPosteRepository {
     await _ecrire(_cleCodePoste, null);
     await _ecrire(_cleCompteAppaire, null);
     await _ecrire(_cleAppaireLe, null);
+    // Sans appairage, plus de droits connus (le prochain compte les apportera) ni d'écart mesuré.
+    await _ecrire(_cleDroits, null);
+    await _ecrire(_cleDecalageHorloge, null);
   }
+
+  // ------------------------------------------------- Droits et horloge (`47g_`)
+
+  /// Droits du compte appairé, mémorisés avec l'appairage et rafraîchis à chaque tirage.
+  /// `null` : inconnus (serveur ancien, ou jamais appris) : le poste propose alors tout et
+  /// laisse le serveur trancher (refus `droit_insuffisant` = reste en attente).
+  Future<DroitsPoste?> droitsSync() async {
+    final brut = await _lire(_cleDroits);
+    if (brut == null) return null;
+    try {
+      return DroitsPoste.depuisJson(jsonDecode(brut));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> definirDroitsSync(DroitsPoste? droits) =>
+      _ecrire(_cleDroits, droits == null ? null : jsonEncode(droits.versJson()));
+
+  /// Dernier écart mesuré (poste − serveur ; positif : en avance), `null` : jamais mesuré.
+  Future<Duration?> decalageHorloge() async {
+    final v = int.tryParse(await _lire(_cleDecalageHorloge) ?? '');
+    return v == null ? null : Duration(milliseconds: v);
+  }
+
+  Future<void> definirDecalageHorloge(Duration? ecart) =>
+      _ecrire(_cleDecalageHorloge, ecart?.inMilliseconds.toString());
 
   // ---------------------------------------------------------- Synchronisation
 

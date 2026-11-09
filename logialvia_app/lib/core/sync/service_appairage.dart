@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import '../../administration/data/repositories/preferences_poste_repository.dart';
 import 'depot_jeton_sync.dart';
+import 'droits_poste.dart';
+import 'identifiant_poste.dart';
 
 /// Issue d'une tentative d'appairage ou de test de connexion.
 enum IssueAppairage {
@@ -49,6 +51,8 @@ class EtatAppairage {
     this.codePoste,
     this.compte,
     this.appaireLe,
+    this.droits,
+    this.decalageHorloge,
   });
 
   final String identifiantPoste;
@@ -57,6 +61,15 @@ class EtatAppairage {
   final String? codePoste;
   final String? compte;
   final DateTime? appaireLe;
+
+  /// Droits du compte appairé (`47g_`), `null` : inconnus.
+  final DroitsPoste? droits;
+
+  /// Dernier écart mesuré de l'horloge (poste − serveur), `null` : jamais mesuré.
+  final Duration? decalageHorloge;
+
+  AnalyseHorloge? get horloge =>
+      decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
 }
 
 /// Appairage du poste avec le serveur web (`45_`, `46_`, blueprint §2).
@@ -92,7 +105,27 @@ class ServiceAppairage {
       codePoste: code,
       compte: await preferences.compteAppaire(),
       appaireLe: await preferences.appaireLe(),
+      droits: await preferences.droitsSync(),
+      decalageHorloge: await preferences.decalageHorloge(),
     );
+  }
+
+  /// Retient les droits et l'écart d'horloge que le serveur vient d'annoncer.
+  Future<void> _memoriserDroitsEtHorloge(
+    Map<String, dynamic>? json,
+    DateTime avant,
+    DateTime apres,
+  ) async {
+    final droits = DroitsPoste.depuisJson(json?['droits']);
+    if (droits != null) await preferences.definirDroitsSync(droits);
+    final serveur = json?['server_now'] is String
+        ? DateTime.tryParse(json!['server_now'] as String)
+        : null;
+    if (serveur != null) {
+      await preferences.definirDecalageHorloge(
+        mesurerDecalage(avant: avant, apres: apres, serveur: serveur),
+      );
+    }
   }
 
   Future<ResultatAppairage> connecter({
@@ -116,6 +149,7 @@ class ServiceAppairage {
     }
 
     final idPoste = await preferences.identifiantPoste();
+    final avant = horlogePoste();
     final reponse = await _appeler(
       (c) => c.post(
         Uri.parse('$propre/api/auth/login'),
@@ -129,6 +163,7 @@ class ServiceAppairage {
     );
     if (reponse == null) return _injoignable(propre);
 
+    final apres = horlogePoste();
     final json = _json(reponse.body);
     if (reponse.statusCode != 200) {
       return ResultatAppairage(
@@ -160,6 +195,10 @@ class ServiceAppairage {
       compte: identifiant.trim(),
       le: DateTime.now(),
     );
+    // `47g_` : les droits de CE compte accompagnent l'appairage (changement de compte compris),
+    // et l'écart d'horloge est mesuré dès la connexion.
+    await preferences.definirDroitsSync(null);
+    await _memoriserDroitsEtHorloge(json, avant, apres);
 
     final temporaire = json?['must_change_password'] == true;
     return ResultatAppairage(
@@ -183,12 +222,14 @@ class ServiceAppairage {
       );
     }
 
+    final avant = horlogePoste();
     final reponse = await _appeler(
       (c) => c.get(
         Uri.parse('$adresse/api/auth/me'),
         headers: _entetes(jeton: jeton),
       ),
     );
+    final apres = horlogePoste();
     if (reponse == null) return _injoignable(adresse);
 
     if (reponse.statusCode == 401) {
@@ -209,6 +250,7 @@ class ServiceAppairage {
     }
 
     final json = _json(reponse.body);
+    await _memoriserDroitsEtHorloge(json, avant, apres);
     final code =
         (json?['poste'] as Map?)?['code'] ?? await preferences.codePoste();
     return ResultatAppairage(

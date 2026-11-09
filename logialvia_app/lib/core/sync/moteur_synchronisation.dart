@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import '../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../administration/data/sync/depot_demandes_referentiel.dart';
 import 'depot_jeton_sync.dart';
+import 'droits_poste.dart';
+import 'identifiant_poste.dart';
 import 'service_appairage.dart';
 import 'table_poste.dart';
 import '../resultat/resultat.dart';
@@ -43,6 +45,11 @@ class RapportSynchronisation {
     this.ignorees = 0,
     this.saisiesPerdues = 0,
     this.remiseAZero = false,
+    this.enAttenteDeDroit = 0,
+    this.refuseesPourDroit = 0,
+    this.refuseesHorloge = 0,
+    this.decalageHorloge,
+    this.envoiSuspendu = false,
   });
 
   final IssueSynchronisation issue;
@@ -78,6 +85,30 @@ class RapportSynchronisation {
   final int saisiesPerdues;
   final bool remiseAZero;
 
+  /// Saisies et demandes que le compte appairé n'a pas le droit d'envoyer (`47g_`) : elles
+  /// restent EN ATTENTE (jamais `conflict`) et partent dès qu'une session avec le droit
+  /// synchronise (changement de compte, droit accordé au serveur, reconnexion).
+  final int enAttenteDeDroit;
+
+  /// Refus `droit_insuffisant` rendus par le serveur à cette synchronisation (droits du poste
+  /// périmés) : la ligne reste en attente, elle n'est PAS marquée en conflit.
+  final int refuseesPourDroit;
+
+  /// Refus `horloge_en_avance` rendus par le serveur : la ligne reste en attente.
+  final int refuseesHorloge;
+
+  /// Écart mesuré de l'horloge (poste − serveur ; positif : en avance), `null` : non mesuré.
+  final Duration? decalageHorloge;
+
+  /// L'envoi des saisies a été suspendu : l'horloge du poste avance de plus de la tolérance.
+  final bool envoiSuspendu;
+
+  AnalyseHorloge? get horloge =>
+      decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
+
+  /// Un avertissement d'horloge à montrer (avance > 2 min, retard > tolérance).
+  bool get horlogeAAvertir => horloge?.aAvertir ?? false;
+
   bool get reussie => issue == IssueSynchronisation.terminee;
 
   RapportSynchronisation avec({
@@ -96,6 +127,11 @@ class RapportSynchronisation {
     int? ignorees,
     int? saisiesPerdues,
     bool? remiseAZero,
+    int? enAttenteDeDroit,
+    int? refuseesPourDroit,
+    int? refuseesHorloge,
+    Duration? decalageHorloge,
+    bool? envoiSuspendu,
   }) => RapportSynchronisation(
     issue ?? this.issue,
     message ?? this.message,
@@ -112,7 +148,33 @@ class RapportSynchronisation {
     ignorees: ignorees ?? this.ignorees,
     saisiesPerdues: saisiesPerdues ?? this.saisiesPerdues,
     remiseAZero: remiseAZero ?? this.remiseAZero,
+    enAttenteDeDroit: enAttenteDeDroit ?? this.enAttenteDeDroit,
+    refuseesPourDroit: refuseesPourDroit ?? this.refuseesPourDroit,
+    refuseesHorloge: refuseesHorloge ?? this.refuseesHorloge,
+    decalageHorloge: decalageHorloge ?? this.decalageHorloge,
+    envoiSuspendu: envoiSuspendu ?? this.envoiSuspendu,
   );
+}
+
+/// Ce que le poste sait de ses droits (`47g_`), pour l'onglet « Appairage ».
+class EtatDroitsPoste {
+  const EtatDroitsPoste({
+    this.droits,
+    this.enAttenteDeDroit = 0,
+    this.decalageHorloge,
+  });
+
+  /// Droits du compte appairé, `null` : inconnus.
+  final DroitsPoste? droits;
+
+  /// Saisies et demandes qui attendent un droit que le compte n'a pas.
+  final int enAttenteDeDroit;
+
+  /// Dernier écart mesuré de l'horloge, `null` : jamais mesuré.
+  final Duration? decalageHorloge;
+
+  AnalyseHorloge? get horloge =>
+      decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
 }
 
 /// Le moteur de synchronisation du poste (`46_` §4, blueprint §3).
@@ -185,11 +247,7 @@ class MoteurSynchronisationPoste {
       );
     }
 
-    final session = _Session(
-      adresse,
-      jeton,
-      await preferences.identifiantPoste(),
-    );
+    var session = _Session(adresse, jeton, await preferences.identifiantPoste());
     // Une seule fois : le catalogue local est propose au serveur.
     await demandes?.adopterCatalogueSiBesoin(preferences);
     await demandes?.adopterIntrantsSiBesoin(preferences);
@@ -209,6 +267,21 @@ class MoteurSynchronisationPoste {
     rapport = tirage.rapport;
     if (tirage.arret != null) return tirage.arret!;
 
+    // `47g_` : le tirage vient d'apprendre les droits du compte et l'écart d'horloge. Seule la
+    // mesure de CETTE synchronisation compte (une mesure ancienne ne bloquerait pas à tort).
+    session = session.avec(
+      droits: await preferences.droitsSync(),
+      decalage: rapport.decalageHorloge,
+    );
+    final analyse = rapport.horloge;
+    if (analyse != null && analyse.suspendEnvoi) {
+      rapport = rapport.avec(
+        envoiSuspendu: true,
+        enAttenteDeDroit: await compterEnAttenteDeDroit(session.droits),
+      );
+      return rapport.avec(message: _resume(rapport));
+    }
+
     // Les DEMANDES partent avant les faits : un produit créé au poste doit être connu
     // du serveur avant que les ventes qui le portent n'arrivent (sinon : « produit
     // inconnu »).
@@ -220,6 +293,12 @@ class MoteurSynchronisationPoste {
     rapport = envoi.rapport;
     if (envoi.arret != null) return envoi.arret!;
 
+    // Ce qui attend un droit, une fois le cycle fait (refus du serveur compris).
+    rapport = rapport.avec(
+      enAttenteDeDroit:
+          await compterEnAttenteDeDroit(session.droits) +
+          rapport.refuseesPourDroit,
+    );
     return rapport.avec(message: _resume(rapport));
   }
 
@@ -316,11 +395,58 @@ class MoteurSynchronisationPoste {
   }
 
   /// Une saisie attend-elle d'être envoyée ? (garde « rien à envoyer »)
+  ///
+  /// Seul ce que le compte a le droit d'envoyer compte (`47g_`) : une saisie qui attend un
+  /// droit ne relancerait sinon une synchronisation, refusée ou sans objet, à chaque geste.
+  ///
+  /// Une horloge en avance au-delà de la tolérance (dernière mesure) suspend l'envoi : rien à
+  /// envoyer tant qu'elle n'est pas corrigée (la synchronisation de routine remesure).
   Future<bool> aDesSaisiesAEnvoyer() async {
+    final decalage = await preferences.decalageHorloge();
+    if (decalage != null && analyserHorloge(decalage).suspendEnvoi) {
+      return false;
+    }
+    final droits = await preferences.droitsSync();
     for (final t in tables) {
+      if (!_peutEnvoyer(droits, t)) continue;
       if ((await t.aEnvoyer()).isNotEmpty) return true;
     }
-    return demandes != null && (await demandes!.aEnvoyer()).isNotEmpty;
+    if (demandes == null) return false;
+    for (final d in await demandes!.aEnvoyer()) {
+      if (droits == null || droits.peutProposer(d.type)) return true;
+    }
+    return false;
+  }
+
+  bool _peutEnvoyer(DroitsPoste? droits, TablePoste t) =>
+      t.referentiel || droits == null || droits.peutEcrireTable(t.nom);
+
+  /// Saisies (faits) et demandes en attente d'un droit que le compte appairé n'a pas : ce
+  /// n'est ni un conflit ni une erreur, c'est un état (`47g_`). 0 si les droits sont inconnus.
+  Future<int> compterEnAttenteDeDroit([DroitsPoste? droits]) async {
+    droits ??= await preferences.droitsSync();
+    if (droits == null) return 0;
+    var n = 0;
+    for (final t in tables) {
+      if (t.referentiel || droits.peutEcrireTable(t.nom)) continue;
+      n += (await t.aEnvoyer()).length;
+    }
+    if (demandes != null) {
+      for (final d in await demandes!.aEnvoyer()) {
+        if (!droits.peutProposer(d.type)) n++;
+      }
+    }
+    return n;
+  }
+
+  /// L'état de droits du poste, pour l'onglet « Appairage » (aucun accès réseau).
+  Future<EtatDroitsPoste> etatDroits() async {
+    final droits = await preferences.droitsSync();
+    return EtatDroitsPoste(
+      droits: droits,
+      enAttenteDeDroit: await compterEnAttenteDeDroit(droits),
+      decalageHorloge: await preferences.decalageHorloge(),
+    );
   }
 
   /// Émet à chaque modification locale d'une table synchronisée.
@@ -336,8 +462,10 @@ class MoteurSynchronisationPoste {
     var page = 1;
     String? borne; // `until` : fige les pages d'un même tirage
     var marqueVerifiee = false;
+    var droitsLus = false;
 
     while (true) {
+      final avant = horlogePoste();
       final reponse = await _appeler(
         (c) => c.get(
           Uri.parse('${s.adresse}/api/sync/pull').replace(
@@ -350,6 +478,7 @@ class MoteurSynchronisationPoste {
           headers: _entetes(s.jeton),
         ),
       );
+      final apres = horlogePoste();
       final arret = await _verifier(reponse);
       if (arret != null) return _Etape(rapport, arret);
 
@@ -359,6 +488,26 @@ class MoteurSynchronisationPoste {
           rapport,
           _refus('Réponse du serveur inattendue au tirage.'),
         );
+      }
+
+      // `47g_` : les droits du compte (rafraîchis à chaque cycle : droit accordé au serveur,
+      // changement de compte) et l'écart de l'horloge de ce poste avec celle du serveur.
+      if (!droitsLus) {
+        droitsLus = true;
+        final droits = DroitsPoste.depuisJson(json['droits']);
+        if (droits != null) await preferences.definirDroitsSync(droits);
+        final serveur = json['server_now'] is String
+            ? DateTime.tryParse(json['server_now'] as String)
+            : null;
+        if (serveur != null) {
+          final ecart = mesurerDecalage(
+            avant: avant,
+            apres: apres,
+            serveur: serveur,
+          );
+          await preferences.definirDecalageHorloge(ecart);
+          rapport = rapport.avec(decalageHorloge: ecart);
+        }
       }
 
       final marque = json['reset_mark'];
@@ -423,6 +572,9 @@ class MoteurSynchronisationPoste {
     final marque = await preferences.marqueRemiseAZero() ?? 'initiale';
 
     for (final t in tables) {
+      // `47g_` : une table que le compte n'a pas le droit d'écrire n'est pas proposée ; ses
+      // saisies restent en attente de droit (jamais `conflict`).
+      if (!_peutEnvoyer(s.droits, t)) continue;
       final aEnvoyer = await t.aEnvoyer();
       for (var i = 0; i < aEnvoyer.length; i += tailleLot) {
         final lot = aEnvoyer.skip(i).take(tailleLot).toList();
@@ -434,7 +586,7 @@ class MoteurSynchronisationPoste {
               'device_id': s.idPoste,
               'reset_mark': marque,
               'tables': {
-                t.nom: [for (final l in lot) l.corps],
+                t.nom: [for (final l in lot) _borner(s, l.corps)],
               },
             }),
           ),
@@ -460,8 +612,21 @@ class MoteurSynchronisationPoste {
           }
         }
         var refusees = 0;
+        var pourDroit = 0;
+        var pourHorloge = 0;
         for (final r in (bilan['rejected'] as List? ?? const [])) {
           if (r is Map && r['id'] is String) {
+            // Code STABLE du serveur : jamais le texte. Un refus pour droit ou pour horloge n'est
+            // pas définitif : la ligne reste en attente et repartira (`47g_`).
+            final code = r['code'];
+            if (code == codeDroitInsuffisant) {
+              pourDroit++;
+              continue;
+            }
+            if (code == codeHorlogeEnAvance) {
+              pourHorloge++;
+              continue;
+            }
             await t.marquerConflit(
               r['id'] as String,
               (r['motif'] as String?) ?? 'Refusé par le serveur.',
@@ -476,6 +641,8 @@ class MoteurSynchronisationPoste {
           acceptees: rapport.acceptees + acceptees,
           refusees: rapport.refusees + refusees,
           ignorees: rapport.ignorees + ignorees,
+          refuseesPourDroit: rapport.refuseesPourDroit + pourDroit,
+          refuseesHorloge: rapport.refuseesHorloge + pourHorloge,
         );
       }
     }
@@ -492,7 +659,12 @@ class MoteurSynchronisationPoste {
   ) async {
     final file = demandes;
     if (file == null) return _Etape(rapport, null);
-    final aEnvoyer = await file.aEnvoyer();
+    // `47g_` : seuls les types que le compte a le droit de proposer partent ; les autres
+    // restent en attente de droit.
+    final aEnvoyer = [
+      for (final d in await file.aEnvoyer())
+        if (s.droits == null || s.droits!.peutProposer(d.type)) d,
+    ];
     if (aEnvoyer.isEmpty) return _Etape(rapport, null);
 
     final reponse = await _appeler(
@@ -506,7 +678,7 @@ class MoteurSynchronisationPoste {
               {
                 'id': d.id,
                 'type': d.type,
-                'saisi_le': d.saisiLe,
+                'saisi_le': _bornerInstant(s, d.saisiLe),
                 'donnees': jsonDecode(d.donnees),
               },
           ],
@@ -526,6 +698,8 @@ class MoteurSynchronisationPoste {
     final saisies = {for (final d in aEnvoyer) d.id: d.saisiLe};
     var acceptees = 0;
     var refusees = 0;
+    var pourDroit = 0;
+    var pourHorloge = 0;
     for (final id in (json['accepted'] as List? ?? const [])) {
       if (id is String && saisies.containsKey(id)) {
         await file.marquerSynchronisee(id, saisies[id]!);
@@ -534,6 +708,16 @@ class MoteurSynchronisationPoste {
     }
     for (final r in (json['rejected'] as List? ?? const [])) {
       if (r is Map && r['id'] is String && saisies.containsKey(r['id'])) {
+        // Refus provisoire (code stable) : la demande reste EN ATTENTE, elle repartira
+        // quand le droit sera accordé ou l'horloge corrigée (`47g_`).
+        if (r['code'] == codeDroitInsuffisant) {
+          pourDroit++;
+          continue;
+        }
+        if (r['code'] == codeHorlogeEnAvance) {
+          pourHorloge++;
+          continue;
+        }
         await file.marquerRefusee(
           r['id'] as String,
           (r['motif'] as String?) ?? 'Refusée par le serveur.',
@@ -545,12 +729,40 @@ class MoteurSynchronisationPoste {
       rapport.avec(
         demandesAcceptees: rapport.demandesAcceptees + acceptees,
         demandesRefusees: rapport.demandesRefusees + refusees,
+        refuseesPourDroit: rapport.refuseesPourDroit + pourDroit,
+        refuseesHorloge: rapport.refuseesHorloge + pourHorloge,
       ),
       null,
     );
   }
 
   // ------------------------------------------------------------------ Outils
+
+  /// Instant de saisie envoyé au serveur : jamais postérieur à l'heure du SERVEUR (estimée par
+  /// l'écart mesuré à ce cycle). Une saisie datée du futur par une horloge en avance, restée en
+  /// attente pendant la suspension, partirait sinon refusée pour toujours après la correction de
+  /// l'horloge. L'instant local de la ligne ne change pas : l'accusé (`marquerSynchronise`)
+  /// compare toujours l'instant d'origine, et le tirage suivant rapporte la version du serveur.
+  String _bornerInstant(_Session s, String instant) {
+    final decalage = s.decalage;
+    final t = DateTime.tryParse(instant);
+    if (decalage == null || t == null) return instant;
+    final maintenantServeur = horlogePoste().subtract(decalage).toUtc();
+    return t.isAfter(maintenantServeur)
+        ? maintenantServeur.toIso8601String()
+        : instant;
+  }
+
+  /// Une ligne à envoyer, avec ses instants de saisie bornés ([_bornerInstant]).
+  Map<String, dynamic> _borner(_Session s, Map<String, dynamic> corps) {
+    if (s.decalage == null) return corps;
+    final copie = {...corps};
+    for (final cle in clesInstantSaisie) {
+      final v = copie[cle];
+      if (v is String) copie[cle] = _bornerInstant(s, v);
+    }
+    return copie;
+  }
 
   Map<String, String> _entetes(String jeton) => {
     'Accept': 'application/json',
@@ -651,7 +863,25 @@ class MoteurSynchronisationPoste {
         '${r.refuseesALaReception} ligne(s) du serveur incohérente(s) refusée(s)',
       );
     }
+    if (r.enAttenteDeDroit > 0) {
+      morceaux.add(
+        '${r.enAttenteDeDroit} en attente de droit (le compte appairé ne peut '
+        'pas les envoyer)',
+      );
+    }
+    if (r.refuseesHorloge > 0) {
+      morceaux.add(
+        '${r.refuseesHorloge} refusée(s) pour horloge en avance (conservées)',
+      );
+    }
+    final alerteHorloge = r.horloge?.message;
+    if (r.envoiSuspendu) {
+      return 'Synchronisation partielle : ${r.recues} reçue(s), envoi '
+          'suspendu. ${alerteHorloge ?? ''}'
+          '${r.enAttenteDeDroit > 0 ? ' ${r.enAttenteDeDroit} en attente de droit.' : ''}';
+    }
     var texte = 'Synchronisation terminée : ${morceaux.join(', ')}.';
+    if (alerteHorloge != null) texte += ' $alerteHorloge';
     if (r.remiseAZero) {
       texte +=
           ' Le serveur a été remis à zéro : ce poste a été vidé de ses données '
@@ -696,10 +926,30 @@ class StreamGroup {
 }
 
 class _Session {
-  const _Session(this.adresse, this.jeton, this.idPoste);
+  const _Session(
+    this.adresse,
+    this.jeton,
+    this.idPoste, {
+    this.droits,
+    this.decalage,
+  });
   final String adresse;
   final String jeton;
   final String idPoste;
+
+  /// Droits du compte appairé (`null` : inconnus, le poste propose tout).
+  final DroitsPoste? droits;
+
+  /// Écart d'horloge mesuré à ce cycle (poste − serveur), `null` : non mesuré.
+  final Duration? decalage;
+
+  _Session avec({DroitsPoste? droits, Duration? decalage}) => _Session(
+    adresse,
+    jeton,
+    idPoste,
+    droits: droits ?? this.droits,
+    decalage: decalage ?? this.decalage,
+  );
 }
 
 class _Etape {

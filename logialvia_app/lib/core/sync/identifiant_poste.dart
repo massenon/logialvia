@@ -20,6 +20,11 @@ String genererUuidV4([Random? alea]) {
 /// `clientDefault` de Drift : un UUID neuf par ligne créée au poste (DV-19).
 String nouvelUuid() => genererUuidV4();
 
+/// L'horloge du poste. Seul point d'injection du temps pour la synchronisation (`47g_`) : les tests
+/// (et l'essai contre le vrai serveur) y simulent une horloge en avance ou en retard ; en
+/// production c'est `DateTime.now`. À remettre à `DateTime.now` après usage.
+DateTime Function() horlogePoste = DateTime.now;
+
 /// Instant de **saisie** (UTC, microsecondes) : `updated_at` des tables
 /// synchronisées. Jamais l'instant d'envoi (`46_` §1) : un poste hors ligne
 /// trois jours ne doit pas battre une saisie plus récente faite ailleurs.
@@ -27,7 +32,7 @@ String nouvelUuid() => genererUuidV4();
 /// Texte ISO 8601 et non `DateTimeColumn` : Drift stocke les dates à la
 /// seconde, trop grossier pour « dernier écrivain gagne ».
 String instantSaisie([DateTime? maintenant]) =>
-    (maintenant ?? DateTime.now()).toUtc().toIso8601String();
+    (maintenant ?? horlogePoste()).toUtc().toIso8601String();
 
 /// UUID **déterministe** (version 5, SHA-1) calculé depuis une clé métier.
 ///

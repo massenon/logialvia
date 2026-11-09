@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 47;
+  static const int versionSchema = 50;
 
   @override
   int get schemaVersion => versionSchema;
@@ -481,12 +481,36 @@ class AppDatabase extends _$AppDatabase {
         await _ajouterColonne(m, ficheJournee, ficheJournee.variantes);
         await _ajouterColonne(m, ficheJournee, ficheJournee.resolution);
       }
+      if (from < 50) {
+        // Droits et horloge (`47g_`) : un refus « Droit insuffisant » n'est JAMAIS définitif.
+        // Les demandes et saisies que d'anciennes versions ont laissées en `conflict` pour ce
+        // motif repassent « en attente » (elles repartent dès qu'une session avec le droit
+        // synchronise). Seul endroit où le texte du motif est comparé : les refus d'aujourd'hui
+        // portent un code stable (`droit_insuffisant`). Idempotent.
+        await _rearmerRefusDeDroit();
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Remet « en attente » toute ligne restée en `conflict` pour droit insuffisant (`47g_`),
+  /// dans toutes les tables qui portent des colonnes de synchronisation.
+  Future<void> _rearmerRefusDeDroit() async {
+    for (final table in allTables) {
+      final nom = table.actualTableName;
+      if (!await _colonneExiste(nom, 'sync_status') ||
+          !await _colonneExiste(nom, 'sync_motif')) {
+        continue;
+      }
+      await customStatement(
+        'UPDATE "$nom" SET sync_status = \'pending\', sync_motif = NULL '
+        'WHERE sync_status = \'conflict\' AND sync_motif LIKE \'Droit insuffisant%\'',
+      );
+    }
+  }
 
   // ------------------------------------------------------------ idempotence
   //
