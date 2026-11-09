@@ -119,8 +119,18 @@ class CoqueNavigationTest extends TestCase
     {
         $this->connecte('admin');
 
-        $this->get('/comptabilite/balance')->assertOk()
-            ->assertSee('Balance Générale')
+        // Une route du poste qu'aucun ecran n'a encore declaree (la comptabilite est convertie : le
+        // test ne depend d'aucun ecran en particulier, il prend la premiere restante).
+        $restantes = array_values(array_filter(
+            array_keys(config('logialvia.routes')),
+            fn (string $r) => ! in_array($r, \App\Support\Ecrans::declarees(), true)
+                && ! in_array($r, ['/profil', '/aide', '/contact'], true)
+                && (config('logialvia.routes')[$r][1] === null),
+        ));
+        $this->assertNotEmpty($restantes, 'Toutes les routes sont converties : ce test n\'a plus d\'objet.');
+
+        $this->get($restantes[0])->assertOk()
+            ->assertSee(\App\Support\Navigation::libelle($restantes[0]))
             ->assertSee('Cet écran arrive bientôt sur le web');
     }
 
