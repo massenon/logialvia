@@ -178,3 +178,17 @@ Une vente a **deux identifiants** : `id` (UUID, identité synchronisée, immuabl
 - **Ordre d'un cycle** : tirage → demandes → faits dans l'ordre des dépendances (clients, fournisseurs, ventes, achats) ; **purge inverse** à la remise à zéro.
 - **Référence** : `ACH-P2-2026-001` (unique pour tous) ou `ACH-2026-001` (unique par poste) ; jamais renumérotée.
 - **Aucun effet à la réception d'un achat d'un autre poste** (stock, PMP, mouvement, écriture) ; le serveur n'a pas de table d'intrants : `intrant_code` est un texte libre de 40 caractères.
+
+## 14. Intrants et journal des mouvements (implémenté, 09/11/2026)
+
+Décision du client : **stock propre à chaque poste + journal partagé**.
+
+- `intrants` : référentiel (clé = `code`), **sans stock ni PMP** sur le fil. Le poste le propose par demande
+  (adoption unique des intrants locaux, puis à chaque création/modification) ; le serveur fait foi. Un intrant
+  reçu d'un autre poste arrive avec stock 0 et PMP 0 ; un intrant connu garde SON stock et SON PMP.
+- `mouvements_intrant` : fait immuable (UUID, schéma poste v36), envoyé après les intrants. Un mouvement reçu d'un
+  autre poste est stocké avec son `origine` et n'a **aucun effet** sur le stock, le PMP ni l'inventaire local
+  (le rapport d'inventaire ne lit que `origine IS NULL`). Une version différente venue du serveur est ignorée.
+- Refus strict à la réception : UUID invalide, type inconnu, quantité nulle, motif vide, date invalide, intrant inconnu.
+- Remise à zéro serveur : le journal est purgé ; intrants et stock restent.
+- Limite : le stock global n'existe pas ; produits vendables et comptabilité restent à faire.

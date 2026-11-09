@@ -23,6 +23,17 @@ class DepotDemandesReferentiel {
   static const String typeParametres = 'parametres_entreprise';
   static const String cleParametres = 'parametres';
   static const String typeProduit = 'produit_vendable';
+  static const String typeIntrant = 'intrant';
+
+  /// Champs d'un intrant proposes au serveur. JAMAIS le stock ni le PMP : propres a
+  /// chaque poste (« stock propre a chaque poste + journal partage »).
+  static Map<String, Object?> champsIntrant(IntrantRow i) => {
+    'code': i.code,
+    'name': i.name,
+    'cat': i.cat,
+    'unit': i.unit,
+    'threshold': i.threshold,
+  };
 
   /// Champs d'un produit proposes au serveur. JAMAIS le stock : donnee derivee
   /// (ventes, achats), propre a chaque poste.
@@ -142,6 +153,29 @@ class DepotDemandesReferentiel {
       await proposer(type: typeProduit, cle: p.id, donnees: champsProduit(p));
     }
     await preferences.definirCatalogueAdopte();
+  }
+
+  /// Propose l'état ACTUEL d'un intrant (relu en base), sans son stock ni son PMP.
+  Future<void> proposerIntrant(String code) async {
+    final ligne = await (_db.select(
+      _db.intrants,
+    )..where((i) => i.code.equals(code))).getSingleOrNull();
+    if (ligne == null) return;
+    await proposer(type: typeIntrant, cle: code, donnees: champsIntrant(ligne));
+  }
+
+  /// Une seule fois : propose TOUS les intrants locaux. Les intrants semés ont les
+  /// mêmes codes sur tous les postes (le serveur accepte sans conflit ce qu'il connaît
+  /// à l'identique) ; ceux que ce poste a créés seuls sont ainsi connus AVANT que les
+  /// achats et mouvements qui les portent n'arrivent.
+  Future<void> adopterIntrantsSiBesoin(
+    PreferencesPosteRepository preferences,
+  ) async {
+    if (await preferences.intrantsAdoptes()) return;
+    for (final i in await _db.select(_db.intrants).get()) {
+      await proposer(type: typeIntrant, cle: i.code, donnees: champsIntrant(i));
+    }
+    await preferences.definirIntrantsAdoptes();
   }
 
   /// La demande **en attente** de cette clé, s'il y en a une.

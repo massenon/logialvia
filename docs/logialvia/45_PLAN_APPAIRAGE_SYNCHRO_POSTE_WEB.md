@@ -228,3 +228,10 @@ descendent pas du serveur et ne sont pas poussés vers lui (hors périmètre de 
 
 Règle : chaque étape se termine par l'analyse, la suite de tests complète et un commit ; rien n'est déclaré fait
 sans avoir tourné.
+
+### 6j. P5 — Intrants et journal (09/11/2026)
+Poste : migration v36 (`mouvements_intrant.id` en UUID, `origine`, `sync_status`), `TableIntrantsPoste`,
+`TableMouvementsIntrantPoste`, demandes d'intrants, libellé « autre poste » dans Gestion des stocks. Serveur :
+tables `intrants` / `mouvements_intrant`, droits lecture/écriture par table. Voir `46_` §14.
+Essais : `journal_sync_poste_test.dart` (25), `migration_v36_mouvements_test.dart`, `IntrantsEtJournalTest.php`.
+Non fait : essai contre le vrai serveur Laravel pour ces deux tables.

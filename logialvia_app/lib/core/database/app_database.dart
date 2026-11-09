@@ -99,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 35;
+  static const int versionSchema = 36;
 
   @override
   int get schemaVersion => versionSchema;
@@ -411,6 +411,12 @@ class AppDatabase extends _$AppDatabase {
         // `achats.fournisseur_id` suit, chaque achat garde son fournisseur.
         await _achatsEnUuid(m);
       }
+      if (from < 36) {
+        // DV-19, palier 5 : le journal des mouvements d'intrants en UUID, avec son
+        // origine et ses colonnes de synchronisation. Les mouvements d'hier sont
+        // LOCAUX (origine NULL) et a envoyer.
+        await _mouvementsEnUuid(m);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -540,6 +546,28 @@ class AppDatabase extends _$AppDatabase {
     }
 
     await customStatement('DROP TABLE IF EXISTS _map_produits');
+  }
+
+  /// Le journal des mouvements d'intrants en UUID. Idempotent.
+  Future<void> _mouvementsEnUuid(Migrator m) async {
+    final colonnes = await customSelect('PRAGMA table_info("mouvements_intrant")').get();
+    final id = colonnes.where((l) => l.read<String>('name') == 'id');
+    if (id.isNotEmpty && id.first.read<String>('type').toUpperCase() == 'TEXT') {
+      return;
+    }
+    await m.alterTable(
+      TableMigration(
+        mouvementsIntrant,
+        columnTransformer: {
+          mouvementsIntrant.id: const CustomExpression<String>(_uuidSql),
+        },
+        newColumns: [
+          mouvementsIntrant.origine,
+          mouvementsIntrant.syncStatus,
+          mouvementsIntrant.syncMotif,
+        ],
+      ),
+    );
   }
 
   /// Fournisseurs, achats et lignes d'achat en UUID. Idempotent.

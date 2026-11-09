@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../core/database/app_database.dart';
 import '../../../commercial/domain/services/numerotation_pieces.dart';
 import '../../../administration/data/repositories/preferences_poste_repository.dart';
@@ -142,6 +143,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
           motif: m.motif,
           quantite: m.quantite,
           reference: m.reference,
+          origine: m.origine,
         ),
     ];
   }
@@ -240,6 +242,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
               pmp: intrant.pmp,
             ),
           );
+      await DepotDemandesReferentiel(_db).proposerIntrant(intrant.code);
       return;
     }
 
@@ -255,6 +258,8 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         pmp: Value(intrant.pmp),
       ),
     );
+    // Le référentiel appartient au serveur : le poste PROPOSE (sans stock ni PMP).
+    await DepotDemandesReferentiel(_db).proposerIntrant(intrant.code);
   }
 
   @override

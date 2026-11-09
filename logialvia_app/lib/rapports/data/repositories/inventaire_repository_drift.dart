@@ -53,7 +53,11 @@ class InventaireRepositoryDrift {
     final articles = await (_db.select(
       _db.intrants,
     )..orderBy([(i) => OrderingTerm.asc(i.name)])).get();
-    final mouvements = await _db.select(_db.mouvementsIntrant).get();
+    // Seuls les mouvements de CE poste : le stock de ce poste n'a pas bouge pour un
+    // mouvement saisi ailleurs (journal partage, stock propre a chaque poste).
+    final mouvements = await (_db.select(
+      _db.mouvementsIntrant,
+    )..where((m) => m.origine.isNull())).get();
 
     final lignes = <LigneInventaireIntrant>[];
     for (final a in articles) {

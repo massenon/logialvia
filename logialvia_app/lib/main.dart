@@ -32,6 +32,8 @@ import 'administration/data/sync/table_modules_actifs_poste.dart';
 import 'administration/data/sync/table_parametres_entreprise_poste.dart';
 import 'approvisionnement/data/sync/table_achats_poste.dart';
 import 'approvisionnement/data/sync/table_fournisseurs_poste.dart';
+import 'approvisionnement/data/sync/table_intrants_poste.dart';
+import 'approvisionnement/data/sync/table_mouvements_intrant_poste.dart';
 import 'commercial/data/sync/table_clients_poste.dart';
 import 'commercial/data/sync/table_produits_poste.dart';
 import 'commercial/data/sync/table_ventes_poste.dart';
@@ -172,16 +174,19 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
     // Les modifications de referentiel faites ici sont PROPOSEES au serveur.
     demandes: DepotDemandesReferentiel(widget.database),
     // Referentiels d'abord (le serveur gagne), puis les faits saisis au poste.
-    // Paliers 1 a 4 de la migration UUID (DV-19) : modules, parametres, produits,
-    // clients, fournisseurs, ventes, achats. Devis, factures, ecritures… suivront.
+    // Paliers 1 a 5 de la migration UUID (DV-19) : modules, parametres, produits,
+    // intrants, clients, fournisseurs, ventes, achats, journal des mouvements. Devis,
+    // factures, ecritures… suivront.
     tables: [
       TableModulesActifsPoste(widget.database),
       TableParametresEntreprisePoste(widget.database),
       TableProduitsPoste(widget.database),
+      TableIntrantsPoste(widget.database),
       TableClientsPoste(widget.database),
       TableFournisseursPoste(widget.database),
       TableVentesPoste(widget.database),
       TableAchatsPoste(widget.database),
+      TableMouvementsIntrantPoste(widget.database),
     ],
   );
   late final PlanificateurSynchronisation

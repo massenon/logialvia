@@ -37,6 +37,11 @@ class FauxServeurSync {
   final Map<String, Map<String, dynamic>> fournisseurs = {};
   final Map<String, Map<String, dynamic>> achats = {};
 
+  /// Intrants (référentiel, SANS stock ni PMP, clé : le code) et journal des
+  /// mouvements (faits immuables).
+  final Map<String, Map<String, dynamic>> intrants = {};
+  final Map<String, Map<String, dynamic>> mouvements = {};
+
   /// Référentiels : `module_id` -> ligne ; une seule ligne de paramètres.
   final Map<String, Map<String, dynamic>> modules = {};
   Map<String, dynamic>? parametres;
@@ -105,6 +110,8 @@ class FauxServeurSync {
     voir(ventes.values);
     voir(fournisseurs.values);
     voir(achats.values);
+    voir(intrants.values);
+    voir(mouvements.values);
     if (parametres != null) voir([parametres!]);
     return plusRecent.toIso8601String();
   }
@@ -114,6 +121,7 @@ class FauxServeurSync {
     ventes.clear(); // les produits (référentiel) sont préservés
     achats.clear();
     fournisseurs.clear();
+    mouvements.clear(); // les intrants (référentiel) sont préservés
     marque = 'rz-${++_horloge}';
   }
 
@@ -267,6 +275,14 @@ class FauxServeurSync {
           for (final x in achats.values)
             if (_dans(x['serveur_modifie_le'] as String, since, jusqua)) x,
         ],
+        'intrants': [
+          for (final i in intrants.values)
+            if (_dans(i['updated_at'] as String, since, jusqua)) i,
+        ],
+        'mouvements_intrant': [
+          for (final m in mouvements.values)
+            if (_dans(m['serveur_modifie_le'] as String, since, jusqua)) m,
+        ],
       },
     });
   }
@@ -288,6 +304,20 @@ class FauxServeurSync {
       acceptees.add(d['id'] as String);
       if (!demandesAccepteesParLeServeur) continue;
       final donnees = d['donnees'] as Map<String, dynamic>;
+      if (d['type'] == 'intrant') {
+        final donnees = d['donnees'] as Map<String, dynamic>;
+        if (donnees.containsKey('stock') || donnees.containsKey('pmp')) {
+          acceptees.remove(d['id']);
+          refusees.add({
+            'id': d['id'] as String,
+            'motif':
+                'Le stock n\'est pas synchronisé : il reste propre à chaque poste.',
+          });
+          continue;
+        }
+        _intrant(d);
+        continue;
+      }
       if (d['type'] == 'produit_vendable') {
         final donnees = d['donnees'] as Map<String, dynamic>;
         if (donnees.containsKey('stock')) {
@@ -388,6 +418,12 @@ class FauxServeurSync {
     if (tables.containsKey('fournisseurs')) {
       reponse['fournisseurs'] = _fournisseurs(
         (tables['fournisseurs'] as List).cast<Map<String, dynamic>>(),
+        corps['device_id'] as String,
+      );
+    }
+    if (tables.containsKey('mouvements_intrant')) {
+      reponse['mouvements_intrant'] = _mouvements(
+        (tables['mouvements_intrant'] as List).cast<Map<String, dynamic>>(),
         corps['device_id'] as String,
       );
     }
@@ -587,6 +623,17 @@ class FauxServeurSync {
         refusees.add({'id': id, 'motif': 'Fournisseur inconnu du serveur.'});
         continue;
       }
+      final inconnuI = lignes.where(
+        (l) => !intrants.containsKey(l['intrant_code']),
+      );
+      if (inconnuI.isNotEmpty) {
+        refusees.add({
+          'id': id,
+          'motif':
+              'Intrant inconnu du serveur : « ${inconnuI.first['intrant_code']} ».',
+        });
+        continue;
+      }
       final ref = a['reference'] as String;
       final doublon = achats.values.any(
         (x) =>
@@ -626,6 +673,65 @@ class FauxServeurSync {
         existant
           ..['updated_at'] = saisie.toUtc().toIso8601String()
           ..['serveur_modifie_le'] = _instant();
+      }
+      acceptees.add(id);
+    }
+    return {'accepted': acceptees, 'rejected': refusees, 'ignored': []};
+  }
+
+  /// Un intrant tel que le serveur le garde (jamais de stock ni de PMP).
+  void ajouterIntrant(Map<String, dynamic> i, {String? saisiLe}) {
+    intrants[i['code'] as String] = {
+      ...i,
+      'saisi_le': saisiLe ?? _instant(),
+      'created_at': _instant(),
+      'updated_at': _instant(),
+    };
+  }
+
+  void _intrant(Map<String, dynamic> demande) {
+    final donnees = demande['donnees'] as Map<String, dynamic>;
+    final saisie = demande['saisi_le'] as String;
+    final code = donnees['code'] as String;
+    final existant = intrants[code];
+    if (existant == null) {
+      ajouterIntrant(donnees, saisiLe: saisie);
+      return;
+    }
+    if (donnees.entries.every((e) => existant[e.key] == e.value)) return;
+    if (!DateTime.parse(
+      saisie,
+    ).isAfter(DateTime.parse(existant['saisi_le'] as String))) {
+      return;
+    }
+    existant
+      ..addAll(donnees)
+      ..['saisi_le'] = saisie
+      ..['updated_at'] = _instant();
+  }
+
+  /// Journal : faits IMMUABLES (rejeu accepté sans rien changer), intrant connu.
+  Map<String, dynamic> _mouvements(
+    List<Map<String, dynamic>> lot,
+    String deviceId,
+  ) {
+    final acceptees = <String>[];
+    final refusees = <Map<String, String>>[];
+    for (final m in lot) {
+      final id = m['id'] as String;
+      if (!intrants.containsKey(m['intrant_code'])) {
+        refusees.add({
+          'id': id,
+          'motif': 'Intrant inconnu du serveur : « ${m['intrant_code']} ».',
+        });
+        continue;
+      }
+      if (!mouvements.containsKey(id)) {
+        mouvements[id] = {
+          ...m,
+          'device_id': deviceId,
+          'serveur_modifie_le': _instant(),
+        };
       }
       acceptees.add(id);
     }

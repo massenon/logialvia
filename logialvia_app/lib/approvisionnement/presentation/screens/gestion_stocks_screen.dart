@@ -153,7 +153,20 @@ class GestionStocksScreen extends StatelessWidget {
                               ),
                               (Text(m.article, style: grasAppro), 2),
                               (Text(m.type, style: texteAppro), 1),
-                              (Text(m.motif, style: texteAppro), 3),
+                              (
+                                Text(
+                                  m.estDUnAutrePoste
+                                      ? '${m.motif} — autre poste (historique, stock inchangé ici)'
+                                      : m.motif,
+                                  style: m.estDUnAutrePoste
+                                      ? texteAppro.copyWith(
+                                          color: AppColors.outline,
+                                          fontStyle: FontStyle.italic,
+                                        )
+                                      : texteAppro,
+                                ),
+                                3,
+                              ),
                               (
                                 Text(
                                   m.quantite > 0

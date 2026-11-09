@@ -2,7 +2,9 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/administration/data/repositories/preferences_poste_repository.dart';
 import 'package:logialvia_app/approvisionnement/data/repositories/approvisionnement_repository_drift.dart';
+import 'package:logialvia_app/administration/data/sync/depot_demandes_referentiel.dart';
 import 'package:logialvia_app/approvisionnement/data/sync/table_achats_poste.dart';
+import 'package:logialvia_app/approvisionnement/data/sync/table_intrants_poste.dart';
 import 'package:logialvia_app/approvisionnement/data/sync/table_fournisseurs_poste.dart';
 import 'package:logialvia_app/approvisionnement/domain/entities/approvisionnement.dart';
 import 'package:logialvia_app/commercial/domain/entities/vente.dart';
@@ -29,7 +31,12 @@ class _Poste {
       preferences: preferences,
       depot: depot,
       appairage: appairage,
-      tables: [TableFournisseursPoste(db), TableAchatsPoste(db)],
+      demandes: DepotDemandesReferentiel(db),
+      tables: [
+        TableIntrantsPoste(db),
+        TableFournisseursPoste(db),
+        TableAchatsPoste(db),
+      ],
       client: serveur.client,
     );
     appro = ApprovisionnementRepositoryDrift(db);

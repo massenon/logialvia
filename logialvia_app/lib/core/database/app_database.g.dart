@@ -12814,16 +12814,13 @@ class $MouvementsIntrantTable extends MouvementsIntrant
   $MouvementsIntrantTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _horodatageMeta = const VerificationMeta(
     'horodatage',
@@ -12901,6 +12898,40 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -12911,6 +12942,9 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     motif,
     quantite,
     reference,
+    origine,
+    syncStatus,
+    syncMotif,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -12984,6 +13018,24 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
       );
     }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
     return context;
   }
 
@@ -12994,7 +13046,7 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MouvementIntrantRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       horodatage: attachedDatabase.typeMapping.read(
@@ -13025,6 +13077,18 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         DriftSqlType.string,
         data['${effectivePrefix}reference'],
       ),
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
     );
   }
 
@@ -13036,7 +13100,8 @@ class $MouvementsIntrantTable extends MouvementsIntrant
 
 class MouvementIntrantRow extends DataClass
     implements Insertable<MouvementIntrantRow> {
-  final int id;
+  /// UUID (DV-19) : un mouvement est un fait synchronise, jamais renumerote.
+  final String id;
   final DateTime horodatage;
   final String intrantCode;
 
@@ -13055,6 +13120,16 @@ class MouvementIntrantRow extends DataClass
 
   /// Référence de l'opération d'origine (achat, ajustement), si elle existe.
   final String? reference;
+
+  /// D'ou vient ce mouvement : `null` = CE poste ; sinon l'identifiant du poste qui
+  /// l'a saisi. Un mouvement d'un autre poste est une ligne d'HISTORIQUE : il
+  /// n'entre dans aucun calcul de stock ni d'inventaire de ce poste (decision du
+  /// client : « stock propre a chaque poste + journal partage »).
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict`. Un mouvement est IMMUABLE : pas d'`updated_at`.
+  final String syncStatus;
+  final String? syncMotif;
   const MouvementIntrantRow({
     required this.id,
     required this.horodatage,
@@ -13064,11 +13139,14 @@ class MouvementIntrantRow extends DataClass
     required this.motif,
     required this.quantite,
     this.reference,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['horodatage'] = Variable<DateTime>(horodatage);
     map['intrant_code'] = Variable<String>(intrantCode);
     map['article'] = Variable<String>(article);
@@ -13077,6 +13155,13 @@ class MouvementIntrantRow extends DataClass
     map['quantite'] = Variable<double>(quantite);
     if (!nullToAbsent || reference != null) {
       map['reference'] = Variable<String>(reference);
+    }
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
     }
     return map;
   }
@@ -13093,6 +13178,13 @@ class MouvementIntrantRow extends DataClass
       reference: reference == null && nullToAbsent
           ? const Value.absent()
           : Value(reference),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
     );
   }
 
@@ -13102,7 +13194,7 @@ class MouvementIntrantRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MouvementIntrantRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       horodatage: serializer.fromJson<DateTime>(json['horodatage']),
       intrantCode: serializer.fromJson<String>(json['intrantCode']),
       article: serializer.fromJson<String>(json['article']),
@@ -13110,13 +13202,16 @@ class MouvementIntrantRow extends DataClass
       motif: serializer.fromJson<String>(json['motif']),
       quantite: serializer.fromJson<double>(json['quantite']),
       reference: serializer.fromJson<String?>(json['reference']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'horodatage': serializer.toJson<DateTime>(horodatage),
       'intrantCode': serializer.toJson<String>(intrantCode),
       'article': serializer.toJson<String>(article),
@@ -13124,11 +13219,14 @@ class MouvementIntrantRow extends DataClass
       'motif': serializer.toJson<String>(motif),
       'quantite': serializer.toJson<double>(quantite),
       'reference': serializer.toJson<String?>(reference),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
     };
   }
 
   MouvementIntrantRow copyWith({
-    int? id,
+    String? id,
     DateTime? horodatage,
     String? intrantCode,
     String? article,
@@ -13136,6 +13234,9 @@ class MouvementIntrantRow extends DataClass
     String? motif,
     double? quantite,
     Value<String?> reference = const Value.absent(),
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
   }) => MouvementIntrantRow(
     id: id ?? this.id,
     horodatage: horodatage ?? this.horodatage,
@@ -13145,6 +13246,9 @@ class MouvementIntrantRow extends DataClass
     motif: motif ?? this.motif,
     quantite: quantite ?? this.quantite,
     reference: reference.present ? reference.value : this.reference,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
   );
   MouvementIntrantRow copyWithCompanion(MouvementsIntrantCompanion data) {
     return MouvementIntrantRow(
@@ -13160,6 +13264,11 @@ class MouvementIntrantRow extends DataClass
       motif: data.motif.present ? data.motif.value : this.motif,
       quantite: data.quantite.present ? data.quantite.value : this.quantite,
       reference: data.reference.present ? data.reference.value : this.reference,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
     );
   }
 
@@ -13173,7 +13282,10 @@ class MouvementIntrantRow extends DataClass
           ..write('type: $type, ')
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
           ..write(')'))
         .toString();
   }
@@ -13188,6 +13300,9 @@ class MouvementIntrantRow extends DataClass
     motif,
     quantite,
     reference,
+    origine,
+    syncStatus,
+    syncMotif,
   );
   @override
   bool operator ==(Object other) =>
@@ -13200,11 +13315,14 @@ class MouvementIntrantRow extends DataClass
           other.type == this.type &&
           other.motif == this.motif &&
           other.quantite == this.quantite &&
-          other.reference == this.reference);
+          other.reference == this.reference &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
 }
 
 class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<DateTime> horodatage;
   final Value<String> intrantCode;
   final Value<String> article;
@@ -13212,6 +13330,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
   final Value<String> motif;
   final Value<double> quantite;
   final Value<String?> reference;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
   const MouvementsIntrantCompanion({
     this.id = const Value.absent(),
     this.horodatage = const Value.absent(),
@@ -13221,6 +13343,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     this.motif = const Value.absent(),
     this.quantite = const Value.absent(),
     this.reference = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MouvementsIntrantCompanion.insert({
     this.id = const Value.absent(),
@@ -13231,6 +13357,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     required String motif,
     required double quantite,
     this.reference = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : horodatage = Value(horodatage),
        intrantCode = Value(intrantCode),
        article = Value(article),
@@ -13238,7 +13368,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
        motif = Value(motif),
        quantite = Value(quantite);
   static Insertable<MouvementIntrantRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<DateTime>? horodatage,
     Expression<String>? intrantCode,
     Expression<String>? article,
@@ -13246,6 +13376,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Expression<String>? motif,
     Expression<double>? quantite,
     Expression<String>? reference,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -13256,11 +13390,15 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       if (motif != null) 'motif': motif,
       if (quantite != null) 'quantite': quantite,
       if (reference != null) 'reference': reference,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MouvementsIntrantCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<DateTime>? horodatage,
     Value<String>? intrantCode,
     Value<String>? article,
@@ -13268,6 +13406,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Value<String>? motif,
     Value<double>? quantite,
     Value<String?>? reference,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
   }) {
     return MouvementsIntrantCompanion(
       id: id ?? this.id,
@@ -13278,6 +13420,10 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       motif: motif ?? this.motif,
       quantite: quantite ?? this.quantite,
       reference: reference ?? this.reference,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -13285,7 +13431,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (horodatage.present) {
       map['horodatage'] = Variable<DateTime>(horodatage.value);
@@ -13308,6 +13454,18 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     if (reference.present) {
       map['reference'] = Variable<String>(reference.value);
     }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -13321,7 +13479,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
           ..write('type: $type, ')
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -29709,7 +29871,7 @@ typedef $$LignesAchatTableProcessedTableManager =
     >;
 typedef $$MouvementsIntrantTableCreateCompanionBuilder =
     MouvementsIntrantCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required DateTime horodatage,
       required String intrantCode,
       required String article,
@@ -29717,10 +29879,14 @@ typedef $$MouvementsIntrantTableCreateCompanionBuilder =
       required String motif,
       required double quantite,
       Value<String?> reference,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
     });
 typedef $$MouvementsIntrantTableUpdateCompanionBuilder =
     MouvementsIntrantCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<DateTime> horodatage,
       Value<String> intrantCode,
       Value<String> article,
@@ -29728,6 +29894,10 @@ typedef $$MouvementsIntrantTableUpdateCompanionBuilder =
       Value<String> motif,
       Value<double> quantite,
       Value<String?> reference,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
     });
 
 final class $$MouvementsIntrantTableReferences
@@ -29770,7 +29940,7 @@ class $$MouvementsIntrantTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -29802,6 +29972,21 @@ class $$MouvementsIntrantTableFilterComposer
 
   ColumnFilters<String> get reference => $composableBuilder(
     column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29838,7 +30023,7 @@ class $$MouvementsIntrantTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -29870,6 +30055,21 @@ class $$MouvementsIntrantTableOrderingComposer
 
   ColumnOrderings<String> get reference => $composableBuilder(
     column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -29906,7 +30106,7 @@ class $$MouvementsIntrantTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get horodatage => $composableBuilder(
@@ -29928,6 +30128,17 @@ class $$MouvementsIntrantTableAnnotationComposer
 
   GeneratedColumn<String> get reference =>
       $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
 
   $$IntrantsTableAnnotationComposer get intrantCode {
     final $$IntrantsTableAnnotationComposer composer = $composerBuilder(
@@ -29986,7 +30197,7 @@ class $$MouvementsIntrantTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<DateTime> horodatage = const Value.absent(),
                 Value<String> intrantCode = const Value.absent(),
                 Value<String> article = const Value.absent(),
@@ -29994,6 +30205,10 @@ class $$MouvementsIntrantTableTableManager
                 Value<String> motif = const Value.absent(),
                 Value<double> quantite = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MouvementsIntrantCompanion(
                 id: id,
                 horodatage: horodatage,
@@ -30003,10 +30218,14 @@ class $$MouvementsIntrantTableTableManager
                 motif: motif,
                 quantite: quantite,
                 reference: reference,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required DateTime horodatage,
                 required String intrantCode,
                 required String article,
@@ -30014,6 +30233,10 @@ class $$MouvementsIntrantTableTableManager
                 required String motif,
                 required double quantite,
                 Value<String?> reference = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MouvementsIntrantCompanion.insert(
                 id: id,
                 horodatage: horodatage,
@@ -30023,6 +30246,10 @@ class $$MouvementsIntrantTableTableManager
                 motif: motif,
                 quantite: quantite,
                 reference: reference,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(

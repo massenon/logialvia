@@ -51,6 +51,7 @@ class MouvementIntrant {
     required this.motif,
     required this.quantite,
     this.reference,
+    this.origine,
   });
 
   final DateTime horodatage;
@@ -59,6 +60,12 @@ class MouvementIntrant {
   final String motif;
   final double quantite;
   final String? reference;
+
+  /// `null` : saisi sur CE poste ; sinon l'identifiant du poste d'origine. Un
+  /// mouvement d'un autre poste est de l'historique : il n'a pas touché ce stock.
+  final String? origine;
+
+  bool get estDUnAutrePoste => origine != null;
 }
 
 /// Statuts d'une commande d'achat.
