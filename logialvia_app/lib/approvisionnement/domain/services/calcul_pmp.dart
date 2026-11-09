@@ -34,7 +34,8 @@ class CalculPmp {
     required double prixUnitaire,
   }) {
     final reste = stock - quantite;
-    if (quantite > stock || reste <= 0) return pmp;
+    // Un stock qui ne couvre pas la quantité (ou qu'elle vide) laisse le PMP inchangé : `reste <= 0`.
+    if (reste <= 0) return pmp;
     final nouveau = ((stock * pmp - quantite * prixUnitaire) / reste).round();
     return nouveau < 0 ? 0 : nouveau;
   }

@@ -3182,6 +3182,334 @@ void main() {
     );
   });
 
+  // --- `47s_` : stock ciblé. Le web désigne un poste ; seul ce poste applique l'effet, une
+  // fois ; le VRAI serveur valide la désignation, redistribue le fait et la trace de l'effet.
+  group('stock ciblé (47s_) : le poste désigné par le web applique, une fois', () {
+    final maintenantUtc = r"now('UTC')->format('Y-m-d\\TH:i:s.u\\Z')";
+    var compteurRef = 0;
+
+    /// Un numéro unique pour toute la durée de vie du serveur d'essai (la référence web est globale).
+    String numero() =>
+        '${(DateTime.now().microsecondsSinceEpoch % 1000000000).toString().padLeft(9, '0')}${compteurRef++}';
+
+    Future<ProduitVendableRow> goliath(_Poste p) async => (p.db.select(
+      p.db.produitsVendables,
+    )..where((x) => x.name.equals('Goliath mature'))).getSingle();
+
+    Future<void> fixerStock(_Poste p, String id, int stock) =>
+        (p.db.update(p.db.produitsVendables)..where((x) => x.id.equals(id)))
+            .write(ProduitsVendablesCompanion(stock: Value(stock)));
+
+    Future<int> stock(_Poste p, String id) async => (await (p.db.select(
+      p.db.produitsVendables,
+    )..where((x) => x.id.equals(id))).getSingle()).stock;
+
+    /// La vente que le web écrirait (les lignes et le poste cible portés par le fait).
+    String phpVente(
+      String id,
+      String ref,
+      String produitId,
+      String cible, {
+      String statut = 'Payée',
+      int secondes = 0,
+    }) =>
+        "echo json_encode((new App\\Sync\\Tables\\VentesTable)->absorber('$posteWeb', "
+        "['id'=>'$id','reference'=>'$ref','client'=>'Client Comptant','client_id'=>null,"
+        "'date_vente'=>now('UTC')->format('Y-m-d\\TH:i:s.u\\Z'),'mode'=>'Espèces','status'=>'$statut',"
+        "'total'=>9000,'paye'=>9000,'poste_cible'=>'$cible',"
+        "'updated_at'=>now('UTC')->addSeconds($secondes)->format('Y-m-d\\TH:i:s.u\\Z'),"
+        "'lignes'=>[['id'=>'${nouvelUuid()}','produit_id'=>'$produitId','name'=>'Goliath mature',"
+        "'qte'=>3,'pu'=>3000,'espece'=>null]]]));";
+
+    test(
+      'vente web ciblée sur A : B ne bouge jamais, A décrémente une fois (rejeu, tirage complet), B voit la trace',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        await sync(a);
+        await sync(b); // les deux ont fini un tirage : désignables
+        final produit = await goliath(a);
+        await fixerStock(a, produit.id, 20);
+        await fixerStock(b, produit.id, 20);
+        final idA = await a.preferences.identifiantPoste();
+        final id = nouvelUuid();
+
+        final sortie = await web(
+          phpVente(id, 'V-WEB-2026-${numero()}', produit.id, idA),
+        );
+        expect(sortie, contains('null'), reason: sortie);
+
+        await sync(b);
+        expect(
+          await stock(b, produit.id),
+          20,
+          reason: 'B apprend la vente, sans effet',
+        );
+        expect(await stock(a, produit.id), 20, reason: 'A est « hors ligne »');
+
+        await sync(a);
+        expect(await stock(a, produit.id), 17, reason: 'A applique, une fois');
+        await sync(a);
+        await sync(a, complet: true);
+        expect(
+          await stock(a, produit.id),
+          17,
+          reason: 'rejeu et tirage complet',
+        );
+        final traces = await (a.db.select(
+          a.db.effetsAppliques,
+        )..where((e) => e.faitId.equals(id))).get();
+        expect(traces, hasLength(1));
+        expect(traces.single.etat, 'applique');
+        expect(traces.single.syncStatus, 'synced');
+
+        await sync(b);
+        final chezB = await (b.db.select(
+          b.db.effetsAppliques,
+        )..where((e) => e.faitId.equals(id))).get();
+        expect(chezB, hasLength(1), reason: 'la trace redescend au poste B');
+        expect(chezB.single.origine, idA);
+        expect(await stock(b, produit.id), 20, reason: 'historique pur chez B');
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'l\'annulation au web suit le même poste (réintégration chez A), jamais chez B',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        await sync(a);
+        await sync(b);
+        final produit = await goliath(a);
+        await fixerStock(a, produit.id, 10);
+        await fixerStock(b, produit.id, 10);
+        final idA = await a.preferences.identifiantPoste();
+        final id = nouvelUuid();
+        final ref = 'V-WEB-2026-${numero()}';
+        await web(phpVente(id, ref, produit.id, idA));
+        await sync(a);
+        await sync(b);
+        expect(await stock(a, produit.id), 7);
+
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final sortie = await web(
+          phpVente(id, ref, produit.id, idA, statut: 'Annulée', secondes: 5),
+        );
+        expect(sortie, contains('null'), reason: sortie);
+        await sync(a);
+        await sync(b);
+
+        expect(await stock(a, produit.id), 10, reason: 'A réintègre');
+        expect(await stock(b, produit.id), 10);
+        expect(
+          (await (a.db.select(
+                a.db.effetsAppliques,
+              )..where((e) => e.faitId.equals(id))).get())
+              .map((e) => e.nature)
+              .toSet(),
+          {'vente', 'annulation_vente'},
+        );
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'stock insuffisant chez A : plancher à 0 et avertissement remonté au serveur et à B',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        await sync(a);
+        await sync(b);
+        final produit = await goliath(a);
+        await fixerStock(a, produit.id, 1);
+        final idA = await a.preferences.identifiantPoste();
+        final idVente = nouvelUuid();
+        await web(phpVente(idVente, 'V-WEB-2026-${numero()}', produit.id, idA));
+
+        await sync(a);
+        await sync(b);
+
+        expect(await stock(a, produit.id), 0);
+        final trace = (await (b.db.select(
+          b.db.effetsAppliques,
+        )..where((e) => e.faitId.equals(idVente))).get()).single;
+        expect(trace.etat, 'avertissement');
+        expect(trace.avertissement, contains('Stock insuffisant au poste P'));
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'réception web ciblée sur A : entrée de stock et PMP chez A seulement ; annulation = sortie inverse',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        final appro = ApprovisionnementRepositoryDrift(a.db);
+        final f = await appro.creerFournisseur(nom: 'Fournisseur 47s $unique');
+        await sync(a); // fournisseur, intrants adoptés
+        await sync(b);
+        for (final p in [a, b]) {
+          await (p.db.update(
+            p.db.intrants,
+          )..where((i) => i.code.equals('INT-001'))).write(
+            const IntrantsCompanion(stock: Value(100), pmp: Value(200)),
+          );
+        }
+        final idA = await a.preferences.identifiantPoste();
+        final id = nouvelUuid();
+        final ref = 'ACH-WEB-2026-${numero()}';
+        String phpAchat(String statut, int secondes) =>
+            "echo json_encode((new App\\Sync\\Tables\\AchatsTable)->absorber('$posteWeb', "
+            "['id'=>'$id','reference'=>'$ref','fournisseur_id'=>'${f.id}',"
+            "'date_achat'=>now('UTC')->format('Y-m-d\\TH:i:s.u\\Z'),'statut'=>'$statut','total'=>16000,"
+            "'paye'=>0,'mode'=>'Crédit','echeance'=>null,'poste_cible'=>'$idA',"
+            "'updated_at'=>now('UTC')->addSeconds($secondes)->format('Y-m-d\\TH:i:s.u\\Z'),"
+            "'lignes'=>[['id'=>'${nouvelUuid()}','intrant_code'=>'INT-001','nom'=>'Maïs',"
+            "'qte'=>50,'pu_achat'=>320]]]));";
+        final sortie = await web(phpAchat('Livré', 0));
+        expect(sortie, contains('null'), reason: sortie);
+
+        await sync(b);
+        await sync(a);
+        Future<IntrantRow> intrant(_Poste p) => (p.db.select(
+          p.db.intrants,
+        )..where((i) => i.code.equals('INT-001'))).getSingle();
+        expect((await intrant(a)).stock, 150);
+        expect((await intrant(a)).pmp, 240, reason: '(100×200 + 50×320) ÷ 150');
+        expect((await intrant(b)).stock, 100);
+        expect((await intrant(b)).pmp, 200);
+
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await web(phpAchat('Annulé', 5));
+        await sync(a);
+        await sync(a, complet: true);
+        expect((await intrant(a)).stock, 100);
+        expect((await intrant(a)).pmp, 200, reason: 'inverse de la formule');
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'correction de stock web ciblée sur A : variation signée chez A seulement',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        final b = await poste()
+          ..let(postes.add);
+        await sync(a);
+        await sync(b);
+        final produit = await goliath(a);
+        await fixerStock(a, produit.id, 10);
+        await fixerStock(b, produit.id, 10);
+        final idA = await a.preferences.identifiantPoste();
+        final sortie = await web(
+          "echo json_encode((new App\\Sync\\Tables\\MouvementsProduitTable)->absorber('$posteWeb', "
+          "['id'=>'${nouvelUuid()}','horodatage'=>$maintenantUtc,'produit_id'=>'${produit.id}',"
+          "'article'=>'Goliath mature','motif'=>'Comptage','quantite'=>-4,'poste_cible'=>'$idA']));",
+        );
+        expect(sortie, contains('null'), reason: sortie);
+
+        await sync(b);
+        await sync(a);
+        await sync(a, complet: true);
+
+        expect(await stock(a, produit.id), 6);
+        expect(await stock(b, produit.id), 10);
+      },
+      skip: sauteWeb,
+    );
+
+    test(
+      'le vrai serveur refuse un poste révoqué, jamais synchronisé ou inconnu, et un poste qui prétend désigner',
+      () async {
+        final a = await poste()
+          ..let(postes.add);
+        await sync(a);
+        final produit = await goliath(a);
+        final revoque = await poste()
+          ..let(postes.add);
+        await sync(revoque);
+        final idRevoque = await revoque.preferences.identifiantPoste();
+        final jamais = await poste()
+          ..let(postes.add);
+        final idJamais = await jamais.preferences.identifiantPoste();
+        await web(
+          "app(App\\Services\\PostesService::class)->revoquer('$idRevoque', App\\Models\\User::query()->first());",
+        );
+
+        String ref(int n) => 'V-WEB-2026-${numero()}';
+        final motifRevoque = await web(
+          phpVente(nouvelUuid(), ref(1), produit.id, idRevoque),
+        );
+        final motifJamais = await web(
+          phpVente(nouvelUuid(), ref(2), produit.id, idJamais),
+        );
+        final motifInconnu = await web(
+          phpVente(nouvelUuid(), ref(3), produit.id, nouvelUuid()),
+        );
+
+        // `json_encode` échappe les accents : on relit la chaîne.
+        expect(
+          jsonDecode(motifRevoque) as String,
+          contains('inconnu ou révoqué'),
+        );
+        expect(
+          jsonDecode(motifJamais) as String,
+          contains('jamais synchronisé'),
+        );
+        expect(
+          jsonDecode(motifInconnu) as String,
+          contains('inconnu ou révoqué'),
+        );
+
+        // Un poste qui pousse une vente avec poste_cible : refusée, jamais écrite.
+        final repo = VentesRepositoryDrift(a.db, EventBus());
+        final x = (await repo.chargerCatalogue()).firstWhere(
+          (c) => c.nom == 'Goliath mature',
+        );
+        final r = await repo.enregistrerVente(
+          client: 'Client Comptant',
+          mode: ModeReglement.especes,
+          statut: StatutVente.payee,
+          montantPaye: x.prix,
+          panier: [
+            LignePanier(
+              produitId: x.id,
+              nom: x.nom,
+              montantGlobal: x.prix,
+              quantite: 1,
+              stockDisponible: x.stock,
+              prixIndicatif: x.prix,
+              prixIndicatifMax: x.prixMax,
+              espece: x.espece,
+              unite: x.unite,
+            ),
+          ],
+        );
+        await (a.db.update(a.db.ventes)
+              ..where((v) => v.ref.equals(r.vente.reference)))
+            .write(VentesCompanion(posteCible: Value(idRevoque)));
+        final rapport = await a.moteur.synchroniser();
+        expect(rapport.refusees, greaterThan(0), reason: rapport.message);
+        final ligne = await (a.db.select(
+          a.db.ventes,
+        )..where((v) => v.ref.equals(r.vente.reference))).getSingle();
+        expect(ligne.syncStatus, 'conflict');
+        expect(ligne.syncMotif, contains('Seul le web peut désigner'));
+      },
+      skip: sauteWeb,
+    );
+  });
+
   group('concurrence réelle', () {
     test(
       'quatre postes synchronisent EN MÊME TEMPS (ventes, pièces, fiche du même jour) : aucun échec, tous convergent',

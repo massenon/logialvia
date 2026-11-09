@@ -749,6 +749,161 @@ void main() {
     );
   });
 
+  // ================================================ garde-fous du service
+
+  group('EffetsStockPoste : chaque effet est unique par lui-même', () {
+    test(
+      'appliquer deux fois le même effet est refusé par le service, sans rien changer',
+      () async {
+        final effets = EffetsStockPoste(db);
+        final p = await produit();
+        await fixerProduit(p.id, 10);
+        const lignesI = [
+          LigneEffetIntrant(
+            code: 'INT-001',
+            nom: 'Maïs',
+            quantite: 50,
+            prixUnitaire: 320,
+          ),
+        ];
+        final lignesP = [
+          LigneEffetProduit(produitId: p.id, nom: 'Produit', quantite: 3),
+        ];
+
+        expect(
+          await effets.appliquerReception(
+            achatId: idAchat,
+            reference: 'R',
+            lignes: lignesI,
+          ),
+          isTrue,
+        );
+        expect(
+          await effets.appliquerReception(
+            achatId: idAchat,
+            reference: 'R',
+            lignes: lignesI,
+          ),
+          isFalse,
+        );
+        expect((await intrant()).stock, 150);
+
+        expect(
+          await effets.annulerReception(
+            achatId: idAchat,
+            reference: 'R',
+            lignes: lignesI,
+          ),
+          isTrue,
+        );
+        expect(
+          await effets.annulerReception(
+            achatId: idAchat,
+            reference: 'R',
+            lignes: lignesI,
+          ),
+          isFalse,
+        );
+        expect((await intrant()).stock, 100);
+
+        expect(
+          await effets.appliquerVente(
+            venteId: idVente,
+            reference: 'V',
+            lignes: lignesP,
+          ),
+          isTrue,
+        );
+        expect(
+          await effets.annulerVente(
+            venteId: idVente,
+            reference: 'V',
+            lignes: lignesP,
+          ),
+          isTrue,
+        );
+        expect(
+          await effets.annulerVente(
+            venteId: idVente,
+            reference: 'V',
+            lignes: lignesP,
+          ),
+          isFalse,
+        );
+        expect(await stockProduit(p.id), 10);
+
+        expect(
+          await effets.appliquerCorrection(
+            mouvementId: idMvt,
+            produitId: p.id,
+            article: 'Produit',
+            motif: 'm',
+            variation: 5,
+          ),
+          isTrue,
+        );
+        expect(
+          await effets.appliquerCorrection(
+            mouvementId: idMvt,
+            produitId: p.id,
+            article: 'Produit',
+            motif: 'm',
+            variation: 5,
+          ),
+          isFalse,
+        );
+        expect(await stockProduit(p.id), 15);
+      },
+    );
+
+    test(
+      'commande liée à ce poste, réceptionnée AUSSI localement avant la livraison web : une seule entrée',
+      () async {
+        final f = await fournisseur();
+        await achats.absorber([achat(f, cible: moi)]);
+        // Le poste reçoit lui-même la commande (stock +50 par sa propre réception).
+        await appro.receptionnerAchat('ACH-WEB-2026-001');
+        expect((await intrant()).stock, 150);
+
+        // La livraison du web arrive ensuite (version plus récente que la saisie locale).
+        await achats.absorber([
+          achat(
+            f,
+            statut: 'Livré',
+            cible: moi,
+            maj: '2099-01-01T00:00:00.000000Z',
+          ),
+        ]);
+
+        expect((await intrant()).stock, 150, reason: 'pas de seconde entrée');
+        final e = (await effets()).single;
+        expect(e.etat, 'ignore');
+        expect(e.avertissement, contains('n\'était plus « Commandé »'));
+      },
+    );
+  });
+
+  group('le poste cible fait l\'aller-retour', () {
+    test(
+      'un achat ou une vente liés renvoient leur poste cible au serveur',
+      () async {
+        final f = await fournisseur();
+        await achats.absorber([achat(f, statut: 'Livré', cible: moi)]);
+        await (db.update(db.achats)..where((a) => a.id.equals(idAchat))).write(
+          const AchatsCompanion(syncStatus: Value('pending')),
+        );
+        expect((await achats.aEnvoyer()).single.corps['poste_cible'], moi);
+
+        final p = await produit();
+        await ventes.absorber([vente(p.id, cible: moi)]);
+        await (db.update(db.ventes)..where((v) => v.id.equals(idVente))).write(
+          const VentesCompanion(syncStatus: Value('pending')),
+        );
+        expect((await ventes.aEnvoyer()).single.corps['poste_cible'], moi);
+      },
+    );
+  });
+
   // ======================================================= corrections
 
   group('correction de stock produit saisie au web', () {
