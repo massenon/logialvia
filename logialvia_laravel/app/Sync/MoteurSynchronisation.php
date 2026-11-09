@@ -34,7 +34,7 @@ class MoteurSynchronisation
     {
         return array_values(array_filter(
             $this->tables(),
-            fn (TableSync $t) => $t->droitLecture() === null || $utilisateur->can($t->droitLecture()),
+            fn (TableSync $t) => $t->peutLire($utilisateur),
         ));
     }
 
@@ -147,8 +147,7 @@ class MoteurSynchronisation
             ];
         }
 
-        $droit = $table->droitEcriture();
-        if ($droit !== null && ! $utilisateur->can($droit)) {
+        if (! $table->peutEcrire($utilisateur)) {
             return $this->tableRefusee($lignes, "Droit insuffisant pour écrire dans « {$table->nom()} ».");
         }
 

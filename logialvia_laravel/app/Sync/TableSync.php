@@ -2,6 +2,7 @@
 
 namespace App\Sync;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,6 +43,33 @@ abstract class TableSync
     public function droitEcriture(): ?string
     {
         return null;
+    }
+
+    /**
+     * Ce compte peut-il LIRE cette table ? Par defaut : le droit de lecture ; une table
+     * partagee par plusieurs metiers (les intrants : stocks, achats, elevage) surcharge.
+     */
+    public function peutLire(User $utilisateur): bool
+    {
+        return $this->droitLecture() === null || $utilisateur->can($this->droitLecture());
+    }
+
+    /** Ce compte peut-il ECRIRE un fait dans cette table ? Meme principe. */
+    public function peutEcrire(User $utilisateur): bool
+    {
+        return $this->droitEcriture() === null || $utilisateur->can($this->droitEcriture());
+    }
+
+    /** Vrai si le compte a l'un de ces droits. */
+    protected function aUnDesDroits(User $utilisateur, array $droits): bool
+    {
+        foreach ($droits as $droit) {
+            if ($utilisateur->can($droit)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function requete(): Builder

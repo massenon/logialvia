@@ -32,6 +32,9 @@ class AchatsTest extends TestCase
 
     private function fournisseurConnu(array $poste, array $surcharge = []): string
     {
+        // Les intrants sont connus du serveur AVANT les achats qui les portent.
+        $this->intrantConnu($poste);
+        $this->intrantConnu($poste, ['code' => 'INT-002', 'name' => 'Soja']);
         $f = $this->ligneFournisseur($surcharge);
         $this->pousser($poste, ['fournisseurs' => [$f]])->assertOk()->assertJsonPath('fournisseurs.rejected', []);
 
@@ -123,6 +126,20 @@ class AchatsTest extends TestCase
         $this->assertSame('Fournisseur inconnu du serveur.', $bilan['rejected'][0]['motif']);
         $this->assertSame(0, Achat::query()->count());
         $this->assertSame(0, LigneAchat::query()->count(), 'jamais de ligne sans son achat');
+    }
+
+    public function test_un_intrant_inconnu_du_serveur_fait_refuser_l_achat_en_entier(): void
+    {
+        $a = $this->poste('admin', 'gerante');
+        $f = $this->fournisseurConnu($a);
+        $achat = $this->ligneAchat($f);
+        $achat['lignes'][0]['intrant_code'] = 'INT-FANTOME';
+
+        $bilan = $this->bilanAchats($a, [$achat]);
+
+        $this->assertSame('Intrant inconnu du serveur : « INT-FANTOME ».', $bilan['rejected'][0]['motif']);
+        $this->assertSame(0, Achat::query()->count());
+        $this->assertSame(0, LigneAchat::query()->count());
     }
 
     public function test_les_droits_lecture_et_ecriture(): void
@@ -242,7 +259,7 @@ class AchatsTest extends TestCase
         $livre = array_merge($achat, [
             'statut' => 'Livré', 'paye' => 30000, 'updated_at' => '2026-11-01T11:00:00.000000Z',
             'reference' => 'ACH-P1-2026-999',
-            'lignes' => [['id' => (string) Str::uuid(), 'intrant_code' => 'INT-009', 'nom' => 'Autre', 'qte' => 9, 'pu_achat' => 1]],
+            'lignes' => [['id' => (string) Str::uuid(), 'intrant_code' => 'INT-002', 'nom' => 'Autre', 'qte' => 9, 'pu_achat' => 1]],
         ]);
         $this->bilanAchats($a, [$livre]);
 

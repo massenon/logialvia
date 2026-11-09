@@ -4,6 +4,7 @@ namespace App\Sync\Tables;
 
 use App\Models\Achat;
 use App\Models\Fournisseur;
+use App\Models\Intrant;
 use App\Models\LigneAchat;
 use App\Sync\TableSync;
 use Carbon\CarbonImmutable;
@@ -120,6 +121,13 @@ class AchatsTable extends TableSync
         }
         if (! Fournisseur::query()->whereKey($ligne['fournisseur_id'])->exists()) {
             return 'Fournisseur inconnu du serveur.';
+        }
+        // Les intrants (referentiel) partent AVANT les achats : un code inconnu rend
+        // l'achat inexploitable par les autres postes.
+        foreach ($ligne['lignes'] as $l) {
+            if (! Intrant::query()->whereKey($l['intrant_code'])->exists()) {
+                return "Intrant inconnu du serveur : « {$l['intrant_code']} ».";
+            }
         }
 
         $saisie = CarbonImmutable::parse($ligne['updated_at'])->utc();

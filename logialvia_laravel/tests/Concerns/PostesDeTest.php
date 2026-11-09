@@ -158,4 +158,48 @@ trait PostesDeTest
             ]],
         ], $surcharge);
     }
+
+    /** Un intrant tel qu'un poste le propose (sans stock ni PMP : propres a chaque poste). */
+    protected function ligneIntrant(array $surcharge = []): array
+    {
+        return array_merge([
+            'code' => 'INT-001',
+            'name' => 'Maïs',
+            'cat' => 'Aliment',
+            'unit' => 'kg',
+            'threshold' => 25,
+        ], $surcharge);
+    }
+
+    /** Cree un intrant au serveur par une demande acceptee ; renvoie son code. */
+    protected function intrantConnu(array $poste, array $surcharge = []): string
+    {
+        $intrant = $this->ligneIntrant($surcharge);
+        $this->avecJeton($poste['jeton'])->postJson('/api/sync/demandes', [
+            'device_id' => $poste['device'],
+            'demandes' => [[
+                'id' => (string) Str::uuid(),
+                'type' => 'intrant',
+                'saisi_le' => now()->format('Y-m-d\TH:i:s.u\Z'),
+                'donnees' => $intrant,
+            ]],
+        ])->assertOk()->assertJsonPath('rejected', []);
+
+        return $intrant['code'];
+    }
+
+    /** Un mouvement du journal tel qu'un poste l'enverrait. */
+    protected function ligneMouvement(string $code = 'INT-001', array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'horodatage' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'intrant_code' => $code,
+            'article' => 'Maïs',
+            'type' => 'Entrée',
+            'motif' => 'Réception commande ACH-P1-2026-001',
+            'quantite' => 100,
+            'reference' => 'ACH-P1-2026-001',
+        ], $surcharge);
+    }
 }

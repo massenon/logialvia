@@ -3,6 +3,7 @@
 namespace App\Sync;
 
 use App\Models\DemandeReferentiel;
+use App\Models\Intrant;
 use App\Models\ModuleActif;
 use App\Models\ParametresEntreprise;
 use App\Models\ProduitVendable;
@@ -31,6 +32,8 @@ class DemandesReferentiel
     public const TYPE_PARAMETRES = 'parametres_entreprise';
 
     public const TYPE_PRODUIT = 'produit_vendable';
+
+    public const TYPE_INTRANT = 'intrant';
 
     /** Champs de `parametres_entreprise` qu'un poste peut proposer. */
     public const CHAMPS_PARAMETRES = [
@@ -102,6 +105,7 @@ class DemandesReferentiel
             self::TYPE_MODULE => $this->module($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_PARAMETRES => $this->parametres($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_PRODUIT => $this->produit($utilisateur, $demande['donnees'], $saisie, $cle),
+            self::TYPE_INTRANT => $this->intrant($utilisateur, $demande['donnees'], $saisie, $cle),
             default => "Type de demande inconnu du serveur : « {$demande['type']} ».",
         };
 
@@ -306,6 +310,63 @@ class DemandesReferentiel
         }
 
         $produit->forceFill($champs + ['saisi_le' => $saisie])->save();
+
+        return null;
+    }
+
+    /**
+     * Cree ou modifie un intrant. Ni STOCK ni PMP : propres a chaque poste (decision du
+     * client). Meme regles que le catalogue : identique accepte sans conflit, plus
+     * ancien refuse. La cle est le CODE, partage par tous les postes.
+     */
+    private function intrant(User $utilisateur, array $donnees, CarbonImmutable $saisie, ?string &$cle): ?string
+    {
+        $cle = is_string($donnees['code'] ?? null) ? $donnees['code'] : null;
+
+        foreach (['stock', 'pmp'] as $interdit) {
+            if (array_key_exists($interdit, $donnees)) {
+                return "Le $interdit n'est pas synchronisé : il reste propre à chaque poste.";
+            }
+        }
+        $v = Validator::make($donnees, [
+            'code' => ['required', 'string', 'max:40'],
+            'name' => ['required', 'string', 'max:255'],
+            'cat' => ['required', 'string', 'max:80'],
+            'unit' => ['required', 'string', 'max:40'],
+            'threshold' => ['nullable', 'integer', 'min:0'],
+        ], [
+            'code.required' => "Le code de l'intrant est obligatoire.",
+            'name.required' => "La désignation de l'intrant est obligatoire.",
+            'cat.required' => "La catégorie de l'intrant est obligatoire.",
+            'unit.required' => "L'unité de l'intrant est obligatoire.",
+            'threshold.min' => 'Le seuil d\'alerte ne peut être négatif.',
+        ]);
+        if ($v->fails()) {
+            return $v->errors()->first();
+        }
+        if (! $utilisateur->can('manage-stocks') && ! $utilisateur->can('manage-achats')) {
+            return 'Droit insuffisant pour modifier les intrants.';
+        }
+
+        $champs = [
+            'name' => $donnees['name'],
+            'cat' => $donnees['cat'],
+            'unit' => $donnees['unit'],
+            'threshold' => (int) ($donnees['threshold'] ?? 0),
+        ];
+        $intrant = Intrant::query()->find($donnees['code']);
+        if ($intrant === null) {
+            (new Intrant)->forceFill($champs + ['code' => $donnees['code'], 'saisi_le' => $saisie])->save();
+
+            return null;
+        }
+        if (collect($champs)->every(fn ($valeur, $colonne) => $intrant->{$colonne} == $valeur)) {
+            return null;
+        }
+        if ($intrant->saisi_le !== null && $intrant->saisi_le->greaterThanOrEqualTo($saisie)) {
+            return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+        }
+        $intrant->forceFill($champs + ['saisi_le' => $saisie])->save();
 
         return null;
     }
