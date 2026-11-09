@@ -61,6 +61,11 @@ return [
     ],
 
     /*
+    | Routes dont l'ecran web est converti (les autres montrent la page « bientot »).
+    */
+    'routes_web_implementees' => [],
+
+    /*
     | Modules basculables et fiche associee — miroir de `ModulesActifsSeeder`
     | du poste. Goliaths et Pintades n'y figurent pas : toujours actifs.
     */
