@@ -5,6 +5,7 @@ namespace App\Sync;
 use App\Models\DemandeReferentiel;
 use App\Models\ModuleActif;
 use App\Models\ParametresEntreprise;
+use App\Models\ProduitVendable;
 use App\Models\User;
 use App\Support\Audit;
 use Carbon\CarbonImmutable;
@@ -28,6 +29,8 @@ class DemandesReferentiel
     public const TYPE_MODULE = 'module_actif';
 
     public const TYPE_PARAMETRES = 'parametres_entreprise';
+
+    public const TYPE_PRODUIT = 'produit_vendable';
 
     /** Champs de `parametres_entreprise` qu'un poste peut proposer. */
     public const CHAMPS_PARAMETRES = [
@@ -98,6 +101,7 @@ class DemandesReferentiel
         $motif = match ($demande['type']) {
             self::TYPE_MODULE => $this->module($utilisateur, $demande['donnees'], $saisie, $cle),
             self::TYPE_PARAMETRES => $this->parametres($utilisateur, $demande['donnees'], $saisie, $cle),
+            self::TYPE_PRODUIT => $this->produit($utilisateur, $demande['donnees'], $saisie, $cle),
             default => "Type de demande inconnu du serveur : « {$demande['type']} ».",
         };
 
@@ -218,6 +222,90 @@ class DemandesReferentiel
         // Les colonnes NOT NULL n'acceptent de toute facon pas de null.
         $parametres->forceFill($valeurs)->save();
         $parametres->touch();
+
+        return null;
+    }
+
+    /**
+     * Cree ou modifie un produit du catalogue. Le STOCK n'est jamais accepte : donnee
+     * derivee (ventes, achats), propre a chaque poste. Une demande plus ancienne que la
+     * derniere acceptee est refusee ; une demande identique a l'etat actuel est
+     * acceptee sans rien changer (deux postes semes du meme catalogue proposent les memes
+     * produits : ce n'est pas un conflit).
+     */
+    private function produit(User $utilisateur, array $donnees, CarbonImmutable $saisie, ?string &$cle): ?string
+    {
+        $cle = is_string($donnees['id'] ?? null) ? $donnees['id'] : null;
+
+        if (array_key_exists('stock', $donnees)) {
+            return 'Le stock n\'est pas synchronisé : il reste propre à chaque poste.';
+        }
+        $v = Validator::make($donnees, [
+            'id' => ['required', 'uuid'],
+            'sku' => ['nullable', 'string', 'max:40'],
+            'name' => ['required', 'string', 'max:255'],
+            'cat' => ['required', 'string', 'max:80'],
+            'price' => ['required', 'numeric', 'gt:0'],
+            'price_max' => ['nullable', 'numeric', 'gte:price'],
+            'unit' => ['required', 'string', 'max:40'],
+            'icon' => ['required', 'string', 'max:80'],
+            'cout_revient' => ['nullable', 'numeric', 'min:0'],
+            'groupe_taxe' => ['nullable', 'string', 'max:5'],
+            'threshold' => ['nullable', 'integer', 'min:0'],
+            'espece' => ['nullable', 'string', 'max:40'],
+        ], [
+            'id.required' => "L'identifiant du produit est obligatoire.",
+            'id.uuid' => "L'identifiant du produit doit être un UUID.",
+            'name.required' => 'La désignation du produit est obligatoire.',
+            'cat.required' => 'La catégorie du produit est obligatoire.',
+            'price.required' => 'Le tarif du produit est obligatoire.',
+            'price.gt' => 'Le tarif indicatif doit être supérieur à 0.',
+            'price_max.gte' => 'Le prix haut de fourchette ne peut être inférieur au prix bas.',
+            'unit.required' => "L'unité du produit est obligatoire.",
+            'icon.required' => "L'icône du produit est obligatoire.",
+            'cout_revient.min' => 'Le coût de revient ne peut être négatif.',
+            'threshold.min' => 'Le seuil d\'alerte ne peut être négatif.',
+        ]);
+        if ($v->fails()) {
+            return $v->errors()->first();
+        }
+        if (isset($donnees['cout_revient']) && $donnees['cout_revient'] > $donnees['price']) {
+            return 'Le coût de revient dépasse le tarif indicatif : chaque vente serait à perte.';
+        }
+        if (! $utilisateur->can('manage-ventes')) {
+            return 'Droit insuffisant pour modifier le catalogue.';
+        }
+
+        $champs = [
+            'sku' => $donnees['sku'] ?? null,
+            'name' => $donnees['name'],
+            'cat' => $donnees['cat'],
+            'price' => (float) $donnees['price'],
+            'price_max' => isset($donnees['price_max']) ? (float) $donnees['price_max'] : null,
+            'unit' => $donnees['unit'],
+            'icon' => $donnees['icon'],
+            'cout_revient' => isset($donnees['cout_revient']) ? (float) $donnees['cout_revient'] : null,
+            'groupe_taxe' => $donnees['groupe_taxe'] ?? 'A',
+            'threshold' => (int) ($donnees['threshold'] ?? 0),
+            'espece' => $donnees['espece'] ?? null,
+        ];
+
+        $produit = ProduitVendable::query()->find($donnees['id']);
+        if ($produit === null) {
+            (new ProduitVendable)->forceFill($champs + ['id' => $donnees['id'], 'saisi_le' => $saisie])->save();
+
+            return null;
+        }
+
+        $identique = collect($champs)->every(fn ($valeur, $colonne) => $produit->{$colonne} == $valeur);
+        if ($identique) {
+            return null;
+        }
+        if ($produit->saisi_le !== null && $produit->saisi_le->greaterThanOrEqualTo($saisie)) {
+            return 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.';
+        }
+
+        $produit->forceFill($champs + ['saisi_le' => $saisie])->save();
 
         return null;
     }

@@ -58,4 +58,67 @@ trait PostesDeTest
             'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
         ], $surcharge);
     }
+
+    /** Un produit tel qu'un poste le propose (sans stock : jamais synchronise). */
+    protected function ligneProduit(array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'sku' => 'PRD-001',
+            'name' => 'Goliath mature',
+            'cat' => 'Avicole',
+            'price' => 25000,
+            'price_max' => null,
+            'unit' => 'u',
+            'icon' => 'egg',
+            'cout_revient' => null,
+            'groupe_taxe' => 'A',
+            'threshold' => 2,
+            'espece' => 'goliaths',
+        ], $surcharge);
+    }
+
+    /** Cree un produit au serveur par une demande acceptee ; renvoie son id. */
+    protected function produitConnu(array $poste, array $surcharge = []): string
+    {
+        $produit = $this->ligneProduit($surcharge);
+        $this->avecJeton($poste['jeton'])->postJson('/api/sync/demandes', [
+            'device_id' => $poste['device'],
+            'demandes' => [[
+                'id' => (string) Str::uuid(),
+                'type' => 'produit_vendable',
+                'saisi_le' => now()->format('Y-m-d\TH:i:s.u\Z'),
+                'donnees' => $produit,
+            ]],
+        ])->assertOk()->assertJsonPath('rejected', []);
+
+        return $produit['id'];
+    }
+
+    /** Une vente (avec une ligne) telle qu'un poste l'enverrait. */
+    protected function ligneVente(string $produitId, array $surcharge = []): array
+    {
+        return array_merge([
+            'id' => (string) Str::uuid(),
+            'reference' => 'V-P1-2026-001',
+            'client' => 'Client Comptant',
+            'client_id' => null,
+            'date_vente' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'mode' => 'Espèces',
+            'status' => 'Payée',
+            'total' => 50000,
+            'paye' => 50000,
+            'motif_annulation' => null,
+            'echeance' => null,
+            'updated_at' => now()->format('Y-m-d\TH:i:s.u\Z'),
+            'lignes' => [[
+                'id' => (string) Str::uuid(),
+                'produit_id' => $produitId,
+                'name' => 'Goliath mature',
+                'qte' => 2,
+                'pu' => 25000,
+                'espece' => 'goliaths',
+            ]],
+        ], $surcharge);
+    }
 }

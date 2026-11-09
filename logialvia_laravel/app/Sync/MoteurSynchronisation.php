@@ -8,7 +8,6 @@ use App\Support\Audit;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 /**
  * Moteur de synchronisation (`46_` §4). Le serveur est la verite.
@@ -157,7 +156,7 @@ class MoteurSynchronisation
 
         foreach ($lignes as $ligne) {
             $ligne = (array) $ligne;
-            $motif = $this->absorberFait($table, $deviceId, $ligne);
+            $motif = $table->absorber($deviceId, $ligne);
 
             if ($motif === null) {
                 $resultat['accepted'][] = $ligne['id'];
@@ -167,52 +166,6 @@ class MoteurSynchronisation
         }
 
         return $resultat;
-    }
-
-    /** @return string|null Le motif du refus, ou `null` si la ligne est acceptee. */
-    private function absorberFait(TableSync $table, string $deviceId, array $ligne): ?string
-    {
-        /** @var \App\Sync\Tables\ClientsTable $table */
-        $validateur = Validator::make($ligne, array_merge([
-            'id' => ['required', 'uuid'],
-            'updated_at' => ['required', 'date'],
-        ], $table->regles()), array_merge([
-            'id.required' => "L'identifiant de la ligne est obligatoire.",
-            'id.uuid' => "L'identifiant de la ligne doit être un UUID.",
-            'updated_at.required' => "La date de saisie de la ligne est obligatoire.",
-            'updated_at.date' => 'La date de saisie de la ligne est invalide.',
-        ], $table->messages()));
-
-        if ($validateur->fails()) {
-            return $validateur->errors()->first();
-        }
-
-        $saisie = CarbonImmutable::parse($ligne['updated_at'])->utc();
-        $donnees = array_intersect_key($ligne, array_flip($table->colonnesEcrites()));
-        $existante = $table->requete()->find($ligne['id']);
-
-        if ($existante === null) {
-            $table->requete()->getModel()->newInstance()->forceFill($donnees + [
-                'id' => $ligne['id'],
-                'device_id' => $deviceId,
-                'updated_at' => $saisie,
-                'serveur_modifie_le' => CarbonImmutable::now('UTC'),
-            ])->save();
-
-            return null;
-        }
-
-        // Dernier ecrivain gagne, a l'instant de SAISIE. Une ligne plus ancienne (ou
-        // identique : rejeu d'un lot deja recu) est acceptee sans rien changer.
-        if ($saisie->greaterThan($existante->updated_at)) {
-            $existante->forceFill($donnees + [
-                'device_id' => $deviceId,
-                'updated_at' => $saisie,
-                'serveur_modifie_le' => CarbonImmutable::now('UTC'),
-            ])->save();
-        }
-
-        return null;
     }
 
     /** @return array{accepted: list<string>, rejected: list<array>, ignored: list<array>} */
