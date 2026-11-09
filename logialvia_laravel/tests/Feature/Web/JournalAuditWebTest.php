@@ -15,7 +15,7 @@ use Tests\TestCase;
 /** Journal d'audit web : lecture seule, droit manage-users, filtres date / action / utilisateur, pagination (doc 47u §2). */
 class JournalAuditWebTest extends TestCase
 {
-    use RefreshDatabase;
+    use \Tests\Concerns\LitXlsx, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -214,7 +214,7 @@ class JournalAuditWebTest extends TestCase
         $intrus = $this->compte('comptable', 'intrus');
         $this->entree('web.login', $admin, '2026-11-01 08:00:00');
 
-        foreach (['reinitialiser', 'precedente', 'suivante'] as $methode) {
+        foreach (['reinitialiser', 'precedente', 'suivante', 'exporter'] as $methode) {
             $c = Livewire::actingAs($admin)->test(JournalAudit::class);
             $this->actingAs($intrus);
             $c->call($methode)->assertForbidden();
@@ -223,7 +223,7 @@ class JournalAuditWebTest extends TestCase
 
         $propres = collect((new \ReflectionClass(JournalAudit::class))->getMethods(\ReflectionMethod::IS_PUBLIC))
             ->filter(fn (\ReflectionMethod $m) => $m->class === JournalAudit::class)->map->name->sort()->values()->all();
-        $this->assertSame(['mount', 'precedente', 'reinitialiser', 'render', 'suivante', 'updated'], $propres);
+        $this->assertSame(['exporter', 'mount', 'precedente', 'reinitialiser', 'render', 'suivante', 'updated'], $propres);
     }
 
     public function test_aucun_bouton_de_modification_et_impression_proposee(): void
@@ -232,5 +232,30 @@ class JournalAuditWebTest extends TestCase
         $this->entree('web.login', $admin, '2026-11-01 08:00:00');
         Livewire::actingAs($admin)->test(JournalAudit::class)->assertDontSee('Supprimer')->assertDontSee('Effacer')
             ->assertSeeHtml('data-action="imprimer"')->assertSee('Imprimer / PDF');
+    }
+
+    public function test_l_export_xlsx_suit_les_filtres_sur_toutes_les_pages_et_masque_les_secrets(): void
+    {
+        $admin = $this->admin();
+        for ($i = 1; $i <= 30; $i++) {
+            $this->entree('sync.push', $admin, now()->subMinutes(100 - $i)->format('Y-m-d H:i:s'), ['n' => $i, 'jeton' => 'SECRET']);
+        }
+        $this->entree('web.login', $admin, '2026-11-01 08:00:00');
+
+        $c = Livewire::actingAs($admin)->test(JournalAudit::class)->set('action', 'sync.push')->call('exporter');
+        $c->assertFileDownloaded('journal-audit.xlsx', null, \App\Support\ExportXlsx::TYPE);
+        $lignes = $this->lignesXlsx(base64_decode($c->effects['download']['content']));
+        $this->assertSame(['Date', 'Utilisateur', 'Identifiant', 'Action', 'Code action', 'Détail', 'Adresse IP'], $lignes[0]);
+        $this->assertCount(31, $lignes, 'titre + 30 entrees : toutes les pages, filtre applique');
+        $this->assertSame('Synchronisation : envoi d\'un poste', $lignes[1][3]);
+        $this->assertStringNotContainsString('SECRET', implode('|', array_merge(...$lignes)));
+    }
+
+    public function test_l_export_avec_dates_invalides_ne_sort_que_le_titre(): void
+    {
+        $admin = $this->admin();
+        $this->entree('web.login', $admin, '2026-11-01 08:00:00');
+        $c = Livewire::actingAs($admin)->test(JournalAudit::class)->set('dateDebut', 'zzz')->call('exporter');
+        $this->assertCount(1, $this->lignesXlsx(base64_decode($c->effects['download']['content'])));
     }
 }

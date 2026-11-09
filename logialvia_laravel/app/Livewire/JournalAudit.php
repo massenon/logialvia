@@ -121,6 +121,26 @@ class JournalAudit extends Component
         return $requete;
     }
 
+    /** Export XLSX : memes filtres que l'ecran, TOUTES les pages (5 000 lignes au plus), secrets masques. */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->verifierDroit();
+        $fuseau = config('logialvia.fuseau');
+        $lignes = [['Date', 'Utilisateur', 'Identifiant', 'Action', 'Code action', 'Détail', 'Adresse IP']];
+        $requete = $this->requete();
+        $auteurs = User::withTrashed()->pluck('name', 'id');
+        if ($this->erreur === null) {
+            foreach ($requete->orderByDesc('created_at')->orderByDesc('id')->limit(5000)->get() as $l) {
+                $lignes[] = [
+                    $l->created_at->timezone($fuseau)->format('d/m/Y H:i:s'), $auteurs[$l->utilisateur_id] ?? '', (string) $l->identifiant,
+                    LibellesAudit::action($l->action), $l->action, implode(' ; ', LibellesAudit::detail($l->detail)), (string) $l->ip,
+                ];
+            }
+        }
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'journal-audit.xlsx', 'Journal d\'audit');
+    }
+
     public function render()
     {
         $this->verifierDroit();

@@ -2,10 +2,14 @@
     <section class="rounded-lg border border-outline-variant bg-surface-card p-md">
         <div class="mb-sm flex flex-wrap items-center justify-between gap-sm">
             <h2 class="text-section-title font-bold">Gestion des Utilisateurs</h2>
+            <div class="flex flex-wrap gap-sm">
+            <button type="button" wire:click="exporter" data-action="exporter" class="no-print rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
+            <x-bouton-imprimer />
             <button type="button" wire:click="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                    class="no-print rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
                 Ajouter un Utilisateur
             </button>
+            </div>
         </div>
 
         @if ($message)

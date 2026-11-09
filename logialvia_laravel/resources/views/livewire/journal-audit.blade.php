@@ -5,6 +5,7 @@
             <p class="text-xs text-outline">Gestes sensibles enregistrés par le serveur : connexions, comptes, synchronisation, clôtures. Lecture seule.</p>
         </div>
         <div class="flex gap-sm no-print">
+            <button type="button" wire:click="exporter" data-action="exporter" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
             <x-bouton-imprimer />
             <a href="/parametres/generaux" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Paramètres Généraux</a>
         </div>

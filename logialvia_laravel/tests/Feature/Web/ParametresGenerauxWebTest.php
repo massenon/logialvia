@@ -456,7 +456,7 @@ class ParametresGenerauxWebTest extends TestCase
     public function test_sauvegardes_corbeille_donnees_de_test_se_gerent_sur_le_poste(): void
     {
         $admin = $this->admin();
-        foreach ([5 => 'Sauvegardes', 6 => 'Corbeille', 7 => 'Données de Test'] as $index => $titre) {
+        foreach ([5 => 'Sauvegardes', 7 => 'Données de Test'] as $index => $titre) {
             Livewire::actingAs($admin)->test(ParametresGeneraux::class)->call('choisirOnglet', $index)
                 ->assertSeeHtml('data-ecart="au-poste"')->assertSee($titre)->assertSee('se gère sur le poste')
                 ->assertDontSee('REMETTRE A ZERO')->assertDontSeeHtml('<button type="submit"');

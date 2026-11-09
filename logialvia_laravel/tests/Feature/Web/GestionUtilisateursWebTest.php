@@ -20,7 +20,7 @@ use Tests\TestCase;
 /** Gestion web des comptes du serveur : droits, regle de mot de passe, garde-fous d'expert, audit (doc 47u §1). */
 class GestionUtilisateursWebTest extends TestCase
 {
-    use RefreshDatabase;
+    use \Tests\Concerns\LitXlsx, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -444,7 +444,7 @@ class GestionUtilisateursWebTest extends TestCase
         $appels = [
             ['nouveau', []], ['modifier', [$cible->id]], ['enregistrer', []], ['annuler', null],
             ['demanderReinitialisation', [$cible->id]], ['reinitialiser', []],
-            ['demanderAction', ['supprimer', $cible->id]], ['confirmerAction', []], ['reactiver', [$cible->id]],
+            ['demanderAction', ['supprimer', $cible->id]], ['confirmerAction', []], ['reactiver', [$cible->id]], ['exporter', []],
         ];
         foreach ($appels as [$methode, $arguments]) {
             if ($arguments === null) {
@@ -521,5 +521,26 @@ class GestionUtilisateursWebTest extends TestCase
         $this->assertNull($service->purger($admin, $cible->id));
         $this->assertNull(User::withTrashed()->find($cible->id));
         $this->assertNotNull($this->dernierAudit('utilisateur.purge'), 'la trace survit au compte efface');
+    }
+
+    public function test_l_export_xlsx_liste_les_comptes_sans_aucun_secret_et_exige_le_droit(): void
+    {
+        $admin = $this->admin();
+        $this->compte('animalier', 'ali')->forceFill(['is_active' => false, 'must_change_password' => true, 'name' => '=1+1'])->save();
+
+        $c = $this->composant($admin)->call('exporter');
+        $c->assertFileDownloaded('utilisateurs.xlsx', null, \App\Support\ExportXlsx::TYPE);
+        $lignes = $this->lignesXlsx(base64_decode($c->effects['download']['content']));
+        $this->assertSame(['Nom complet', 'Identifiant', 'E-mail', 'Rôle', 'Statut', 'Mot de passe temporaire', 'Dernière connexion'], $lignes[0]);
+        $this->assertCount(3, $lignes);
+        $texte = implode('|', array_merge(...$lignes));
+        $this->assertStringContainsString('=1+1', $texte);
+        $this->assertStringContainsString('Désactivé', $texte);
+        $this->assertStringNotContainsString($admin->password, $texte);
+        $this->assertStringNotContainsString('$2y$', $texte);
+
+        $neuf = $this->composant($admin);
+        $this->actingAs($this->compte('comptable', 'intrus'));
+        $neuf->call('exporter')->assertForbidden();
     }
 }

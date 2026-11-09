@@ -264,7 +264,11 @@
     @endif
 
     {{-- ============================================================ 5-7 · Au poste --}}
-    @if ($onglet >= 5)
+    @if ($onglet === 6)
+        <livewire:corbeille-web />
+    @endif
+
+    @if ($onglet === 5 || $onglet === 7)
         <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-onglet="au-poste">
             <h2 class="mb-sm text-section-title font-bold">{{ $onglets[$onglet] }}</h2>
             <p class="rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="au-poste">

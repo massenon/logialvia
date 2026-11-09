@@ -217,6 +217,22 @@ class GestionUtilisateurs extends Component
         $this->message = 'Compte réactivé.';
     }
 
+    /** Export XLSX de la liste des comptes (jamais de mot de passe ni d'empreinte). */
+    public function exporter(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->verifierDroit();
+        $lignes = [['Nom complet', 'Identifiant', 'E-mail', 'Rôle', 'Statut', 'Mot de passe temporaire', 'Dernière connexion']];
+        foreach (User::query()->with('roles')->orderBy('name')->get() as $u) {
+            $lignes[] = [
+                $u->name, $u->username, (string) $u->email, config('logialvia.roles')[$u->roles->first()?->name] ?? '—',
+                $u->is_active ? 'Actif' : 'Désactivé', $u->must_change_password ? 'Oui' : 'Non',
+                $u->last_login_at?->timezone(config('logialvia.fuseau'))->format('d/m/Y H:i') ?? '',
+            ];
+        }
+
+        return \App\Support\ExportXlsx::telecharger($lignes, 'utilisateurs.xlsx', 'Utilisateurs');
+    }
+
     public function render()
     {
         $acteur = Auth::user();
