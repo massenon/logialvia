@@ -116,4 +116,4 @@ Pour un **usage commercial**, une **démonstration** ou une **collaboration** :
 
 📧 **[rarhodes06@gmail.com](mailto:rarhodes06@gmail.com)**
 
-<sub>Tous droits réservés. Projet privé : aucune reproduction ni utilisation commerciale sans accord écrit.</sub>
+<sub>© ALLMANY ET COMPAGNIE · Tous droits réservés. Projet privé : aucune reproduction ni utilisation commerciale sans accord écrit.</sub>

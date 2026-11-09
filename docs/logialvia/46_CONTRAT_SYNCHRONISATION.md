@@ -206,5 +206,13 @@ Même décision que §14 : **stock propre à chaque poste + journal partagé**.
 - Droits : lecture `view-ventes` ou `view-stocks` ; écriture `manage-ventes` ou `manage-stocks`.
 - Supprimer un produit au poste emporte son journal local ; la remise à zéro du poste et celle du serveur vident le
   journal et préservent produits et stock.
-- Limites : le motif d'une correction n'est pas saisi (texte fixe) ; la suppression d'un produit n'est pas propagée ;
-  stock global et comptabilité restent hors synchronisation.
+- **Motif** : le formulaire du catalogue exige un motif dès que le stock d'un produit existant change
+  (« Indiquez le motif de la correction de stock. ») ; il entre tel quel au journal.
+- **Suppression propagée (pierre tombale)** : le serveur n'efface jamais un produit (ventes, mouvements, autres postes
+  peuvent le citer). La suppression au poste envoie la demande `produit_vendable` avec `archive: true` ; le serveur pose
+  `archive_le` (la règle « identique accepté / plus ancien refusé » s'applique) et le redistribue. Un autre poste
+  l'archive alors dans SA corbeille (restaurable), sauf s'il l'a déjà vendu (historique conservé) ou si sa saisie locale
+  est plus récente. Un produit restauré depuis la corbeille lève la pierre tombale. Un poste neuf ne crée jamais un
+  produit archivé. Une saisie plus récente d'un poste hors ligne désarchive le produit (dernier écrivain gagne).
+- Limites : stock global et comptabilité restent hors synchronisation ; une vente d'un produit archivé venue d'un autre
+  poste est refusée localement (« produit inconnu ») si ce poste ne l'a jamais eu.

@@ -241,3 +241,6 @@ Poste : migration v37 (`mouvements_produit`), journal des corrections de stock d
 `TableMouvementsProduitPoste`. Serveur : table `mouvements_produit` et `MouvementsProduitTable`. Voir `46_` §15.
 Essais : `journal_produits_sync_poste_test.dart` (19), `migration_v37_mouvements_produit_test.dart`,
 `JournalProduitsTest.php` (11). Non fait : essai contre le vrai serveur Laravel pour cette table.
+
+Limites levées après P6 : motif de correction saisi au formulaire ; suppression de produit propagée par pierre tombale
+(`archive_le`, voir `46_` §15). Essais : `suppression_produit_sync_poste_test.dart` (8), `ProduitsDemandesTest.php` (+6).

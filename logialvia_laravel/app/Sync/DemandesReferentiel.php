@@ -257,6 +257,7 @@ class DemandesReferentiel
             'groupe_taxe' => ['nullable', 'string', 'max:5'],
             'threshold' => ['nullable', 'integer', 'min:0'],
             'espece' => ['nullable', 'string', 'max:40'],
+            'archive' => ['nullable', 'boolean'],
         ], [
             'id.required' => "L'identifiant du produit est obligatoire.",
             'id.uuid' => "L'identifiant du produit doit être un UUID.",
@@ -269,6 +270,7 @@ class DemandesReferentiel
             'icon.required' => "L'icône du produit est obligatoire.",
             'cout_revient.min' => 'Le coût de revient ne peut être négatif.',
             'threshold.min' => 'Le seuil d\'alerte ne peut être négatif.',
+            'archive.boolean' => 'Le drapeau d\'archivage du produit est invalide.',
         ]);
         if ($v->fails()) {
             return $v->errors()->first();
@@ -294,6 +296,10 @@ class DemandesReferentiel
             'espece' => $donnees['espece'] ?? null,
         ];
 
+        // Suppression au poste : pierre tombale (`archive`), jamais d'effacement.
+        $archive = (bool) ($donnees['archive'] ?? false);
+        $champs['archive_le'] = $archive ? $saisie : null;
+
         $produit = ProduitVendable::query()->find($donnees['id']);
         if ($produit === null) {
             (new ProduitVendable)->forceFill($champs + ['id' => $donnees['id'], 'saisi_le' => $saisie])->save();
@@ -301,7 +307,8 @@ class DemandesReferentiel
             return null;
         }
 
-        $identique = collect($champs)->every(fn ($valeur, $colonne) => $produit->{$colonne} == $valeur);
+        $identique = collect($champs)->except('archive_le')->every(fn ($valeur, $colonne) => $produit->{$colonne} == $valeur)
+            && ($produit->archive_le !== null) === $archive;
         if ($identique) {
             return null;
         }

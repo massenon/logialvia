@@ -70,7 +70,11 @@ abstract class VentesRepository {
 
   Future<ProduitVendable> creerProduit(ProduitVendable produit);
 
-  Future<void> mettreAJourProduit(ProduitVendable produit);
+  /// [motifCorrection] : pourquoi le stock change (journal partagé, palier 6).
+  Future<void> mettreAJourProduit(
+    ProduitVendable produit, {
+    String? motifCorrection,
+  });
 
   Future<void> supprimerProduit(
     String produitId, {

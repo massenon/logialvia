@@ -470,15 +470,23 @@ class FauxServeurSync {
   }
 
   void _produit(Map<String, dynamic> demande) {
-    final donnees = demande['donnees'] as Map<String, dynamic>;
+    var donnees = demande['donnees'] as Map<String, dynamic>;
     final saisie = demande['saisi_le'] as String;
     final id = donnees['id'] as String;
+    // Pierre tombale : `archive` devient `archive_le` (jamais d'effacement).
+    final archive = donnees['archive'] == true;
+    donnees = {...donnees}..remove('archive');
+    donnees['archive_le'] = archive ? saisie : null;
     final existant = produits[id];
     if (existant == null) {
       ajouterProduit(donnees, saisiLe: saisie);
       return;
     }
-    final identique = donnees.entries.every((e) => existant[e.key] == e.value);
+    final identique = donnees.entries.every(
+      (e) => e.key == 'archive_le'
+          ? (existant[e.key] != null) == (e.value != null)
+          : existant[e.key] == e.value,
+    );
     if (identique) return;
     if (!DateTime.parse(
       saisie,

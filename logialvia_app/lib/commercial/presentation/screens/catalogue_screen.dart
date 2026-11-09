@@ -483,6 +483,7 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
   late final TextEditingController _prixMax;
   late final TextEditingController _unite;
   late final TextEditingController _stock;
+  late final TextEditingController _motifCorrection;
   late final TextEditingController _seuil;
   late final TextEditingController _coutRevient;
   String? _categorie;
@@ -502,7 +503,9 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
       text: p?.prixMax?.toStringAsFixed(0) ?? '',
     );
     _unite = TextEditingController(text: p?.unite ?? 'u');
-    _stock = TextEditingController(text: p?.stock.toString() ?? '0');
+    _stock = TextEditingController(text: p?.stock.toString() ?? '0')
+      ..addListener(() => setState(() {}));
+    _motifCorrection = TextEditingController();
     _seuil = TextEditingController(text: p?.seuil.toString() ?? '0');
     _coutRevient = TextEditingController(
       text: p?.coutRevient?.toStringAsFixed(0) ?? '',
@@ -518,10 +521,16 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
     _prixMax.dispose();
     _unite.dispose();
     _stock.dispose();
+    _motifCorrection.dispose();
     _seuil.dispose();
     _coutRevient.dispose();
     super.dispose();
   }
+
+  /// Vrai quand on modifie le stock d'un produit EXISTANT : le motif devient requis.
+  bool get _stockModifie =>
+      widget.produit != null &&
+      int.tryParse(_stock.text) != widget.produit!.stock;
 
   Future<void> _valider() async {
     setState(() {
@@ -539,6 +548,7 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
       seuil: int.tryParse(_seuil.text),
       espece: _espece,
       coutRevient: double.tryParse(_coutRevient.text.trim()),
+      motifCorrection: _motifCorrection.text,
     );
     if (!mounted) return;
 
@@ -674,6 +684,10 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
             ),
           ],
         ),
+        if (_stockModifie) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _champ('Motif de la correction de stock', _motifCorrection),
+        ],
         if (_erreur != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(_erreur!, style: AppTypography.invalidFeedback),

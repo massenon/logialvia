@@ -140,6 +140,15 @@ class DepotDemandesReferentiel {
     );
   }
 
+  /// Suppression d'un produit : le serveur ne l'efface jamais (des ventes ou un autre
+  /// poste peuvent encore le citer), il le marque archivé (pierre tombale) et le
+  /// redistribue. [ligne] est l'état du produit AVANT sa suppression locale.
+  Future<void> proposerArchivageProduit(ProduitVendableRow ligne) => proposer(
+    type: typeProduit,
+    cle: ligne.id,
+    donnees: {...champsProduit(ligne), 'archive': true},
+  );
+
   /// Une seule fois : propose TOUT le catalogue local au serveur. Les produits
   /// semés ont le même UUID sur tous les postes et le serveur accepte sans conflit
   /// ce qu'il connaît déjà à l'identique ; ceux que ce poste a créés seuls sont ainsi

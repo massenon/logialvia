@@ -488,7 +488,10 @@ class VentesRepositoryDrift implements VentesRepository {
   }
 
   @override
-  Future<void> mettreAJourProduit(ProduitVendable produit) async {
+  Future<void> mettreAJourProduit(
+    ProduitVendable produit, {
+    String? motifCorrection,
+  }) async {
     final avant = await (_db.select(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produit.id))).getSingleOrNull();
@@ -516,7 +519,9 @@ class VentesRepositoryDrift implements VentesRepository {
         produitId: produit.id,
         article: produit.nom,
         variation: produit.stock - avant.stock,
-        motif: 'Correction de stock (catalogue)',
+        motif: (motifCorrection?.trim().isNotEmpty ?? false)
+            ? motifCorrection!.trim()
+            : 'Correction de stock (catalogue)',
       );
     }
   }
@@ -566,6 +571,10 @@ class VentesRepositoryDrift implements VentesRepository {
         utilisateurNom: utilisateurNom,
       );
     });
+    // Les autres postes l'apprennent (pierre tombale, jamais d'effacement serveur).
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageProduit(ligne);
+    }
   }
 
   // ---------------------------------------------------------------- internes

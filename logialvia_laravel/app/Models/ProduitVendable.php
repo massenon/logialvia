@@ -22,6 +22,7 @@ class ProduitVendable extends Model
             'cout_revient' => 'float',
             'threshold' => 'integer',
             'saisi_le' => 'datetime',
+            'archive_le' => 'datetime',
         ];
     }
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../data/sync/depot_demandes_referentiel.dart';
 
 /// Un élément archivé, tel que l'onglet Corbeille l'affiche.
 class ElementArchive {
@@ -288,6 +289,13 @@ class ServiceArchivage {
       await (_db.delete(
         _db.corbeille,
       )..where((c) => c.id.equals(idArchive))).go();
+
+      // Un produit restauré lève la pierre tombale posée au serveur à sa suppression.
+      if (type.nomTable == TypeArchivable.produits.nomTable) {
+        await DepotDemandesReferentiel(
+          _db,
+        ).proposerProduit('${donnees[type.clePrimaire]}');
+      }
     });
   }
 

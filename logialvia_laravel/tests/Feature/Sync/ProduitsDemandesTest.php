@@ -143,4 +143,83 @@ class ProduitsDemandesTest extends TestCase
         $this->assertCount(1, $reponse['ignored']);
         $this->assertSame(0, ProduitVendable::query()->count());
     }
+
+    // ------------------------------------------------- Suppression (pierre tombale)
+
+    public function test_une_suppression_marque_le_produit_archive_sans_l_effacer(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+        $p = $this->ligneProduit();
+        $this->demander($a, $p)->assertJsonPath('rejected', []);
+
+        $this->travel(2)->seconds();
+        $this->demander($a, $p + ['archive' => true])->assertOk()->assertJsonPath('rejected', []);
+
+        $row = ProduitVendable::query()->find($p['id']);
+        $this->assertNotNull($row, 'jamais efface : un autre poste peut le citer');
+        $this->assertNotNull($row->archive_le);
+    }
+
+    public function test_l_archivage_descend_vers_les_autres_postes(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+        $b = $this->poste('admin', 'bako');
+        $p = $this->ligneProduit();
+        $this->demander($a, $p);
+        $curseur = $this->avecJeton($b['jeton'])->getJson('/api/sync/pull')->json('server_time');
+
+        $this->travel(5)->seconds();
+        $this->demander($a, $p + ['archive' => true]);
+
+        $recu = collect($this->avecJeton($b['jeton'])->getJson('/api/sync/pull?since='.urlencode($curseur))->json('tables.produits_vendables'))->firstWhere('id', $p['id']);
+        $this->assertNotNull($recu['archive_le']);
+    }
+
+    public function test_une_restauration_leve_l_archivage(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+        $p = $this->ligneProduit();
+        $this->demander($a, $p);
+        $this->travel(2)->seconds();
+        $this->demander($a, $p + ['archive' => true]);
+
+        $this->travel(2)->seconds();
+        $this->demander($a, $p)->assertJsonPath('rejected', []);
+
+        $this->assertNull(ProduitVendable::query()->find($p['id'])->archive_le);
+    }
+
+    public function test_un_archivage_plus_ancien_que_la_derniere_decision_est_refuse(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+        $p = $this->ligneProduit();
+        $this->demander($a, $p);
+
+        $this->demander($a, $p + ['archive' => true], now()->subDay()->format('Y-m-d\TH:i:s.u\Z'))
+            ->assertJsonPath('rejected.0.motif', 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.');
+
+        $this->assertNull(ProduitVendable::query()->find($p['id'])->archive_le);
+    }
+
+    public function test_un_archivage_rejoue_est_accepte_sans_rien_changer(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+        $p = $this->ligneProduit();
+        $this->demander($a, $p);
+        $this->travel(2)->seconds();
+        $this->demander($a, $p + ['archive' => true]);
+        $avant = ProduitVendable::query()->find($p['id'])->archive_le;
+
+        $this->demander($a, $p + ['archive' => true], now()->addSeconds(30)->format('Y-m-d\TH:i:s.u\Z'))->assertJsonPath('rejected', []);
+
+        $this->assertEquals($avant, ProduitVendable::query()->find($p['id'])->archive_le);
+    }
+
+    public function test_un_drapeau_d_archivage_invalide_est_refuse(): void
+    {
+        $a = $this->poste('caissier', 'amina');
+
+        $this->demander($a, $this->ligneProduit() + ['archive' => 'peut-être'])
+            ->assertJsonPath('rejected.0.motif', 'Le drapeau d\'archivage du produit est invalide.');
+    }
 }

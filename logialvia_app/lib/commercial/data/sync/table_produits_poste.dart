@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../administration/data/sync/depot_demandes_referentiel.dart';
+import '../../../administration/domain/services/service_archivage.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/table_poste.dart';
 
@@ -87,6 +88,14 @@ class TableProduitsPoste implements TablePoste {
           _db.produitsVendables,
         )..where((p) => p.id.equals(id))).getSingleOrNull();
 
+        // Pierre tombale : le produit a été supprimé sur un autre poste.
+        final archive = l['archive_le'];
+        if (archive is String && archive.isNotEmpty) {
+          if (locale != null && await _archiver(locale)) absorbees++;
+          if (demande != null) await _depot.abandonner(demande.id);
+          continue;
+        }
+
         if (locale == null) {
           await _db
               .into(_db.produitsVendables)
@@ -138,6 +147,28 @@ class TableProduitsPoste implements TablePoste {
         supplantees: supplantees,
       );
     });
+  }
+
+  /// Archive ici le produit supprimé ailleurs (corbeille de CE poste, restaurable).
+  /// Un produit déjà vendu ICI reste : son historique l'exige (clé étrangère), et le
+  /// supprimer à la main échouerait de la même façon. Faux = conservé.
+  Future<bool> _archiver(ProduitVendableRow produit) async {
+    final vendu = await _db
+        .customSelect(
+          'SELECT 1 FROM lignes_vente WHERE produit_id = ? LIMIT 1',
+          variables: [Variable.withString(produit.id)],
+        )
+        .getSingleOrNull();
+    if (vendu != null) return false;
+    await (_db.delete(
+      _db.mouvementsProduit,
+    )..where((m) => m.produitId.equals(produit.id))).go();
+    await ServiceArchivage(_db).archiver(
+      type: TypeArchivable.produits,
+      cle: produit.id,
+      designation: produit.name,
+    );
+    return true;
   }
 
   @override
