@@ -69,6 +69,10 @@ class ReporterDecesInfirmerieUseCase {
             mortsParCategorie: morts,
             donsParCategorie: _aLaTaille(existante?.donsParCategorie, nombre),
           ),
+          // Un deces sanitaire se declare TOUJOURS (`47e_`) : une fiche dont les entrees
+          // manquent encore ne doit pas faire refuser la mort d'un sujet de
+          // l'infirmerie. L'animalier verra l'effectif ramene a 0 et corrigera ses entrees.
+          controlerVraisemblance: false,
           poidsGeneralG: existante?.poidsGeneralG,
           traitementObs: existante?.traitementObs,
           traitementValide: existante?.traitementValide ?? false,

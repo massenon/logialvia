@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
@@ -6,7 +8,11 @@ import 'identifiants_elevage.dart';
 import 'outils_sync_elevage.dart';
 
 /// `fiche_journee` — fait saisi au poste, **dernier écrivain gagne, ligne entière**
-/// (`46_` §2.3, `46a_`).
+/// (`46_` §2.3, `46a_`), **sans jamais perdre une saisie en silence** (`47e_`) : quand deux
+/// postes saisissent la même fiche sans s'être vus, la version la plus récente reste
+/// courante mais l'autre est CONSERVÉE comme « variante » et la fiche est marquée
+/// « modifiée ailleurs » jusqu'à ce que l'utilisatrice choisisse. Une saisie locale non
+/// envoyée n'est plus jamais écrasée par une version différente du serveur.
 ///
 /// ## Convergence de deux postes
 ///
@@ -36,6 +42,142 @@ class TableFichesJourneePoste implements TablePoste {
   @override
   Stream<void> get modifications =>
       _db.tableUpdates(TableUpdateQuery.onTable(_db.ficheJournee)).map((_) {});
+
+  /// Colonnes du CONTENU d'une fiche (tout sauf identité et instants), dans l'ordre de
+  /// l'envoi : ce sont elles qu'on compare pour savoir si deux versions diffèrent.
+  static const colonnesContenu = [
+    'espece',
+    'date',
+    'achat',
+    'ne',
+    'vente',
+    'mort_cat1',
+    'mort_cat2',
+    'mort_cat3',
+    'mort_cat4',
+    'don_cat1',
+    'don_cat2',
+    'don_cat3',
+    'don_cat4',
+    'effectif',
+    'eff_cat1_day',
+    'eff_cat2_day',
+    'eff_cat3_day',
+    'eff_cat4_day',
+    'srh',
+    'ts',
+    'stock_final_oeufs',
+    'oeufs_pondus',
+    'oeufs_casses',
+    'sorties_plateaux',
+    'poids_general_g',
+    'traitement_obs',
+    'traitement_valide',
+    'is_recorded',
+  ];
+
+  /// Le contenu d'une ligne locale, au format de l'envoi.
+  static Map<String, dynamic> contenuDe(FicheJourneeRow f) => {
+    'espece': f.espece,
+    'date': jourCivil(f.date),
+    'achat': f.achat,
+    'ne': f.ne,
+    'vente': f.vente,
+    'mort_cat1': f.mortCat1,
+    'mort_cat2': f.mortCat2,
+    'mort_cat3': f.mortCat3,
+    'mort_cat4': f.mortCat4,
+    'don_cat1': f.donCat1,
+    'don_cat2': f.donCat2,
+    'don_cat3': f.donCat3,
+    'don_cat4': f.donCat4,
+    'effectif': f.effectif,
+    'eff_cat1_day': f.effCat1Day,
+    'eff_cat2_day': f.effCat2Day,
+    'eff_cat3_day': f.effCat3Day,
+    'eff_cat4_day': f.effCat4Day,
+    'srh': f.srh,
+    'ts': f.ts,
+    'stock_final_oeufs': f.stockFinalOeufs,
+    'oeufs_pondus': f.oeufsPondus,
+    'oeufs_casses': f.oeufsCasses,
+    'sorties_plateaux': f.sortiesPlateaux,
+    'poids_general_g': f.poidsGeneralG,
+    'traitement_obs': f.traitementObs,
+    'traitement_valide': f.traitementValide,
+    'is_recorded': f.isRecorded,
+  };
+
+  /// Le contenu d'une ligne du serveur (mêmes clés que [contenuDe]).
+  static Map<String, dynamic> contenuDeLigne(Map<String, dynamic> l) => {
+    for (final c in colonnesContenu)
+      c: c == 'date' ? (l[c] as String).substring(0, 10) : l[c],
+  };
+
+  /// Deux versions ont-elles le même contenu ? (`null` et absent se valent.)
+  static bool contenuIdentique(Map<String, dynamic> a, Map<String, dynamic> b) =>
+      colonnesContenu.every((c) => a[c] == b[c]);
+
+  /// Les variantes stockées (JSON), `[]` si absentes ou illisibles. Chaque élément :
+  /// `{origine, updated_at, contenu}`.
+  static List<Map<String, dynamic>> lireVariantes(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    try {
+      final decode = jsonDecode(json);
+      if (decode is! List) return const [];
+      return [
+        for (final v in decode)
+          if (v is Map &&
+              v['origine'] is String &&
+              v['updated_at'] is String &&
+              v['contenu'] is Map)
+            Map<String, dynamic>.from(v),
+      ];
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  /// Variantes d'une ligne du serveur (`variantes` : `{device_id, updated_at, contenu}`),
+  /// au format local. Un élément illisible est ignoré (jamais lissé).
+  static List<Map<String, dynamic>> variantesDuServeur(Object? brut) {
+    if (brut is! List) return const [];
+    return [
+      for (final v in brut)
+        if (v is Map &&
+            v['updated_at'] is String &&
+            v['contenu'] is Map &&
+            DateTime.tryParse(v['updated_at'] as String) != null)
+          {
+            'origine': v['device_id'] is String
+                ? 'Poste ${(v['device_id'] as String).substring(0, 8)}'
+                : 'Autre poste',
+            'updated_at': v['updated_at'],
+            'contenu': Map<String, dynamic>.from(v['contenu'] as Map),
+          },
+    ];
+  }
+
+  /// Ajoute [nouvelles] à [existantes] sans doublon (même instant et même contenu).
+  static List<Map<String, dynamic>> fusionner(
+    List<Map<String, dynamic>> existantes,
+    List<Map<String, dynamic>> nouvelles,
+  ) {
+    final resultat = [...existantes];
+    for (final n in nouvelles) {
+      final instantN = DateTime.tryParse(n['updated_at'] as String);
+      final deja = resultat.any(
+        (e) =>
+            DateTime.tryParse(e['updated_at'] as String) == instantN &&
+            contenuIdentique(
+              Map<String, dynamic>.from(e['contenu'] as Map),
+              Map<String, dynamic>.from(n['contenu'] as Map),
+            ),
+      );
+      if (!deja) resultat.add(n);
+    }
+    return resultat;
+  }
 
   /// Entiers obligatoires (≥ 0) d'une ligne.
   static const _obligatoires = [
@@ -74,7 +216,7 @@ class TableFichesJourneePoste implements TablePoste {
       var absorbees = 0;
       var refusees = 0;
       var conservees = 0;
-      var supplantees = 0;
+      const supplantees = 0;
 
       for (final l in lignes) {
         final jour = OutilsSyncElevage.jour(l['date']);
@@ -117,16 +259,49 @@ class TableFichesJourneePoste implements TablePoste {
           }
         }
 
-        var supplantee = false;
+        final contenuEntrant = contenuDeLigne(l);
+        final instantIso = instant.toUtc().toIso8601String();
+        var variantes = variantesDuServeur(l['variantes']);
+
         if (locale != null && locale.syncStatus != 'synced') {
-          final saisieLocale = DateTime.tryParse(locale.updatedAt);
-          if (saisieLocale != null && !instant.isAfter(saisieLocale)) {
-            conservees++; // la saisie locale est plus récente : elle gagnera
+          if (contenuIdentique(contenuDe(locale), contenuEntrant)) {
+            // Le serveur a deja MA version : la fiche est synchronisee, rien ne diverge.
+            await (_db.update(_db.ficheJournee)
+                  ..where((f) => f.id.equals(id)))
+                .write(
+                  FicheJourneeCompanion(
+                    syncStatus: const Value('synced'),
+                    syncMotif: const Value(null),
+                    baseMaj: Value(instantIso),
+                    variantes: Value(
+                      variantes.isEmpty ? null : jsonEncode(variantes),
+                    ),
+                    updatedAt: Value(instantIso),
+                  ),
+                );
+            absorbees++;
             continue;
           }
-          supplantee = true;
+          // Version DIFFERENTE alors que ma saisie n'est pas partie : on ne l'ecrase
+          // JAMAIS (`47e_`). La version du serveur est gardee comme variante visible ;
+          // quand ma saisie partira, le serveur dira qu'elle divergeait.
+          if (locale.baseMaj != instantIso) {
+            variantes = fusionner(
+              fusionner(lireVariantes(locale.variantes), variantes),
+              [
+                {
+                  'origine': 'Serveur',
+                  'updated_at': instantIso,
+                  'contenu': contenuEntrant,
+                },
+              ],
+            );
+            await (_db.update(_db.ficheJournee)..where((f) => f.id.equals(id)))
+                .write(FicheJourneeCompanion(variantes: Value(jsonEncode(variantes))));
+          }
+          conservees++;
+          continue;
         }
-        if (supplantee) supplantees++;
 
         await _db
             .into(_db.ficheJournee)
@@ -163,7 +338,12 @@ class TableFichesJourneePoste implements TablePoste {
                 isRecorded: Value(l['is_recorded'] as bool),
                 syncStatus: const Value('synced'),
                 syncMotif: const Value(null),
-                updatedAt: Value(instant.toUtc().toIso8601String()),
+                updatedAt: Value(instantIso),
+                baseMaj: Value(instantIso),
+                variantes: Value(
+                  variantes.isEmpty ? null : jsonEncode(variantes),
+                ),
+                resolution: const Value(false),
               ),
             );
         absorbees++;
@@ -221,6 +401,10 @@ class TableFichesJourneePoste implements TablePoste {
             'traitement_valide': f.traitementValide,
             'is_recorded': f.isRecorded,
             'updated_at': f.updatedAt,
+            // La version dont cette fiche est partie : le serveur en deduit si le poste
+            // avait VU la version courante (suite normale) ou non (divergence, `47e_`).
+            'base_updated_at': f.baseMaj,
+            'resolution': f.resolution,
           },
         ),
     ];
@@ -233,9 +417,12 @@ class TableFichesJourneePoste implements TablePoste {
     await (_db.update(
       _db.ficheJournee,
     )..where((f) => f.id.equals(id) & f.updatedAt.equals(instantEnvoye))).write(
-      const FicheJourneeCompanion(
-        syncStatus: Value('synced'),
-        syncMotif: Value(null),
+      FicheJourneeCompanion(
+        syncStatus: const Value('synced'),
+        syncMotif: const Value(null),
+        // Le serveur detient desormais ma version : c'est celle dont partira la suite.
+        baseMaj: Value(instantEnvoye),
+        resolution: const Value(false),
       ),
     );
   }

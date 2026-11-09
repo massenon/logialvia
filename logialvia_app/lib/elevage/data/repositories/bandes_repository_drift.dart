@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/bande.dart';
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../domain/repositories/bandes_repository.dart';
 
 class BandesRepositoryDrift implements BandesRepository {
@@ -122,6 +123,54 @@ class BandesRepositoryDrift implements BandesRepository {
     );
   }
 
+  @override
+  Future<void> recoderBande({
+    required String id,
+    required String nouveauCode,
+  }) async {
+    final code = nouveauCode.trim();
+    if (code.isEmpty) {
+      throw ArgumentError('Le code de la bande est obligatoire.');
+    }
+    final ligne = await (_db.select(_db.bandes)..where((b) => b.id.equals(id)))
+        .getSingle();
+    final pris = await (_db.select(_db.bandes)..where(
+          (b) =>
+              b.espece.equals(ligne.espece) &
+              b.code.equals(code) &
+              b.id.equals(id).not(),
+        ))
+        .getSingleOrNull();
+    if (pris != null) {
+      throw StateError('Ce code de bande est déjà utilisé pour cette filière.');
+    }
+    final jour = DateTime.now();
+    final trace =
+        'Recodée de ${ligne.code} en $code le '
+        '${jour.year.toString().padLeft(4, '0')}-'
+        '${jour.month.toString().padLeft(2, '0')}-'
+        '${jour.day.toString().padLeft(2, '0')} (code déjà utilisé sur un autre poste).';
+    await (_db.update(_db.bandes)..where((b) => b.id.equals(id))).write(
+      BandesCompanion(
+        code: Value(code),
+        observations: Value(
+          ligne.observations == null || ligne.observations!.isEmpty
+              ? trace
+              : '${ligne.observations} · $trace',
+        ),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
+      ),
+    );
+    // La bande de l'autre poste a ete refusee ici tant que ce code etait pris, et le
+    // curseur de tirage est deja passe : un tirage complet la ramene.
+    await PreferencesPosteRepository(_db).definirCurseurTirage(null);
+  }
+
+  @override
+  Future<String?> codePoste() => PreferencesPosteRepository(_db).codeAttribue();
+
   Bande _versDomaine(BandeRow ligne) => Bande(
     id: ligne.id,
     espece: ligne.espece,
@@ -130,6 +179,7 @@ class BandesRepositoryDrift implements BandesRepository {
     effectifInitial: ligne.effectifInitial,
     dateCloture: ligne.dateCloture,
     observations: ligne.observations,
+    motifConflit: ligne.syncStatus == 'conflict' ? ligne.syncMotif : null,
   );
 
   static DateTime _minuit(DateTime d) => DateTime(d.year, d.month, d.day);

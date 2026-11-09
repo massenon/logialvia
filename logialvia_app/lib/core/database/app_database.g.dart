@@ -15161,6 +15161,43 @@ class $FicheJourneeTable extends FicheJournee
     requiredDuringInsert: false,
     clientDefault: instantSaisie,
   );
+  static const VerificationMeta _baseMajMeta = const VerificationMeta(
+    'baseMaj',
+  );
+  @override
+  late final GeneratedColumn<String> baseMaj = GeneratedColumn<String>(
+    'base_maj',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _variantesMeta = const VerificationMeta(
+    'variantes',
+  );
+  @override
+  late final GeneratedColumn<String> variantes = GeneratedColumn<String>(
+    'variantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resolutionMeta = const VerificationMeta(
+    'resolution',
+  );
+  @override
+  late final GeneratedColumn<bool> resolution = GeneratedColumn<bool>(
+    'resolution',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("resolution" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -15195,6 +15232,9 @@ class $FicheJourneeTable extends FicheJournee
     syncStatus,
     syncMotif,
     updatedAt,
+    baseMaj,
+    variantes,
+    resolution,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -15428,6 +15468,24 @@ class $FicheJourneeTable extends FicheJournee
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('base_maj')) {
+      context.handle(
+        _baseMajMeta,
+        baseMaj.isAcceptableOrUnknown(data['base_maj']!, _baseMajMeta),
+      );
+    }
+    if (data.containsKey('variantes')) {
+      context.handle(
+        _variantesMeta,
+        variantes.isAcceptableOrUnknown(data['variantes']!, _variantesMeta),
+      );
+    }
+    if (data.containsKey('resolution')) {
+      context.handle(
+        _resolutionMeta,
+        resolution.isAcceptableOrUnknown(data['resolution']!, _resolutionMeta),
+      );
+    }
     return context;
   }
 
@@ -15569,6 +15627,18 @@ class $FicheJourneeTable extends FicheJournee
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
       )!,
+      baseMaj: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_maj'],
+      ),
+      variantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variantes'],
+      ),
+      resolution: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}resolution'],
+      )!,
     );
   }
 
@@ -15635,6 +15705,21 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
 
   /// Instant de **saisie** (UTC, microsecondes) : il departage deux postes.
   final String updatedAt;
+
+  /// Instant (`updated_at` du serveur) de la version DONT CETTE FICHE EST PARTIE : celle
+  /// qu'on a tiree ou envoyee en dernier. Il est envoye avec la fiche (`base_updated_at`) :
+  /// le serveur sait ainsi si le poste avait vu la version courante (modification
+  /// successive normale) ou non (divergence). `null` : aucune version du serveur connue.
+  final String? baseMaj;
+
+  /// Les AUTRES versions de la meme fiche (JSON : liste de `{origine, updated_at,
+  /// contenu}`), tant que la divergence n'est pas resolue. Non `null` = « modifiee
+  /// ailleurs ».
+  final String? variantes;
+
+  /// Vrai quand cette ecriture RESOUT une divergence (l'utilisatrice a choisi) : le
+  /// serveur efface alors les variantes. Remis a faux a l'accuse.
+  final bool resolution;
   const FicheJourneeRow({
     required this.id,
     required this.espece,
@@ -15668,6 +15753,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     required this.syncStatus,
     this.syncMotif,
     required this.updatedAt,
+    this.baseMaj,
+    this.variantes,
+    required this.resolution,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -15728,6 +15816,13 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       map['sync_motif'] = Variable<String>(syncMotif);
     }
     map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || baseMaj != null) {
+      map['base_maj'] = Variable<String>(baseMaj);
+    }
+    if (!nullToAbsent || variantes != null) {
+      map['variantes'] = Variable<String>(variantes);
+    }
+    map['resolution'] = Variable<bool>(resolution);
     return map;
   }
 
@@ -15785,6 +15880,13 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           ? const Value.absent()
           : Value(syncMotif),
       updatedAt: Value(updatedAt),
+      baseMaj: baseMaj == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseMaj),
+      variantes: variantes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variantes),
+      resolution: Value(resolution),
     );
   }
 
@@ -15826,6 +15928,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       syncMotif: serializer.fromJson<String?>(json['syncMotif']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      baseMaj: serializer.fromJson<String?>(json['baseMaj']),
+      variantes: serializer.fromJson<String?>(json['variantes']),
+      resolution: serializer.fromJson<bool>(json['resolution']),
     );
   }
   @override
@@ -15864,6 +15969,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       'syncStatus': serializer.toJson<String>(syncStatus),
       'syncMotif': serializer.toJson<String?>(syncMotif),
       'updatedAt': serializer.toJson<String>(updatedAt),
+      'baseMaj': serializer.toJson<String?>(baseMaj),
+      'variantes': serializer.toJson<String?>(variantes),
+      'resolution': serializer.toJson<bool>(resolution),
     };
   }
 
@@ -15900,6 +16008,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     String? syncStatus,
     Value<String?> syncMotif = const Value.absent(),
     String? updatedAt,
+    Value<String?> baseMaj = const Value.absent(),
+    Value<String?> variantes = const Value.absent(),
+    bool? resolution,
   }) => FicheJourneeRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -15941,6 +16052,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     syncStatus: syncStatus ?? this.syncStatus,
     syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
     updatedAt: updatedAt ?? this.updatedAt,
+    baseMaj: baseMaj.present ? baseMaj.value : this.baseMaj,
+    variantes: variantes.present ? variantes.value : this.variantes,
+    resolution: resolution ?? this.resolution,
   );
   FicheJourneeRow copyWithCompanion(FicheJourneeCompanion data) {
     return FicheJourneeRow(
@@ -16002,6 +16116,11 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           : this.syncStatus,
       syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      baseMaj: data.baseMaj.present ? data.baseMaj.value : this.baseMaj,
+      variantes: data.variantes.present ? data.variantes.value : this.variantes,
+      resolution: data.resolution.present
+          ? data.resolution.value
+          : this.resolution,
     );
   }
 
@@ -16039,7 +16158,10 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           ..write('isRecorded: $isRecorded, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('baseMaj: $baseMaj, ')
+          ..write('variantes: $variantes, ')
+          ..write('resolution: $resolution')
           ..write(')'))
         .toString();
   }
@@ -16078,6 +16200,9 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     syncStatus,
     syncMotif,
     updatedAt,
+    baseMaj,
+    variantes,
+    resolution,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -16114,7 +16239,10 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           other.isRecorded == this.isRecorded &&
           other.syncStatus == this.syncStatus &&
           other.syncMotif == this.syncMotif &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.baseMaj == this.baseMaj &&
+          other.variantes == this.variantes &&
+          other.resolution == this.resolution);
 }
 
 class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
@@ -16150,6 +16278,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
   final Value<String> syncStatus;
   final Value<String?> syncMotif;
   final Value<String> updatedAt;
+  final Value<String?> baseMaj;
+  final Value<String?> variantes;
+  final Value<bool> resolution;
   final Value<int> rowid;
   const FicheJourneeCompanion({
     this.id = const Value.absent(),
@@ -16184,6 +16315,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.baseMaj = const Value.absent(),
+    this.variantes = const Value.absent(),
+    this.resolution = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FicheJourneeCompanion.insert({
@@ -16219,6 +16353,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.syncStatus = const Value.absent(),
     this.syncMotif = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.baseMaj = const Value.absent(),
+    this.variantes = const Value.absent(),
+    this.resolution = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        date = Value(date);
@@ -16255,6 +16392,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Expression<String>? syncStatus,
     Expression<String>? syncMotif,
     Expression<String>? updatedAt,
+    Expression<String>? baseMaj,
+    Expression<String>? variantes,
+    Expression<bool>? resolution,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -16290,6 +16430,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       if (syncStatus != null) 'sync_status': syncStatus,
       if (syncMotif != null) 'sync_motif': syncMotif,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (baseMaj != null) 'base_maj': baseMaj,
+      if (variantes != null) 'variantes': variantes,
+      if (resolution != null) 'resolution': resolution,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -16327,6 +16470,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Value<String>? syncStatus,
     Value<String?>? syncMotif,
     Value<String>? updatedAt,
+    Value<String?>? baseMaj,
+    Value<String?>? variantes,
+    Value<bool>? resolution,
     Value<int>? rowid,
   }) {
     return FicheJourneeCompanion(
@@ -16362,6 +16508,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       syncStatus: syncStatus ?? this.syncStatus,
       syncMotif: syncMotif ?? this.syncMotif,
       updatedAt: updatedAt ?? this.updatedAt,
+      baseMaj: baseMaj ?? this.baseMaj,
+      variantes: variantes ?? this.variantes,
+      resolution: resolution ?? this.resolution,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -16465,6 +16614,15 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
+    if (baseMaj.present) {
+      map['base_maj'] = Variable<String>(baseMaj.value);
+    }
+    if (variantes.present) {
+      map['variantes'] = Variable<String>(variantes.value);
+    }
+    if (resolution.present) {
+      map['resolution'] = Variable<bool>(resolution.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -16506,6 +16664,9 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('baseMaj: $baseMaj, ')
+          ..write('variantes: $variantes, ')
+          ..write('resolution: $resolution, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -34495,6 +34656,9 @@ typedef $$FicheJourneeTableCreateCompanionBuilder =
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
+      Value<String?> baseMaj,
+      Value<String?> variantes,
+      Value<bool> resolution,
       Value<int> rowid,
     });
 typedef $$FicheJourneeTableUpdateCompanionBuilder =
@@ -34531,6 +34695,9 @@ typedef $$FicheJourneeTableUpdateCompanionBuilder =
       Value<String> syncStatus,
       Value<String?> syncMotif,
       Value<String> updatedAt,
+      Value<String?> baseMaj,
+      Value<String?> variantes,
+      Value<bool> resolution,
       Value<int> rowid,
     });
 
@@ -34700,6 +34867,21 @@ class $$FicheJourneeTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseMaj => $composableBuilder(
+    column: $table.baseMaj,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variantes => $composableBuilder(
+    column: $table.variantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -34872,6 +35054,21 @@ class $$FicheJourneeTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get baseMaj => $composableBuilder(
+    column: $table.baseMaj,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get variantes => $composableBuilder(
+    column: $table.variantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FicheJourneeTableAnnotationComposer
@@ -35004,6 +35201,17 @@ class $$FicheJourneeTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get baseMaj =>
+      $composableBuilder(column: $table.baseMaj, builder: (column) => column);
+
+  GeneratedColumn<String> get variantes =>
+      $composableBuilder(column: $table.variantes, builder: (column) => column);
+
+  GeneratedColumn<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
+    builder: (column) => column,
+  );
 }
 
 class $$FicheJourneeTableTableManager
@@ -35069,6 +35277,9 @@ class $$FicheJourneeTableTableManager
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
+                Value<String?> baseMaj = const Value.absent(),
+                Value<String?> variantes = const Value.absent(),
+                Value<bool> resolution = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion(
                 id: id,
@@ -35103,6 +35314,9 @@ class $$FicheJourneeTableTableManager
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
+                baseMaj: baseMaj,
+                variantes: variantes,
+                resolution: resolution,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -35139,6 +35353,9 @@ class $$FicheJourneeTableTableManager
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> syncMotif = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
+                Value<String?> baseMaj = const Value.absent(),
+                Value<String?> variantes = const Value.absent(),
+                Value<bool> resolution = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion.insert(
                 id: id,
@@ -35173,6 +35390,9 @@ class $$FicheJourneeTableTableManager
                 syncStatus: syncStatus,
                 syncMotif: syncMotif,
                 updatedAt: updatedAt,
+                baseMaj: baseMaj,
+                variantes: variantes,
+                resolution: resolution,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

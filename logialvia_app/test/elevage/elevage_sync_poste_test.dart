@@ -13,6 +13,7 @@ import 'package:logialvia_app/elevage/data/repositories/soins_repository_drift.d
 import 'package:logialvia_app/elevage/data/sync/identifiants_parametres_elevage.dart';
 import 'package:logialvia_app/elevage/data/sync/table_infirmerie_poste.dart';
 import 'package:logialvia_app/elevage/data/sync/table_parametres_elevage_poste.dart';
+import 'package:logialvia_app/elevage/data/sync/table_bandes_poste.dart';
 import 'package:logialvia_app/elevage/data/sync/table_soins_poste.dart';
 import 'package:logialvia_app/elevage/domain/entities/soin.dart';
 
@@ -38,6 +39,7 @@ class _Poste {
         TableBaremesRationPoste(db),
         TableTauxRationPoidsPoste(db),
         TableCalendrierProphylaxiePoste(db),
+        TableBandesPoste(db),
         TableSoinsPoste(db),
         TableInfirmeriePoste(db),
       ],
@@ -85,7 +87,6 @@ class _Poste {
     final compte = <String, int>{};
     for (final t in const [
       'fiche_journee',
-      'bandes',
       'mouvements_intrant',
       'mouvements_produit',
       'ecriture_comptable',
@@ -664,7 +665,7 @@ void main() {
       () async {
         final a = await poste();
         await a.moteur.synchroniser();
-        const bande = 'bande-1';
+        const bande = '11111111-1111-4111-8111-111111111111';
         await a.db
             .into(a.db.bandes)
             .insert(
@@ -694,16 +695,12 @@ void main() {
         expect(chez['date_prevue'], '2026-11-05', reason: 'date civile');
         expect(chez['type_soin'], 'Vaccination');
         expect(chez['cout_fcfa'], 1500);
-        expect(chez.keys, isNot(contains('bande_id')));
+        expect(chez['bande_id'], bande, reason: 'le lien de bande voyage (`47e_`)');
         final corps =
             ((serveur.envois.last['tables'] as Map)['soins_calendrier'] as List)
                 .cast<Map<String, dynamic>>()
                 .single;
-        expect(
-          corps.keys,
-          isNot(contains('bande_id')),
-          reason: 'l\'identifiant de bande est local : il ne voyage pas',
-        );
+        expect(corps['bande_id'], bande);
         expect((await a.soins()).single.syncStatus, 'synced');
         expect((await a.soins()).single.bandeId, bande);
       },
@@ -768,7 +765,7 @@ void main() {
         final b = await poste();
         await a.moteur.synchroniser();
         await b.moteur.synchroniser();
-        const bande = 'bande-1';
+        const bande = '11111111-1111-4111-8111-111111111111';
         await a.db
             .into(a.db.bandes)
             .insert(
@@ -798,8 +795,8 @@ void main() {
         expect(recu.coutFcfa, 2500);
         expect(
           recu.bandeId,
-          isNull,
-          reason: 'les bandes ne sont pas synchronisées',
+          bande,
+          reason: 'le lien de bande voyage avec le soin (`47e_`)',
         );
         expect(
           await b.effetsDeBord(),
@@ -836,7 +833,7 @@ void main() {
       'le lien de bande local d\'un soin n\'est JAMAIS effacé par une version du serveur',
       () async {
         final a = await poste();
-        const bande = 'bande-1';
+        const bande = '11111111-1111-4111-8111-111111111111';
         await a.db
             .into(a.db.bandes)
             .insert(

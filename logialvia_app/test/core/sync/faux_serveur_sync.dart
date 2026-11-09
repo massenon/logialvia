@@ -1376,6 +1376,12 @@ class FauxServeurSync {
       } else if (l['echeance_prophylaxie_id'] != null &&
           !echeances.containsKey(l['echeance_prophylaxie_id'])) {
         motif = 'Échéance de prophylaxie inconnue du serveur.';
+      } else if (l['bande_id'] != null &&
+          (l['bande_id'] is! String ||
+              !_uuidRe.hasMatch(l['bande_id'] as String))) {
+        motif = "L'identifiant de la bande doit être un UUID.";
+      } else if (l['bande_id'] != null && !bandes.containsKey(l['bande_id'])) {
+        motif = 'Bande inconnue du serveur.';
       }
       if (motif != null) {
         refusees.add({'id': '$id', 'motif': motif});
@@ -1398,6 +1404,7 @@ class FauxServeurSync {
           'symptomes',
           'cout_fcfa',
           'echeance_prophylaxie_id',
+          'bande_id',
         ])
           c: l[c],
       };
@@ -2440,6 +2447,37 @@ class FauxServeurSync {
 
   /// Rejoue `FichesJourneeTable` : identite = (espece, date), dernier ecrivain gagne,
   /// ligne ENTIERE.
+  static const _colonnesContenuFiche = [
+    'espece',
+    'date',
+    'achat',
+    'ne',
+    'vente',
+    'mort_cat1',
+    'mort_cat2',
+    'mort_cat3',
+    'mort_cat4',
+    'don_cat1',
+    'don_cat2',
+    'don_cat3',
+    'don_cat4',
+    'effectif',
+    'eff_cat1_day',
+    'eff_cat2_day',
+    'eff_cat3_day',
+    'eff_cat4_day',
+    'srh',
+    'ts',
+    'stock_final_oeufs',
+    'oeufs_pondus',
+    'oeufs_casses',
+    'sorties_plateaux',
+    'poids_general_g',
+    'traitement_obs',
+    'traitement_valide',
+    'is_recorded',
+  ];
+
   Map<String, dynamic> _fichesJournee(
     List<Map<String, dynamic>> lot,
     String deviceId,
@@ -2489,14 +2527,62 @@ class FauxServeurSync {
       }
       final saisie = DateTime.parse(f['updated_at'] as String);
       final existante = fichesJournee[id];
-      if (existante == null ||
-          saisie.isAfter(DateTime.parse(existante['updated_at'] as String))) {
-        fichesJournee[id] = {
-          ...f,
-          'device_id': deviceId,
-          'updated_at': saisie.toUtc().toIso8601String(),
-          'serveur_modifie_le': _instant(),
+      // Rejoue `FichesJourneeTable` (`47e_`) : une divergence n'est jamais perdue.
+      final base = f['base_updated_at'] is String
+          ? DateTime.tryParse(f['base_updated_at'] as String)
+          : null;
+      final resolution = f['resolution'] == true;
+      final contenu = {
+        for (final c in _colonnesContenuFiche) c: f[c],
+      };
+      final entrante = {
+        for (final c in _colonnesContenuFiche) c: f[c],
+        'device_id': deviceId,
+        'updated_at': saisie.toUtc().toIso8601String(),
+        'serveur_modifie_le': _instant(),
+        'variantes': <Map<String, dynamic>>[],
+      };
+      if (existante == null) {
+        fichesJournee[id] = {'id': id, ...entrante};
+      } else {
+        final instantExistant = DateTime.parse(existante['updated_at'] as String);
+        final contenuExistant = {
+          for (final c in _colonnesContenuFiche) c: existante[c],
         };
+        final identique = _colonnesContenuFiche.every(
+          (c) => contenuExistant[c] == contenu[c],
+        );
+        final plusRecente = saisie.isAfter(instantExistant);
+        final vue = base != null && base.isAtSameMomentAs(instantExistant);
+        final diverge =
+            !identique && !vue && existante['device_id'] != deviceId && !resolution;
+        final variantes = [
+          ...(existante['variantes'] as List? ?? const [])
+              .cast<Map<String, dynamic>>(),
+        ];
+        if (plusRecente) {
+          if (diverge) {
+            variantes.add({
+              'device_id': existante['device_id'],
+              'updated_at': existante['updated_at'],
+              'contenu': contenuExistant,
+            });
+          }
+          fichesJournee[id] = {
+            'id': id,
+            ...entrante,
+            'variantes': resolution ? <Map<String, dynamic>>[] : variantes,
+          };
+        } else if (diverge) {
+          variantes.add({
+            'device_id': deviceId,
+            'updated_at': saisie.toUtc().toIso8601String(),
+            'contenu': contenu,
+          });
+          existante
+            ..['variantes'] = variantes
+            ..['serveur_modifie_le'] = _instant();
+        }
       }
       acceptees.add(id);
     }

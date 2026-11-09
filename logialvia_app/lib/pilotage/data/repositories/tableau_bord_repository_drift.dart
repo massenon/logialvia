@@ -6,6 +6,7 @@ import '../../../elevage/data/repositories/parametres_elevage_repository_drift.d
 import '../../../elevage/data/repositories/soins_repository_drift.dart';
 import '../../../elevage/domain/entities/cycle_incubation.dart';
 import '../../../elevage/domain/services/rappels_prophylaxie.dart';
+import '../../../elevage/domain/services/reperes_zootechniques.dart';
 import '../../domain/entities/tableau_bord_principal.dart';
 import '../../domain/repositories/tableau_bord_repository.dart';
 
@@ -515,18 +516,31 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
       (s, j) => s + j.mortCat1 + j.mortCat2 + j.mortCat3 + (j.mortCat4 ?? 0),
     );
 
-    // Effectif de debut de mois = effectif du 1er jour saisi + les morts de ce
-    // jour-la, pour ne pas sous-estimer la base de calcul.
+    // Effectif EXPOSE au risque (`47e_`) = effectif de debut de mois (reconstitue depuis
+    // le 1er jour saisi : on lui rend ce qu'il a retire et on lui retire ce qu'il a
+    // ajoute) + toutes les entrees du mois. Ignorer les entrees faisait depasser 100 %
+    // quand une bande arrivait en cours de mois.
     final premier = jours.first;
-    final base =
-        premier.effectif +
+    final debutDeMois =
+        premier.effectif -
+        premier.achat -
+        premier.ne +
         premier.mortCat1 +
         premier.mortCat2 +
         premier.mortCat3 +
-        (premier.mortCat4 ?? 0);
-    if (base == 0) return 0;
-
-    return morts / base * 100;
+        (premier.mortCat4 ?? 0) +
+        premier.vente +
+        premier.donCat1 +
+        premier.donCat2 +
+        premier.donCat3 +
+        (premier.donCat4 ?? 0);
+    final entrees = jours.fold<int>(0, (s, j) => s + j.achat + j.ne);
+    return ReperesZootechniques.tauxMortaliteCumule(
+          morts: morts,
+          effectifDepart: debutDeMois,
+          entrees: entrees,
+        ) ??
+        0;
   }
 
   static DateTime _minuit(DateTime d) => DateTime(d.year, d.month, d.day);

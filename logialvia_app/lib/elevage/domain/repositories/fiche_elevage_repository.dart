@@ -31,6 +31,25 @@ abstract class FicheElevageRepository {
 
   Future<void> enregistrerJour(JourneeElevage journee);
 
+  /// TOUTES les journées saisies de la filière, dans l'ordre chronologique (chaîne
+  /// d'effectifs, `47e_`).
+  Future<List<JourneeElevage>> chargerJoursSaisis(String espece);
+
+  /// Les versions en présence quand la fiche du jour est « modifiée ailleurs » : la
+  /// courante d'abord, puis les autres. Liste vide sans divergence.
+  Future<List<VersionJournee>> versionsEnDivergence({
+    required String espece,
+    required DateTime date,
+  });
+
+  /// Marque la fiche du jour comme **résolue** : les variantes sont effacées et la
+  /// prochaine écriture envoyée le dit au serveur. À appeler APRÈS avoir réécrit la
+  /// version choisie (`enregistrerJour`).
+  Future<void> marquerDivergenceResolue({
+    required String espece,
+    required DateTime date,
+  });
+
   /// Ventes du jour issues du POS pour cette espèce (`FICHE_VENTES_JOUR`).
   Future<int> venteDuJour({required String espece, required DateTime date});
 }

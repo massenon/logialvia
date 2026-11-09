@@ -93,8 +93,14 @@ class CalculFicheJournaliere {
   int rationCategorie(int index) {
     if (index < 0 || index >= configuration.categories.length) return 0;
     final categorie = configuration.categories[index];
-    return rationsConfigurees[categorie.libelle] ??
-        categorie.rationGrammesParJour;
+    // Libelle de la categorie, puis les intitules equivalents du bareme (`47e_`).
+    final configuree =
+        rationsConfigurees[categorie.libelle] ??
+        categorie.stadesEquivalents
+            .map((stade) => rationsConfigurees[stade])
+            .whereType<int>()
+            .firstOrNull;
+    return configuree ?? categorie.rationGrammesParJour;
   }
 
   /// Garde-fou de Doc 05 : aucun effectif ne peut devenir negatif (BR-ELV-001).

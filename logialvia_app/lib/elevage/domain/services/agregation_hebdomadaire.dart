@@ -39,8 +39,14 @@ class SemaineElevage {
   /// `null` — et non 0 — si l'effectif de départ est nul : sans effectif, il n'y
   /// a pas de taux à calculer, et afficher « 0,0 % » laisserait croire à une
   /// semaine sans perte.
-  double? get tauxMortalite =>
-      effectifDebut <= 0 ? null : cumulMorts / effectifDebut * 100;
+  ///
+  /// Le dénominateur est l'effectif **exposé** au risque : effectif de départ + entrées
+  /// de la semaine (`47e_`). Avec le seul effectif de départ, une bande arrivée en cours
+  /// de semaine n'avait aucun taux (« — »), ou un taux supérieur à 100 %.
+  double? get tauxMortalite {
+    final expose = effectifDebut + cumulAchats + cumulNaissances;
+    return expose <= 0 ? null : cumulMorts / expose * 100;
+  }
 }
 
 /// Agrégation hebdomadaire du tableau mensuel — `renderWeeklyGrid()` de
@@ -77,8 +83,16 @@ class AgregationHebdomadaire {
 
       // Effectif de depart : celui du soir de la veille. Pour la premiere
       // semaine, c'est l'effectif de report du mois precedent.
-      final veille = debut > 1 ? journees[debut - 1] : null;
-      final effectifDebut = veille?.effectif ?? effectifInitial;
+      // Dernier effectif CONNU avant la semaine : une veille non saisie ne ramene pas a
+      // l'effectif de debut de mois (`47e_`), elle laisse l'effectif de la derniere
+      // journee saisie (sinon la semaine suivante partirait d'un effectif perime).
+      var effectifDebut = effectifInitial;
+      for (var j = 1; j < debut; j++) {
+        final precedente = journees[j];
+        if (precedente != null && precedente.isRecorded) {
+          effectifDebut = precedente.effectif;
+        }
+      }
 
       var achats = 0;
       var naissances = 0;

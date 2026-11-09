@@ -22,3 +22,9 @@ String identifiantFicheJournee(String espece, DateTime date) =>
 /// [poste] (son identifiant, celui du jeton côté serveur).
 String identifiantVentesJour(String espece, DateTime date, String poste) =>
     uuidDeterministe('fiche_ventes_jour:$espece|${jourCivil(date)}|$poste');
+
+/// UUID du soin engendré par l'échéance [echeanceId] du calendrier de prophylaxie pour la
+/// bande [bandeId] (`47e_`). Déterministe : deux postes qui « génèrent les soins du
+/// calendrier » pour la même bande écrivent la MÊME ligne, jamais deux rappels Newcastle.
+String identifiantSoinProphylaxie(String bandeId, String echeanceId) =>
+    uuidDeterministe('soin_prophylaxie:$bandeId|$echeanceId');

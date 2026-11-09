@@ -19,10 +19,13 @@ import '../../../core/widgets/kpi_card.dart';
 import '../../domain/entities/configuration_espece.dart';
 import '../../domain/entities/journee_elevage.dart';
 import '../../domain/services/calcul_fiche_journaliere.dart';
+import '../../domain/services/controle_vraisemblance.dart';
+import '../../domain/services/reperes_zootechniques.dart';
 import '../viewmodels/fiche_espece_view_model.dart';
 import 'widgets/compteur_categorie.dart';
 import 'widgets/suivi_stock_oeufs.dart';
 import 'widgets/tableau_hebdomadaire.dart';
+import 'widgets/bandeaux_expert.dart';
 import 'widgets/bloc_bande_prophylaxie.dart';
 import 'widgets/tableau_mensuel.dart';
 import '../../../core/saisie/formats_saisie.dart';
@@ -72,6 +75,8 @@ class _FicheEspeceScreenState extends State<FicheEspeceScreen> {
           // echeances de prophylaxie, indexees sur le jour du cycle.
           BandeauBande(vm: vm, configuration: configuration),
           const SizedBox(height: AppSpacing.lg),
+          // Fiche modifiee ailleurs, chaine incoherente, bande a recoder (`47e_`).
+          BandeauxExpert(vm: vm),
           _BandeauKpiFiche(vm: vm, configuration: configuration),
           const SizedBox(height: AppSpacing.lg),
           FormulaireJournalier(
@@ -307,7 +312,12 @@ class _BandeauKpiFiche extends StatelessWidget {
       KpiCard(
         libelle: 'Taux de Mortalité (Cumul)',
         valeur: Formats.pourcentage(vm.tauxMortaliteCumul),
-        accent: AppColors.errorDeep,
+        // DV-13 : 10 % avertissement, 20 % critique (`47e_`).
+        accent: switch (vm.niveauMortaliteCumul) {
+          NiveauAlerte.critique => AppColors.errorDeep,
+          NiveauAlerte.avertissement => AppColors.brandGold,
+          NiveauAlerte.normal => AppColors.successDeep,
+        },
         icone: Symbols.trending_down,
       ),
     ];
@@ -499,6 +509,13 @@ class _FormulaireJournalierState extends State<FormulaireJournalier> {
           ),
           const SizedBox(height: AppSpacing.md),
           _Totaux(effectifs: effectifs),
+          _BlocControle(
+            controle: widget.vm.controlerEnDirect(
+              _mouvements,
+              poidsTotalGrammes: int.tryParse(_poids.text),
+              stockOeufs: _saisieOeufs,
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           _TableauRationnement(
             configuration: widget.configuration,
@@ -645,6 +662,54 @@ class _BlocCategories extends StatelessWidget {
               ],
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Contrôle de vraisemblance d'expert (`47e_`) : erreurs (saisie refusée) et
+/// avertissements (non bloquants), en direct sous les totaux.
+class _BlocControle extends StatelessWidget {
+  const _BlocControle({required this.controle});
+
+  final ResultatControle controle;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controle.erreurs.isEmpty && controle.avertissements.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    Widget ligne(String texte, Color couleur, IconData icone) => Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, size: 16, color: couleur),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              texte,
+              style: TextStyle(
+                fontFamily: AppTypography.fontFamily,
+                fontSize: AppTypography.textXs,
+                color: couleur,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(
+        key: const Key('controle-vraisemblance'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final e in controle.erreurs)
+            ligne(e, AppColors.errorDeep, Symbols.error),
+          for (final a in controle.avertissements)
+            ligne(a, AppColors.brandGold, Symbols.warning),
         ],
       ),
     );

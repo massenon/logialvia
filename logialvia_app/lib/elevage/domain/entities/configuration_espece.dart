@@ -5,9 +5,17 @@ class CategorieEspece {
     required this.rationGrammesParJour,
     this.recoitAchatEtNaissances = false,
     this.deduiteDesVentes = false,
+    this.stadesEquivalents = const [],
   });
 
   final String libelle;
+
+  /// Autres intitulés sous lesquels le **barème** de cette catégorie peut avoir été
+  /// semé ou saisi (`47e_`). Le barème est cherché par libellé de stade : sans cette
+  /// équivalence, une ration modifiée dans Paramètres Élevage pour « Sevré / Lapereaux »
+  /// ou « Alevins » (le stade de la pintade semé à tort, DV-09 l'interdit) restait sans
+  /// effet sur la provende calculée, sans le dire.
+  final List<String> stadesEquivalents;
 
   /// Ration normative en g/j, utilisee pour le calcul de provende.
   final int rationGrammesParJour;
@@ -179,6 +187,7 @@ class ConfigurationsEspeces {
         libelle: 'Poussins',
         rationGrammesParJour: 30,
         recoitAchatEtNaissances: true,
+        stadesEquivalents: ['Alevins'],
       ),
       CategorieEspece(
         libelle: 'Pintadau',
@@ -205,13 +214,16 @@ class ConfigurationsEspeces {
         libelle: 'Lapereau',
         rationGrammesParJour: 30,
         recoitAchatEtNaissances: true,
+        stadesEquivalents: ['Sevré / Lapereaux'],
       ),
       CategorieEspece(
         libelle: 'Chair',
         rationGrammesParJour: 60,
         deduiteDesVentes: true,
+        stadesEquivalents: ['Chair / Jeune'],
       ),
-      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 110),
+      // 120 g/j : la valeur confirmee du bareme seme (Q-ELV-2) ; le code disait 110.
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 120),
     ],
     etapesCycle: ['Naissance', 'Chair', 'Reproducteur'],
     libelleNaissances: 'Nés (Mise bas)',
@@ -223,17 +235,22 @@ class ConfigurationsEspeces {
     icone: 'set_meal',
     route: '/elevage/poissons-chats',
     categories: [
+      // Repli par tete SANS pesee, en g/poisson/j (`47e_`). L'ancien 30 / 60 / 110 g
+      // etait absurde : un alevin de 2 g ne mange pas 30 g (15 fois son poids). Ordres
+      // de grandeur : alevin ~2 g a 15 % de biomasse = 0,3 g, arrondi a 1 g (l'entier
+      // le plus petit) ; juvenile ~50 g a 4 % = 2 g, arrondi a 3 g ; adulte ~500 g a
+      // 1,5 % = 7,5 g, arrondi a 8 g. Des qu'une pesee existe, le % de biomasse prime.
       CategorieEspece(
         libelle: 'Alevin',
-        rationGrammesParJour: 30,
+        rationGrammesParJour: 1,
         recoitAchatEtNaissances: true,
       ),
       CategorieEspece(
         libelle: 'Juvénile',
-        rationGrammesParJour: 60,
+        rationGrammesParJour: 3,
         deduiteDesVentes: true,
       ),
-      CategorieEspece(libelle: 'Mature', rationGrammesParJour: 110),
+      CategorieEspece(libelle: 'Mature', rationGrammesParJour: 8),
     ],
     etapesCycle: ['Alevin', 'Juvénile', 'Mature'],
     noteRationnement:

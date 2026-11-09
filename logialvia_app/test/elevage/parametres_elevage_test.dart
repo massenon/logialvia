@@ -51,7 +51,8 @@ void main() {
       final alevin = vm.baremes.firstWhere(
         (b) => b.espece == 'poissons-chats' && b.stade == 'Alevin',
       );
-      expect(alevin.rationGrammesParJour, 8);
+      // Repli par tete corrige par l'expert (`47e_`) : 1 g, pas 8 g, pour un alevin.
+      expect(alevin.rationGrammesParJour, 1);
     });
 
     test('seuls les 3 barèmes Lapins portent le badge « Confirmé » — c\'est le '

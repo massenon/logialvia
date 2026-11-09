@@ -672,7 +672,9 @@ void main() {
     test('sans pesée : ration par tête, signalée', () {
       final provende = poissons.provendeDuJour(const [0, 100, 0]);
       expect(provende.surPoidsVif, isFalse);
-      expect(provende.grammes, 100 * 60);
+      // 100 juveniles x 3 g (repli par tete corrige, `47e_` : 60 g/poisson/j etait
+      // absurde, un juvenile de 50 g n'en mange que 2).
+      expect(provende.grammes, 100 * 3);
     });
 
     test('libellés en grammes, unité répétée seulement si elle change', () {

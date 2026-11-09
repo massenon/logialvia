@@ -4,6 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/soin.dart';
 import '../../domain/repositories/soins_repository.dart';
+import '../sync/identifiants_elevage.dart';
 
 class SoinsRepositoryDrift implements SoinsRepository {
   const SoinsRepositoryDrift(this._db);
@@ -34,7 +35,11 @@ class SoinsRepositoryDrift implements SoinsRepository {
     String? echeanceProphylaxieId,
   }) async {
     final jour = DateTime(date.year, date.month, date.day);
-    final id = nouvelUuid();
+    // Un soin issu du calendrier a un identifiant DETERMINISTE de (bande, echeance) :
+    // pas de doublon entre postes (`47e_`). Un soin libre garde un UUID aleatoire.
+    final id = bandeId != null && echeanceProphylaxieId != null
+        ? identifiantSoinProphylaxie(bandeId, echeanceProphylaxieId)
+        : nouvelUuid();
     await _db
         .into(_db.soinsCalendrier)
         .insert(

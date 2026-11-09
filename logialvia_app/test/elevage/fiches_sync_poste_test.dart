@@ -22,8 +22,10 @@ import 'package:logialvia_app/elevage/data/sync/identifiants_elevage.dart';
 import 'package:logialvia_app/elevage/data/sync/table_bandes_poste.dart';
 import 'package:logialvia_app/elevage/data/sync/table_fiches_journee_poste.dart';
 import 'package:logialvia_app/elevage/data/sync/table_ventes_jour_poste.dart';
+import 'package:logialvia_app/elevage/domain/entities/bande.dart';
 import 'package:logialvia_app/elevage/domain/entities/configuration_espece.dart';
 import 'package:logialvia_app/elevage/domain/entities/journee_elevage.dart';
+import 'package:logialvia_app/elevage/domain/usecases/chaine_effectifs_usecases.dart';
 import 'package:logialvia_app/elevage/domain/usecases/enregistrer_journee_usecase.dart';
 import 'package:logialvia_app/elevage/domain/services/calcul_fiche_journaliere.dart';
 
@@ -301,7 +303,7 @@ void main() {
     );
 
     test(
-      'deux postes : la saisie plus ancienne arrivée en retard ne l\'emporte pas',
+      'deux postes : la saisie la plus récente reste courante, l\'ancienne n\'est PAS perdue',
       () async {
         final a = await poste();
         final b = await poste();
@@ -316,13 +318,37 @@ void main() {
         await b.moteur
             .synchroniser(); // B arrive en retard avec une saisie ancienne
         await a.moteur.synchroniser();
+        await b.moteur.synchroniser();
 
+        // Courante : la plus récente, partout.
         expect((await a.lesFiches()).single.traitementObs, 'A (récente)');
         expect((await b.lesFiches()).single.traitementObs, 'A (récente)');
+        final chezLeServeur = serveur.fichesJournee.values.single;
+        expect(chezLeServeur['traitement_obs'], 'A (récente)');
+        // Mais la saisie de B est CONSERVEE au serveur comme variante...
+        final variantes = chezLeServeur['variantes'] as List;
+        expect(variantes, hasLength(1));
         expect(
-          serveur.fichesJournee.values.single['traitement_obs'],
-          'A (récente)',
+          ((variantes.single as Map)['contenu'] as Map)['traitement_obs'],
+          'B (ancienne)',
         );
+        // ... et les DEUX postes voient « modifiée ailleurs ».
+        for (final p in [a, b]) {
+          final f = (await p.lesFiches()).single;
+          expect(f.variantes, isNotNull, reason: 'divergence visible');
+          final versions = await p.depotFiches.versionsEnDivergence(
+            espece: 'goliaths',
+            date: jour,
+          );
+          expect(versions, hasLength(2));
+          expect(versions.first.estCourante, isTrue);
+          expect(versions.last.journee.traitementObs, 'B (ancienne)');
+          expect(
+            (await p.depotFiches.chargerJour(espece: 'goliaths', date: jour))!
+                .modifieeAilleurs,
+            isTrue,
+          );
+        }
       },
     );
 
@@ -356,7 +382,7 @@ void main() {
     );
 
     test(
-      'une saisie locale non envoyée PLUS RÉCENTE est conservée ; une plus ancienne est supplantée',
+      'une saisie locale non envoyée n\'est JAMAIS écrasée, même par une version plus récente',
       () async {
         final b = await poste();
         await b.saisir(jour, achat: 7);
@@ -382,9 +408,17 @@ void main() {
             surcharge: {'effectif': 99},
           ),
         ]);
-        expect(recente.supplantees, 1);
-        expect((await b.lesFiches()).single.effectif, 99);
-        expect((await b.lesFiches()).single.syncStatus, 'synced');
+        expect(recente.supplantees, 0);
+        expect(recente.conservees, 1);
+        final apres = (await b.lesFiches()).single;
+        expect(apres.effectif, locale.effectif, reason: 'ma saisie est intacte');
+        expect(apres.syncStatus, 'pending');
+        // La version de l'autre est gardee, visible, pour que l'utilisatrice choisisse.
+        final versions = await b.depotFiches.versionsEnDivergence(
+          espece: 'goliaths',
+          date: jour,
+        );
+        expect(versions.map((v) => v.journee.effectif), contains(99));
       },
     );
 
@@ -893,6 +927,79 @@ void main() {
       },
     );
 
+    test(
+      'recodage `B2` -> `B2-P1` : la bande refusée repart, celle de l\'autre poste revient, tout est tracé',
+      () async {
+        final a = await poste();
+        final b = await poste();
+        await a.bandesDepot.creerBande(
+          espece: 'goliaths',
+          code: 'B2',
+          dateMiseEnBande: DateTime(2026, 10, 1),
+        );
+        await b.bandesDepot.creerBande(
+          espece: 'goliaths',
+          code: 'B2',
+          dateMiseEnBande: DateTime(2026, 10, 20),
+        );
+        await a.moteur.synchroniser();
+        await b.moteur.synchroniser();
+        final enConflit = (await b.bandesDepot.chargerBandes('goliaths')).single;
+        expect(enConflit.enConflit, isTrue);
+
+        final propose = Bande.proposerCodeRecodage(
+          enConflit.code,
+          codePoste: await b.bandesDepot.codePoste(),
+          codesPris: {enConflit.code},
+        );
+        expect(propose, 'B2-P1');
+        await b.bandesDepot.recoderBande(id: enConflit.id, nouveauCode: propose);
+        await b.moteur.synchroniser();
+        await a.moteur.synchroniser();
+
+        expect(serveur.bandes, hasLength(2));
+        final chezB = await b.lesBandes();
+        expect(chezB.map((x) => x.code), ['B2', 'B2-P1']);
+        expect(chezB.every((x) => x.syncStatus == 'synced'), isTrue);
+        final recodee = chezB.firstWhere((x) => x.code == 'B2-P1');
+        expect(recodee.observations, contains('Recodée de B2 en B2-P1'));
+        expect((await a.lesBandes()).map((x) => x.code), ['B2', 'B2-P1']);
+      },
+    );
+
+    test('recoder vers un code déjà pris est refusé', () async {
+      final a = await poste();
+      final x = await a.bandesDepot.creerBande(
+        espece: 'goliaths',
+        code: 'B1',
+        dateMiseEnBande: DateTime(2026, 10, 1),
+      );
+      await a.bandesDepot.creerBande(
+        espece: 'goliaths',
+        code: 'B2',
+        dateMiseEnBande: DateTime(2026, 10, 2),
+      );
+      expect(
+        () => a.bandesDepot.recoderBande(id: x.id, nouveauCode: 'B2'),
+        throwsStateError,
+      );
+    });
+
+    test('code de recodage : suffixe numérique si le code recodé est pris', () {
+      expect(
+        Bande.proposerCodeRecodage(
+          'B2',
+          codePoste: 'P2',
+          codesPris: {'B2', 'B2-P2'},
+        ),
+        'B2-P2-2',
+      );
+      expect(
+        Bande.proposerCodeRecodage('B2', codePoste: null, codesPris: {'B2'}),
+        'B2-X',
+      );
+    });
+
     test('le même code dans deux filières différentes est accepté', () async {
       final a = await poste();
       await a.bandesDepot.creerBande(
@@ -1032,5 +1139,210 @@ void main() {
         expect(r.saisiesPerdues, greaterThanOrEqualTo(1));
       },
     );
+  });
+
+  group('divergence de deux postes (`47e_`)', () {
+    Future<void> divergence(_Poste a, _Poste b) async {
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      await b.saisir(jour, achat: 25, observation: 'B');
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await a.saisir(jour, achat: 10, observation: 'A');
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+    }
+
+    test('une suite NORMALE (le poste avait vu la version) ne diverge pas', () async {
+      final a = await poste();
+      final b = await poste();
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      await a.saisir(jour, achat: 10, observation: 'v1');
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      // B a VU la v1 puis la corrige : modification successive, pas une divergence.
+      await b.saisir(jour, achat: 12, observation: 'v2');
+      await b.moteur.synchroniser();
+      await a.moteur.synchroniser();
+
+      expect(serveur.fichesJournee.values.single['variantes'], isEmpty);
+      expect((await a.lesFiches()).single.variantes, isNull);
+      expect((await a.lesFiches()).single.traitementObs, 'v2');
+    });
+
+    test('deux saisies IDENTIQUES ne divergent pas', () async {
+      final a = await poste();
+      final b = await poste();
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      await b.saisir(jour, achat: 10, observation: 'pareil');
+      await a.saisir(jour, achat: 10, observation: 'pareil');
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+      expect(serveur.fichesJournee.values.single['variantes'], isEmpty);
+    });
+
+    test('choisir la version de l\'autre poste : elle gagne partout, plus de marque', () async {
+      final a = await poste();
+      final b = await poste();
+      await divergence(a, b);
+      final versions = await a.depotFiches.versionsEnDivergence(
+        espece: 'goliaths',
+        date: jour,
+      );
+      final deB = versions.firstWhere((v) => !v.estCourante);
+
+      final r = await ResoudreDivergenceUseCase(
+        a.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      ).executer(date: jour, choisie: deB);
+      expect(r, isA<Succes<void>>());
+      await a.moteur.synchroniser();
+      await b.moteur.synchroniser();
+
+      expect(serveur.fichesJournee.values.single['traitement_obs'], 'B');
+      expect(serveur.fichesJournee.values.single['variantes'], isEmpty);
+      for (final p in [a, b]) {
+        final f = (await p.lesFiches()).single;
+        expect(f.traitementObs, 'B');
+        expect(f.variantes, isNull);
+        expect(f.achat, 25);
+      }
+    });
+
+    test('garder la version courante confirme et efface la marque partout', () async {
+      final a = await poste();
+      final b = await poste();
+      await divergence(a, b);
+      final courante = (await b.depotFiches.versionsEnDivergence(
+        espece: 'goliaths',
+        date: jour,
+      )).first;
+
+      await ResoudreDivergenceUseCase(
+        b.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      ).executer(date: jour, choisie: courante);
+      await b.moteur.synchroniser();
+      await a.moteur.synchroniser();
+
+      expect(serveur.fichesJournee.values.single['traitement_obs'], 'A');
+      expect(serveur.fichesJournee.values.single['variantes'], isEmpty);
+      expect((await a.lesFiches()).single.variantes, isNull);
+      expect((await b.lesFiches()).single.variantes, isNull);
+    });
+
+    test('résoudre une fiche sans divergence est refusé', () async {
+      final a = await poste();
+      await a.saisir(jour, achat: 10);
+      final r = await ResoudreDivergenceUseCase(
+        a.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      ).executer(
+        date: jour,
+        choisie: VersionJournee(
+          origine: 'x',
+          instant: DateTime.now(),
+          journee: (await a.depotFiches.chargerJour(
+            espece: 'goliaths',
+            date: jour,
+          ))!,
+        ),
+      );
+      expect(r, isA<Echec<void>>());
+    });
+
+    test('la version retenue au poste en conflit n\'est jamais écrasée avant choix', () async {
+      final a = await poste();
+      final b = await poste();
+      await divergence(a, b);
+      // Une troisieme version arrive du serveur : les anciennes variantes restent.
+      final f = serveur.fichesJournee.values.single;
+      expect((f['variantes'] as List), hasLength(1));
+      await b.saisir(jour, achat: 30, observation: 'B2');
+      await b.moteur.synchroniser();
+      // B a vu la version courante de A (suite normale) : pas de nouvelle variante, mais
+      // celle de B (1ere version) reste tant que personne n'a tranche.
+      expect(serveur.fichesJournee.values.single['variantes'], isNotEmpty);
+    });
+  });
+
+  group('chaîne des effectifs (`47e_`)', () {
+    test('vérifier : une chaîne cohérente ne signale rien et ne réécrit rien', () async {
+      final a = await poste();
+      await a.saisir(jour, achat: 10);
+      await a.saisir(jour.add(const Duration(days: 1)), achat: 5);
+      final avant = await a.lesFiches();
+      final cas = ChaineEffectifsUseCase(
+        a.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      );
+      expect(await cas.verifier(), isEmpty);
+      final r = await cas.recalculer();
+      expect((r as Succes<RapportChaine>).valeur.etaitCoherente, isTrue);
+      final apres = await a.lesFiches();
+      expect(
+        [for (final f in apres) f.updatedAt],
+        [for (final f in avant) f.updatedAt],
+        reason: 'aucun jour identique n\'est réécrit',
+      );
+    });
+
+    test('une fiche d\'un autre poste casse la chaîne ; le bouton la répare', () async {
+      final a = await poste();
+      // Le 6 est saisi ici : 7 sujets, découlant d'une veille vide.
+      await a.saisir(jour.add(const Duration(days: 1)), achat: 7);
+      // Un autre poste envoie le 5 (50 sujets) : pas de cascade a l'absorption.
+      await a.fiches.absorber([
+        _ligneFiche(
+          'goliaths',
+          jour,
+          surcharge: {
+            'achat': 50,
+            'effectif': 50,
+            'eff_cat1_day': 50,
+            'eff_cat2_day': 0,
+            'eff_cat3_day': 0,
+          },
+        ),
+      ]);
+      final cas = ChaineEffectifsUseCase(
+        a.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      );
+
+      final incoherents = await cas.verifier();
+      expect(incoherents, hasLength(1));
+      expect(incoherents.single.date, jour.add(const Duration(days: 1)));
+      expect(incoherents.single.effectifEnregistre, 7);
+      expect(incoherents.single.effectifAttendu, 57, reason: '50 + 7 achetés');
+
+      final r = await cas.recalculer() as Succes<RapportChaine>;
+      expect(r.valeur.joursCorriges, [jour.add(const Duration(days: 1))]);
+      expect(r.valeur.joursVerifies, 2);
+      final fiches = await a.lesFiches();
+      expect(fiches.last.effectif, 57);
+      expect(fiches.last.effCat1Day, 57);
+      expect(fiches.last.syncStatus, 'pending', reason: 'le jour corrigé repart');
+      expect(await cas.verifier(), isEmpty);
+    });
+
+    test('la chaîne enchaîne les jours saisis par-dessus un jour non saisi', () async {
+      final a = await poste();
+      await a.saisir(jour, achat: 100);
+      // Le 7 : 4 morts. Le 6 n'est pas saisi : la veille du 7 est le 5.
+      await a.saisir(
+        jour.add(const Duration(days: 2)),
+        morts: const [4, 0, 0],
+      );
+      final cas = ChaineEffectifsUseCase(
+        a.depotFiches,
+        ConfigurationsEspeces.goliaths,
+      );
+      expect(await cas.verifier(), isEmpty);
+      expect((await a.lesFiches()).last.effectif, 96);
+    });
   });
 }

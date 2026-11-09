@@ -33,9 +33,9 @@ class ParametresElevageSeeder {
     (espece: 'lapins', stade: 'Sevré / Lapereaux', ration: 30, confirme: true),
     (espece: 'lapins', stade: 'Chair / Jeune', ration: 60, confirme: true),
     (espece: 'lapins', stade: 'Reproducteur', ration: 120, confirme: true),
-    (espece: 'poissons-chats', stade: 'Alevin', ration: 8, confirme: false),
-    (espece: 'poissons-chats', stade: 'Juvénile', ration: 25, confirme: false),
-    (espece: 'poissons-chats', stade: 'Mature', ration: 45, confirme: false),
+    (espece: 'poissons-chats', stade: 'Alevin', ration: 1, confirme: false),
+    (espece: 'poissons-chats', stade: 'Juvénile', ration: 3, confirme: false),
+    (espece: 'poissons-chats', stade: 'Mature', ration: 8, confirme: false),
   ];
 
   /// Les 11 échéances réelles — `PROPHYLAXIE_STORE` du prototype.

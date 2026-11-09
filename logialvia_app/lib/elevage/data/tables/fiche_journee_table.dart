@@ -94,6 +94,27 @@ class FicheJournee extends Table {
   /// Instant de **saisie** (UTC, microsecondes) : il departage deux postes.
   TextColumn get updatedAt => text().clientDefault(instantSaisie)();
 
+  // ------------------------------------------------- Divergence (schema v47, `47e_`)
+  //
+  // « Dernier ecrivain gagne » perdait EN SILENCE la saisie de l'autre poste quand deux
+  // postes saisissaient la meme fiche sans se voir. Desormais la divergence est detectee,
+  // marquee et c'est l'utilisatrice qui choisit la version a garder.
+
+  /// Instant (`updated_at` du serveur) de la version DONT CETTE FICHE EST PARTIE : celle
+  /// qu'on a tiree ou envoyee en dernier. Il est envoye avec la fiche (`base_updated_at`) :
+  /// le serveur sait ainsi si le poste avait vu la version courante (modification
+  /// successive normale) ou non (divergence). `null` : aucune version du serveur connue.
+  TextColumn get baseMaj => text().nullable()();
+
+  /// Les AUTRES versions de la meme fiche (JSON : liste de `{origine, updated_at,
+  /// contenu}`), tant que la divergence n'est pas resolue. Non `null` = « modifiee
+  /// ailleurs ».
+  TextColumn get variantes => text().nullable()();
+
+  /// Vrai quand cette ecriture RESOUT une divergence (l'utilisatrice a choisi) : le
+  /// serveur efface alors les variantes. Remis a faux a l'accuse.
+  BoolColumn get resolution => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 

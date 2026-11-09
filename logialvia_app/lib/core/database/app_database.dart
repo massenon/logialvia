@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 45;
+  static const int versionSchema = 47;
 
   @override
   int get schemaVersion => versionSchema;
@@ -473,6 +473,14 @@ class AppDatabase extends _$AppDatabase {
         // sont à envoyer au serveur.
         await _messagesEditeurEnUuid(m);
       }
+      if (from < 47) {
+        // Elevage expert (`47e_`) : une fiche journaliere garde la version dont elle est
+        // partie (`base_maj`), les versions divergentes d'un autre poste (`variantes`)
+        // et le drapeau de resolution. Additif, idempotent
+        await _ajouterColonne(m, ficheJournee, ficheJournee.baseMaj);
+        await _ajouterColonne(m, ficheJournee, ficheJournee.variantes);
+        await _ajouterColonne(m, ficheJournee, ficheJournee.resolution);
+      }
     },
     beforeOpen: (details) async {
       // Les cles etrangeres ne sont pas actives par defaut dans SQLite.
@@ -652,7 +660,15 @@ class AppDatabase extends _$AppDatabase {
             "strftime('%Y-%m-%dT%H:%M:%fZ', date, 'unixepoch')",
           ),
         },
-        newColumns: [ficheJournee.syncStatus, ficheJournee.syncMotif, ficheJournee.updatedAt],
+        newColumns: [
+          ficheJournee.syncStatus,
+          ficheJournee.syncMotif,
+          ficheJournee.updatedAt,
+          // Colonnes de la v47 : absentes de la base v37, a creer ici (`47e_`).
+          ficheJournee.baseMaj,
+          ficheJournee.variantes,
+          ficheJournee.resolution,
+        ],
       ),
     );
     await customStatement('DROP TABLE IF EXISTS _map_fiches');

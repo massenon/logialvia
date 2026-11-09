@@ -5,6 +5,7 @@ import '../entities/configuration_espece.dart';
 import '../entities/journee_elevage.dart';
 import '../repositories/fiche_elevage_repository.dart';
 import '../services/calcul_fiche_journaliere.dart';
+import '../services/controle_vraisemblance.dart';
 
 /// Saisies du suivi du stock d'œufs — Pondeuses uniquement (Doc H2).
 class SaisieStockOeufs {
@@ -44,6 +45,7 @@ class EnregistrerJourneeUseCase {
     String? traitementObs,
     bool traitementValide = false,
     SaisieStockOeufs? stockOeufs,
+    bool controlerVraisemblance = true,
   }) async {
     // Validation AVANT tout calcul (Doc E6 §3) : calculer sur des valeurs
     // invalides produirait un effectif incohérent, sans erreur visible.
@@ -67,6 +69,27 @@ class EnregistrerJourneeUseCase {
         effectifTotalVeille: veille?.effectif ?? 0,
         mouvements: mouvements,
       );
+
+      // Controle de vraisemblance d'expert (`47e_`) : une saisie IMPOSSIBLE est refusee
+      // (plus de morts que de sujets, plus d'oeufs que de pondeuses) ; le clamp du
+      // calcul masquerait sinon l'erreur et fausserait toute la chaine d'effectifs.
+      final controle = ControleVraisemblance(_configuration).controlerJournee(
+        effectifsVeille: effectifsVeille,
+        mouvements: mouvements,
+        effectifsDuJour: effectifs,
+        effectifTotalVeille: veille?.effectif ?? 0,
+        poidsTotalGrammes: poidsGeneralG,
+        oeufsPondus: stockOeufs?.oeufsPondus,
+        oeufsCasses: stockOeufs?.oeufsCasses,
+        sortiesPlateaux: stockOeufs?.sortiesPlateaux,
+        stockOeufsDisponible:
+            (veille?.stockFinalOeufs ?? 0) +
+            ((stockOeufs?.oeufsPondus ?? 0) - (stockOeufs?.oeufsCasses ?? 0))
+                .clamp(0, 999999),
+      );
+      if (controlerVraisemblance && !controle.estValide) {
+        return Echec(controle.erreurs.first);
+      }
 
       // Suivi du stock d'oeufs (Pondeuses) — Doc 05 §4, Doc H2.
       // ⚠️ Le SRH d'ouverture est le **Stock Final** de la veille, jamais son

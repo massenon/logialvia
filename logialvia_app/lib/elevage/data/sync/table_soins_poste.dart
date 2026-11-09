@@ -14,9 +14,8 @@ import '../../domain/entities/soin.dart';
 /// - **Aucun effet de bord** : absorber le soin d'un autre poste n'écrit que la ligne
 ///   (ni stock, ni compteur de fiche, ni écriture comptable, ni événement) — ce que
 ///   fait `confirmerAdministration` est une simple écriture de statut.
-/// - **`bande_id` ne voyage pas** : les bandes ne sont pas encore synchronisées, un
-///   entier de bande n'aurait aucun sens sur un autre poste. Le soin reçu arrive sans
-///   bande ; le lien local d'une ligne déjà connue n'est JAMAIS effacé.
+/// - **`bande_id` voyage** (`47e_`, v38+ : la bande est un UUID). Le serveur vérifie que la
+///   bande est connue ; ici le lien est repris tel quel (la bande peut arriver après).
 /// - Un soin n'est jamais supprimé au poste (pas de pierre tombale).
 class TableSoinsPoste implements TablePoste {
   const TableSoinsPoste(this._db);
@@ -58,6 +57,7 @@ class TableSoinsPoste implements TablePoste {
         final remanence = l['remanence_jours'];
         final cout = l['cout_fcfa'];
         final echeance = l['echeance_prophylaxie_id'];
+        final bande = l['bande_id'];
         // Strict : une ligne incohérente est refusée, jamais lissée.
         if (id is! String ||
             !_uuid.hasMatch(id) ||
@@ -70,7 +70,8 @@ class TableSoinsPoste implements TablePoste {
             (remanence != null && (remanence is! int || remanence < 0)) ||
             (cout != null && (cout is! int || cout < 0)) ||
             (echeance != null &&
-                (echeance is! String || !_uuid.hasMatch(echeance)))) {
+                (echeance is! String || !_uuid.hasMatch(echeance))) ||
+            (bande != null && (bande is! String || !_uuid.hasMatch(bande)))) {
           refusees++;
           continue;
         }
@@ -104,7 +105,7 @@ class TableSoinsPoste implements TablePoste {
                 symptomes: Value(_texte(l['symptomes'])),
                 coutFcfa: Value(cout as int? ?? 0),
                 echeanceProphylaxieId: Value(echeance as String?),
-                // `bandeId` : volontairement absent — local à ce poste.
+                bandeId: Value(bande as String?),
                 syncStatus: const Value('synced'),
                 syncMotif: const Value(null),
                 updatedAt: Value(instant.toUtc().toIso8601String()),
@@ -148,6 +149,7 @@ class TableSoinsPoste implements TablePoste {
             'symptomes': s.symptomes,
             'cout_fcfa': s.coutFcfa,
             'echeance_prophylaxie_id': s.echeanceProphylaxieId,
+            'bande_id': s.bandeId,
             'updated_at': s.updatedAt,
           },
         ),
