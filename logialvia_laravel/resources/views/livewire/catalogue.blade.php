@@ -10,8 +10,9 @@
     </div>
 
     <p class="mb-md text-xs text-outline">
-        Le catalogue est partagé par tous les postes. Le <strong>stock</strong> reste propre à chaque poste :
-        il se lit et se corrige sur le poste, jamais ici.
+        Le catalogue est partagé par tous les postes. Le <strong>stock</strong> reste propre à chaque poste : il se lit sur le poste.
+        Une correction saisie ici <strong>désigne le poste de stock</strong> qui l'applique à son propre stock, une seule fois, à sa
+        prochaine synchronisation.
     </p>
 
     @if ($message)
@@ -68,6 +69,7 @@
                         <td class="px-md py-sm text-right">{{ $p->threshold }}</td>
                         @if ($peutGerer)
                             <td class="px-md py-sm text-right">
+                                <button type="button" wire:click="ouvrirCorrection('{{ $p->id }}')" data-action="corriger-stock" class="rounded-lg border border-brand-navy px-sm py-xs font-semibold text-brand-navy hover:bg-surface-zebra">Corriger le stock</button>
                                 <button type="button" wire:click="modifier('{{ $p->id }}')" class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Modifier</button>
                                 <button type="button" wire:click="demanderSuppression('{{ $p->id }}')" class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">Supprimer</button>
                             </td>
@@ -97,6 +99,56 @@
             <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucun produit ne correspond.</p>
         @endforelse
     </div>
+
+    @if ($corrections->isNotEmpty())
+        <h2 class="mb-sm mt-lg text-section-title font-bold">Dernières corrections de stock saisies ici</h2>
+        <div class="overflow-x-auto rounded-lg border border-outline-variant bg-surface-card" data-table="corrections-stock">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-surface-zebra text-caption uppercase text-outline">
+                    <tr><th class="px-md py-sm">Produit</th><th class="px-md py-sm text-right">Variation</th><th class="px-md py-sm">Motif</th><th class="px-md py-sm">Poste de stock</th></tr>
+                </thead>
+                <tbody>
+                    @foreach ($corrections as $c)
+                        @php $s = $suiviCorrections[$c->id]; @endphp
+                        <tr data-correction="{{ $c->id }}">
+                            <td class="px-md py-sm font-bold">{{ $c->article }}</td>
+                            <td class="px-md py-sm text-right font-bold {{ $c->quantite >= 0 ? 'text-success-deep' : 'text-error-deep' }}">{{ $c->quantite > 0 ? '+' : '' }}{{ (int) $c->quantite }}</td>
+                            <td class="px-md py-sm">{{ $c->motif }}</td>
+                            <td class="px-md py-sm" data-suivi="{{ $s['etat'] }}">{{ $s['libelle'] }}@if ($s['avertissement'])<br><span class="text-caption text-error-deep">{{ $s['avertissement'] }}</span>@endif</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if ($produitCorrige)
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-correction" data-modale="correction-stock">
+            <form wire:submit="enregistrerCorrection" class="w-full max-w-md rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-correction" class="mb-sm text-modal-title font-bold">Corriger le stock de {{ $produitCorrige->name }}</h2>
+                <p class="mb-md text-xs text-outline">Le web n'a pas de stock : la correction est inscrite au journal partagé et <strong>appliquée par le poste désigné</strong>
+                    à son propre stock (une fois, à sa prochaine synchronisation). Les autres postes la lisent comme de l'historique.</p>
+                <label class="mb-sm block text-xs">Poste de stock *
+                    <select wire:model="correctionPoste" data-champ="poste-stock" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                        <option value="">-- Choisir un poste --</option>
+                        @foreach ($postesCorrection as $p)<option value="{{ $p->device_id }}">{{ $p->code }}</option>@endforeach
+                    </select>
+                    @if ($postesCorrection->isEmpty())<span class="text-caption text-error-deep">Aucun poste appairé, actif et déjà synchronisé n'est disponible.</span>@endif
+                </label>
+                <label class="mb-sm block text-xs">Variation (négative pour retirer) *
+                    <input type="text" inputmode="numeric" wire:model="correctionVariation" data-champ="variation" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                <label class="mb-sm block text-xs">Motif *
+                    <input type="text" wire:model="correctionMotif" maxlength="255" data-champ="motif" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
+                @if ($erreurCorrection)
+                    <p role="alert" class="mb-sm text-xs font-bold text-error-deep" data-erreur-correction>{{ $erreurCorrection }}</p>
+                @endif
+                <div class="mt-md flex justify-end gap-sm">
+                    <button type="button" wire:click="fermerCorrection" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="submit" data-action="valider-correction" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Inscrire la correction</button>
+                </div>
+            </form>
+        </div>
+    @endif
 
     @if ($formulaire)
         <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-produit">

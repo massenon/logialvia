@@ -96,7 +96,7 @@ class VentesWebTest extends TestCase
     {
         Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertSeeHtml('data-ecart="ventes"')->assertSee('Stock propre à chaque poste')
-            ->assertSee('ne décrémente aucun stock')->assertSee('XLSX');
+            ->assertSee('désigne donc un')->assertSee('décrémente SON stock')->assertSee('XLSX');
     }
 
     // --------------------------------------------------------------------- KPI

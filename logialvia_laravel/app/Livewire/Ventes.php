@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\ProduitVendable;
 use App\Models\Vente;
 use App\Services\Commerce\VentesWeb;
+use App\Services\PosteDeStock;
 use App\Support\ExportXlsx;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
@@ -72,6 +73,9 @@ class Ventes extends Component
 
     public string $livraisonContact = '';
 
+    /** Poste de stock choisi (`device_id`) : celui dont le stock est decremente (`47s_`). '' = aucun (journal seul). */
+    public string $posteCible = '';
+
     public ?string $erreur = null;
 
     public ?string $message = null;
@@ -114,6 +118,12 @@ class Ventes extends Component
     private function service(): VentesWeb
     {
         return new VentesWeb(Auth::user());
+    }
+
+    /** Le poste propose a l'ouverture : le defaut memorise de ce compte pour la vente, sinon le seul poste disponible. */
+    public function mount(): void
+    {
+        $this->posteCible = Auth::user() !== null ? (PosteDeStock::defaut(Auth::user(), PosteDeStock::VENTE) ?? '') : '';
     }
 
     public function choisirOnglet(string $onglet): void
@@ -271,6 +281,7 @@ class Ventes extends Component
             'lignes' => $this->panier,
             'livraison' => $this->livraison(),
             'echeance' => $this->echeance,
+            'poste_cible' => $this->posteCible,
         ]);
         if ($r['motif'] !== null) {
             $this->erreur = $r['motif'];
@@ -279,7 +290,11 @@ class Ventes extends Component
         }
 
         $this->derniereVente = $r['vente']->id;
-        $this->message = "Vente {$r['vente']->reference} enregistrée — ".number_format($r['vente']->total, 0, ',', ' ').' FCFA.';
+        $code = PosteDeStock::code($r['vente']->poste_cible);
+        $this->message = "Vente {$r['vente']->reference} enregistrée — ".number_format($r['vente']->total, 0, ',', ' ').' FCFA. '
+            .($code === null
+                ? 'Aucun poste de stock désigné : aucun stock ne bouge.'
+                : "Le poste $code décrémentera son stock à sa prochaine synchronisation (une seule fois).");
         $this->reset(['panier', 'client', 'clientId', 'mode', 'condition', 'montantRecu', 'echeance', 'livraisonActive',
             'livraisonMode', 'livraisonFrais', 'livraisonAdresse', 'livraisonContact']);
     }
@@ -319,9 +334,15 @@ class Ventes extends Component
 
             return;
         }
-        $reference = Vente::query()->whereKey($id)->value('reference');
+        $vente = Vente::query()->whereKey($id)->first();
         $this->annulationId = null;
-        $this->messageHistorique = "Vente $reference annulée, écriture d'extourne passée.";
+        $this->messageHistorique = "Vente {$vente->reference} annulée, écriture d'extourne passée."
+            .($vente->poste_cible !== null
+                ? ' Le poste de stock '.(PosteDeStock::code($vente->poste_cible) ?? '?').' réintégrera les quantités à son stock (une seule fois).'
+                : '');
+        if ($vente->poste_cible !== null && ($m = PosteDeStock::verifier($vente->poste_cible, PosteDeStock::VENTE)) !== null) {
+            $this->messageHistorique .= " Attention : ce poste ne peut pas recevoir la réintégration pour l'instant ($m)";
+        }
     }
 
     public function fermerAnnulation(): void
@@ -452,12 +473,15 @@ class Ventes extends Component
         $homonymes = $this->clientId === null && $saisieClient !== ''
             && Client::query()->whereNull('supprime_le')->get()->filter(fn ($c) => mb_strtolower(trim($c->nom)) === $saisieClient)->count() > 1;
 
+        $ventesHisto = $this->onglet === 'historique' ? $this->ventesFiltrees() : collect();
         $ouverte = $this->venteId
             ? Vente::query()->with(['lignes' => fn ($q) => $q->orderBy('name')])->find($this->venteId)
             : null;
 
         return view('livewire.ventes', [
-            'ventes' => $this->onglet === 'historique' ? $this->ventesFiltrees() : collect(),
+            'postesStock' => PosteDeStock::proposables(PosteDeStock::VENTE),
+            'suiviStock' => $this->onglet === 'historique' ? PosteDeStock::suiviVentes($ventesHisto) : [],
+            'ventes' => $ventesHisto,
             'retours' => $this->onglet === 'retours' ? Vente::query()->where('status', 'Annulée')->orderByDesc('date_vente')->get() : collect(),
             'chiffreAffaires' => $chiffreAffaires,
             'panierMoyen' => $nombreDuJour === 0 ? null : $chiffreAffaires / $nombreDuJour,

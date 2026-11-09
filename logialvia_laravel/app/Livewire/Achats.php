@@ -7,6 +7,7 @@ use App\Models\Achat;
 use App\Models\Fournisseur;
 use App\Models\Intrant;
 use App\Services\Achats\GestionAchats;
+use App\Services\PosteDeStock;
 use App\Sync\Tables\AchatsTable;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
@@ -22,9 +23,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * MODIFIE une commande « Commandé » et ANNULE avec motif (extourne). Voir `GestionAchats` pour les regles,
  * `EcrituresAutomatiquesAchats` pour les ecritures SYSCOHADA et `docs/logialvia/47b_ACHATS_PARITE.md`.
  *
- * **Decision du client « stock propre a chaque poste + journal partage »** : la reception au web ecrit
- * un mouvement `Entrée` au journal (poste d'origine : web) mais ne met AUCUN stock ni PMP a jour — c'est
- * dit sur l'ecran. Il n'y a donc pas de prix propose (le PMP est propre a chaque poste).
+ * **Decision du client « stock propre a chaque poste + journal partage »** (`47s_`) : le web n'a pas de
+ * stock, la commande designe donc un POSTE DE STOCK. La reception ecrit un mouvement `Entrée` au journal
+ * (poste d'origine : web) ; le poste designe, et lui seul, applique l'entree et le PMP a SON stock, une
+ * fois, a sa prochaine synchronisation. Pas de prix propose (le PMP est propre a chaque poste).
  *
  * Toute ecriture passe par `GestionAchats` → `AchatsTable::absorber` (poste « web »), jamais par un
  * `update` ; le droit `manage-achats` est verifie dans CHAQUE methode d'ecriture.
@@ -63,6 +65,9 @@ class Achats extends Component
 
     public bool $livree = true;
 
+    /** Poste de stock choisi (`device_id`) ; '' = aucun (journal seul). */
+    public string $posteCible = '';
+
     /** @var list<array{intrant_code: string, qte: string, pu: string}> */
     public array $lignes = [];
 
@@ -75,6 +80,9 @@ class Achats extends Component
     // --- reception et annulation : confirmations ---
 
     public ?string $aReceptionner = null;
+
+    /** Poste de stock de la reception (propose : celui de la commande, sinon son poste d'origine, sinon le defaut). */
+    public string $posteReception = '';
 
     public ?string $aAnnuler = null;
 
@@ -96,6 +104,7 @@ class Achats extends Component
     {
         $this->verifierDroitDeGerer();
         $this->reinitialiser();
+        $this->posteCible = PosteDeStock::defaut(Auth::user(), PosteDeStock::RECEPTION) ?? '';
         $this->formulaire = true;
     }
 
@@ -116,6 +125,7 @@ class Achats extends Component
         $this->mode = in_array($achat->mode, GestionAchats::MODES, true) ? $achat->mode : 'Espèces';
         $this->paye = $achat->paye > 0 ? (string) $achat->paye : '';
         $this->echeance = $achat->echeance?->timezone(config('logialvia.fuseau'))->format('Y-m-d') ?? '';
+        $this->posteCible = $achat->poste_cible ?? (PosteDeStock::defaut(Auth::user(), PosteDeStock::RECEPTION) ?? '');
         $this->lignes = $achat->lignes->map(fn ($l) => [
             'intrant_code' => $l->intrant_code, 'qte' => (string) (int) $l->qte, 'pu' => (string) $l->pu_achat,
         ])->all();
@@ -166,6 +176,7 @@ class Achats extends Component
             'paye' => $this->paye === '' ? 0 : $this->paye,
             'echeance' => $this->echeance,
             'livree' => $this->livree,
+            'poste_cible' => $this->posteCible,
             'lignes' => $this->lignes,
         ];
         $gestion = new GestionAchats(Auth::user());
@@ -180,7 +191,7 @@ class Achats extends Component
         $achat = $bilan['achat'];
         $this->message = $this->achatId === null
             ? "Commande {$achat->reference} enregistrée."
-                .($achat->statut === 'Livré' ? ' Entrées inscrites au journal ; le stock et le PMP restent propres à chaque poste.' : '')
+                .($achat->statut === 'Livré' ? ' Entrées inscrites au journal. '.$this->phraseStock($achat->poste_cible) : '')
             : "Commande {$achat->reference} modifiée (écritures extournées et réécrites).";
         $this->formulaire = false;
     }
@@ -193,6 +204,13 @@ class Achats extends Component
         $this->message = null;
         $this->erreur = null;
         $this->aReceptionner = $id;
+
+        // Proposition : le poste deja lie a la commande ; sinon le poste qui l'a passee (si on peut encore
+        // le designer) ; sinon le defaut de ce compte.
+        $achat = Achat::query()->find($id);
+        $this->posteReception = $achat?->poste_cible
+            ?? ($achat !== null && PosteDeStock::verifier($achat->device_id, PosteDeStock::RECEPTION) === null ? $achat->device_id : null)
+            ?? (PosteDeStock::defaut(Auth::user(), PosteDeStock::RECEPTION) ?? '');
     }
 
     public function annulerReception(): void
@@ -209,13 +227,13 @@ class Achats extends Component
             return;
         }
 
-        $bilan = (new GestionAchats(Auth::user()))->receptionner($id);
+        $bilan = (new GestionAchats(Auth::user()))->receptionner($id, $this->posteReception);
         if ($bilan['erreur'] !== null) {
             $this->erreur = $bilan['erreur'];
 
             return;
         }
-        $this->message = "Commande {$bilan['achat']->reference} réceptionnée : entrées inscrites au journal. Le stock et le PMP ne sont pas modifiés (propres à chaque poste).";
+        $this->message = "Commande {$bilan['achat']->reference} réceptionnée : entrées inscrites au journal. ".$this->phraseStock($bilan['achat']->poste_cible);
     }
 
     // -------------------------------------------------------------- annulation
@@ -250,12 +268,23 @@ class Achats extends Component
             return;
         }
         $this->aAnnuler = null;
-        $this->message = "Commande {$bilan['achat']->reference} annulée : écritures extournées.";
+        $this->message = "Commande {$bilan['achat']->reference} annulée : écritures extournées."
+            .($bilan['avertissement'] !== null ? ' '.$bilan['avertissement'] : '');
+    }
+
+    /** Ce que le compte doit savoir de l'effet de stock d'une reception, d'apres le poste designe. */
+    private function phraseStock(?string $posteCible): string
+    {
+        $code = PosteDeStock::code($posteCible);
+
+        return $code === null
+            ? "Aucun poste de stock désigné : le journal est mis à jour, aucun stock ne bouge."
+            : "Le poste $code appliquera l'entrée de stock et le PMP à son propre stock, une seule fois, à sa prochaine synchronisation.";
     }
 
     private function reinitialiser(): void
     {
-        $this->reset(['achatId', 'fournisseurId', 'paye', 'echeance', 'lignes', 'intrantAjoute', 'erreur', 'message']);
+        $this->reset(['achatId', 'fournisseurId', 'paye', 'echeance', 'lignes', 'intrantAjoute', 'erreur', 'message', 'posteCible']);
         $this->mode = 'Espèces';
         $this->livree = true;
     }
@@ -332,6 +361,9 @@ class Achats extends Component
             'intrantsParCode' => $intrants->keyBy('code'),
             'modes' => GestionAchats::MODES,
             'totalPanier' => round($total, 2),
+            'suiviStock' => PosteDeStock::suiviAchats($achats),
+            'postesStock' => PosteDeStock::proposables(PosteDeStock::RECEPTION),
+            'posteLie' => $this->achatId ? Achat::query()->whereKey($this->achatId)->value('poste_cible') : null,
             'confirmationReception' => $this->aReceptionner ? Achat::query()->find($this->aReceptionner) : null,
             'confirmationAnnulation' => $this->aAnnuler ? Achat::query()->find($this->aAnnuler) : null,
             'reglement' => $this->reglementEnCours(),

@@ -105,7 +105,8 @@
     </div>
     <p class="mb-sm text-xs text-outline">
         Historique de tous les postes (les {{ \App\Livewire\GestionStocks::LIMITE_JOURNAL }} derniers), en lecture seule :
-        un mouvement d'un autre poste ne change jamais le stock d'un poste. Heures en UTC.
+        un mouvement d'un autre poste ne change jamais le stock d'un poste, sauf s'il le désigne : « Web → P2 » signale une opération saisie au web
+        dont le poste de stock P2 applique l'effet à son propre stock (voir l'état sur la commande, la vente ou la correction). Heures en UTC.
     </p>
 
     <div class="hidden overflow-x-auto rounded-lg border border-outline-variant bg-surface-card sm:block">

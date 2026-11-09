@@ -10,6 +10,7 @@ use App\Models\LigneAchat;
 use App\Models\User;
 use App\Services\Comptabilite\EcrituresAutomatiquesAchats;
 use App\Services\Comptabilite\Saisie;
+use App\Services\PosteDeStock;
 use App\Support\Audit;
 use App\Sync\Tables\AchatsTable;
 use App\Sync\Tables\MouvementsIntrantTable;
@@ -25,16 +26,18 @@ use Illuminate\Support\Str;
  *   unitaire > 0 ; reference `ACH-<poste>-AAAA-NNN` ; la piece d'achat est ecrite des la commande
  *   (livree ou non) ; si « livree immediatement », la reception est faite dans la foulee.
  * - **Reception** : une commande « Commandé » seulement. Au poste : stock + PMP + journal. **Au web :
- *   journal SEUL** (decision du client « stock propre a chaque poste + journal partage ») : un
- *   mouvement `Entrée` par ligne, poste d'origine = web, AUCUN stock ni PMP, AUCUNE ecriture (le Dart
- *   n'en ecrit pas a la reception : la charge a ete constatee a la commande).
+ *   journal partage + POSTE DE STOCK** (`47s_`) : un mouvement `Entrée` par ligne (poste d'origine = web)
+ *   et l'achat porte `poste_cible` — le poste designe, et lui seul, applique l'entree de stock et le PMP a
+ *   SON stock, une fois, a sa prochaine synchronisation. Sans poste designe : journal seul, comme avant.
+ *   AUCUNE ecriture a la reception (le Dart n'en ecrit pas : la charge a ete constatee a la commande).
  * - **Reglement** : borne au reste du ; ecriture D 401 / C tresorerie du montant REELLEMENT verse.
  *
  * ## Ce que le web ajoute (le Dart ne le fait pas — voir `docs/logialvia/47b_ACHATS_PARITE.md`)
  * - **Modification** d'une commande « Commandé » : les pieces vivantes sont extournees et une piece
  *   neuve est ecrite d'apres la nouvelle composition.
  * - **Annulation** avec motif obligatoire : extourne des pieces, mouvement `Sortie` si la commande
- *   etait livree (journal seulement), statut « Annulé ».
+ *   etait livree (journal ; et sortie inverse au MEME poste de stock), statut « Annulé ». Le poste
+ *   de stock d'une commande ne change jamais apres coup.
  * - **Echeance** de la dette (colonne `achats.echeance` du poste, que son ecran ne renseigne pas).
  *
  * Toute ecriture passe par `TableSync::absorber` (poste « web »), jamais par un `update` direct, et
@@ -61,6 +64,7 @@ final class GestionAchats
 
         return $this->executer(function () use ($d): Achat {
             $v = $this->valider($d);
+            $cible = $this->posteRetenu(null, $d['poste_cible'] ?? null, (bool) $d['livree']);
             $maintenant = Saisie::instantMaintenant();
             $reference = $this->prochaineReference();
             $paye = min($v['paye'], $v['total']);
@@ -75,6 +79,7 @@ final class GestionAchats
                 'paye' => $paye,
                 'mode' => $v['mode'],
                 'echeance' => $v['echeance'],
+                'poste_cible' => $cible,
                 'updated_at' => $maintenant,
                 'lignes' => $this->lignesAEcrire($v['lignes']),
             ]);
@@ -83,6 +88,7 @@ final class GestionAchats
             if ($d['livree']) {
                 $this->journaliserReception($achat);
             }
+            PosteDeStock::memoriser($this->utilisateur, PosteDeStock::RECEPTION, $cible);
             Audit::enregistrer('achats.creation', $this->utilisateur, ['reference' => $reference, 'total' => $v['total']]);
 
             return $achat;
@@ -112,6 +118,7 @@ final class GestionAchats
                 throw new RefusAchat('Le montant déjà réglé ('.$this->nombre($achat->paye).' FCFA) dépasse le nouveau total de la commande.');
             }
 
+            $cible = $this->posteRetenu($achat, $d['poste_cible'] ?? null, false);
             $maintenant = Saisie::instantMaintenant();
             $comptes = $this->comptes();
 
@@ -126,6 +133,7 @@ final class GestionAchats
                 'total' => $v['total'],
                 'mode' => $v['mode'],
                 'echeance' => $v['echeance'],
+                'poste_cible' => $cible,
                 'lignes' => $this->lignesAEcrire($v['lignes']),
             ]));
             $this->ecrireLaPiece($achat, $maintenant, $v['mode'], (float) $achat->paye);
@@ -135,19 +143,26 @@ final class GestionAchats
         });
     }
 
-    /** @return array{erreur: ?string, achat: ?Achat} */
-    public function receptionner(string $achatId): array
+    /**
+     * Reception d'une commande. `$posteCible` : le poste dont le stock recoit la marchandise (`47s_`) —
+     * ignore (et refuse s'il differe) quand la commande en porte deja un ; sinon pose une fois pour toutes.
+     *
+     * @return array{erreur: ?string, achat: ?Achat}
+     */
+    public function receptionner(string $achatId, ?string $posteCible = null): array
     {
         $this->exigerLeDroit();
 
-        return $this->executer(function () use ($achatId): Achat {
+        return $this->executer(function () use ($achatId, $posteCible): Achat {
             $achat = $this->charger($achatId);
             if ($achat->statut !== 'Commandé') {
                 throw new RefusAchat('Cette commande n\'est pas en attente de livraison.');
             }
+            $cible = $this->posteRetenu($achat, $posteCible, true);
 
-            $achat = $this->ecrireAchat($this->entete($achat, ['statut' => 'Livré']));
+            $achat = $this->ecrireAchat($this->entete($achat, ['statut' => 'Livré', 'poste_cible' => $cible]));
             $this->journaliserReception($achat);
+            PosteDeStock::memoriser($this->utilisateur, PosteDeStock::RECEPTION, $cible);
             Audit::enregistrer('achats.reception', $this->utilisateur, ['reference' => $achat->reference]);
 
             return $achat;
@@ -197,12 +212,18 @@ final class GestionAchats
         return $bilan + ['verse' => $verse];
     }
 
-    /** @return array{erreur: ?string, achat: ?Achat} */
+    /**
+     * Annulation. Si la commande etait livree a un poste de stock, la sortie inverse part au MEME poste ;
+     * `avertissement` dit quand ce poste ne peut plus la recevoir (revoque, jamais synchronise).
+     *
+     * @return array{erreur: ?string, achat: ?Achat, avertissement: ?string}
+     */
     public function annuler(string $achatId, ?string $motif): array
     {
         $this->exigerLeDroit();
+        $avertissement = null;
 
-        return $this->executer(function () use ($achatId, $motif): Achat {
+        $bilan = $this->executer(function () use ($achatId, $motif, &$avertissement): Achat {
             $motif = trim((string) $motif);
             if ($motif === '') {
                 throw new RefusAchat('Le motif de l\'annulation est obligatoire.');
@@ -220,11 +241,17 @@ final class GestionAchats
             $achat = $this->ecrireAchat($this->entete($achat, ['statut' => 'Annulé']));
             if ($etaitLivree) {
                 $this->journaliserReception($achat, $motif);
+                if ($achat->poste_cible !== null && ($m = PosteDeStock::verifier($achat->poste_cible, PosteDeStock::RECEPTION)) !== null) {
+                    $code = PosteDeStock::code($achat->poste_cible) ?? 'inconnu';
+                    $avertissement = "Le poste de stock $code ne peut pas recevoir la sortie de stock pour l'instant : $m";
+                }
             }
             Audit::enregistrer('achats.annulation', $this->utilisateur, ['reference' => $achat->reference, 'motif' => $motif, 'livree' => $etaitLivree]);
 
             return $achat;
         });
+
+        return $bilan + ['avertissement' => $avertissement];
     }
 
     // ------------------------------------------------------------------ internes
@@ -376,6 +403,7 @@ final class GestionAchats
             'paye' => $achat->paye,
             'mode' => $achat->mode,
             'echeance' => $achat->echeance === null ? null : CarbonImmutable::instance($achat->echeance)->utc()->format('Y-m-d\TH:i:s.u\Z'),
+            'poste_cible' => $achat->poste_cible,
             'updated_at' => $instant->format('Y-m-d\TH:i:s.u\Z'),
             'lignes' => $lignes,
         ];
@@ -407,8 +435,9 @@ final class GestionAchats
     }
 
     /**
-     * Journal partage SEUL : une `Entrée` par ligne a la reception, une `Sortie` (quantite negative)
-     * a l'annulation d'une commande livree. Aucun stock, aucun PMP : propres a chaque poste.
+     * Journal partage : une `Entrée` par ligne a la reception, une `Sortie` (quantite negative) a
+     * l'annulation d'une commande livree. Aucun stock ici (le web n'en a pas) : c'est le poste designe
+     * (`poste_cible` de l'achat) qui applique l'effet de stock et de PMP a SON stock.
      */
     private function journaliserReception(Achat $achat, ?string $motifAnnulation = null): void
     {
@@ -427,11 +456,43 @@ final class GestionAchats
                 'motif' => $motif,
                 'quantite' => $sortie ? -$l->qte : $l->qte,
                 'reference' => $achat->reference,
+                // `47s_` : informatif — l'effet de stock est porte par l'achat, pas par cette ligne.
+                'poste_cible' => $achat->poste_cible,
             ]);
             if ($refus !== null) {
                 throw new RefusAchat($refus);
             }
         }
+    }
+
+    /**
+     * Le poste de stock de la commande : celui qu'elle porte deja (jamais change), sinon le choix du
+     * compte (verifie : poste connu, non revoque, deja synchronise, compte qui lit les achats), sinon
+     * aucun. `$exige` : la reception exige un poste quand le client l'a decide (`STOCK_CIBLE_OBLIGATOIRE`).
+     */
+    private function posteRetenu(?Achat $achat, mixed $choix, bool $exige): ?string
+    {
+        $choix = trim((string) $choix);
+        if ($achat?->poste_cible !== null) {
+            if ($choix !== '' && $choix !== $achat->poste_cible) {
+                $code = PosteDeStock::code($achat->poste_cible) ?? 'inconnu';
+                throw new RefusAchat("Le poste de stock de cette commande est $code : il ne peut plus être changé (le fait lui est lié).");
+            }
+
+            return $achat->poste_cible;
+        }
+        if ($choix === '') {
+            if ($exige && PosteDeStock::obligatoire()) {
+                throw new RefusAchat(PosteDeStock::MOTIF_OBLIGATOIRE);
+            }
+
+            return null;
+        }
+        if (($motif = PosteDeStock::verifier($choix, PosteDeStock::RECEPTION)) !== null) {
+            throw new RefusAchat($motif);
+        }
+
+        return $choix;
     }
 
     /** `ACH-WEB-AAAA-NNN` : la sequence est deduite des achats reellement enregistres, jamais renumerotee. */

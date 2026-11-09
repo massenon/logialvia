@@ -9,6 +9,7 @@ use App\Models\ParametresEntreprise;
 use App\Models\ProduitVendable;
 use App\Models\User;
 use App\Models\Vente;
+use App\Services\PosteDeStock;
 use App\Services\Comptabilite\EcrituresAutomatiquesVentes as Ecritures;
 use App\Services\Comptabilite\Saisie;
 use App\Services\Comptabilite\Verrous;
@@ -156,7 +157,9 @@ final class VentesWeb
 
     /**
      * Encaisse une vente. `$d` : `client`, `client_id?`, `mode`, `condition`, `montant_recu`, `lignes`
-     * (`[produit_id, qte, montant]`), `livraison?` (`mode`, `frais?`, `adresse?`, `contact?`), `echeance?` (Y-m-d).
+     * (`[produit_id, qte, montant]`), `livraison?` (`mode`, `frais?`, `adresse?`, `contact?`), `echeance?` (Y-m-d),
+     * `poste_cible?` : le POSTE DE STOCK dont le stock est decremente (`47s_`) — verifie (connu, non revoque,
+     * deja synchronise, compte qui lit les ventes) ; sans poste, la vente n'est que du journal partage.
      *
      * @return array{motif: ?string, vente: ?Vente}
      */
@@ -193,6 +196,16 @@ final class VentesWeb
             return ['motif' => $motif, 'vente' => null];
         }
 
+        $cible = trim((string) ($d['poste_cible'] ?? ''));
+        if ($cible === '') {
+            if ($panier !== [] && PosteDeStock::obligatoire()) {
+                return ['motif' => PosteDeStock::MOTIF_OBLIGATOIRE, 'vente' => null];
+            }
+            $cible = null;
+        } elseif (($motif = PosteDeStock::verifier($cible, PosteDeStock::VENTE)) !== null) {
+            return ['motif' => $motif, 'vente' => null];
+        }
+
         $avance = $condition === self::AVANCE;
         $echeance = null;
         if ($avance && ! empty($d['echeance'])) {
@@ -208,7 +221,7 @@ final class VentesWeb
         [$clientId, $nomClient] = $this->clientRetenu((string) ($d['client'] ?? ''), $d['client_id'] ?? null);
 
         $vente = null;
-        $motif = $this->transaction(function () use (&$vente, $d, $panier, $livraison, $mode, $avance, $echeance, $maintenant, $total, $paye, $clientId, $nomClient) {
+        $motif = $this->transaction(function () use (&$vente, $d, $panier, $livraison, $mode, $avance, $echeance, $maintenant, $total, $paye, $clientId, $nomClient, $cible) {
             // Reference : si deux comptes valident en meme temps, la seconde est refusee (unicite) → on recompte.
             for ($essai = 0; $essai < 3; $essai++) {
                 $annee = (int) $maintenant->timezone(config('logialvia.fuseau'))->year;
@@ -231,6 +244,7 @@ final class VentesWeb
                     'livraison_contact' => $this->texte($livraison['contact'] ?? null),
                     'echeance' => $echeance,
                     'ligne_mobile_money' => $mode === 'Mobile Money' ? self::ligneMobileMoney() : null,
+                    'poste_cible' => $cible,
                     'updated_at' => self::iso($maintenant),
                     'lignes' => array_map(function (array $l) {
                         $produit = ProduitVendable::query()->find($l['produit_id']);
@@ -267,6 +281,10 @@ final class VentesWeb
 
             return $this->ecrituresEncaissement($vente, $panier);
         });
+
+        if ($motif === null) {
+            PosteDeStock::memoriser($this->utilisateur, PosteDeStock::VENTE, $cible);
+        }
 
         return $motif === null ? ['motif' => null, 'vente' => $vente] : ['motif' => $motif, 'vente' => null];
     }
@@ -515,6 +533,8 @@ final class VentesWeb
             'livraison_contact' => $vente->livraison_contact,
             'echeance' => $vente->echeance === null ? null : self::iso($vente->echeance),
             'ligne_mobile_money' => $vente->ligne_mobile_money,
+            // `47s_` : le poste de stock est lie a la vente ; toute reecriture de l'entete le reprend.
+            'poste_cible' => $vente->poste_cible,
             'updated_at' => self::instantApres($vente->updated_at),
             'lignes' => $vente->lignes->map(fn ($l) => [
                 'id' => $l->id, 'produit_id' => $l->produit_id, 'name' => $l->name,

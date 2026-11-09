@@ -167,7 +167,7 @@ class AchatsOperationsWebTest extends TestCase
     {
         $this->commander()->assertSet('formulaire', false)->assertSet('erreur', null)
             ->assertSee('Commande '.$this->reference().' enregistrée.')
-            ->assertSee('le stock et le PMP restent propres à chaque poste');
+            ->assertSee('Aucun poste de stock désigné : le journal est mis à jour, aucun stock ne bouge.');
 
         $a = $this->achat();
         $this->assertSame($this->reference(), $a->reference);
@@ -286,7 +286,7 @@ class AchatsOperationsWebTest extends TestCase
         $pieces = PieceComptable::query()->count();
 
         Livewire::actingAs($this->admin())->test(Achats::class)
-            ->call('demanderReception', $a->id)->assertSeeHtml('data-modale="reception"')->assertSee('Le stock et le PMP ne sont pas modifiés')
+            ->call('demanderReception', $a->id)->assertSeeHtml('data-modale="reception"')->assertSee('Poste de stock')->assertSee('son propre stock')
             ->call('confirmerReception')->assertSee('réceptionnée : entrées inscrites au journal');
 
         $this->assertSame('Livré', $this->achat()->statut);

@@ -19,8 +19,9 @@
     </div>
 
     <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="ventes">
-        Stock propre à chaque poste : une vente enregistrée sur le web ne décrémente aucun stock (le stock se tient au poste), mais elle
-        produit ses écritures comptables et alimente le compteur de ventes du jour de la fiche d'élevage. Les devis de prestations se
+        Stock propre à chaque poste : le web n'a pas de stock, la vente désigne donc un <strong>poste de stock</strong> qui décrémente SON stock
+        (une seule fois, à sa prochaine synchronisation ; le stock manquant est ramené à 0 avec un avertissement visible ici et au poste ; une annulation
+        réintègre au même poste). Elle produit aussi ses écritures comptables et alimente le compteur de ventes du jour de la fiche d'élevage. Les devis de prestations se
         traitent dans leur propre écran ; l'export de l'historique se fait au format XLSX, la facture s'imprime depuis le détail d'une vente.
     </p>
 
@@ -105,6 +106,17 @@
                         <p class="mb-sm text-caption text-error-deep" data-homonymes>Plusieurs clients portent ce nom : choisissez-en un dans la liste, sinon la vente ne sera rattachée à aucun.</p>
                     @endif
 
+                    <label class="mb-sm block text-xs">Poste de stock
+                        <select wire:model="posteCible" data-champ="poste-stock" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                            <option value="">Aucun (journal seul : aucun stock ne bouge)</option>
+                            @foreach ($postesStock as $p)<option value="{{ $p->device_id }}">{{ $p->code }}</option>@endforeach
+                        </select>
+                        @if ($postesStock->isEmpty())
+                            <span class="text-caption text-outline" data-aucun-poste>Aucun poste appairé, actif et déjà synchronisé : la vente n'aura aucun effet de stock.</span>
+                        @else
+                            <span class="text-caption text-outline">Le poste dont le stock est décrémenté ; il ne change plus après la vente.</span>
+                        @endif
+                    </label>
                     <label class="mb-sm block text-xs">Mode de règlement
                         <select wire:model.live="mode" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
                             @foreach ($modes as $m)<option value="{{ $m }}">{{ $m }}</option>@endforeach
@@ -202,6 +214,7 @@
                     <tr>
                         <th class="px-md py-sm">Référence</th><th class="px-md py-sm">Date</th><th class="px-md py-sm">Client</th>
                         <th class="px-md py-sm text-right">Montant</th><th class="px-md py-sm text-center">Statut</th>
+                        <th class="px-md py-sm">Poste de stock</th>
                         @if ($peutGerer)<th class="px-md py-sm text-right">Actions</th>@endif
                     </tr>
                 </thead>
@@ -213,6 +226,11 @@
                             <td class="px-md py-sm">{{ $v->client }}</td>
                             <td class="px-md py-sm text-right">{{ $fcfa($v->total) }}</td>
                             <td class="px-md py-sm text-center"><span class="rounded-full px-sm py-xs font-bold {{ $badge($v->status) }}">{{ $v->status }}</span></td>
+                            @php $sv = $suiviStock[$v->id] ?? ['etat' => 'aucun', 'libelle' => '—', 'avertissement' => null]; @endphp
+                            <td class="px-md py-sm" data-poste-stock="{{ $sv['etat'] }}">
+                                <span class="rounded-full px-sm py-xs font-semibold {{ $sv['etat'] === 'applique' ? 'bg-success-container text-success-deep' : (in_array($sv['etat'], ['avertissement', 'ignore', 'revoque'], true) ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline') }}">{{ $sv['libelle'] }}</span>
+                                @if ($sv['avertissement'])<br><span class="text-caption text-error-deep" data-avertissement-stock>{{ $sv['avertissement'] }}</span>@endif
+                            </td>
                             @if ($peutGerer)
                                 <td class="px-md py-sm text-right">
                                     @if ($v->status === 'Annulée')
@@ -225,7 +243,7 @@
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucune vente ne correspond. Les ventes encaissées apparaissent ici.</td></tr>
+                        <tr><td colspan="7" class="px-md py-lg text-center text-outline">Aucune vente ne correspond. Les ventes encaissées apparaissent ici.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -239,6 +257,7 @@
                     </div>
                     <p class="text-caption text-outline">{{ $v->date_vente->timezone($fuseau)->format('d/m/Y') }} · {{ $v->client }}</p>
                     <p class="font-bold">{{ $fcfa($v->total) }} F</p>
+                    <p class="text-caption text-outline" data-carte-poste-stock="{{ ($suiviStock[$v->id] ?? ['etat' => 'aucun'])['etat'] }}">Poste de stock : {{ ($suiviStock[$v->id] ?? ['libelle' => '—'])['libelle'] }}</p>
                 </article>
             @empty
                 <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucune vente ne correspond.</p>

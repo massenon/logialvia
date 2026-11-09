@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Models\MouvementProduit;
 use App\Models\ProduitVendable;
+use App\Services\Commerce\CorrectionsStockWeb;
+use App\Services\PosteDeStock;
 use App\Sync\DemandesReferentiel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -16,6 +19,8 @@ use Livewire\Component;
  * poste (validation, droit `manage-ventes`, dernier ecrivain gagne, audit, historique).
  * Le STOCK n'existe pas ici : il est propre a chaque poste (decision du client), donc
  * ni colonne « Stock », ni valeur du catalogue, ni seuils critiques : ils restent au poste.
+ * Une CORRECTION de stock saisie ici designe le POSTE DE STOCK qui l'applique a SON stock
+ * (`47s_`) : `CorrectionsStockWeb`, journal `mouvements_produit` avec `poste_cible`.
  */
 #[Layout('components.layouts.app')]
 class Catalogue extends Component
@@ -55,6 +60,19 @@ class Catalogue extends Component
     /** Identifiant du produit dont on demande la suppression ; `null` = modale fermee. */
     public ?string $aSupprimer = null;
 
+    // --- correction de stock (`47s_`) ---
+
+    /** Produit dont on corrige le stock ; `null` = modale fermee. */
+    public ?string $correctionId = null;
+
+    public string $correctionVariation = '';
+
+    public string $correctionMotif = '';
+
+    public string $correctionPoste = '';
+
+    public ?string $erreurCorrection = null;
+
     private function verifierDroitDeGerer(): void
     {
         abort_unless(Auth::user()?->can('manage-ventes'), 403);
@@ -92,6 +110,45 @@ class Catalogue extends Component
         $this->coutRevient = $produit->cout_revient === null ? '' : (string) $produit->cout_revient;
         $this->seuil = (string) $produit->threshold;
         $this->formulaire = true;
+    }
+
+    public function ouvrirCorrection(string $id): void
+    {
+        $this->verifierDroitDeGerer();
+        $this->message = null;
+        $this->erreurCorrection = null;
+        if (! ProduitVendable::query()->whereNull('archive_le')->whereKey($id)->exists()) {
+            return;
+        }
+        $this->correctionId = $id;
+        $this->correctionVariation = '';
+        $this->correctionMotif = '';
+        $this->correctionPoste = PosteDeStock::defaut(Auth::user(), PosteDeStock::CORRECTION) ?? '';
+    }
+
+    public function fermerCorrection(): void
+    {
+        $this->correctionId = null;
+        $this->erreurCorrection = null;
+    }
+
+    public function enregistrerCorrection(): void
+    {
+        $this->verifierDroitDeGerer();
+        $id = $this->correctionId;
+        if ($id === null) {
+            return;
+        }
+        $motif = (new CorrectionsStockWeb(Auth::user()))->corriger($id, $this->correctionVariation, $this->correctionMotif, $this->correctionPoste);
+        if ($motif !== null) {
+            $this->erreurCorrection = $motif;
+
+            return;
+        }
+        $code = PosteDeStock::code($this->correctionPoste);
+        $this->message = "Correction de stock inscrite au journal pour le poste $code : il l'appliquera à son stock (une seule fois) à sa prochaine synchronisation.";
+        $this->correctionId = null;
+        $this->erreurCorrection = null;
     }
 
     public function annuler(): void
@@ -215,6 +272,7 @@ class Catalogue extends Component
             ->orderBy('name')->get();
 
         $tous = ProduitVendable::query()->whereNull('archive_le');
+        $corrections = MouvementProduit::query()->whereNotNull('poste_cible')->orderByDesc('horodatage')->limit(15)->get();
 
         return view('livewire.catalogue', [
             'produits' => $produits,
@@ -223,6 +281,10 @@ class Catalogue extends Component
             'categories' => collect(self::CATEGORIES)->merge(ProduitVendable::query()->distinct()->pluck('cat'))->unique()->values(),
             'peutGerer' => Auth::user()?->can('manage-ventes') ?? false,
             'aConfirmer' => $this->aSupprimer ? ProduitVendable::query()->find($this->aSupprimer) : null,
+            'corrections' => $corrections,
+            'suiviCorrections' => PosteDeStock::suiviCorrections($corrections),
+            'postesCorrection' => PosteDeStock::proposables(PosteDeStock::CORRECTION),
+            'produitCorrige' => $this->correctionId ? ProduitVendable::query()->find($this->correctionId) : null,
         ])->title('Catalogue & Seuils');
     }
 }

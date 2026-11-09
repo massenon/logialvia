@@ -98,7 +98,7 @@ class AchatsWebTest extends TestCase
 
         $this->actingAs($this->utilisateur('admin', 'chef'))->get('/achats')->assertOk()
             ->assertSeeHtml('data-ecart="stock-poste"')->assertDontSeeHtml('data-ecart="lecture-seule"')
-            ->assertSee('aucun stock ni PMP à jour', false)
+            ->assertSee('désigne donc un')->assertSee('poste de stock')
             ->assertSeeHtml('data-action="nouvelle-commande"')->assertSeeHtml('data-action="receptionner"')
             ->assertSeeHtml('data-action="modifier"')->assertSeeHtml('data-action="annuler-commande"')
             ->assertSeeHtml('data-action="regler"');

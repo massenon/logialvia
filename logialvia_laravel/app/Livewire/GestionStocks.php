@@ -168,6 +168,14 @@ class GestionStocks extends Component
         return $codes[$deviceId] ?? 'Poste '.Str::substr($deviceId, 0, 8);
     }
 
+    /** Poste d'origine, suivi du poste de stock designe par le web (`47s_`) : « Web → P2 ». */
+    private function libelleMouvement(MouvementIntrant $m, array $codes): string
+    {
+        $libelle = $this->libellePoste($m->device_id, $codes);
+
+        return $m->poste_cible === null ? $libelle : $libelle.' → '.($codes[$m->poste_cible] ?? 'poste inconnu');
+    }
+
     /** Export XLSX du journal des mouvements (tous postes). Droit de lecture verifie ICI. */
     public function exporter(): StreamedResponse
     {
@@ -176,7 +184,7 @@ class GestionStocks extends Component
         $fuseau = config('logialvia.fuseau');
         $lignes = [['Date / Heure', 'Poste', 'Référence', 'Article', 'Type', 'Motif', 'Quantité']];
         foreach (MouvementIntrant::query()->orderByDesc('horodatage')->limit(self::LIMITE_JOURNAL)->get() as $m) {
-            $lignes[] = [$m->horodatage->timezone($fuseau)->format('d/m/Y H:i'), $this->libellePoste($m->device_id, $codes),
+            $lignes[] = [$m->horodatage->timezone($fuseau)->format('d/m/Y H:i'), $this->libelleMouvement($m, $codes),
                 $m->reference ?? '', $m->article, $m->type, $m->motif, (float) $m->quantite];
         }
 
@@ -195,7 +203,7 @@ class GestionStocks extends Component
 
         $codes = Poste::query()->pluck('code', 'device_id')->all();
         $journal = MouvementIntrant::query()->orderByDesc('horodatage')->limit(self::LIMITE_JOURNAL)->get()
-            ->map(fn (MouvementIntrant $m) => ['mouvement' => $m, 'poste' => $this->libellePoste($m->device_id, $codes)]);
+            ->map(fn (MouvementIntrant $m) => ['mouvement' => $m, 'poste' => $this->libelleMouvement($m, $codes)]);
 
         $u = Auth::user();
 

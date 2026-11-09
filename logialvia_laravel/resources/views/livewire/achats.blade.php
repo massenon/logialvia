@@ -21,8 +21,10 @@
 
     @if ($peutGerer)
         <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="stock-poste">
-            Le stock et le PMP sont propres à chaque poste. Ici, la réception inscrit les entrées au <strong>journal partagé</strong>
-            (poste d'origine : Web) mais ne met <strong>aucun stock ni PMP à jour</strong> : le poste qui a la marchandise ajuste son propre stock.
+            Le stock et le PMP sont propres à chaque poste, et le web n'en a pas. Une commande désigne donc un <strong>poste de stock</strong> :
+            à la réception, les entrées sont inscrites au <strong>journal partagé</strong> et <strong>ce poste, et lui seul</strong>, ajoute les quantités à son
+            stock et recalcule son PMP, une seule fois, à sa prochaine synchronisation (hors ligne : l'opération l'attend). Les autres postes la lisent comme
+            de l'historique. Le poste d'une commande ne change plus une fois choisi ; l'annulation d'une commande livrée retire les quantités du même poste.
         </p>
     @else
         <p class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="lecture-seule">
@@ -75,6 +77,7 @@
                     <th class="px-md py-sm">Fournisseur</th>
                     <th class="px-md py-sm">Mode</th>
                     <th class="px-md py-sm text-center">Statut</th>
+                    <th class="px-md py-sm">Poste de stock</th>
                     <th class="px-md py-sm text-right">Montant</th>
                     <th class="px-md py-sm text-right">Payé</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
@@ -95,6 +98,11 @@
                         <td class="px-md py-sm">{{ $a->mode ?: '—' }}</td>
                         <td class="px-md py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : ($a->statut === 'Annulé' ? 'bg-error-container text-error-deep' : 'bg-brand-gold/20 text-brand-navy') }}" data-statut>{{ $a->statut }}</span>
+                        </td>
+                        @php $sv = $suiviStock[$a->id]; @endphp
+                        <td class="px-md py-sm" data-poste-stock="{{ $sv['etat'] }}">
+                            <span class="rounded-full px-sm py-xs font-semibold {{ in_array($sv['etat'], ['applique'], true) ? 'bg-success-container text-success-deep' : (in_array($sv['etat'], ['avertissement', 'ignore', 'revoque'], true) ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline') }}">{{ $sv['libelle'] }}</span>
+                            @if ($sv['avertissement'])<br><span class="text-caption text-error-deep" data-avertissement-stock>{{ $sv['avertissement'] }}</span>@endif
                         </td>
                         <td class="px-md py-sm text-right">{{ $nombre($a->total) }}</td>
                         <td class="px-md py-sm text-right">{{ $nombre($a->paye) }}</td>
@@ -131,7 +139,7 @@
                     </tr>
                     @if ($detail?->id === $a->id)
                         <tr data-lignes-de="{{ $a->reference }}">
-                            <td colspan="10" class="bg-surface-zebra px-md py-sm">
+                            <td colspan="11" class="bg-surface-zebra px-md py-sm">
                                 <p class="mb-xs text-caption text-outline" data-echeance>Échéance : {{ $a->echeance ? $a->echeance->timezone($fuseau)->format('d/m/Y') : 'aucune convenue' }}</p>
                                 <table class="w-full text-left text-xs">
                                     <thead class="text-caption uppercase text-outline">
@@ -157,7 +165,7 @@
                         </tr>
                     @endif
                 @empty
-                    <tr><td colspan="10" class="px-md py-lg text-center text-outline">
+                    <tr><td colspan="11" class="px-md py-lg text-center text-outline">
                         {{ $aucunAchat ? 'Aucune commande enregistrée. Composez-en une avec « Nouvelle commande ».' : 'Aucun achat ne correspond.' }}</td></tr>
                 @endforelse
             </tbody>
@@ -177,6 +185,7 @@
                 </div>
                 <p class="text-caption text-outline">{{ $a->date_achat->timezone($fuseau)->format('d/m/Y') }} · {{ $noms[$a->fournisseur_id] ?? '—' }} · {{ $a->mode ?: '—' }}</p>
                 <p class="text-xs">Montant {{ $nombre($a->total) }} F · Payé {{ $nombre($a->paye) }} F</p>
+                <p class="text-xs" data-carte-poste-stock="{{ $suiviStock[$a->id]['etat'] }}">Poste de stock : {{ $suiviStock[$a->id]['libelle'] }}</p>
                 <p class="text-xs font-bold {{ $solde > 0 ? 'text-error-deep' : 'text-outline' }}">
                     {{ $solde > 0 ? 'Reste '.$nombre($solde).' F ('.$jours.' j)' : 'Soldée' }}</p>
                 <button type="button" wire:click="basculer('{{ $a->id }}')"
@@ -270,11 +279,27 @@
                     <label class="block text-xs">Échéance de la dette (facultatif)
                         <input type="date" wire:model="echeance" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm" data-champ="echeance">
                     </label>
+                    <label class="block text-xs sm:col-span-2">Poste de stock
+                        <select wire:model="posteCible" {{ $posteLie ? 'disabled' : '' }} data-champ="poste-stock"
+                                class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm disabled:bg-surface-zebra">
+                            <option value="">Aucun (journal seul : aucun stock ne bouge)</option>
+                            @foreach ($postesStock as $p)
+                                <option value="{{ $p->device_id }}">{{ $p->code }}</option>
+                            @endforeach
+                            @if ($posteLie && ! $postesStock->contains('device_id', $posteLie))
+                                <option value="{{ $posteLie }}">{{ \App\Services\PosteDeStock::code($posteLie) ?? 'poste inconnu' }}</option>
+                            @endif
+                        </select>
+                        <span class="text-caption text-outline">{{ $posteLie ? 'Lié à la commande : il ne peut plus être changé.' : 'Le poste dont le stock et le PMP seront mis à jour à la réception. Une fois choisi, il ne change plus.' }}</span>
+                        @if ($postesStock->isEmpty() && ! $posteLie)
+                            <span class="block text-caption text-error-deep" data-aucun-poste>Aucun poste appairé, actif et déjà synchronisé n'est disponible.</span>
+                        @endif
+                    </label>
                 </div>
                 @unless ($achatId)
                     <label class="mt-sm flex items-center gap-sm text-xs">
                         <input type="checkbox" wire:model="livree" class="rounded border-outline-variant">
-                        Livrée immédiatement (inscrit les entrées au journal ; le stock et le PMP restent propres à chaque poste)
+                        Livrée immédiatement (inscrit les entrées au journal ; le poste de stock choisi applique l'entrée et le PMP à son stock)
                     </label>
                 @endunless
 
@@ -295,8 +320,24 @@
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-reception" data-modale="reception">
             <div class="w-full max-w-md rounded-lg bg-surface-card p-lg shadow-xl">
                 <h2 id="titre-reception" class="mb-sm text-modal-title font-bold">Réceptionner {{ $confirmationReception->reference }} ?</h2>
-                <p class="mb-md text-xs">Une entrée par ligne est inscrite au journal partagé. <strong>Le stock et le PMP ne sont pas modifiés</strong> : ils sont propres à chaque poste
-                    (si la commande a été passée sur un poste, ce poste n'augmente pas son stock du fait d'une réception faite ici).</p>
+                <p class="mb-sm text-xs">Une entrée par ligne est inscrite au journal partagé. Le <strong>poste de stock</strong> choisi ci-dessous ajoute les quantités à
+                    <strong>son propre stock</strong> et recalcule son PMP, une seule fois, à sa prochaine synchronisation (rien ne se perd s'il est hors ligne).</p>
+                <label class="mb-md block text-xs">Poste de stock
+                    <select wire:model="posteReception" {{ $confirmationReception->poste_cible ? 'disabled' : '' }} data-champ="poste-reception"
+                            class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm disabled:bg-surface-zebra">
+                        <option value="">Aucun (journal seul : aucun stock ne bouge)</option>
+                        @foreach ($postesStock as $p)
+                            <option value="{{ $p->device_id }}">{{ $p->code }}</option>
+                        @endforeach
+                        @if ($confirmationReception->poste_cible && ! $postesStock->contains('device_id', $confirmationReception->poste_cible))
+                            <option value="{{ $confirmationReception->poste_cible }}">{{ \App\Services\PosteDeStock::code($confirmationReception->poste_cible) ?? 'poste inconnu' }}</option>
+                        @endif
+                    </select>
+                    <span class="text-caption text-outline">{{ $confirmationReception->poste_cible ? 'Lié à la commande : il ne peut plus être changé.' : 'Proposé : le poste qui a passé la commande, sinon votre dernier choix.' }}</span>
+                </label>
+                @if ($erreur)
+                    <p role="alert" class="mb-sm text-xs font-bold text-error-deep" data-erreur-reception>{{ $erreur }}</p>
+                @endif
                 <div class="flex justify-end gap-sm">
                     <button type="button" wire:click="annulerReception" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
                     <button type="button" wire:click="confirmerReception" data-action="confirmer-reception" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Réceptionner</button>
@@ -314,7 +355,8 @@
                         <strong class="text-error-deep">{{ number_format($confirmationAnnulation->paye, 0, ',', ' ') }} FCFA ont été réglés : l'extourne suppose que le fournisseur les rembourse.</strong>
                     @endif
                     @if ($confirmationAnnulation->statut === 'Livré')
-                        La commande est livrée : une sortie par ligne est inscrite au journal (stock des postes inchangé).
+                        La commande est livrée : une sortie par ligne est inscrite au journal et
+                        {{ $confirmationAnnulation->poste_cible ? 'le poste de stock '.(\App\Services\PosteDeStock::code($confirmationAnnulation->poste_cible) ?? '?').' retirera les quantités de son stock (sortie inverse, une seule fois)' : 'aucun stock ne bouge (aucun poste n\'était désigné)' }}.
                     @endif
                 </p>
                 <label class="block text-xs">Motif de l'annulation *
