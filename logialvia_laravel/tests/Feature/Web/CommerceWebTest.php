@@ -97,7 +97,7 @@ class CommerceWebTest extends TestCase
         $v->save();
         (new LigneVente)->forceFill(['id' => (string) Str::uuid(), 'vente_id' => $v->id, 'produit_id' => $p->id, 'name' => $p->name, 'qte' => 1, 'pu' => 6000, 'espece' => 'goliaths'])->save();
         if ($avecPiece) {
-            $this->poserPiece($v->reference, 2026, 11, 9, 'VT', [['531', 6000, 0, null], ['701', 0, 6000, 'Goliaths']], ['vente_ref' => $v->reference]);
+            $this->poserPiece($v->reference, 2026, 11, 9, 'VT', [['571', 6000, 0, null], ['702', 0, 6000, 'Goliaths']], ['vente_ref' => $v->reference]);
         }
 
         return $v;
@@ -273,7 +273,7 @@ class CommerceWebTest extends TestCase
         $this->assertNull($v->ligne_mobile_money);
         $l = $v->lignes->sole();
         $this->assertSame([2.0, 6500.0, 'goliaths', 'Goliath mature'], [$l->qte, $l->pu, $l->espece, $l->name]); // pu DEDUIT
-        $this->assertSame('531', PieceComptable::query()->where('vente_ref', 'V-WEB-2026-001')->sole()->lignes->firstWhere('debit', '>', 0)->numero_compte);
+        $this->assertSame('571', PieceComptable::query()->where('vente_ref', 'V-WEB-2026-001')->sole()->lignes->firstWhere('debit', '>', 0)->numero_compte);
         // Stock propre a chaque poste : rien n'est decremente ni journalise.
         $this->assertSame($stockAvant, [ProduitVendable::query()->get()->toArray(), MouvementProduit::query()->count()]);
         $this->assertSame(Catalogue::POSTE_WEB, PieceComptable::query()->where('vente_ref', $v->reference)->sole()->device_id);
@@ -498,7 +498,7 @@ class CommerceWebTest extends TestCase
     {
         $v = $this->venteDePoste();
         // Le poste a deja contrepasse (piece recue avant le statut de la vente).
-        $this->poserPiece('ANN-'.$v->reference, 2026, 11, 9, 'OD', [['701', 6000, 0, 'Goliaths'], ['531', 0, 6000, null]], ['vente_ref' => $v->reference]);
+        $this->poserPiece('ANN-'.$v->reference, 2026, 11, 9, 'OD', [['702', 6000, 0, 'Goliaths'], ['571', 0, 6000, null]], ['vente_ref' => $v->reference]);
         $service = new \App\Services\Commerce\VentesWeb($this->caissier());
         $this->assertSame('Les écritures de cette vente sont déjà contrepassées.', $service->annuler($v->id, 'Autre'));
         $this->assertSame('Payée', $v->fresh()->status);
@@ -523,12 +523,12 @@ class CommerceWebTest extends TestCase
     public function test_deux_ventes_de_postes_sans_code_de_meme_reference_ne_se_confondent_pas_a_l_annulation(): void
     {
         $a = $this->venteDePoste(['reference' => 'V-2026-001', 'portee_reference' => '11111111-1111-4111-8111-111111111111']);
-        $this->poserPiece('V-2026-001', 2026, 11, 9, 'VT', [['531', 9000, 0, null], ['701', 0, 9000, null]],
+        $this->poserPiece('V-2026-001', 2026, 11, 9, 'VT', [['571', 9000, 0, null], ['702', 0, 9000, null]],
             ['vente_ref' => 'V-2026-001'], '22222222-2222-4222-8222-222222222222'); // l'AUTRE poste, meme reference
 
         $this->assertNull((new \App\Services\Commerce\VentesWeb($this->caissier()))->annuler($a->id, 'Autre'));
         $ann = PieceComptable::query()->where('numero_piece', 'ANN-V-2026-001')->sole()->lignes;
-        $this->assertSame(6000.0, $ann->firstWhere('numero_compte', '531')->credit, 'seules les ecritures du poste de la vente sont reprises');
+        $this->assertSame(6000.0, $ann->firstWhere('numero_compte', '571')->credit, 'seules les ecritures du poste de la vente sont reprises');
     }
 
     // --------------------------------------------------------------- Modification
@@ -631,7 +631,7 @@ class CommerceWebTest extends TestCase
         $this->assertSame(6500.0, $k->fresh()->solde_creance, 'solde derive recalcule');
         $reg = PieceComptable::query()->where('numero_piece', 'REG-V-P1-2026-001')->sole();
         $this->assertSame(['CA', 'V-P1-2026-001'], [$reg->journal_code, $reg->vente_ref]);
-        $this->assertSame([2000.0, 0.0], [$reg->lignes->firstWhere('numero_compte', '531')->debit, $reg->lignes->firstWhere('numero_compte', '531')->credit]);
+        $this->assertSame([2000.0, 0.0], [$reg->lignes->firstWhere('numero_compte', '571')->debit, $reg->lignes->firstWhere('numero_compte', '571')->credit]);
         $this->assertSame(2000.0, $reg->lignes->firstWhere('numero_compte', '411')->credit);
 
         $c->call('demanderRecouvrement', $v->id)->set('recMontant', '6500')->call('enregistrerRecouvrement')->assertSet('erreurRecouvrement', null);

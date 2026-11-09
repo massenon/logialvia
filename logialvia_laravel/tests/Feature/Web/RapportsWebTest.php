@@ -150,8 +150,8 @@ class RapportsWebTest extends TestCase
 
     private function poserPetitJeu(): void
     {
-        $this->piece('2026-11-05 09:00:00', [['531', 1000, 0], ['701', 0, 1000]], 'V-1', ['vente_ref' => 'V-1']);
-        $this->piece('2026-11-06 09:00:00', [['624', 400, 0], ['531', 0, 400]], 'D-1');
+        $this->piece('2026-11-05 09:00:00', [['571', 1000, 0], ['702', 0, 1000]], 'V-1', ['vente_ref' => 'V-1']);
+        $this->piece('2026-11-06 09:00:00', [['618', 400, 0], ['571', 0, 400]], 'D-1');
     }
 
     public function test_export_xlsx_des_recettes_avec_les_memes_chiffres_que_l_ecran(): void
@@ -170,8 +170,8 @@ class RapportsWebTest extends TestCase
             ['Taux de Marge Brute', '60,0 %'],
             [],
             ['Période', 'N° Pièce', 'Catégorie SYSCOHADA', 'Centre de Profit', 'Encaissement', 'Décaissement', 'Solde Cumulé'],
-            ['Novembre 2026', 'D-1', '624 - Transports', 'Charge Générale', '0', '400', '-400'],
-            ['Novembre 2026', 'V-1', '701 - Ventes de Produits Avicoles', 'Aviculture', '1000', '0', '600'],
+            ['Novembre 2026', 'D-1', '618 - Autres frais de transport', 'Charge Générale', '0', '400', '-400'],
+            ['Novembre 2026', 'V-1', '702 - Ventes de produits finis', 'Aviculture', '1000', '0', '600'],
         ], $this->xlsx($c));
     }
 
@@ -185,14 +185,14 @@ class RapportsWebTest extends TestCase
         $this->assertSame(['Total Recettes', '1000'], $lignes[3]);
         $this->assertSame(['Total Dépenses', '0'], $lignes[4]);
         // Une seule ligne de detail : le centre Aviculture ce jour-la.
-        $this->assertSame(['Novembre 2026', 'V-1', '701 - Ventes de Produits Avicoles', 'Aviculture', '1000', '0', '1000'], $lignes[9]);
+        $this->assertSame(['Novembre 2026', 'V-1', '702 - Ventes de produits finis', 'Aviculture', '1000', '0', '1000'], $lignes[9]);
         $this->assertCount(10, $lignes);
     }
 
     public function test_export_xlsx_de_la_tresorerie(): void
     {
         $this->poserPetitJeu();
-        $this->piece('2026-10-01 10:00:00', [['531', 5000, 0], ['101', 0, 5000]], 'OD-1');
+        $this->piece('2026-10-01 10:00:00', [['571', 5000, 0], ['101', 0, 5000]], 'OD-1');
         $c = $this->rapport('comptable', 'tresorerie')->call('exporter');
 
         $lignes = $this->xlsx($c);
@@ -259,7 +259,7 @@ class RapportsWebTest extends TestCase
         @unlink($chemin);
 
         // Les montants negatifs sont de vrais nombres.
-        $this->piece('2026-11-05 09:00:00', [['624', 400, 0], ['531', 0, 400]], 'D-1');
+        $this->piece('2026-11-05 09:00:00', [['618', 400, 0], ['571', 0, 400]], 'D-1');
         $recettes = $this->rapport('comptable', 'recettes')->call('exporter');
         $octetsR = base64_decode($recettes->effects['download']['content']);
         $this->assertContains('-400', $this->lignesXlsx($octetsR)[9]);

@@ -167,7 +167,7 @@ class ComptabiliteWebTest extends TestCase
             ->set('journal', '')
             ->set('recherche', 'DEP-P1')
             ->assertSee('DEP-P1-'.$this->annee().'-0001')->assertDontSee('V-P1-'.$this->annee().'-001')
-            ->set('recherche', '616')
+            ->set('recherche', '625')
             ->assertSee('DEP-P1-'.$this->annee().'-0002')->assertDontSee('DEP-P1-'.$this->annee().'-0001')
             ->set('recherche', 'introuvable-xyz')
             ->assertSee('Aucune écriture ne correspond à ces critères.');
@@ -197,10 +197,10 @@ class ComptabiliteWebTest extends TestCase
         Livewire::test(Journal::class)
             ->call('nouvelle')
             ->set('libelle', 'Régularisation caisse')->set('montant', '5 000'.'')->set('montant', '5000')
-            ->set('compteDebit', '531')->set('compteCredit', '701')
+            ->set('compteDebit', '571')->set('compteCredit', '702')
             ->call('enregistrer')
             ->assertSet('erreur', null)
-            ->assertSee('Écriture OD-WEB-'.$this->annee().'-0001 enregistrée — Débit 531 / Crédit 701.');
+            ->assertSee('Écriture OD-WEB-'.$this->annee().'-0001 enregistrée — Débit 571 / Crédit 702.');
 
         $piece = PieceComptable::query()->with('lignes')->firstOrFail();
         $this->assertSame('OD-WEB-'.$this->annee().'-0001', $piece->numero_piece);
@@ -236,9 +236,9 @@ class ComptabiliteWebTest extends TestCase
             ->assertSet('erreur', 'Veuillez renseigner le libellé et un montant valide.');
         $c->set('montant', 'abc')->call('enregistrer')
             ->assertSet('erreur', 'Veuillez renseigner le libellé et un montant valide.');
-        $c->set('montant', '100')->set('compteDebit', '531')->set('compteCredit', '531')->call('enregistrer')
+        $c->set('montant', '100')->set('compteDebit', '571')->set('compteCredit', '571')->call('enregistrer')
             ->assertSet('erreur', 'Le compte Débit et le compte Crédit ne peuvent pas être identiques.');
-        $c->set('compteCredit', '701')->set('jour', '2026-13-45')->call('enregistrer')
+        $c->set('compteCredit', '702')->set('jour', '2026-13-45')->call('enregistrer')
             ->assertSet('erreur', 'La date de l\'écriture est invalide.');
         $c->set('jour', now()->format('Y-m-d'))->set('compteDebit', '999')->call('enregistrer')
             ->assertSet('erreur', 'Compte inconnu ou archivé.');
@@ -248,11 +248,11 @@ class ComptabiliteWebTest extends TestCase
 
     public function test_un_compte_archive_n_est_pas_propose_a_la_saisie(): void
     {
-        PlanComptable::query()->whereKey('624')->update(['archive' => true]);
+        PlanComptable::query()->whereKey('618')->update(['archive' => true]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         Livewire::test(Journal::class)->call('nouvelle')
-            ->set('libelle', 'x')->set('montant', '100')->set('compteDebit', '624')->set('compteCredit', '701')
+            ->set('libelle', 'x')->set('montant', '100')->set('compteDebit', '618')->set('compteCredit', '702')
             ->call('enregistrer')->assertSet('erreur', 'Compte inconnu ou archivé.');
     }
 
@@ -283,7 +283,7 @@ class ComptabiliteWebTest extends TestCase
         $inverse = PieceComptable::query()->where('contrepasse_de', $originale->id)->with('lignes')->firstOrFail();
         $this->assertSame('ANN-OD-P1-'.$this->annee().'-0002', $inverse->numero_piece);
         $this->assertSame(200000.0, $inverse->lignes->firstWhere('numero_compte', '231')->credit);
-        $this->assertSame(200000.0, $inverse->lignes->firstWhere('numero_compte', '531')->debit);
+        $this->assertSame(200000.0, $inverse->lignes->firstWhere('numero_compte', '571')->debit);
     }
 
     public function test_une_piece_annulee_ne_s_annule_pas_deux_fois_et_une_annulation_non_plus(): void
@@ -355,7 +355,7 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = Livewire::test(GrandLivre::class)->set('compte', '531')
+        $c = Livewire::test(GrandLivre::class)->set('compte', '571')
             ->assertSeeHtmlInOrder(['data-kpi="ouverture"', '100 000 FCFA'])
             ->assertSeeHtmlInOrder(['data-kpi="debit"', '670 000 FCFA'])
             ->assertSeeHtmlInOrder(['data-kpi="credit"', '225 000 FCFA'])
@@ -371,7 +371,7 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
         $n = $this->annee();
 
-        Livewire::test(GrandLivre::class)->set('compte', '531')->set('debut', "$n-05-01")
+        Livewire::test(GrandLivre::class)->set('compte', '571')->set('debut', "$n-05-01")
             ->assertSeeHtmlInOrder(['data-kpi="ouverture"', '740 000 FCFA'])
             ->assertSeeHtmlInOrder(['data-kpi="debit"', '20 000 FCFA'])
             ->assertSeeHtmlInOrder(['data-kpi="credit"', '215 000 FCFA'])
@@ -385,7 +385,7 @@ class ComptabiliteWebTest extends TestCase
         $n = $this->annee();
 
         // L'ecriture du 15/06 entre dans « au 15/06 », celle du 01/07 non.
-        Livewire::test(GrandLivre::class)->set('compte', '531')->set('fin', "$n-06-15")
+        Livewire::test(GrandLivre::class)->set('compte', '571')->set('fin', "$n-06-15")
             ->assertSee('Libelle REG-V-P1-'.$n.'-002')->assertDontSee('Libelle OD-P1-'.$n.'-0002')
             ->assertSeeHtmlInOrder(['data-kpi="solde-final"', '745 000 FCFA']);
     }
@@ -395,7 +395,7 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        Livewire::test(GrandLivre::class)->set('compte', '531')->set('recherche', 'REG-V')
+        Livewire::test(GrandLivre::class)->set('compte', '571')->set('recherche', 'REG-V')
             ->assertSee('Libelle REG-V-P1-'.$this->annee().'-002')->assertDontSee('Libelle OD-P1-'.$this->annee().'-0002')
             ->assertSeeHtmlInOrder(['data-kpi="debit"', '670 000 FCFA'])
             ->assertSeeHtmlInOrder(['data-kpi="solde-final"', '545 000 FCFA'])
@@ -408,7 +408,7 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         // Exactement « 120 000 », jamais « -120 000 » : un credit AUGMENTE le solde d'un compte crediteur.
-        Livewire::test(GrandLivre::class)->set('compte', '701')
+        Livewire::test(GrandLivre::class)->set('compte', '702')
             ->assertSee('Créditeur par nature')
             ->assertSeeHtml('data-kpi="solde-final">120 000 FCFA<')
             ->assertSeeHtml('data-kpi="credit">120 000 FCFA<')
@@ -428,7 +428,7 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        Livewire::test(GrandLivre::class)->set('compte', '622')
+        Livewire::test(GrandLivre::class)->set('compte', '604')
             ->assertSeeHtml('data-vide="aucune-ecriture"')->assertSee('Aucune écriture ne correspond à ces critères.');
     }
 
@@ -437,7 +437,7 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        Livewire::test(GrandLivre::class)->set('compte', '531')->set('debut', 'pas-une-date')
+        Livewire::test(GrandLivre::class)->set('compte', '571')->set('debut', 'pas-une-date')
             ->assertSeeHtmlInOrder(['data-kpi="ouverture"', '100 000 FCFA'])
             ->set('debut', $this->annee().'-05-01')->call('retirerBorne', 'debut')->assertSet('debut', '');
     }
@@ -468,9 +468,9 @@ class ComptabiliteWebTest extends TestCase
 
         Livewire::test(BalanceGenerale::class)
             ->assertSeeHtmlInOrder(['data-compte="101"', '100 000', '500 000', '600 000'])   // ouverture C, mouvement C, solde final C
-            ->assertSeeHtmlInOrder(['data-compte="531"', '545 000'])
+            ->assertSeeHtmlInOrder(['data-compte="571"', '545 000'])
             ->assertSeeHtmlInOrder(['data-compte="401"', '42 000'])
-            ->assertDontSeeHtml('data-compte="622"');                                         // jamais mouvemente : absent
+            ->assertDontSeeHtml('data-compte="604"');                                         // jamais mouvemente : absent
     }
 
     public function test_mois_en_cours_deplace_la_frontiere_ouverture_mouvements(): void
@@ -479,7 +479,7 @@ class ComptabiliteWebTest extends TestCase
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
         // Une ecriture du mois en cours : le reste (y compris l'exercice anterieur) passe en ouverture.
         $maintenant = now(config('logialvia.fuseau'));
-        $this->poserPiece('OD-P1-'.$maintenant->year.'-0099', (int) $maintenant->year, (int) $maintenant->month, 1, 'OD', [['531', 1000, 0, null], ['101', 0, 1000, null]]);
+        $this->poserPiece('OD-P1-'.$maintenant->year.'-0099', (int) $maintenant->year, (int) $maintenant->month, 1, 'OD', [['571', 1000, 0, null], ['101', 0, 1000, null]]);
 
         $c = Livewire::test(BalanceGenerale::class)->set('perimetre', 'mois')
             ->assertSee('Mois en cours — '.BalanceGenerale::MOIS[(int) $maintenant->month - 1].' '.$maintenant->year);
@@ -511,17 +511,17 @@ class ComptabiliteWebTest extends TestCase
 
     // -------------------------------------------------------------------- Plan
 
-    public function test_le_plan_liste_les_24_comptes_filtre_et_masque_les_archives(): void
+    public function test_le_plan_liste_les_60_comptes_filtre_et_masque_les_archives(): void
     {
-        PlanComptable::query()->whereKey('613')->update(['archive' => true]);
+        PlanComptable::query()->whereKey('622')->update(['archive' => true]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = Livewire::test(PlanComptableEcran::class)->assertSee('23 compte(s)')->assertDontSeeHtml('data-compte="613"');
-        $c->set('archives', true)->assertSee('24 compte(s)')->assertSeeHtml('data-compte="613"')->assertSeeHtml('data-archive');
-        $c->set('classe', '7')->assertSee('2 compte(s)')->assertSee('Ventes de Produits Avicoles')->assertDontSee('Caisse');
-        $c->set('classe', '')->set('recherche', 'vétéri')->assertSee('Frais Vétérinaires');
-        $c->set('recherche', '531')->assertSee('1 compte(s)')->assertSee('Débiteur');
-        $c->set('recherche', '701')->assertSee('1 compte(s)')->assertSee('Créditeur');
+        $c = Livewire::test(PlanComptableEcran::class)->assertSee('59 compte(s)')->assertDontSeeHtml('data-compte="622"');
+        $c->set('archives', true)->assertSee('60 compte(s)')->assertSeeHtml('data-compte="622"')->assertSeeHtml('data-archive');
+        $c->set('classe', '7')->assertSee('7 compte(s)')->assertSee('Ventes de produits finis')->assertDontSee('Caisse');
+        $c->set('classe', '')->set('recherche', 'consommables')->assertSee('Achats stockés de matières et fournitures consommables');
+        $c->set('recherche', '571')->assertSee('1 compte(s)')->assertSee('Débiteur');
+        $c->set('recherche', '702')->assertSee('1 compte(s)')->assertSee('Créditeur');
     }
 
     public function test_creer_un_compte_passe_par_les_demandes_et_le_decide(): void
@@ -547,7 +547,7 @@ class ComptabiliteWebTest extends TestCase
         $c->set('numero', '8x')->call('enregistrer')->assertSet('erreur', 'Un numéro de compte SYSCOHADA commence par un chiffre de 1 à 7.');
         $c->set('numero', '635')->set('libelle', '')->call('enregistrer')->assertSet('erreur', 'Le libellé est obligatoire.');
         $c->set('libelle', 'x')->set('classeCompte', '')->call('enregistrer')->assertSet('erreur', 'La classe est obligatoire.');
-        $c->set('numero', '531')->set('classeCompte', '5')->call('enregistrer')->assertSet('erreur', 'Ce numéro de compte existe déjà.');
+        $c->set('numero', '571')->set('classeCompte', '5')->call('enregistrer')->assertSet('erreur', 'Ce numéro de compte existe déjà.');
         $c->set('numero', '635')->set('classeCompte', '7')->call('enregistrer')->assertSet('erreur', 'Le numéro doit commencer par 7 pour appartenir à cette classe.');
 
         $this->assertFalse(PlanComptable::query()->whereKey('635')->exists());
@@ -558,31 +558,31 @@ class ComptabiliteWebTest extends TestCase
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = Livewire::test(PlanComptableEcran::class)->call('modifier', '624')
-            ->assertSet('numero', '624')->assertSet('libelle', 'Transports')
+        $c = Livewire::test(PlanComptableEcran::class)->call('modifier', '618')
+            ->assertSet('numero', '618')->assertSet('libelle', 'Autres frais de transport')
             ->set('libelle', 'Transports et déplacements')->call('enregistrer')
-            ->assertSee('Compte 624 modifié.');
+            ->assertSee('Compte 618 modifié.');
 
-        $this->assertSame('Transports et déplacements', PlanComptable::query()->find('624')->libelle);
-        $this->assertSame(1, EcritureComptable::query()->where('numero_compte', '624')->count());
+        $this->assertSame('Transports et déplacements', PlanComptable::query()->find('618')->libelle);
+        $this->assertSame(1, EcritureComptable::query()->where('numero_compte', '618')->count());
         // Le numero n'est pas modifiable : meme si le composant recoit une autre valeur, il garde le sien.
-        $c->call('modifier', '624')->set('numero', '999')->call('enregistrer');
+        $c->call('modifier', '618')->set('numero', '999')->call('enregistrer');
         $this->assertFalse(PlanComptable::query()->whereKey('999')->exists());
-        $this->assertSame('6', PlanComptable::query()->find('624')->classe);
+        $this->assertSame('6', PlanComptable::query()->find('618')->classe);
     }
 
     public function test_archiver_demande_confirmation_reactiver_non(): void
     {
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = Livewire::test(PlanComptableEcran::class)->call('basculerArchive', '613')
-            ->assertSeeHtml('data-modale="archivage"')->assertSee('Archiver le compte 613 ?');
-        $this->assertFalse(PlanComptable::query()->find('613')->archive, 'rien n\'est archive avant confirmation');
-        $c->call('confirmerArchivage')->assertSee('Compte 613 archivé.');
-        $this->assertTrue(PlanComptable::query()->find('613')->archive);
+        $c = Livewire::test(PlanComptableEcran::class)->call('basculerArchive', '622')
+            ->assertSeeHtml('data-modale="archivage"')->assertSee('Archiver le compte 622 ?');
+        $this->assertFalse(PlanComptable::query()->find('622')->archive, 'rien n\'est archive avant confirmation');
+        $c->call('confirmerArchivage')->assertSee('Compte 622 archivé.');
+        $this->assertTrue(PlanComptable::query()->find('622')->archive);
 
-        $c->call('basculerArchive', '613')->assertDontSeeHtml('data-modale="archivage"')->assertSee('Compte 613 réactivé.');
-        $this->assertFalse(PlanComptable::query()->find('613')->archive);
+        $c->call('basculerArchive', '622')->assertDontSeeHtml('data-modale="archivage"')->assertSee('Compte 622 réactivé.');
+        $this->assertFalse(PlanComptable::query()->find('622')->archive);
     }
 
     public function test_les_methodes_d_ecriture_du_plan_refusent_qui_n_a_pas_le_droit(): void
@@ -591,10 +591,10 @@ class ComptabiliteWebTest extends TestCase
         $lecteur->givePermissionTo('view-comptabilite');
         $this->actingAs($lecteur);
 
-        foreach (['nouveau' => [], 'modifier' => ['624'], 'enregistrer' => [], 'basculerArchive' => ['624'], 'confirmerArchivage' => []] as $methode => $args) {
+        foreach (['nouveau' => [], 'modifier' => ['618'], 'enregistrer' => [], 'basculerArchive' => ['618'], 'confirmerArchivage' => []] as $methode => $args) {
             Livewire::test(PlanComptableEcran::class)->call($methode, ...$args)->assertForbidden();
         }
-        $this->assertFalse(PlanComptable::query()->find('624')->archive);
+        $this->assertFalse(PlanComptable::query()->find('618')->archive);
     }
 
     // ------------------------------------------------------------- Analytique
@@ -607,7 +607,7 @@ class ComptabiliteWebTest extends TestCase
         Livewire::test(Analytique::class)
             ->assertSeeHtmlInOrder(['data-centre="Goliaths"', '120 000', '120 000'])               // revenus, marge
             ->assertSeeHtmlInOrder(['data-centre="Pintades"', '15 000'])                           // couts imputes par l'axe
-            ->assertSeeHtmlInOrder(['data-centre="Commerce Annexe"', 'Comptes 707 et 602', '80 000'])
+            ->assertSeeHtmlInOrder(['data-centre="Commerce Annexe"', 'Comptes 701 et 601', '80 000'])
             ->assertSeeHtmlInOrder(['data-centre="Avicole — filière non précisée"', '40 000'])
             ->assertSeeHtmlInOrder(['data-total-marge', '145 000'])                                // Σ marges
             ->assertSee('Charges de structure non affectées à un centre : 12 000 FCFA');
@@ -695,7 +695,7 @@ class ComptabiliteWebTest extends TestCase
 
     public function test_un_tafire_sans_ouverture_est_coherent(): void
     {
-        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['531', 1000, 0, null], ['101', 0, 1000, null]]);
+        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['571', 1000, 0, null], ['101', 0, 1000, null]]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         Livewire::test(EtatsFinanciers::class)->call('choisir', 'flux')
@@ -772,19 +772,19 @@ class ComptabiliteWebTest extends TestCase
         // passif : 600 000 + 133 000 + 42 000 = 775 000. L'ancien ecart de −200 000 etait l'immobilisation (231),
         // absente de l'ecran.
         Livewire::test(BilanEntreprise::class)
-            ->assertSeeHtmlInOrder(['data-carte="actif"', 'data-poste="2"', '200 000', 'data-poste="411"', '30 000', 'data-poste="531"', '545 000', 'data-total="actif"', '775 000'])
+            ->assertSeeHtmlInOrder(['data-carte="actif"', 'data-poste="2"', '200 000', 'data-poste="411"', '30 000', 'data-poste="571"', '545 000', 'data-total="actif"', '775 000'])
             ->assertSeeHtmlInOrder(['data-carte="passif"', 'data-poste="101"', '600 000', 'data-poste="13"', '133 000', 'data-poste="401"', '42 000', 'data-total="passif"', '775 000'])
             ->assertDontSeeHtml('data-ligne="ecart"');
     }
 
     public function test_un_actif_superieur_au_passif_renvoie_au_compte_101(): void
     {
-        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['531', 1000, 0, null], ['701', 0, 1000, null]]);
+        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['571', 1000, 0, null], ['702', 0, 1000, null]]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         // Actif 1 000 ; passif : resultat 1 000 → equilibre. Tous les comptes etant desormais portes par une
         // ligne du bilan, seule une ecriture DESEQUILIBREE (un debit sans contrepartie) laisse un ecart :
-        $this->poserPiece('OD-P1-'.$this->annee().'-0002', $this->annee(), 1, 3, 'OD', [['531', 500, 0, null]]);
+        $this->poserPiece('OD-P1-'.$this->annee().'-0002', $this->annee(), 1, 3, 'OD', [['571', 500, 0, null]]);
 
         Livewire::test(BilanEntreprise::class)
             ->assertSee('Écart de 500 FCFA entre l\'actif et le passif.', false)
@@ -798,7 +798,7 @@ class ComptabiliteWebTest extends TestCase
         Livewire::test(BilanEntreprise::class)->assertSeeHtml('data-bandeau="vide"')->assertDontSeeHtml('data-ligne="ecart"')
             ->assertSee('Aucune écriture sur l\'exercice', false);
 
-        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['531', 1000, 0, null], ['101', 0, 1000, null]]);
+        $this->poserPiece('OD-P1-'.$this->annee().'-0001', $this->annee(), 1, 2, 'OD', [['571', 1000, 0, null], ['101', 0, 1000, null]]);
         Livewire::test(BilanEntreprise::class)->assertSeeHtml('data-bandeau="equilibre"')->assertDontSeeHtml('data-ligne="ecart"')
             ->assertSee('Bilan équilibré — Total Actif = Total Passif = 1 000 FCFA.');
     }
@@ -813,7 +813,7 @@ class ComptabiliteWebTest extends TestCase
         $c = Livewire::test(Cloture::class)
             ->assertSeeHtml('data-jeton="'.$this->annee().'"')->assertSeeHtml('data-jeton="'.($this->annee() - 1).'"')
             ->assertSeeHtmlInOrder(['data-kpi="resultat"', '133 000 FCFA'])
-            ->assertSeeHtmlInOrder(['data-kpi="comptes-gestion"', '5'])      // 701, 707, 601, 624, 616
+            ->assertSeeHtmlInOrder(['data-kpi="comptes-gestion"', '5'])      // 702, 701, 602, 618, 625
             ->assertSeeHtmlInOrder(['data-kpi="balance"', 'Équilibrée']);
         foreach (range(1, 12) as $m) {
             $c->assertSeeHtml('data-mois="'.$m.'"');
@@ -856,7 +856,7 @@ class ComptabiliteWebTest extends TestCase
         $motif = (new \App\Services\Comptabilite\Saisie(auth()->user()))->enregistrer(
             \Carbon\CarbonImmutable::create($n, 8, 12, 10, 0, 0, config('logialvia.fuseau'))->utc()->format('Y-m-d\TH:i:s.u\Z'),
             'OD', 'OD-WEB-'.$n.'-0001',
-            [['compte' => '531', 'debit' => 10, 'credit' => 0, 'libelle' => 'x'], ['compte' => '701', 'debit' => 0, 'credit' => 10, 'libelle' => 'x']],
+            [['compte' => '571', 'debit' => 10, 'credit' => 0, 'libelle' => 'x'], ['compte' => '702', 'debit' => 0, 'credit' => 10, 'libelle' => 'x']],
         );
 
         $this->assertStringContainsString("Le mois 8/$n est clôturé", (string) $motif);
@@ -957,10 +957,10 @@ class ComptabiliteWebTest extends TestCase
         // Rejouer la meme piece par le meme chemin : acceptee, sans rien changer.
         $motif = (new \App\Sync\Tables\EcrituresTable)->pourUtilisateur(auth()->user())->absorber('x', [
             'id' => $piece->id, 'numero_piece' => 'AUTRE', 'date_ecriture' => now()->toIso8601String(), 'exercice_annee' => $this->annee(),
-            'journal_code' => 'OD', 'updated_at' => now()->toIso8601String(),
+            'journal_code' => 'OD', 'plan_version' => 2, 'updated_at' => now()->toIso8601String(),
             'lignes' => [
-                ['id' => (string) Str::uuid(), 'numero_compte' => '531', 'debit' => 9, 'credit' => 0, 'libelle' => 'x'],
-                ['id' => (string) Str::uuid(), 'numero_compte' => '701', 'debit' => 0, 'credit' => 9, 'libelle' => 'x'],
+                ['id' => (string) Str::uuid(), 'numero_compte' => '571', 'debit' => 9, 'credit' => 0, 'libelle' => 'x'],
+                ['id' => (string) Str::uuid(), 'numero_compte' => '702', 'debit' => 0, 'credit' => 9, 'libelle' => 'x'],
             ],
         ]);
 

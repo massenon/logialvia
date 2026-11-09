@@ -23,7 +23,7 @@
         <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Charges Fixes</p>
             <p class="text-page-title font-bold" data-kpi="fixes">{{ $f::montant($chargesFixes) }}</p>
-            <p class="text-caption text-outline">Comptes 613 et 616</p>
+            <p class="text-caption text-outline">Comptes {{ implode(' et ', \App\Support\PlanSyscohada::COMPTES_CHARGES_FIXES) }}</p>
         </div>
         <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Charges Variables</p>

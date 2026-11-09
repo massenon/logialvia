@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\PlanSyscohada;
 use App\Livewire\Concerns\ReglementDette;
 use App\Models\Achat;
 use App\Models\EcritureComptable;
@@ -301,7 +302,7 @@ class Fournisseurs extends Component
 
         $r = EcritureComptable::query()
             ->join('pieces_comptables as p', 'p.id', '=', 'ecritures_comptables.piece_id')
-            ->where('ecritures_comptables.numero_compte', '401')
+            ->where('ecritures_comptables.numero_compte', PlanSyscohada::FOURNISSEURS)
             ->selectRaw('COALESCE(SUM(CASE WHEN p.achat_ref IS NOT NULL THEN ecritures_comptables.credit - ecritures_comptables.debit ELSE 0 END), 0) as achats_401')
             ->selectRaw('COALESCE(SUM(ecritures_comptables.credit - ecritures_comptables.debit), 0) as total_401')
             ->first();

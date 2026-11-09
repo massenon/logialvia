@@ -11,8 +11,8 @@
                 <span class="text-caption text-outline">Un versement supérieur au solde est borné au reste dû.</span></label>
             <label class="block text-xs">Mode du règlement *
                 <select wire:model="modeReglement" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
-                    <option value="Espèces">Espèces (compte 531)</option>
-                    <option value="Mobile Money">Mobile Money (compte 512)</option>
+                    <option value="Espèces">Espèces (compte {{ \App\Support\PlanSyscohada::CAISSE }})</option>
+                    <option value="Mobile Money">Mobile Money (compte {{ \App\Support\PlanSyscohada::MOBILE_MONEY }})</option>
                 </select></label>
             @if ($erreurReglement)
                 <p role="alert" class="mt-sm text-xs text-error-deep" data-erreur-reglement>{{ $erreurReglement }}</p>

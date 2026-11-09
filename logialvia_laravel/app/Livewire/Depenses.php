@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\PlanSyscohada;
 use App\Livewire\Concerns\LitLeLivre;
 use App\Services\Comptabilite\LivreComptable;
 use App\Services\Comptabilite\MoteurComptable;
@@ -20,7 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * ## Comment une depense devient une ecriture (lu dans le Dart)
  * Une depense n'a PAS de table : c'est une PIECE de 2 lignes, journal `CA`, numero `DEP-<poste>-AAAA-NNNN` —
- * la charge au DEBIT d'un compte de classe 6 (hors 601/602, alimentes par les achats), la
+ * la charge au DEBIT d'un compte de classe 6 (hors 601/602, alimentes par les achats ; SYSCOHADA), la
  * contrepartie au CREDIT d'un compte de tresorerie (classe 5) ou, « a credit », d'un compte
  * fournisseur (40x). Le centre analytique n'est porte que par la ligne de charge. La liste est
  * reconstruite depuis les ecritures : ligne au debit de classe 6, sans `vente_ref` ni `achat_ref`.
@@ -234,7 +235,7 @@ class Depenses extends Component
     /** Comptes proposes a l'imputation : classe 6, hors comptes d'achats alimentes par les approvisionnements. */
     private function comptesDeCharge($plan)
     {
-        return $plan->filter(fn ($c) => $c->classe === '6' && ! str_starts_with($c->numero_compte, '601') && ! str_starts_with($c->numero_compte, '602'));
+        return $plan->filter(fn ($c) => $c->classe === '6' && ! str_starts_with($c->numero_compte, PlanSyscohada::ACHATS_MARCHANDISES) && ! str_starts_with($c->numero_compte, PlanSyscohada::ACHATS_MATIERES));
     }
 
     /** Tresorerie (classe 5) ou « a credit » sur un compte fournisseur (40x). */

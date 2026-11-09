@@ -91,10 +91,10 @@ class ComptabiliteExportsTest extends TestCase
         $total = end($balance);
         // Jeu commun, ouverture cumulee : ouverture 100 000 ; mouvements 987 000 ; soldes finaux 842 000.
         $this->assertSame(['Total', '', '100000', '100000', '987000', '987000', '842000', '842000'], $total);
-        $c531 = collect($balance)->first(fn ($l) => ($l[0] ?? '') === '531');
+        $c531 = collect($balance)->first(fn ($l) => ($l[0] ?? '') === '571');
         $this->assertSame('545000', $c531[6]);
 
-        $gl = $this->xlsx(Livewire::test(GrandLivre::class)->set('compte', '531')->call('exporter'));
+        $gl = $this->xlsx(Livewire::test(GrandLivre::class)->set('compte', '571')->call('exporter'));
         $this->assertSame('Solde d\'ouverture', $gl[2][0]);
         $this->assertSame('100000', $gl[2][5]);
         $this->assertSame('545000', end($gl)[5]);

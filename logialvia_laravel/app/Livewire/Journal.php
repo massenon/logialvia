@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\PlanSyscohada;
 use App\Livewire\Concerns\LitLeLivre;
 use App\Services\Comptabilite\LigneEcriture;
 use App\Services\Comptabilite\LivreComptable;
@@ -40,9 +41,9 @@ class Journal extends Component
 
     public string $libelle = '';
 
-    public string $compteDebit = '531';
+    public string $compteDebit = PlanSyscohada::CAISSE;
 
-    public string $compteCredit = '701';
+    public string $compteCredit = PlanSyscohada::VENTES_PRODUITS_FINIS;
 
     public string $montant = '';
 
@@ -63,8 +64,8 @@ class Journal extends Component
         $this->verifierDroitDeGerer();
         $this->reset(['libelle', 'montant', 'erreur', 'message']);
         $this->jour = now(config('logialvia.fuseau'))->format('Y-m-d');
-        $this->compteDebit = '531';
-        $this->compteCredit = '701';
+        $this->compteDebit = PlanSyscohada::CAISSE;
+        $this->compteCredit = PlanSyscohada::VENTES_PRODUITS_FINIS;
         $this->formulaire = true;
     }
 

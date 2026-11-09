@@ -180,19 +180,19 @@ class AchatsOperationsWebTest extends TestCase
         $this->assertNotNull($a->serveur_modifie_le, 'les postes la recevront au prochain tirage');
         $this->assertCount(3, $a->lignes);
 
-        // Piece d'achat : ventilation 601 / 622 / 602, tresorerie 531, dette 401 ; D = C = 40 000.
+        // Piece d'achat : ventilation 602 / 604 / 601, tresorerie 571, dette 401 ; D = C = 40 000.
         $piece = PieceComptable::query()->with('lignes')->where('achat_ref', $this->reference())->sole();
         $this->assertSame('AC', $piece->journal_code);
         $this->assertSame($this->reference(), $piece->numero_piece);
         $this->assertSame(Catalogue::POSTE_WEB, $piece->device_id);
         $this->assertEqualsCanonicalizing(
-            ['601:30000:0', '622:5000:0', '602:5000:0', '531:0:15000', '401:0:25000'],
+            ['602:30000:0', '604:5000:0', '601:5000:0', '571:0:15000', '401:0:25000'],
             $piece->lignes->map(fn ($l) => $l->numero_compte.':'.(int) $l->debit.':'.(int) $l->credit)->all(),
         );
         $this->assertEquals(40000.0, $piece->lignes->sum('debit'));
         $this->assertEquals(40000.0, $piece->lignes->sum('credit'));
-        $this->assertSame('Achat '.$this->reference(), $piece->lignes->firstWhere('numero_compte', '601')->libelle);
-        $this->assertSame('Règlement achat '.$this->reference(), $piece->lignes->firstWhere('numero_compte', '531')->libelle);
+        $this->assertSame('Achat '.$this->reference(), $piece->lignes->firstWhere('numero_compte', '602')->libelle);
+        $this->assertSame('Règlement achat '.$this->reference(), $piece->lignes->firstWhere('numero_compte', '571')->libelle);
         $this->assertSame('Dette fournisseur — achat '.$this->reference(), $piece->lignes->firstWhere('numero_compte', '401')->libelle);
 
         // Reception immediate : une Entree par ligne au journal partage, poste d'origine web.
@@ -212,9 +212,9 @@ class AchatsOperationsWebTest extends TestCase
         $this->assertSame('Commandé', $this->achat()->statut);
         $this->assertSame(0, MouvementIntrant::query()->count());
         // Comme le poste : la charge est constatee a la commande. Rien paye : toute la dette en 401.
-        $this->assertEquals(['401' => -40000.0, '602' => 5000.0, '601' => 30000.0, '622' => 5000.0], $this->net($this->reference()));
+        $this->assertEquals(['401' => -40000.0, '601' => 5000.0, '602' => 30000.0, '604' => 5000.0], $this->net($this->reference()));
         $this->assertEquals(-40000.0, $this->net($this->reference())['401']);
-        $this->assertArrayNotHasKey('531', $this->net($this->reference()));
+        $this->assertArrayNotHasKey('571', $this->net($this->reference()));
     }
 
     public function test_les_references_web_se_suivent_et_ne_sont_jamais_reutilisees(): void
@@ -232,10 +232,10 @@ class AchatsOperationsWebTest extends TestCase
     public function test_le_mode_mobile_money_ecrit_le_compte_512_et_credit_le_531_comme_le_poste(): void
     {
         $this->commander(['mode' => 'Mobile Money', 'paye' => '40000']);
-        $this->assertEquals(['601' => 30000.0, '622' => 5000.0, '602' => 5000.0, '512' => -40000.0], $this->net($this->reference()));
+        $this->assertEquals(['602' => 30000.0, '604' => 5000.0, '601' => 5000.0, '552' => -40000.0], $this->net($this->reference()));
 
         $this->commander(['mode' => 'Crédit', 'paye' => '1000']);
-        $this->assertEquals(-1000.0, $this->net($this->reference(2))['531'], 'Crédit : la part payee passe en caisse, comme le Dart');
+        $this->assertEquals(-1000.0, $this->net($this->reference(2))['571'], 'Crédit : la part payee passe en caisse, comme le Dart');
         $this->assertSame('Crédit', $this->achat($this->reference(2))->mode);
     }
 
@@ -262,7 +262,7 @@ class AchatsOperationsWebTest extends TestCase
         $this->commander(['livree' => false, 'paye' => '0.1', 'lignes' => [['intrant_code' => 'INT-001', 'qte' => '3', 'pu' => '33.33']]])->assertSet('erreur', null);
 
         $this->assertEquals(99.99, $this->achat()->total);
-        $this->assertEquals(['601' => 99.99, '401' => -99.89, '531' => -0.1], $this->net($this->reference()));
+        $this->assertEquals(['602' => 99.99, '401' => -99.89, '571' => -0.1], $this->net($this->reference()));
     }
 
     public function test_un_mois_cloture_refuse_la_commande_et_ne_laisse_aucune_trace(): void
@@ -320,7 +320,7 @@ class AchatsOperationsWebTest extends TestCase
         $piece = PieceComptable::query()->with('lignes')->where('numero_piece', 'REG-'.$a->reference)->sole();
         $this->assertSame('CA', $piece->journal_code);
         $this->assertSame($a->reference, $piece->achat_ref);
-        $this->assertEqualsCanonicalizing(['401:10000:0', '512:0:10000'], $piece->lignes->map(fn ($l) => $l->numero_compte.':'.(int) $l->debit.':'.(int) $l->credit)->all());
+        $this->assertEqualsCanonicalizing(['401:10000:0', '552:0:10000'], $piece->lignes->map(fn ($l) => $l->numero_compte.':'.(int) $l->debit.':'.(int) $l->credit)->all());
         // Le solde 401 = la dette restante (15 000).
         $this->assertEquals(-15000.0, $this->net($a->reference)['401']);
     }
@@ -336,7 +336,7 @@ class AchatsOperationsWebTest extends TestCase
 
         $this->assertEquals(40000.0, $this->achat()->paye);
         $this->assertArrayNotHasKey('401', $this->net($a->reference), '401 ne devient jamais debiteur (defaut du poste corrige)');
-        $this->assertEquals(-40000.0, $this->net($a->reference)['531']);
+        $this->assertEquals(-40000.0, $this->net($a->reference)['571']);
     }
 
     public function test_les_refus_de_reglement(): void
@@ -384,7 +384,7 @@ class AchatsOperationsWebTest extends TestCase
         $inverse = PieceComptable::query()->where('contrepasse_de', $ancienne->id)->sole();
         $this->assertSame('ANN-'.$a->reference, $inverse->numero_piece);
         $this->assertSame('OD', $inverse->journal_code);
-        $this->assertEquals(['601' => 15000.0, '531' => -15000.0], $this->net($a->reference));
+        $this->assertEquals(['602' => 15000.0, '571' => -15000.0], $this->net($a->reference));
     }
 
     public function test_les_refus_de_modification(): void
@@ -419,7 +419,7 @@ class AchatsOperationsWebTest extends TestCase
         // 100 Maïs × 400 = 40 000 : reste du 15 000 apres les 25 000 regles ; 401 = 15 000, 531 = 25 000.
         Livewire::actingAs($this->admin())->test(Achats::class)->call('modifier', $a->id)
             ->set('lignes', [['intrant_code' => 'INT-001', 'qte' => '100', 'pu' => '400']])->call('enregistrer')->assertSet('erreur', null);
-        $this->assertEquals(['601' => 40000.0, '531' => -25000.0, '401' => -15000.0], $this->net($a->reference));
+        $this->assertEquals(['602' => 40000.0, '571' => -25000.0, '401' => -15000.0], $this->net($a->reference));
     }
 
     // ----------------------------------------------------------------- Annulation
@@ -566,7 +566,7 @@ class AchatsOperationsWebTest extends TestCase
             // dettes : 15 000 (commande 1 apres reglement) + 1 000 (commande 2) ; la commande 3 annulee n'est pas comptee.
             ->assertSeeHtml('data-solde-du>16 000 FCFA<')->assertDontSeeHtml('data-achat="'.$this->reference(3).'"')
             ->assertSeeHtmlInOrder(['data-achat="'.$this->reference(1).'"', '40 000', '25 000', '15 000'])
-            ->assertSeeHtmlInOrder(['data-reglement="'.$this->reference(1).'"', 'REG-'.$this->reference(1), '512', '10 000']);
+            ->assertSeeHtmlInOrder(['data-reglement="'.$this->reference(1).'"', 'REG-'.$this->reference(1), '552', '10 000']);
     }
 
     public function test_fournisseurs_et_stocks_et_depenses_ont_leur_etat_imprimable(): void
@@ -644,14 +644,14 @@ class AchatsOperationsWebTest extends TestCase
         $paul = $this->utilisateurAvecRole('comptable', 'paul');
 
         Livewire::actingAs($paul)->test(\App\Livewire\Depenses::class)
-            ->call('corriger', $piece->id)->assertSet('libelle', 'Libelle DEP-P1-'.$n.'-0001')->assertSet('categorie', '624')->assertSet('montant', '15000')->assertSet('centre', 'Pintades')
+            ->call('corriger', $piece->id)->assertSet('libelle', 'Libelle DEP-P1-'.$n.'-0001')->assertSet('categorie', '618')->assertSet('montant', '15000')->assertSet('centre', 'Pintades')
             ->set('montant', '18000')->call('enregistrer')->assertSet('corrigeDe', null)->assertSee('Dépense corrigée');
 
         $inverse = PieceComptable::query()->where('contrepasse_de', $piece->id)->sole();
         $this->assertSame('ANN-DEP-P1-'.$n.'-0001', $inverse->numero_piece);
         $neuve = PieceComptable::query()->with('lignes')->where('numero_piece', 'DEP-WEB-'.$n.'-0001')->sole();
         $this->assertEquals(18000.0, $neuve->lignes->sum('debit'));
-        $this->assertSame('Pintades', $neuve->lignes->firstWhere('numero_compte', '624')->axe_analytique);
+        $this->assertSame('Pintades', $neuve->lignes->firstWhere('numero_compte', '618')->axe_analytique);
     }
 
     public function test_une_correction_refusee_n_annule_pas_l_ancienne_piece(): void
@@ -666,7 +666,7 @@ class AchatsOperationsWebTest extends TestCase
         $this->assertFalse(PieceComptable::query()->where('contrepasse_de', $piece->id)->exists());
 
         // Refus du serveur apres l'annulation (jour dans un exercice hors bornes) : tout est annule ensemble.
-        $c->set('reglement', '531')->set('jour', '1999-01-01')->call('enregistrer');
+        $c->set('reglement', '571')->set('jour', '1999-01-01')->call('enregistrer');
         $this->assertFalse(PieceComptable::query()->where('contrepasse_de', $piece->id)->exists(), 'l\'annulation est annulee avec le refus');
         $this->assertFalse(PieceComptable::query()->where('numero_piece', 'like', 'DEP-WEB%')->exists());
     }

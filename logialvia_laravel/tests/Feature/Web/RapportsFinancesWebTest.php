@@ -27,42 +27,42 @@ class RapportsFinancesWebTest extends TestCase
     {
         parent::setUp();
         $this->amorcerRapports();
-        $this->compte('6011', 'Charge test', '6');
-        $this->compte('7011', 'Produit test', '7');
+        $this->compte('6021', 'Charge test', '6');
+        $this->compte('7021', 'Produit test', '7');
     }
 
     private function poserLeJeu(): void
     {
         // Avant la periode.
-        $this->piece('2025-12-20 10:00:00', [['531', 20000, 0], ['101', 0, 20000]], 'OD-2025');
-        $this->piece('2026-09-15 10:00:00', [['512', 50000, 0], ['101', 0, 50000]], 'OD-0915');
-        $this->piece('2026-10-31 23:59:59', [['531', 100000, 0], ['101', 0, 100000]], 'OD-1031');
-        $this->piece('2026-10-31 23:59:59', [['531', 30000, 0], ['701', 0, 30000]], 'V-1031');
+        $this->piece('2025-12-20 10:00:00', [['571', 20000, 0], ['101', 0, 20000]], 'OD-2025');
+        $this->piece('2026-09-15 10:00:00', [['552', 50000, 0], ['101', 0, 50000]], 'OD-0915');
+        $this->piece('2026-10-31 23:59:59', [['571', 100000, 0], ['101', 0, 100000]], 'OD-1031');
+        $this->piece('2026-10-31 23:59:59', [['571', 30000, 0], ['702', 0, 30000]], 'V-1031');
 
         // Dans la periode.
-        $this->piece('2026-11-01 00:00:00', [['531', 120000, 0], ['701', 0, 120000]], 'V-P1-2026-001', ['vente_ref' => 'V-P1-2026-001', 'journal_code' => 'VT']);
-        $this->piece('2026-11-05 09:00:00', [['531', 30000, 0], ['411', 50000, 0], ['707', 0, 80000]], 'V-P1-2026-002', ['vente_ref' => 'V-P1-2026-002', 'journal_code' => 'VT']);
-        $this->piece('2026-11-05 14:00:00', [['601', 40000, 0], ['531', 0, 10000], ['401', 0, 30000]], 'ACH-P1-2026-001', ['achat_ref' => 'ACH-P1-2026-001', 'journal_code' => 'AC']);
-        $this->piece('2026-11-06 11:00:00', [['701', 20000, 0], ['531', 0, 20000]], 'ANN-V-001', ['vente_ref' => 'V-P1-2026-001']);
-        $this->piece('2026-11-07 10:00:00', [['531', 1000, 0], ['401', 0, 1000]], 'REM-1', ['achat_ref' => 'ACH-P1-2026-001']);
+        $this->piece('2026-11-01 00:00:00', [['571', 120000, 0], ['702', 0, 120000]], 'V-P1-2026-001', ['vente_ref' => 'V-P1-2026-001', 'journal_code' => 'VT']);
+        $this->piece('2026-11-05 09:00:00', [['571', 30000, 0], ['411', 50000, 0], ['701', 0, 80000]], 'V-P1-2026-002', ['vente_ref' => 'V-P1-2026-002', 'journal_code' => 'VT']);
+        $this->piece('2026-11-05 14:00:00', [['602', 40000, 0], ['571', 0, 10000], ['401', 0, 30000]], 'ACH-P1-2026-001', ['achat_ref' => 'ACH-P1-2026-001', 'journal_code' => 'AC']);
+        $this->piece('2026-11-06 11:00:00', [['702', 20000, 0], ['571', 0, 20000]], 'ANN-V-001', ['vente_ref' => 'V-P1-2026-001']);
+        $this->piece('2026-11-07 10:00:00', [['571', 1000, 0], ['401', 0, 1000]], 'REM-1', ['achat_ref' => 'ACH-P1-2026-001']);
 
         // Deux pieces du MEME instant : identifiants adverses (la ligne creditee et la piece saisie la premiere ont les plus petits UUID).
         $this->piece('2026-11-08 10:00:00', [
-            ['531', 0, 7000, '00000000-0000-4000-8000-000000000001'],
-            ['512', 7000, 0, 'ffffffff-ffff-4fff-8fff-ffffffffffff'],
+            ['571', 0, 7000, '00000000-0000-4000-8000-000000000001'],
+            ['552', 7000, 0, 'ffffffff-ffff-4fff-8fff-ffffffffffff'],
         ], 'OD-T9', ['id' => 'ffffffff-ffff-4fff-8fff-fffffffffff0'], '2026-11-08 10:00:00.100');
         $this->piece('2026-11-08 10:00:00', [
-            ['531', 500, 0, '00000000-0000-4000-8000-000000000000'],
+            ['571', 500, 0, '00000000-0000-4000-8000-000000000000'],
             ['101', 0, 500],
         ], 'OD-T2', ['id' => '00000000-0000-4000-8000-0000000000f0'], '2026-11-08 10:00:00.200');
 
-        $this->piece('2026-11-10 10:00:00', [['624', 15000, 0], ['512', 0, 15000]], 'DEP-P1-2026-0001');
+        $this->piece('2026-11-10 10:00:00', [['618', 15000, 0], ['552', 0, 15000]], 'DEP-P1-2026-0001');
         // Saisie ANTERIEURE a toutes les autres pieces : seule la DATE (12/11) la place apres celle du 10/11.
-        $this->piece('2026-11-12 10:00:00', [['6011', 5000, 0], ['531', 0, 5000]], 'DEP-P1-2026-0002', [], '2026-10-01 10:00:00');
-        $this->piece('2026-11-18 23:59:59', [['531', 2000, 0], ['7011', 0, 2000]], null);
+        $this->piece('2026-11-12 10:00:00', [['6021', 5000, 0], ['571', 0, 5000]], 'DEP-P1-2026-0002', [], '2026-10-01 10:00:00');
+        $this->piece('2026-11-18 23:59:59', [['571', 2000, 0], ['7021', 0, 2000]], null);
 
         // Apres la periode.
-        $this->piece('2026-11-19 00:00:00', [['531', 99999, 0], ['701', 0, 99999]], 'V-1119');
+        $this->piece('2026-11-19 00:00:00', [['571', 99999, 0], ['702', 0, 99999]], 'V-1119');
     }
 
     private function rapport(string $onglet = 'recettes'): \Livewire\Features\SupportTesting\Testable
@@ -84,14 +84,14 @@ class RapportsFinancesWebTest extends TestCase
         $this->assertSame('122 000 FCFA', $this->nombre($c, 'resultat-net'));
         $this->assertSame('67,0 %', $this->nombre($c, 'taux-marge'));   // 122 000 / 182 000 = 67,03 %
 
-        // Une ligne PAR compte de gestion, triees comme du TEXTE (601 < 6011 < 624 < 701 < 7011 < 707), classes 6 et 7 seules.
+        // Une ligne PAR compte de gestion, triees comme du TEXTE (602 < 6021 < 618 < 701 < 702 < 7021), classes 6 et 7 seules.
         $this->assertSame([
-            ['Novembre 2026', 'ACH-P1-2026-001', '601 - Achats de Matières (Intrants Provende)', 'Aviculture', '—', '40 000', '-40 000'],
-            ['Novembre 2026', 'DEP-P1-2026-0002', '6011 - Charge test', 'Aviculture', '—', '5 000', '-45 000'],
-            ['Novembre 2026', 'DEP-P1-2026-0001', '624 - Transports', 'Charge Générale', '—', '15 000', '-60 000'],
-            ['Novembre 2026', 'V-P1-2026-001', '701 - Ventes de Produits Avicoles', 'Aviculture', '100 000', '—', '40 000'],
-            ['Novembre 2026', '—', '7011 - Produit test', 'Aviculture', '2 000', '—', '42 000'],
-            ['Novembre 2026', 'V-P1-2026-002', '707 - Ventes de Marchandises (Commerce Annexe)', 'Commerce Annexe', '80 000', '—', '122 000'],
+            ['Novembre 2026', 'ACH-P1-2026-001', '602 - Achats de matières premières et fournitures liées', 'Aviculture', '—', '40 000', '-40 000'],
+            ['Novembre 2026', 'DEP-P1-2026-0002', '6021 - Charge test', 'Aviculture', '—', '5 000', '-45 000'],
+            ['Novembre 2026', 'DEP-P1-2026-0001', '618 - Autres frais de transport', 'Charge Générale', '—', '15 000', '-60 000'],
+            ['Novembre 2026', 'V-P1-2026-002', '701 - Ventes de marchandises', 'Commerce Annexe', '80 000', '—', '20 000'],
+            ['Novembre 2026', 'V-P1-2026-001', '702 - Ventes de produits finis', 'Aviculture', '100 000', '—', '120 000'],
+            ['Novembre 2026', '—', '7021 - Produit test', 'Aviculture', '2 000', '—', '122 000'],
         ], $this->lignes($c, "//table[@data-table='recettes']/tbody/tr"));
     }
 
@@ -101,7 +101,7 @@ class RapportsFinancesWebTest extends TestCase
         $this->poserLeJeu();
         $c = $this->rapport()->set('debut', '2026-01-01')->set('fin', '2026-12-31');
 
-        // Exercice 2026 entier : produits 701 (30 000 + 120 000 - 20 000 + 99 999) + 707 80 000 + 7011 2 000 = 311 999 ; charges 60 000.
+        // Exercice 2026 entier : produits 701 (30 000 + 120 000 - 20 000 + 99 999) + 707 80 000 + 7021 2 000 = 311 999 ; charges 60 000.
         $this->assertSame('311 999 FCFA', $this->nombre($c, 'total-recettes'));
         $this->assertSame('251 999 FCFA', $this->nombre($c, 'resultat-net'));
         $this->assertSame('Janvier 2026 — Décembre 2026', $this->texte($c, "//table[@data-table='recettes']/tbody/tr[1]/td[1]"));
@@ -110,45 +110,45 @@ class RapportsFinancesWebTest extends TestCase
     public function test_bornes_de_periode_incluses_premier_et_dernier_instant(): void
     {
         $this->poserLeJeu();
-        // 18/11 23:59:59 (7011, 2 000) et 01/11 00:00:00 (701) sont DANS la periode ; 31/10 23:59:59 et 19/11 00:00:00 non.
+        // 18/11 23:59:59 (7021, 2 000) et 01/11 00:00:00 (701) sont DANS la periode ; 31/10 23:59:59 et 19/11 00:00:00 non.
         $c = $this->rapport();
-        $this->assertSame(['100 000'], $this->textes($c, "//tr[@data-compte='701']/td[@data-encaissement]"));
-        $this->assertSame(['2 000'], $this->textes($c, "//tr[@data-compte='7011']/td[@data-encaissement]"));
+        $this->assertSame(['100 000'], $this->textes($c, "//tr[@data-compte='702']/td[@data-encaissement]"));
+        $this->assertSame(['2 000'], $this->textes($c, "//tr[@data-compte='7021']/td[@data-encaissement]"));
 
         // Periode d'un seul jour : on ne voit que ce jour (05/11 : V2 707 80 000 et ACH 601 40 000).
         $c->set('debut', '2026-11-05')->set('fin', '2026-11-05');
         $this->assertSame('80 000 FCFA', $this->nombre($c, 'total-recettes'));
         $this->assertSame('40 000 FCFA', $this->nombre($c, 'total-depenses'));
-        $this->assertSame('Novembre 2026', $this->texte($c, "//tr[@data-compte='707']/td[1]"));
+        $this->assertSame('Novembre 2026', $this->texte($c, "//tr[@data-compte='701']/td[1]"));
         $c->assertSee('du 05/11/2026 au 05/11/2026');
     }
 
     public function test_le_dernier_microsecond_du_dernier_jour_est_inclus(): void
     {
-        $this->piece('2026-11-18 23:59:59.999999', [['707', 0, 300], ['531', 300, 0]], 'V-FIN');
-        $this->piece('2026-11-19 00:00:00', [['707', 0, 900], ['531', 900, 0]], 'V-APRES');
+        $this->piece('2026-11-18 23:59:59.999999', [['701', 0, 300], ['571', 300, 0]], 'V-FIN');
+        $this->piece('2026-11-19 00:00:00', [['701', 0, 900], ['571', 900, 0]], 'V-APRES');
         $this->assertSame('300 FCFA', $this->nombre($this->rapport(), 'total-recettes'));
     }
 
     public function test_un_remboursement_vient_en_deduction_de_la_charge_et_les_centres_622_et_602_existent(): void
     {
-        $this->piece('2026-11-05 10:00:00', [['624', 1000, 0], ['531', 0, 1000]], 'D-1');
-        $this->piece('2026-11-06 10:00:00', [['531', 400, 0], ['624', 0, 400]], 'D-2');   // avoir : charge nette 600
-        $this->piece('2026-11-07 10:00:00', [['622', 700, 0], ['531', 0, 700]], 'D-3');
-        $this->piece('2026-11-08 10:00:00', [['602', 800, 0], ['531', 0, 800]], 'D-4');
+        $this->piece('2026-11-05 10:00:00', [['618', 1000, 0], ['571', 0, 1000]], 'D-1');
+        $this->piece('2026-11-06 10:00:00', [['571', 400, 0], ['618', 0, 400]], 'D-2');   // avoir : charge nette 600
+        $this->piece('2026-11-07 10:00:00', [['604', 700, 0], ['571', 0, 700]], 'D-3');
+        $this->piece('2026-11-08 10:00:00', [['601', 800, 0], ['571', 0, 800]], 'D-4');
         $c = $this->rapport();
 
-        $this->assertSame(['602 - Achats de Marchandises (Commerce Annexe)|Commerce Annexe|800', '622 - Frais Vétérinaires|Aviculture|700', '624 - Transports|Charge Générale|600'],
+        $this->assertSame(['601 - Achats de marchandises|Commerce Annexe|800', '604 - Achats stockés de matières et fournitures consommables|Aviculture|700', '618 - Autres frais de transport|Charge Générale|600'],
             array_map(fn ($l) => $l[2].'|'.$l[3].'|'.$l[5], $this->lignes($c, "//table[@data-table='recettes']/tbody/tr")));
         $this->assertSame('2 100 FCFA', $this->nombre($c, 'total-depenses'));
     }
 
     public function test_les_montants_sont_arrondis_comme_le_poste_pas_a_la_hausse_en_export(): void
     {
-        $this->piece('2026-11-05 10:00:00', [['531', 1000.4, 0], ['701', 0, 1000.4]], 'V-1');
+        $this->piece('2026-11-05 10:00:00', [['571', 1000.4, 0], ['702', 0, 1000.4]], 'V-1');
         $c = $this->rapport()->call('exporter');
         $lignes = $this->lignesXlsx(base64_decode($c->effects['download']['content']));
-        $this->assertContains(['Novembre 2026', 'V-1', '701 - Ventes de Produits Avicoles', 'Aviculture', '1000', '0', '1000'], $lignes);
+        $this->assertContains(['Novembre 2026', 'V-1', '702 - Ventes de produits finis', 'Aviculture', '1000', '0', '1000'], $lignes);
     }
 
     public function test_la_periode_inversee_est_remise_d_aplomb_comme_au_poste(): void
@@ -209,7 +209,7 @@ class RapportsFinancesWebTest extends TestCase
 
     public function test_un_filtre_sans_resultat_ne_dit_pas_qu_il_n_y_a_aucune_ecriture(): void
     {
-        $this->piece('2026-11-05 09:00:00', [['531', 1000, 0], ['707', 0, 1000]], 'V-1');
+        $this->piece('2026-11-05 09:00:00', [['571', 1000, 0], ['701', 0, 1000]], 'V-1');
         $c = $this->rapport()->set('filtreCentre', 'Aviculture');
 
         $c->assertSee('Aucune ligne ne correspond à ce centre de profit.')->assertDontSee('Aucune écriture de gestion');
@@ -302,7 +302,7 @@ class RapportsFinancesWebTest extends TestCase
 
     public function test_tresorerie_sans_mouvement_affiche_les_ouvertures_et_le_message(): void
     {
-        $this->piece('2026-09-15 10:00:00', [['531', 40000, 0], ['101', 0, 40000]], 'OD-1');
+        $this->piece('2026-09-15 10:00:00', [['571', 40000, 0], ['101', 0, 40000]], 'OD-1');
         $c = $this->rapport('tresorerie');
 
         $c->assertSeeHtml('data-vide="tresorerie"')->assertSee('Aucun mouvement de trésorerie sur la période.');

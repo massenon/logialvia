@@ -32,7 +32,7 @@ class DepensesWebTest extends TestCase
     {
         $valeurs = array_merge([
             'jour' => now(config('logialvia.fuseau'))->format('Y-m-d'), 'libelle' => 'Transport du maïs',
-            'categorie' => '624', 'montant' => '12000', 'reglement' => '531', 'centre' => '',
+            'categorie' => '618', 'montant' => '12000', 'reglement' => '571', 'centre' => '',
         ], $valeurs);
         foreach ($valeurs as $champ => $valeur) {
             $composant->set($champ, $valeur);
@@ -77,14 +77,14 @@ class DepensesWebTest extends TestCase
         $n = $this->annee();
 
         Livewire::test(Depenses::class)
-            ->assertSeeHtmlInOrder(['data-depense="DEP-P1-'.$n.'-0002"', '616 - Assurances', '12 000 FCFA', 'En attente'])   // credit 401 : elle reste due
-            ->assertSeeHtmlInOrder(['data-depense="DEP-P1-'.$n.'-0001"', '624 - Transports', '15 000 FCFA', 'Payée'])
+            ->assertSeeHtmlInOrder(['data-depense="DEP-P1-'.$n.'-0002"', '625 - Primes d\'assurance', '12 000 FCFA', 'En attente'])   // credit 401 : elle reste due
+            ->assertSeeHtmlInOrder(['data-depense="DEP-P1-'.$n.'-0001"', '618 - Autres frais de transport', '15 000 FCFA', 'Payée'])
             ->assertDontSeeHtml('data-depense="ACH-P1-'.$n.'-001"')                           // achat d'intrants : autre ecran
             ->assertDontSeeHtml('data-depense="V-P1-'.$n.'-001"')
             ->assertSeeHtmlInOrder(['data-total', 'TOTAL AFFICHÉ (2 dépenses)', '27 000 FCFA']);
     }
 
-    public function test_les_kpi_fixes_et_variables_suivent_les_comptes_613_et_616(): void
+    public function test_les_kpi_fixes_et_variables_suivent_les_comptes_622_et_625(): void
     {
         $this->poserLeJeuCommun();
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
@@ -98,7 +98,7 @@ class DepensesWebTest extends TestCase
     {
         $this->poserLeJeuCommun();
         $m = now(config('logialvia.fuseau'));
-        $this->poserPiece('DEP-P1-'.$m->year.'-0099', (int) $m->year, (int) $m->month, 1, 'CA', [['628', 7777, 0, null], ['531', 0, 7777, null]]);
+        $this->poserPiece('DEP-P1-'.$m->year.'-0099', (int) $m->year, (int) $m->month, 1, 'CA', [['658', 7777, 0, null], ['571', 0, 7777, null]]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         $attendu = 7777
@@ -145,16 +145,16 @@ class DepensesWebTest extends TestCase
 
         $c = $this->formulaire(Livewire::test(Depenses::class), ['centre' => 'Pintades'])->call('enregistrer')
             ->assertSet('erreur', null)
-            ->assertSee('Dépense DEP-WEB-'.$this->annee().'-0001 enregistrée — 12 000 FCFA imputés au compte 624.');
+            ->assertSee('Dépense DEP-WEB-'.$this->annee().'-0001 enregistrée — 12 000 FCFA imputés au compte 618.');
 
         $piece = PieceComptable::query()->with('lignes')->firstOrFail();
         $this->assertSame('CA', $piece->journal_code);
         $this->assertSame('00000000-0000-0000-0000-000000000000', $piece->device_id);
         $this->assertCount(2, $piece->lignes);
-        $charge = $piece->lignes->firstWhere('numero_compte', '624');
+        $charge = $piece->lignes->firstWhere('numero_compte', '618');
         $this->assertSame(12000.0, $charge->debit);
         $this->assertSame('Pintades', $charge->axe_analytique, 'le centre est porte par la ligne de charge');
-        $tresorerie = $piece->lignes->firstWhere('numero_compte', '531');
+        $tresorerie = $piece->lignes->firstWhere('numero_compte', '571');
         $this->assertSame(12000.0, $tresorerie->credit);
         $this->assertNull($tresorerie->axe_analytique, 'la contrepartie n\'appartient a aucune filiere');
         // Comme au poste : le formulaire est reinitialise, l'ecran enchaine les saisies.
@@ -166,7 +166,7 @@ class DepensesWebTest extends TestCase
     {
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
-        $c = $this->formulaire(Livewire::test(Depenses::class), ['reglement' => '401', 'categorie' => '616'])->call('enregistrer')->assertSet('erreur', null);
+        $c = $this->formulaire(Livewire::test(Depenses::class), ['reglement' => '401', 'categorie' => '625'])->call('enregistrer')->assertSet('erreur', null);
 
         $c->assertSeeHtmlInOrder(['data-depense="DEP-WEB-'.$this->annee().'-0001"', 'En attente']);
         $this->assertSame(12000.0, EcritureComptable::query()->where('numero_compte', '401')->first()->credit);
@@ -216,22 +216,22 @@ class DepensesWebTest extends TestCase
 
         $this->formulaire(Livewire::test(Depenses::class), ['montant' => '1250,5'])->call('enregistrer')->assertSet('erreur', null);
 
-        $this->assertSame(1250.5, EcritureComptable::query()->where('numero_compte', '624')->first()->debit);
+        $this->assertSame(1250.5, EcritureComptable::query()->where('numero_compte', '618')->first()->debit);
     }
 
     public function test_seuls_les_comptes_proposes_sont_acceptes(): void
     {
-        PlanComptable::query()->whereKey('613')->update(['archive' => true]);
+        PlanComptable::query()->whereKey('622')->update(['archive' => true]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
         $c = Livewire::test(Depenses::class);
         $motif = 'Compte inconnu, archivé ou non proposé à la saisie d\'une dépense.';
 
-        // 601 : achat d'intrants (autre ecran) ; 613 : archive ; 701 : produit ; 999 : inconnu.
-        foreach (['601', '613', '701', '999'] as $compte) {
+        // 602 : achat d'intrants (autre ecran) ; 622 : archive ; 702 : produit ; 999 : inconnu.
+        foreach (['602', '622', '702', '999'] as $compte) {
             $this->formulaire($c, ['categorie' => $compte])->call('enregistrer')->assertSet('erreur', $motif);
         }
         // Le reglement doit etre de la tresorerie (classe 5) ou un compte fournisseur (40x).
-        $this->formulaire($c, ['reglement' => '701'])->call('enregistrer')->assertSet('erreur', $motif);
+        $this->formulaire($c, ['reglement' => '702'])->call('enregistrer')->assertSet('erreur', $motif);
         $this->formulaire($c, ['reglement' => '411'])->call('enregistrer')->assertSet('erreur', $motif);
         $this->assertSame(0, PieceComptable::query()->count());
     }
@@ -292,8 +292,8 @@ class DepensesWebTest extends TestCase
         $inverse = PieceComptable::query()->where('contrepasse_de', $piece->id)->with('lignes')->firstOrFail();
         $this->assertSame('ANN-DEP-P1-'.$n.'-0001', $inverse->numero_piece);
         $this->assertSame('OD', $inverse->journal_code);
-        $this->assertSame(15000.0, $inverse->lignes->firstWhere('numero_compte', '624')->credit);
-        $this->assertSame('Pintades', $inverse->lignes->firstWhere('numero_compte', '624')->axe_analytique, 'l\'annulation garde le centre de la charge');
+        $this->assertSame(15000.0, $inverse->lignes->firstWhere('numero_compte', '618')->credit);
+        $this->assertSame('Pintades', $inverse->lignes->firstWhere('numero_compte', '618')->axe_analytique, 'l\'annulation garde le centre de la charge');
         // Le resultat net revient d'autant (Compte de Resultat).
         Livewire::test(\App\Livewire\Comptabilite::class)->assertSee('148 000');
     }
@@ -335,7 +335,7 @@ class DepensesWebTest extends TestCase
     public function test_les_depenses_d_un_autre_exercice_ne_sont_pas_melangees(): void
     {
         $this->poserLeJeuCommun();
-        $this->poserPiece('DEP-P1-'.($this->annee() - 1).'-0001', $this->annee() - 1, 3, 3, 'CA', [['628', 900, 0, null], ['531', 0, 900, null]]);
+        $this->poserPiece('DEP-P1-'.($this->annee() - 1).'-0001', $this->annee() - 1, 3, 3, 'CA', [['658', 900, 0, null], ['571', 0, 900, null]]);
         $this->actingAs($this->utilisateurAvecRole('comptable', 'paul'));
 
         Livewire::test(Depenses::class)->assertDontSeeHtml('data-depense="DEP-P1-'.($this->annee() - 1).'-0001"')

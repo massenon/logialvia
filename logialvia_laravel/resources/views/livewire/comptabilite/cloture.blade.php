@@ -82,7 +82,7 @@
                 @elseif ($cloture)
                     Bénéfice de {{ $f::montant($resultat) }} affecté : réserve légale {{ $f::montant($affectationCloture['reserve_legale']) }}, autres réserves {{ $f::montant($affectationCloture['autres_reserves']) }}, dividendes {{ $f::montant($affectationCloture['dividendes']) }}, report à nouveau {{ $f::montant($resultat - array_sum($affectationCloture)) }}.
                 @else
-                    Par défaut, tout le résultat est reporté à nouveau ({{ $resultat < 0 ? '129' : '121' }}).
+                    Par défaut, tout le résultat est reporté à nouveau ({{ $resultat < 0 ? \App\Support\PlanSyscohada::REPORT_DEBITEUR : \App\Support\PlanSyscohada::REPORT_CREDITEUR }}).
                 @endif
             </p>
         </li>

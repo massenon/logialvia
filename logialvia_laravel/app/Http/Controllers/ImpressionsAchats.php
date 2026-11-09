@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\PlanSyscohada;
 use App\Models\Achat;
 use App\Models\Fournisseur;
 use App\Models\Intrant;
@@ -154,7 +155,7 @@ class ImpressionsAchats extends Controller
 
         return $pieces->filter(fn (PieceComptable $p) => $p->contrepasse_de === null && ! $annulees->has($p->id))
             ->map(function (PieceComptable $p) {
-                $debit401 = $p->lignes->where('numero_compte', '401')->sum('debit');
+                $debit401 = $p->lignes->where('numero_compte', PlanSyscohada::FOURNISSEURS)->sum('debit');
                 $tresorerie = $p->lignes->where('credit', '>', 0)->first();
 
                 return [

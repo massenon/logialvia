@@ -46,11 +46,11 @@ class ReportANouveauTest extends TestCase
     private function jeu(): int
     {
         $n = $this->annee();
-        $this->poserPiece('P1', $n, 1, 5, 'OD', [['531', 1000000, 0, null], ['101', 0, 1000000, null]]);
-        $this->poserPiece('P2', $n, 2, 5, 'OD', [['531', 600000, 0, null], ['701', 0, 600000, null]]);
-        $this->poserPiece('P3', $n, 3, 5, 'OD', [['601', 250000, 0, null], ['401', 0, 250000, null]]);
-        $this->poserPiece('P4', $n, 4, 5, 'OD', [['624', 50000, 0, null], ['531', 0, 50000, null]]);
-        $this->poserPiece('P5', $n, 5, 5, 'OD', [['231', 300000, 0, null], ['531', 0, 300000, null]]);
+        $this->poserPiece('P1', $n, 1, 5, 'OD', [['571', 1000000, 0, null], ['101', 0, 1000000, null]]);
+        $this->poserPiece('P2', $n, 2, 5, 'OD', [['571', 600000, 0, null], ['702', 0, 600000, null]]);
+        $this->poserPiece('P3', $n, 3, 5, 'OD', [['602', 250000, 0, null], ['401', 0, 250000, null]]);
+        $this->poserPiece('P4', $n, 4, 5, 'OD', [['618', 50000, 0, null], ['571', 0, 50000, null]]);
+        $this->poserPiece('P5', $n, 5, 5, 'OD', [['231', 300000, 0, null], ['571', 0, 300000, null]]);
 
         return $n;
     }
@@ -99,7 +99,7 @@ class ReportANouveauTest extends TestCase
 
         $this->assertEquals([
             '101' => -1000000.0, '111' => -30000.0, '121' => -170000.0, '231' => 300000.0,
-            '401' => -250000.0, '465' => -100000.0, '531' => 1250000.0,
+            '401' => -250000.0, '465' => -100000.0, '571' => 1250000.0,
         ], $c['reportes']);
         $an = end($c['pieces']);
         $this->assertSame(1550000.0, (float) array_sum(array_column($an['lignes'], 'debit')));
@@ -112,7 +112,7 @@ class ReportANouveauTest extends TestCase
     public function test_une_perte_va_au_129_et_aucun_dividende_n_est_possible(): void
     {
         $n = $this->jeu();
-        $this->poserPiece('P6', $n, 6, 5, 'OD', [['624', 800000, 0, null], ['531', 0, 800000, null]]);
+        $this->poserPiece('P6', $n, 6, 5, 'OD', [['618', 800000, 0, null], ['571', 0, 800000, null]]);
         $c = ReportANouveau::calculer($this->toutes(), $n);
 
         $this->assertSame(-500000.0, $c['resultat']);
@@ -129,7 +129,7 @@ class ReportANouveauTest extends TestCase
     {
         $n = $this->jeu();
         PlanComptable::query()->create(['numero_compte' => '891', 'libelle' => 'Impôt sur le résultat', 'classe' => '8', 'archive' => false]);
-        $this->poserPiece('P7', $n, 7, 5, 'OD', [['891', 75000, 0, null], ['531', 0, 75000, null]]);
+        $this->poserPiece('P7', $n, 7, 5, 'OD', [['891', 75000, 0, null], ['571', 0, 75000, null]]);
 
         $this->assertSame(225000.0, MoteurComptable::resultatNet(ReportANouveau::soldesDeFin($this->toutes(), $n)));
         $this->assertSame(225000.0, ReportANouveau::calculer($this->toutes(), $n)['resultat']);
@@ -154,7 +154,7 @@ class ReportANouveauTest extends TestCase
         $this->cloturer($n, ['reserveLegale' => '30000', 'dividendes' => '100000'])->assertSet('erreur', null)
             ->assertSee("Exercice $n clôturé");
 
-        foreach (['601', '624', '701', '131'] as $compte) {
+        foreach (['602', '618', '702', '131'] as $compte) {
             $this->assertSame(0.0, (float) collect($this->toutes())->filter(fn ($e) => $e->exercice === $n && $e->compte === $compte)->sum(fn ($e) => $e->debit - $e->credit), "compte $compte solde");
         }
         $this->assertSame(-170000.0, (float) collect($this->toutes())->filter(fn ($e) => $e->exercice === $n && $e->compte === '121')->sum(fn ($e) => $e->debit - $e->credit));
@@ -163,7 +163,7 @@ class ReportANouveauTest extends TestCase
         $this->assertCount(7, $an);
         $this->assertSame(1550000.0, (float) $an->sum('debit'));
         $this->assertSame(1550000.0, (float) $an->sum('credit'));
-        $this->assertSame(1250000.0, $this->net('AN', $n + 1, '531'));
+        $this->assertSame(1250000.0, $this->net('AN', $n + 1, '571'));
         $this->assertTrue((bool) ExerciceComptable::query()->find($n)->is_cloture);
         $this->assertEqualsCanonicalizing(['reserve_legale' => 30000, 'autres_reserves' => 0, 'dividendes' => 100000], json_decode(ExerciceComptable::query()->find($n)->affectation, true));
         $this->assertDatabaseHas('clotures_exercice', ['annee' => $n]);
@@ -210,9 +210,9 @@ class ReportANouveauTest extends TestCase
         foreach (['CL', 'AN'] as $journal) {
             $motif = (new EcrituresTable)->pourUtilisateur($admin)->absorber('11111111-1111-4111-8111-111111111111', [
                 'id' => (string) \Illuminate\Support\Str::uuid(), 'numero_piece' => 'X', 'date_ecriture' => now()->toIso8601String(),
-                'exercice_annee' => $n, 'journal_code' => $journal, 'updated_at' => now()->toIso8601String(),
+                'exercice_annee' => $n, 'journal_code' => $journal, 'plan_version' => 2, 'updated_at' => now()->toIso8601String(),
                 'lignes' => [
-                    ['id' => (string) \Illuminate\Support\Str::uuid(), 'numero_compte' => '531', 'debit' => 5, 'credit' => 0, 'libelle' => 'x'],
+                    ['id' => (string) \Illuminate\Support\Str::uuid(), 'numero_compte' => '571', 'debit' => 5, 'credit' => 0, 'libelle' => 'x'],
                     ['id' => (string) \Illuminate\Support\Str::uuid(), 'numero_compte' => '101', 'debit' => 0, 'credit' => 5, 'libelle' => 'x'],
                 ],
             ]);
@@ -278,7 +278,7 @@ class ReportANouveauTest extends TestCase
         $n = $this->jeu();
         $this->actingAs($this->utilisateurAvecRole('admin', 'gerante'));
         $this->cloturer($n, ['reserveLegale' => '30000', 'dividendes' => '100000']);
-        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['531', 200000, 0, null], ['701', 0, 200000, null]]);
+        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['571', 200000, 0, null], ['702', 0, 200000, null]]);
 
         $soldes = ReportANouveau::soldesDeFin($this->toutes(), $n + 1);
         $bilan = MoteurComptable::bilan($soldes);
@@ -304,12 +304,12 @@ class ReportANouveauTest extends TestCase
         $n = $this->jeu();
         $this->actingAs($this->utilisateurAvecRole('admin', 'gerante'));
         $this->cloturer($n);
-        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['531', 200000, 0, null], ['701', 0, 200000, null]]);
+        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['571', 200000, 0, null], ['702', 0, 200000, null]]);
 
         Livewire::test(BalanceGenerale::class)->set('exercice', $n + 1)
             ->assertDontSeeHtml('data-bandeau="desequilibre"')
-            ->assertSeeHtmlInOrder(['data-compte="531"', '1 250 000', '200 000', '1 450 000'])
-            ->assertDontSeeHtml('data-compte="601"');
+            ->assertSeeHtmlInOrder(['data-compte="571"', '1 250 000', '200 000', '1 450 000'])
+            ->assertDontSeeHtml('data-compte="602"');
 
         // L'exercice clos se lit encore : 701 y est solde par la cloture, la balance reste equilibree.
         Livewire::test(BalanceGenerale::class)->set('exercice', $n)->assertDontSeeHtml('data-bandeau="desequilibre"')->assertSeeHtml('data-compte="131"');
@@ -318,10 +318,10 @@ class ReportANouveauTest extends TestCase
     public function test_sans_cloture_l_ouverture_est_une_cloture_virtuelle(): void
     {
         $n = $this->jeu();
-        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['531', 200000, 0, null], ['701', 0, 200000, null]]);
+        $this->poserPiece('V25', $n + 1, 2, 5, 'OD', [['571', 200000, 0, null], ['702', 0, 200000, null]]);
 
         $ouverture = ReportANouveau::soldesOuverture($this->toutes(), $n + 1);
-        $this->assertSame(1250000.0, $ouverture['531']);
+        $this->assertSame(1250000.0, $ouverture['571']);
         $this->assertSame(-300000.0, $ouverture['121']);
         foreach (array_keys($ouverture) as $compte) {
             $this->assertNotContains(((string) $compte)[0], ['6', '7', '8']);
@@ -343,14 +343,14 @@ class ReportANouveauTest extends TestCase
     {
         $n = $this->jeu();
         foreach ([['281', 'Amortissements', '2'], ['681', 'Dotations amortissements', '6'], ['161', 'Emprunts', '1']] as [$c, $l, $k]) {
-            PlanComptable::query()->create(['numero_compte' => $c, 'libelle' => $l, 'classe' => $k, 'archive' => false]);
+            PlanComptable::query()->firstOrCreate(['numero_compte' => $c], ['libelle' => $l, 'classe' => $k, 'archive' => false]);
         }
         $this->actingAs($this->utilisateurAvecRole('admin', 'gerante'));
         $this->cloturer($n, ['reserveLegale' => '30000', 'dividendes' => '100000']);
         $m = $n + 1;
-        $this->poserPiece('E1', $m, 1, 5, 'OD', [['531', 400000, 0, null], ['161', 0, 400000, null]]);
+        $this->poserPiece('E1', $m, 1, 5, 'OD', [['571', 400000, 0, null], ['161', 0, 400000, null]]);
         $this->poserPiece('A1', $m, 2, 5, 'OD', [['681', 30000, 0, null], ['281', 0, 30000, null]]);
-        $this->poserPiece('V2', $m, 3, 5, 'OD', [['411', 100000, 0, null], ['701', 0, 100000, null]]);
+        $this->poserPiece('V2', $m, 3, 5, 'OD', [['411', 100000, 0, null], ['702', 0, 100000, null]]);
 
         $soldes = ReportANouveau::soldesDeFin($this->toutes(), $m);
         $t = MoteurComptable::tafire($soldes, ReportANouveau::soldesDOuverture($this->toutes(), $m));

@@ -184,7 +184,7 @@ class PlanComptableEcran extends Component
             'id' => (string) Str::uuid(),
             'type' => DemandesReferentiel::TYPE_COMPTE,
             'saisi_le' => now('UTC')->format('Y-m-d\TH:i:s.u\Z'),
-            'donnees' => $donnees,
+            'donnees' => $donnees + ['plan_version' => \App\Support\PlanSyscohada::VERSION],
         ]]);
 
         return $bilan['rejected'][0]['motif'] ?? null;
