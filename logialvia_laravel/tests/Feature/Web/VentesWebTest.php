@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-/** Ecran web « Ventes » : KPI et historique en LECTURE SEULE (les ventes sont des faits saisis au poste). */
+/** Ecran web « Ventes » : KPI, historique (liste, filtres, detail). La caisse, l'annulation et le recouvrement : `CommerceWebTest`. */
 class VentesWebTest extends TestCase
 {
     use RefreshDatabase;
@@ -94,9 +94,9 @@ class VentesWebTest extends TestCase
 
     public function test_l_ecran_declare_ses_ecarts_avec_le_poste(): void
     {
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
-            ->assertSeeHtml('data-ecart="ventes"')->assertSee('caisse')->assertSee('devis')
-            ->assertSee('retours et avoirs')->assertSee('export PDF');
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
+            ->assertSeeHtml('data-ecart="ventes"')->assertSee('Stock propre à chaque poste')
+            ->assertSee('ne décrémente aucun stock')->assertSee('XLSX');
     }
 
     // --------------------------------------------------------------------- KPI
@@ -108,7 +108,7 @@ class VentesWebTest extends TestCase
         $this->vente(['total' => 99000, 'status' => 'Annulée']);
         $this->vente(['total' => 70000, 'date_vente' => CarbonImmutable::now()->subDay()]);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertSeeHtml('data-kpi="ca">15 000 ')
             ->assertSeeHtml('data-kpi="panier">7 500<')
             ->assertSeeHtml('data-kpi="attente">1<');
@@ -118,7 +118,7 @@ class VentesWebTest extends TestCase
     {
         $this->vente(['date_vente' => CarbonImmutable::now()->subDays(3)]);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertSeeHtml('data-kpi="ca">0 ')->assertSeeHtml('data-kpi="panier">—<')
             ->assertSee('Aucune vente aujourd\'hui');
     }
@@ -131,7 +131,7 @@ class VentesWebTest extends TestCase
         $this->vente(['total' => 4000, 'date_vente' => CarbonImmutable::parse('2026-11-09 23:30:00', config('logialvia.fuseau'))->utc()]);
         $this->vente(['total' => 8000, 'date_vente' => CarbonImmutable::parse('2026-11-10 00:30:00', config('logialvia.fuseau'))->utc()]);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)->assertSeeHtml('data-kpi="ca">5 000 ');
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')->assertSeeHtml('data-kpi="ca">5 000 ');
     }
 
     public function test_les_ventes_en_attente_comptent_toutes_les_avances_de_tous_les_jours(): void
@@ -140,7 +140,7 @@ class VentesWebTest extends TestCase
         $this->vente(['status' => 'Avance']);
         $this->vente(['status' => 'Payée']);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)->assertSeeHtml('data-kpi="attente">2<');
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')->assertSeeHtml('data-kpi="attente">2<');
     }
 
     // ------------------------------------------------------------------- Liste
@@ -150,14 +150,14 @@ class VentesWebTest extends TestCase
         $this->vente(['reference' => 'V-ANCIEN', 'date_vente' => CarbonImmutable::now()->subDays(5), 'total' => 1500]);
         $this->vente(['reference' => 'V-RECENT', 'client' => 'Kofi', 'total' => 12345]);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertSeeHtmlInOrder(['data-vente="V-RECENT"', 'V-RECENT', '09/11/2026', 'Kofi', '12 345', 'Payée', 'data-vente="V-ANCIEN"', '04/11/2026'])
             ->assertSee('Référence')->assertSee('Montant')->assertSee('Statut');
     }
 
     public function test_la_liste_vide_affiche_le_message_du_poste(): void
     {
-        Livewire::actingAs($this->caissier())->test(Ventes::class)->assertSee('Aucune vente ne correspond.');
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')->assertSee('Aucune vente ne correspond.');
     }
 
     public function test_la_recherche_filtre_par_reference_ou_client_sans_casse(): void
@@ -165,7 +165,7 @@ class VentesWebTest extends TestCase
         $this->vente(['reference' => 'V-P1-2026-AAA', 'client' => 'Amina Bako']);
         $this->vente(['reference' => 'V-P1-2026-BBB', 'client' => 'Kofi']);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->set('recherche', 'kof')->assertSeeHtml('data-vente="V-P1-2026-BBB"')->assertDontSeeHtml('data-vente="V-P1-2026-AAA"')
             ->set('recherche', '2026-aaa')->assertSeeHtml('data-vente="V-P1-2026-AAA"')->assertDontSeeHtml('data-vente="V-P1-2026-BBB"')
             ->set('recherche', '  ')->assertSeeHtml('data-vente="V-P1-2026-AAA"')->assertSeeHtml('data-vente="V-P1-2026-BBB"');
@@ -175,7 +175,7 @@ class VentesWebTest extends TestCase
     {
         $this->vente(['reference' => 'V-1', 'client' => 'Amina']);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->set('recherche', '%')->assertDontSeeHtml('data-vente="V-1"')
             ->set('recherche', '_')->assertDontSeeHtml('data-vente="V-1"');
     }
@@ -186,7 +186,7 @@ class VentesWebTest extends TestCase
         $this->vente(['reference' => 'V-AVANCE', 'client' => 'Amina', 'status' => 'Avance']);
         $this->vente(['reference' => 'V-ANNULEE', 'client' => 'Kofi', 'status' => 'Annulée']);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertSeeHtml('data-vente="V-ANNULEE"')
             ->set('statut', 'Avance')->assertSeeHtml('data-vente="V-AVANCE"')
             ->assertDontSeeHtml('data-vente="V-PAYEE"')->assertDontSeeHtml('data-vente="V-ANNULEE"')
@@ -205,7 +205,7 @@ class VentesWebTest extends TestCase
         $autre = $this->vente(['reference' => 'V-AUTRE']);
         $this->ligne($autre, 'Intrus', 1, 1);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->assertDontSeeHtml('data-detail=')
             ->call('ouvrir', $v->id)
             ->assertSeeHtml('data-detail="'.$v->reference.'"')
@@ -221,31 +221,31 @@ class VentesWebTest extends TestCase
         $payee = $this->vente();
         $annulee = $this->vente(['status' => 'Annulée', 'motif_annulation' => 'Erreur de saisie', 'paye' => 0]);
 
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->call('ouvrir', $payee->id)->assertSee('Comptant')->assertDontSee('Reste dû')->assertDontSee('Motif d\'annulation')
             ->call('ouvrir', $annulee->id)->assertSee('Motif d\'annulation')->assertSee('Erreur de saisie')->assertDontSee('Reste dû');
     }
 
     public function test_ouvrir_une_vente_inconnue_ne_montre_rien(): void
     {
-        Livewire::actingAs($this->caissier())->test(Ventes::class)
+        Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
             ->call('ouvrir', (string) Str::uuid())->assertSet('venteId', null)->assertDontSeeHtml('data-detail=');
     }
 
-    // ------------------------------------------------------------- Lecture seule
+    // ------------------------------------------------------------- Consultation
 
-    public function test_aucun_bouton_d_ecriture_et_aucune_ecriture_en_base_meme_pour_l_admin(): void
+    public function test_le_comptable_consulte_sans_aucun_bouton_d_ecriture_et_sans_rien_ecrire(): void
     {
         $v = $this->vente();
         $this->ligne($v, 'Poulet', 1, 10000);
         $avant = [Vente::query()->count(), LigneVente::query()->count(), $v->fresh()->getAttributes()];
 
-        Livewire::actingAs($this->utilisateur('admin', 'chef'))->test(Ventes::class)
-            ->assertDontSee('Annuler la vente')->assertDontSee('Enregistrer Vente')
+        Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Ventes::class)
+            ->assertSee('exige le droit de gérer les ventes')->assertDontSee('Encaisser la Vente')
+            ->set('onglet', 'historique')->assertDontSeeHtml('data-action="annuler-vente"')->assertDontSeeHtml('data-action="modifier-vente"')
             ->set('recherche', 'x')->set('statut', 'Avance')->set('statut', '')->set('recherche', '')
             ->call('ouvrir', $v->id)->call('fermer');
 
         $this->assertSame($avant, [Vente::query()->count(), LigneVente::query()->count(), $v->fresh()->getAttributes()]);
-        $this->assertFalse(method_exists(Ventes::class, 'annuler'), 'pas de methode d\'ecriture sur le web');
     }
 }
