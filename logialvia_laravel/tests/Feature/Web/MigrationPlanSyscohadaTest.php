@@ -167,7 +167,8 @@ class MigrationPlanSyscohadaTest extends TestCase
         // Coupure au milieu : apres la 20e mise a jour d'ecritures (phase A achevee, phase B entamee).
         $n = 0;
         DB::listen(function ($q) use (&$n) {
-            if (str_contains($q->sql, 'update "ecritures_comptables"') && ++$n === 20) {
+            // Guillemets (SQLite/PostgreSQL) ou accents graves (MySQL/MariaDB) : le test vaut sur tout moteur.
+            if (preg_match('/^update\s+[`"]ecritures_comptables[`"]/i', $q->sql) && ++$n === 20) {
                 throw new \RuntimeException('coupure de courant');
             }
         });
