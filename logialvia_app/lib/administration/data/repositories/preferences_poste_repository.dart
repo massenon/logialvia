@@ -153,6 +153,7 @@ class PreferencesPosteRepository {
 
   Future<void> definirParametresElevageAdoptes() =>
       _ecrire(_cleParametresElevageAdoptes, '1');
+
   /// Les comptes que ce poste a créés ou modifiés seul ont-ils déjà été proposés au
   /// serveur (une seule fois, P8) ?
   Future<bool> planAdopte() async => await _lire('sync.plan_adopte') == '1';
@@ -207,8 +208,10 @@ class PreferencesPosteRepository {
     }
   }
 
-  Future<void> definirDroitsSync(DroitsPoste? droits) =>
-      _ecrire(_cleDroits, droits == null ? null : jsonEncode(droits.versJson()));
+  Future<void> definirDroitsSync(DroitsPoste? droits) => _ecrire(
+    _cleDroits,
+    droits == null ? null : jsonEncode(droits.versJson()),
+  );
 
   /// Dernier écart mesuré (poste − serveur ; positif : en avance), `null` : jamais mesuré.
   Future<Duration?> decalageHorloge() async {

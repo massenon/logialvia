@@ -16,7 +16,7 @@ class ConnecterUtilisateurUseCase {
   /// Message unique, volontairement identique que l'identifiant soit inconnu
   /// ou le mot de passe faux.
   static const String messageIdentifiantsInvalides =
-      'Adresse e-mail ou mot de passe incorrect. Veuillez réessayer.';
+      'Identifiant ou mot de passe incorrect. Veuillez réessayer.';
 
   Future<Resultat<SessionUtilisateur>> executer({
     required String identifiant,

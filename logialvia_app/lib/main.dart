@@ -74,6 +74,13 @@ Future<void> main() async {
     title: 'LogiALVIA — ALLMANY ET COMPAGNIE',
   );
   await windowManager.waitUntilReadyToShow(optionsFenetre, () async {
+    // Fenetre MAXIMISEE (et non plein ecran) : elle occupe tout le bureau mais laisse
+    // la barre des taches visible. Les trois boutons (reduire, agrandir/restaurer,
+    // fermer) sont ceux du cadre Windows natif ; on les rend explicitement actifs.
+    await windowManager.setMinimizable(true);
+    await windowManager.setMaximizable(true);
+    await windowManager.setClosable(true);
+    await windowManager.maximize();
     await windowManager.show();
     await windowManager.focus();
   });

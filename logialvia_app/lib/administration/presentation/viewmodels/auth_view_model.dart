@@ -131,7 +131,7 @@ class AuthViewModel extends ChangeNotifier {
     // Validation locale d'abord (Doc E6 §2) : les 2 champs sont requis, non vides.
     // Les libelles sont ceux du prototype (login.html l.89 et l.98).
     _erreurIdentifiant = identifiant.trim().isEmpty
-        ? 'L\'adresse e-mail est obligatoire.'
+        ? 'L\'identifiant est obligatoire.'
         : null;
     _erreurMotDePasse = motDePasse.trim().isEmpty
         ? 'Le mot de passe est obligatoire.'
@@ -183,18 +183,14 @@ class AuthViewModel extends ChangeNotifier {
           );
         }
 
+        // DECISION CLIENT (2026-11-10) : AUCUN verrouillage apres des echecs. Le poste est un
+        // ordinateur de bureau ; bloquer la connexion empechait de travailler. Les echecs restent
+        // journalises (security_logs) et comptes, mais ne bloquent jamais.
         _tentatives++;
-        if (_tentatives >= nombreTentativesMax) {
-          _verrouiller();
-          // Aucun toast au 5e echec : le prototype affiche uniquement la
-          // banniere de verrouillage (login.html l.189-193).
-          return const ReponseConnexion(IssueConnexion.compteVerrouille);
-        }
-
         notifyListeners();
         return ReponseConnexion(
           IssueConnexion.identifiantsIncorrects,
-          messageToast: '$message ($_tentatives/$nombreTentativesMax)',
+          messageToast: message,
         );
     }
   }
@@ -211,36 +207,12 @@ class AuthViewModel extends ChangeNotifier {
 
   /// Remet a zero l'etat de saisie a l'arrivee sur l'ecran de connexion.
   /// Ne touche ni au compteur de tentatives ni au verrouillage : les reinitialiser
-  /// permettrait de contourner le blocage en quittant puis revenant sur l'ecran.
+  /// ne change rien au compteur d'echecs (plus aucun blocage depuis la decision du 2026-11-10).
   void reinitialiserErreursSaisie() {
     if (_erreurIdentifiant == null && _erreurMotDePasse == null) return;
     _erreurIdentifiant = null;
     _erreurMotDePasse = null;
     notifyListeners();
-  }
-
-  void _verrouiller() {
-    _verrouille = true;
-    _secondesRestantes = dureeVerrouillageSecondes;
-    _libelleVerrouillage = '15min';
-    notifyListeners();
-
-    _minuteurVerrouillage?.cancel();
-    _minuteurVerrouillage = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _secondesRestantes--;
-      final minutes = _secondesRestantes ~/ 60;
-      final secondes = _secondesRestantes % 60;
-      _libelleVerrouillage = '${minutes}min ${secondes}s';
-
-      if (_secondesRestantes <= 0) {
-        timer.cancel();
-        _minuteurVerrouillage = null;
-        _verrouille = false;
-        _tentatives = 0;
-        _libelleVerrouillage = '15min';
-      }
-      notifyListeners();
-    });
   }
 
   @override
