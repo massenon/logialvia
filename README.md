@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="logo/logo_logialvia.png" alt="LogiALVIA" width="150">
-
 # LogiALVIA
 
 **Gestion intégrée d'ALLMANY ET COMPAGNIE**
