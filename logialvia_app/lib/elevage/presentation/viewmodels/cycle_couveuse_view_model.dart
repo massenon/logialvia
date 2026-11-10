@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/resultat/resultat.dart';
 import '../../domain/entities/cycle_incubation.dart';
+import '../../domain/services/controle_vraisemblance.dart';
 import '../../domain/repositories/cycle_couveuse_repository.dart';
 import '../../domain/services/suivi_incubation.dart';
 
@@ -35,10 +36,10 @@ class CycleCouveuseViewModel extends ChangeNotifier {
   List<MachineIncubateur> get machines => _machines;
 
   /// Filtre par machine — un couvoir a plusieurs incubateurs.
-  int? _filtreMachine;
-  int? get filtreMachine => _filtreMachine;
+  String? _filtreMachine;
+  String? get filtreMachine => _filtreMachine;
 
-  void definirFiltreMachine(int? machineId) {
+  void definirFiltreMachine(String? machineId) {
     _filtreMachine = machineId;
     notifyListeners();
   }
@@ -102,9 +103,9 @@ class CycleCouveuseViewModel extends ChangeNotifier {
       .where((c) => c.estEnCours)
       .fold<int>(0, (s, c) => s + c.oeufsRetenusApresMirages);
 
-  int occupation(int machineId) => _suivi.occupation(_cycles, machineId);
+  int occupation(String machineId) => _suivi.occupation(_cycles, machineId);
 
-  List<CycleIncubation> lignee(int lotRacineId) =>
+  List<CycleIncubation> lignee(String lotRacineId) =>
       _suivi.lignee(_cycles, lotRacineId);
 
   CycleIncubation? racineDe(CycleIncubation lot) =>
@@ -114,7 +115,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
   ///
   /// C'est la productivité d'un **emplacement** sur la durée : le TER d'un seul
   /// lot ne dit rien de la rotation qui l'a suivi.
-  double? terDeLaLignee(int lotRacineId) =>
+  double? terDeLaLignee(String lotRacineId) =>
       _suivi.terDeLaLignee(_cycles, lotRacineId, _reference);
 
   /// Capacité totale déclarée du parc, `null` si aucune machine ne l'annonce.
@@ -167,7 +168,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     required EspeceCouvable? espece,
     required DateTime? dateChargement,
     required int? oeufsCharges,
-    int? machineId,
+    String? machineId,
   }) async {
     // Validations de la modale (`data-required`, cycle-couveuse.html l.229-246).
     if (espece == null) return const Echec('L\'espèce est obligatoire.');
@@ -202,7 +203,7 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     required EspeceCouvable? espece,
     required DateTime? dateChargement,
     required int? oeufsCharges,
-    int? machineId,
+    String? machineId,
   }) async {
     if (!cycle.estEnCours) {
       return const Echec(
@@ -277,6 +278,13 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     if (retires < 0) {
       return const Echec('Le nombre d\'œufs retirés est obligatoire.');
     }
+    // Un mirage ne se fait pas avant J+5 / J+12 (`47e_`).
+    final prematuree = ControleVraisemblanceCouveuse.erreurMirage(
+      lot: lot,
+      jour: jour,
+      date: _reference,
+    );
+    if (prematuree != null) return Echec(prematuree);
 
     // Un mirage ne peut pas retirer plus d'oeufs qu'il n'en reste dans la
     // machine, sinon le denominateur du TER deviendrait negatif.
@@ -320,6 +328,12 @@ class CycleCouveuseViewModel extends ChangeNotifier {
     if (eclos < 0 || perdus < 0) {
       return const Echec('Les quantités ne peuvent être négatives.');
     }
+    // Une eclosion plus de 4 jours avant le terme de l'espece est impossible (`47e_`).
+    final prematureeEclosion = ControleVraisemblanceCouveuse.erreurEclosion(
+      lot: cycle,
+      date: _reference,
+    );
+    if (prematureeEclosion != null) return Echec(prematureeEclosion);
 
     // Invariant : on ne peut pas faire eclore plus d'oeufs qu'il n'en RESTE
     // apres les mirages — et non plus qu'il n'y en avait au depart. Un lot de

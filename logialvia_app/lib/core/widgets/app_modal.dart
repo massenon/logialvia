@@ -24,15 +24,28 @@ class AppModal extends StatelessWidget {
   final List<Widget>? actions;
   final double maxWidth;
 
+  /// Ouvre la modale et rend la main **quand elle a fini de se fermer**.
+  ///
+  /// `showDialog` rend son résultat dès le `pop`, alors que l'animation de
+  /// sortie dure encore. Or les appelants libèrent leurs `TextEditingController`
+  /// juste après le `await` : la modale, encore en train de s'effacer, les
+  /// reconstruisait une dernière fois — « A TextEditingController was used
+  /// after being disposed », écran rouge en développement. Attendre la fin de
+  /// la transition évite ce dernier rendu sur un contrôleur mort.
   static Future<T?> show<T>(
     BuildContext context, {
     required String title,
     required Widget child,
     List<Widget>? actions,
     double maxWidth = 480,
-  }) {
-    return showDialog<T>(
+  }) async {
+    // Comme `showDialog` : navigateur RACINE (la modale recouvre aussi la barre
+    // laterale, pas seulement le corps de l'ecran sous le `ShellRoute`) et
+    // themes captures depuis l'endroit d'appel.
+    final navigateur = Navigator.of(context, rootNavigator: true);
+    final route = DialogRoute<T>(
       context: context,
+      themes: InheritedTheme.capture(from: context, to: navigateur.context),
       barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (ctx) => Dialog(
         backgroundColor: AppColors.surfaceCard,
@@ -46,6 +59,10 @@ class AppModal extends StatelessWidget {
         ),
       ),
     );
+    final resultat = await navigateur.push<T>(route);
+    // Fin de l'animation de sortie (immédiat si la modale est déjà démontée).
+    await route.completed;
+    return resultat;
   }
 
   @override

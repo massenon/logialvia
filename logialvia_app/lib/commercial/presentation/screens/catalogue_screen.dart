@@ -20,6 +20,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/carte_section.dart';
 import '../../../core/widgets/kpi_card.dart';
 import '../../data/repositories/ventes_repository_drift.dart';
+import '../../../elevage/domain/entities/configuration_espece.dart';
 import '../../domain/entities/produit_vendable.dart';
 import '../viewmodels/catalogue_view_model.dart';
 import '../../../core/saisie/formats_saisie.dart';
@@ -482,9 +483,13 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
   late final TextEditingController _prixMax;
   late final TextEditingController _unite;
   late final TextEditingController _stock;
+  late final TextEditingController _motifCorrection;
   late final TextEditingController _seuil;
   late final TextEditingController _coutRevient;
   String? _categorie;
+
+  /// Filière d'élevage dont le produit est la vente (`null` = aucune).
+  String? _espece;
   String? _erreur;
   bool _enCours = false;
 
@@ -498,12 +503,15 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
       text: p?.prixMax?.toStringAsFixed(0) ?? '',
     );
     _unite = TextEditingController(text: p?.unite ?? 'u');
-    _stock = TextEditingController(text: p?.stock.toString() ?? '0');
+    _stock = TextEditingController(text: p?.stock.toString() ?? '0')
+      ..addListener(() => setState(() {}));
+    _motifCorrection = TextEditingController();
     _seuil = TextEditingController(text: p?.seuil.toString() ?? '0');
     _coutRevient = TextEditingController(
       text: p?.coutRevient?.toStringAsFixed(0) ?? '',
     );
     _categorie = p?.categorie;
+    _espece = p?.espece;
   }
 
   @override
@@ -513,10 +521,16 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
     _prixMax.dispose();
     _unite.dispose();
     _stock.dispose();
+    _motifCorrection.dispose();
     _seuil.dispose();
     _coutRevient.dispose();
     super.dispose();
   }
+
+  /// Vrai quand on modifie le stock d'un produit EXISTANT : le motif devient requis.
+  bool get _stockModifie =>
+      widget.produit != null &&
+      int.tryParse(_stock.text) != widget.produit!.stock;
 
   Future<void> _valider() async {
     setState(() {
@@ -532,8 +546,9 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
       unite: _unite.text,
       stock: int.tryParse(_stock.text),
       seuil: int.tryParse(_seuil.text),
-      espece: widget.produit?.espece,
+      espece: _espece,
       coutRevient: double.tryParse(_coutRevient.text.trim()),
+      motifCorrection: _motifCorrection.text,
     );
     if (!mounted) return;
 
@@ -568,6 +583,39 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
               DropdownMenuItem(value: c, child: Text(c)),
           ],
           onChanged: (v) => setState(() => _categorie = v),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        // Sans ce choix, un produit neuf n'est rattache a AUCUNE fiche : sa
+        // vente ne decrementerait ni la categorie commercialisee ni le
+        // compteur de ventes du jour, et ne serait imputee a aucun centre.
+        const Text(
+          'FILIÈRE D\'ÉLEVAGE (FACULTATIF)',
+          style: AppTypography.label,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        DropdownButtonFormField<String?>(
+          key: const ValueKey('champ-filiere'),
+          initialValue: _espece,
+          isExpanded: true,
+          decoration: _decoration,
+          style: _texte,
+          items: [
+            const DropdownMenuItem<String?>(
+              child: Text('Aucune (produit hors élevage)'),
+            ),
+            for (final config in ConfigurationsEspeces.parIdentifiant.values)
+              DropdownMenuItem<String?>(
+                value: config.identifiant,
+                child: Text(config.libelle),
+              ),
+          ],
+          onChanged: (v) => setState(() => _espece = v),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Rattache les ventes de ce produit à la fiche de la filière : le '
+          'stock vendu est déduit de sa catégorie commercialisée.',
+          style: _texte.copyWith(fontSize: 11, color: AppColors.outline),
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(
@@ -636,6 +684,10 @@ class _FormulaireProduitState extends State<_FormulaireProduit> {
             ),
           ],
         ),
+        if (_stockModifie) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _champ('Motif de la correction de stock', _motifCorrection),
+        ],
         if (_erreur != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(_erreur!, style: AppTypography.invalidFeedback),

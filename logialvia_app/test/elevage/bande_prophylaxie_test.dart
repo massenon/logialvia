@@ -233,6 +233,37 @@ void main() {
       expect(enBase.single.vientDuCalendrier, isTrue);
     });
 
+    test('la dose de l\'échéance est reprise sur le soin créé', () async {
+      // Goliaths J1 : la dose n'est pas semee (echeance d'avant la v27) ; elle
+      // est renseignee ici comme le ferait l'animalier dans Paramètres Élevage.
+      await db.customStatement(
+        "UPDATE calendrier_prophylaxie SET dose = '1 mL par litre d''eau' "
+        "WHERE espece = 'goliaths' AND jour_cycle = 1",
+      );
+      await ouvrirLe(DateTime(2026, 8, 1));
+      await declarer(date: DateTime(2026, 8, 1));
+
+      await vm.planifierEcheance(
+        projetee: vm.prophylaxieDuJour.single,
+        typeSoin: 'Vermifuge',
+      );
+
+      final enBase = await soins.chargerSoins();
+      expect(enBase.single.dose, '1 mL par litre d\'eau');
+    });
+
+    test('sans dose renseignée, le soin n\'en invente pas', () async {
+      await ouvrirLe(DateTime(2026, 8, 1));
+      await declarer(date: DateTime(2026, 8, 1));
+
+      await vm.planifierEcheance(
+        projetee: vm.prophylaxieDuJour.single,
+        typeSoin: 'Vermifuge',
+      );
+
+      expect((await soins.chargerSoins()).single.dose, isNull);
+    });
+
     test('une échéance déjà planifiée ne se reprogramme pas', () async {
       await ouvrirLe(DateTime(2026, 8, 1));
       await declarer(date: DateTime(2026, 8, 1));

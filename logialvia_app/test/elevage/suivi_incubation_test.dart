@@ -20,7 +20,7 @@ void main() {
     int? parentId,
     int? machineId = 1,
   }) => CycleIncubation(
-    id: id,
+    id: 'lot-$id',
     code: code,
     espece: espece,
     dateChargement: insertion ?? j0,
@@ -29,8 +29,8 @@ void main() {
     oeufsBlancsJ7: blancs,
     oeufsGatesJ14: gates,
     poussinsEclos: eclos,
-    lotParentId: parentId,
-    machineId: machineId,
+    lotParentId: parentId == null ? null : 'lot-$parentId',
+    machineId: machineId == null ? null : 'machine-$machineId',
   );
 
   group('Durées d\'incubation', () {
@@ -293,7 +293,7 @@ void main() {
       final eclosions = au22.where((a) => a.type == TypeEcheance.eclosion);
       expect(
         eclosions.map((a) => a.lot.id),
-        [1],
+        ['lot-1'],
         reason:
             'La pintade n\'eclot que le 29 : l\'alerter le 22 ferait '
             'ouvrir la machine pour rien.',
@@ -326,7 +326,7 @@ void main() {
     ];
 
     test('la lignée suit la chaîne des remplacements, dans l\'ordre', () {
-      final lignee = suivi.lignee(lots, 1);
+      final lignee = suivi.lignee(lots, 'lot-1');
 
       expect(lignee.map((l) => l.code), [
         'C-2026-001',
@@ -351,7 +351,7 @@ void main() {
 
     test('le TER de la lignée mesure la place dans la machine', () {
       // 100 + 100 retenus, 80 + 90 eclos.
-      final ter = suivi.terDeLaLignee(lots, 1, DateTime(2026, 10, 1));
+      final ter = suivi.terDeLaLignee(lots, 'lot-1', DateTime(2026, 10, 1));
       expect(ter, closeTo(85, 0.001));
     });
 
@@ -390,9 +390,9 @@ void main() {
         lot(id: 3, machineId: 2, quantite: 200),
       ];
 
-      expect(suivi.occupation(lots, 1), 90);
-      expect(suivi.occupation(lots, 2), 200);
-      expect(suivi.occupation(lots, 3), 0);
+      expect(suivi.occupation(lots, 'machine-1'), 90);
+      expect(suivi.occupation(lots, 'machine-2'), 200);
+      expect(suivi.occupation(lots, 'machine-3'), 0);
     });
   });
 
@@ -400,7 +400,7 @@ void main() {
     test('le document porte lots, machines, alertes et TER', () {
       final lots = [lot(insertion: DateTime(2026, 8, 1), blancs: 10)];
       const machines = [
-        MachineIncubateur(id: 1, code: 'INC-01', libelle: 'Couveuse 1'),
+        MachineIncubateur(id: 'machine-1', code: 'INC-01', libelle: 'Couveuse 1'),
       ];
 
       final json = suivi.versJson(lots, machines, DateTime(2026, 8, 20));

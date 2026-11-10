@@ -94,7 +94,7 @@ void main() {
     final neuve = AppDatabase.pourFichier(fichier);
     await neuve.customSelect('SELECT 1').get();
     await neuve.customStatement(
-      "INSERT INTO clients (nom, telephone) VALUES ('AGOSSOU Prudence', '97')",
+      "INSERT INTO clients (id, nom, telephone, updated_at) VALUES ('33333333-3333-4333-8333-333333333333', 'AGOSSOU Prudence', '97', '2026-11-09T09:00:00.000Z')",
     );
     await neuve.customStatement('PRAGMA user_version = 16');
     await neuve.close();

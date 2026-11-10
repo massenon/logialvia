@@ -1,0 +1,61 @@
+numero;libelle;classe;statut
+101;Capital social;1;verifie_pdf_fourni_2026-11-09
+111;Réserve légale;1;verifie_pdf_fourni_2026-11-09
+118;Autres réserves;1;verifie_pdf_fourni_2026-11-09
+121;Report à nouveau créditeur;1;verifie_pdf_fourni_2026-11-09
+129;Report à nouveau débiteur;1;verifie_pdf_fourni_2026-11-09
+131;Résultat net de l'exercice : bénéfice;1;verifie_pdf_fourni_2026-11-09
+139;Résultat net de l'exercice : perte;1;verifie_pdf_fourni_2026-11-09
+162;Emprunts et dettes auprès des établissements de crédit;1;verifie_pdf_fourni_2026-11-09
+231;Bâtiments industriels, agricoles, administratifs et commerciaux sur sol propre;2;verifie_pdf_fourni_2026-11-09
+242;Matériel et outillage agricole;2;verifie_pdf_fourni_2026-11-09
+244;Matériel et mobilier;2;verifie_pdf_fourni_2026-11-09
+245;Matériel de transport;2;verifie_pdf_fourni_2026-11-09
+246;Actifs biologiques;2;verifie_pdf_fourni_2026-11-09
+283;Amortissements des bâtiments, installations techniques et agencements;2;verifie_pdf_fourni_2026-11-09
+284;Amortissements du matériel;2;verifie_pdf_fourni_2026-11-09
+31;Marchandises;3;verifie_pdf_fourni_2026-11-09
+32;Matières premières et fournitures liées;3;verifie_pdf_fourni_2026-11-09
+36;Produits finis;3;verifie_pdf_fourni_2026-11-09
+401;Fournisseurs, dettes en compte;4;verifie_pdf_fourni_2026-11-09
+409;Fournisseurs débiteurs : avances et acomptes versés;4;verifie_pdf_fourni_2026-11-09
+411;Clients;4;verifie_pdf_fourni_2026-11-09
+419;Clients créditeurs, avances et acomptes reçus;4;verifie_pdf_fourni_2026-11-09
+421;Personnel, avances et acomptes;4;verifie_pdf_fourni_2026-11-09
+422;Personnel, rémunérations dues;4;verifie_pdf_fourni_2026-11-09
+431;Sécurité sociale;4;verifie_pdf_fourni_2026-11-09
+4431;TVA facturée sur ventes;4;verifie_pdf_fourni_2026-11-09
+4432;TVA facturée sur prestations de services;4;verifie_pdf_fourni_2026-11-09
+4441;État, TVA due;4;verifie_pdf_fourni_2026-11-09
+4449;État, crédit de TVA à reporter;4;verifie_pdf_fourni_2026-11-09
+4451;État, TVA récupérable sur immobilisations;4;verifie_pdf_fourni_2026-11-09
+4452;État, TVA récupérable sur achats;4;verifie_pdf_fourni_2026-11-09
+465;Associés, dividendes à payer;4;verifie_pdf_fourni_2026-11-09
+552;Monnaie électronique : téléphone portable;5;verifie_pdf_fourni_2026-11-09
+571;Caisse siège social;5;verifie_pdf_fourni_2026-11-09
+601;Achats de marchandises;6;verifie_pdf_fourni_2026-11-09
+602;Achats de matières premières et fournitures liées;6;verifie_pdf_fourni_2026-11-09
+604;Achats stockés de matières et fournitures consommables;6;verifie_pdf_fourni_2026-11-09
+605;Autres achats;6;verifie_pdf_fourni_2026-11-09
+611;Transports sur achats;6;absent_du_pdf_fourni
+612;Transports sur ventes;6;verifie_pdf_fourni_2026-11-09
+618;Autres frais de transport;6;verifie_pdf_fourni_2026-11-09
+622;Locations et charges locatives;6;verifie_pdf_fourni_2026-11-09
+624;Entretien, réparations et maintenance;6;verifie_pdf_fourni_2026-11-09
+625;Primes d'assurance;6;verifie_pdf_fourni_2026-11-09
+628;Frais de télécommunications;6;verifie_pdf_fourni_2026-11-09
+631;Frais bancaires;6;verifie_pdf_fourni_2026-11-09
+632;Rémunérations d'intermédiaires et de conseils;6;verifie_pdf_fourni_2026-11-09
+641;Impôts et taxes directs;6;verifie_pdf_fourni_2026-11-09
+658;Charges diverses;6;verifie_pdf_fourni_2026-11-09
+661;Rémunérations directes versées au personnel national;6;verifie_pdf_fourni_2026-11-09
+664;Charges sociales;6;verifie_pdf_fourni_2026-11-09
+671;Intérêts des emprunts;6;verifie_pdf_fourni_2026-11-09
+681;Dotations aux amortissements d'exploitation;6;verifie_pdf_fourni_2026-11-09
+701;Ventes de marchandises;7;verifie_pdf_fourni_2026-11-09
+702;Ventes de produits finis;7;verifie_pdf_fourni_2026-11-09
+706;Services vendus;7;verifie_pdf_fourni_2026-11-09
+707;Produits accessoires;7;verifie_pdf_fourni_2026-11-09
+7071;Ports, emballages perdus et autres frais facturés;7;verifie_pdf_fourni_2026-11-09
+758;Produits divers;7;verifie_pdf_fourni_2026-11-09
+771;Intérêts de prêts et créances diverses;7;verifie_pdf_fourni_2026-11-09

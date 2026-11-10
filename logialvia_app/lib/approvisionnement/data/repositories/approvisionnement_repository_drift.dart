@@ -3,15 +3,25 @@ import 'package:drift/drift.dart';
 
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../core/database/app_database.dart';
+import '../../../commercial/domain/services/numerotation_pieces.dart';
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/approvisionnement.dart';
 import '../../domain/entities/fabrication_provende.dart';
+import '../../domain/services/calcul_pmp.dart';
+import '../../../comptabilite/domain/plan_syscohada.dart';
 
 /// Dépôt du contexte Approvisionnement — intrants, mouvements, achats,
 /// fournisseurs.
 abstract class ApprovisionnementRepository {
   Future<List<Intrant>> chargerIntrants();
   Future<List<MouvementIntrant>> chargerMouvements({int limite = 100});
+
+  /// Effets de stock appliqués à CE poste sur ordre du web (`47s_`), du plus récent au
+  /// plus ancien : ce qui a été fait, avec les avertissements (« Stock insuffisant… »).
+  Future<List<EffetStockWeb>> chargerEffetsWeb({int limite = 30});
   Future<List<Fournisseur>> chargerFournisseurs();
   Future<List<Achat>> chargerAchats({int limite = 200});
 
@@ -51,7 +61,7 @@ abstract class ApprovisionnementRepository {
   /// incrémenté, leur PMP recalculé, et les mouvements journalisés — le tout
   /// dans une seule transaction.
   Future<Achat> enregistrerAchat({
-    required int fournisseurId,
+    required String fournisseurId,
     required String mode,
     required double montantPaye,
     required List<LignePanierAchat> panier,
@@ -79,21 +89,27 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
   final GenererEcrituresAutomatiques _ecritures;
 
   /// Ventile un panier d'achat entre les comptes de charges selon la catégorie
-  /// de l'intrant : « Vétérinaire » → 622, « Marchandises » → 602, le reste
-  /// (provende) → 601.
-  Map<String, double> _ventilerAchat(
+  /// de l'intrant : « Vétérinaire » → 604, « Marchandises » → 601, le reste
+  /// (provende) → 602 (plan SYSCOHADA, `47p_`).
+  ///
+  /// **TVA** : un intrant n'a pas encore de groupe de taxe (colonne à créer, voir `47p_` §6) :
+  /// le taux est 0, l'achat reste intégralement en charge. Dès qu'un taux est connu, la
+  /// génération extrait la TVA déductible (4452) du montant TTC.
+  Map<CleVentilationAchat, double> _ventilerAchat(
     List<LignePanierAchat> panier,
     Map<String, String> categorieParCode,
   ) {
-    final ventilation = <String, double>{};
+    const tauxAchat = 0.0;
+    final ventilation = <CleVentilationAchat, double>{};
     for (final ligne in panier) {
       final categorie = categorieParCode[ligne.intrantCode];
       final compte = switch (categorie) {
-        'Vétérinaire' => ComptesAutomatiques.fraisVeterinaires,
-        'Marchandises' => ComptesAutomatiques.achatsMarchandises,
-        _ => ComptesAutomatiques.achatsMatieres,
+        'Vétérinaire' => PlanSyscohada.fraisVeterinaires,
+        'Marchandises' => PlanSyscohada.achatsMarchandises,
+        _ => PlanSyscohada.achatsMatieres,
       };
-      ventilation[compte] = (ventilation[compte] ?? 0) + ligne.total;
+      final cle = (compte, tauxAchat);
+      ventilation[cle] = (ventilation[cle] ?? 0) + ligne.total;
     }
     return ventilation;
   }
@@ -105,10 +121,9 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
   @override
   Future<List<Intrant>> chargerIntrants() async {
-    final lignes =
-        await (_db.select(_db.intrants)
-              ..orderBy([(i) => OrderingTerm.asc(i.name)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.intrants,
+    )..orderBy([(i) => OrderingTerm.asc(i.name)])).get();
     return [
       for (final i in lignes)
         Intrant(
@@ -130,6 +145,19 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
               ..orderBy([(m) => OrderingTerm.desc(m.horodatage)])
               ..limit(limite))
             .get();
+    // Les références dont l'effet a réellement touché CE stock (`47s_`).
+    final moi = await PreferencesPosteRepository(_db).identifiantPoste();
+    final appliquees = {
+      for (final e
+          in await (_db.select(_db.effetsAppliques)..where(
+                (e) =>
+                    e.faitType.equals('achat') &
+                    e.origine.isNull() &
+                    e.etat.isNotValue('ignore'),
+              ))
+              .get())
+        if (e.reference != null) e.reference!,
+    };
     return [
       for (final m in lignes)
         MouvementIntrant(
@@ -139,16 +167,43 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
           motif: m.motif,
           quantite: m.quantite,
           reference: m.reference,
+          origine: m.origine,
+          posteCible: m.posteCible,
+          appliqueIci:
+              m.origine != null &&
+              m.posteCible == moi &&
+              m.reference != null &&
+              appliquees.contains(m.reference),
+        ),
+    ];
+  }
+
+  @override
+  Future<List<EffetStockWeb>> chargerEffetsWeb({int limite = 30}) async {
+    final lignes =
+        await (_db.select(_db.effetsAppliques)
+              ..where((e) => e.origine.isNull())
+              ..orderBy([(e) => OrderingTerm.desc(e.appliqueLe)])
+              ..limit(limite))
+            .get();
+    return [
+      for (final e in lignes)
+        EffetStockWeb(
+          libelle: e.libelle,
+          etat: e.etat,
+          appliqueLe:
+              DateTime.tryParse(e.appliqueLe)?.toLocal() ?? DateTime.now(),
+          reference: e.reference,
+          avertissement: e.avertissement,
         ),
     ];
   }
 
   @override
   Future<List<Fournisseur>> chargerFournisseurs() async {
-    final lignes =
-        await (_db.select(_db.fournisseurs)
-              ..orderBy([(f) => OrderingTerm.asc(f.nom)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.fournisseurs,
+    )..orderBy([(f) => OrderingTerm.asc(f.nom)])).get();
     final commandes = await _db.select(_db.achats).get();
 
     return [
@@ -192,14 +247,16 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
     final parAchat = <String, List<LigneAchat>>{};
     for (final l in lignes) {
-      parAchat.putIfAbsent(l.achatRef, () => []).add(
-        LigneAchat(
-          intrantCode: l.intrantCode,
-          nom: l.nom,
-          quantite: l.qte,
-          prixUnitaire: l.puAchat,
-        ),
-      );
+      parAchat
+          .putIfAbsent(l.achatRef, () => [])
+          .add(
+            LigneAchat(
+              intrantCode: l.intrantCode,
+              nom: l.nom,
+              quantite: l.qte,
+              prixUnitaire: l.puAchat,
+            ),
+          );
     }
 
     return [
@@ -237,6 +294,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
               pmp: intrant.pmp,
             ),
           );
+      await DepotDemandesReferentiel(_db).proposerIntrant(intrant.code);
       return;
     }
 
@@ -252,6 +310,8 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         pmp: Value(intrant.pmp),
       ),
     );
+    // Le référentiel appartient au serveur : le poste PROPOSE (sans stock ni PMP).
+    await DepotDemandesReferentiel(_db).proposerIntrant(intrant.code);
   }
 
   @override
@@ -271,6 +331,11 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       utilisateurId: utilisateurId,
       utilisateurNom: utilisateurNom,
     );
+    // Les autres postes l'apprennent (pierre tombale, jamais d'effacement serveur) ;
+    // proposé APRÈS l'archivage local réussi : une suppression refusée n'est pas diffusée.
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageIntrant(ligne);
+    }
   }
 
   @override
@@ -339,11 +404,9 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         final intrant = intrants[entree.key]!;
         final restant = intrant.stock - entree.value.round();
 
-        await (_db.update(
-          _db.intrants,
-        )..where((i) => i.code.equals(entree.key))).write(
-          IntrantsCompanion(stock: Value(restant)),
-        );
+        await (_db.update(_db.intrants)
+              ..where((i) => i.code.equals(entree.key)))
+            .write(IntrantsCompanion(stock: Value(restant)));
 
         await _journaliser(
           intrantCode: entree.key,
@@ -385,10 +448,12 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
     String? adresse,
     String? fournit,
   }) async {
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.fournisseurs)
         .insert(
           FournisseursCompanion.insert(
+            id: Value(id),
             nom: nom,
             telephone: Value(telephone),
             adresse: Value(adresse),
@@ -406,7 +471,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
   @override
   Future<Achat> enregistrerAchat({
-    required int fournisseurId,
+    required String fournisseurId,
     required String mode,
     required double montantPaye,
     required List<LignePanierAchat> panier,
@@ -497,23 +562,28 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         _db.lignesAchat,
       )..where((l) => l.achatRef.equals(reference))).get();
 
-      await _receptionnerLignes(
-        reference,
-        [
-          for (final l in lignes)
-            LignePanierAchat(
-              intrantCode: l.intrantCode,
-              nom: l.nom,
-              quantite: l.qte,
-              prixUnitaire: l.puAchat,
-              unite: '',
-            ),
-        ],
-        DateTime.now(),
-      );
+      await _receptionnerLignes(reference, [
+        for (final l in lignes)
+          LignePanierAchat(
+            intrantCode: l.intrantCode,
+            nom: l.nom,
+            quantite: l.qte,
+            prixUnitaire: l.puAchat,
+            unite: '',
+          ),
+      ], DateTime.now());
 
-      await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(const AchatsCompanion(statut: Value(StatutAchat.livre)));
+      await (_db.update(
+        _db.achats,
+      )..where((a) => a.ref.equals(reference))).write(
+        AchatsCompanion(
+          statut: const Value(StatutAchat.livre),
+          // Toute modification locale repasse l'achat a envoyer.
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
     });
   }
 
@@ -523,6 +593,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
     required double montant,
   }) async {
     String? modeAchat;
+    var verse = 0.0;
 
     await _db.transaction(() async {
       final achat = await (_db.select(
@@ -530,12 +601,27 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       )..where((a) => a.ref.equals(reference))).getSingleOrNull();
       if (achat == null) throw StateError('Commande $reference introuvable.');
 
+      if (achat.statut == StatutAchat.annule) {
+        throw StateError('Cette commande est annulée.');
+      }
       modeAchat = achat.mode;
 
       // Ne jamais regler plus que le total du.
       final nouveauPaye = (achat.paye + montant).clamp(0.0, achat.total);
-      await (_db.update(_db.achats)..where((a) => a.ref.equals(reference)))
-          .write(AchatsCompanion(paye: Value(nouveauPaye)));
+      // Ce qui est REELLEMENT verse : l'ecriture porte ce montant, pas celui saisi. Avec le
+      // montant saisi, un versement de 999 999 sur 4 000 dus laissait 401 DEBITEUR de 995 999
+      // alors que la dette de l'achat etait ramenee a zero (solde 401 != dettes fournisseurs).
+      verse = nouveauPaye - achat.paye;
+      await (_db.update(
+        _db.achats,
+      )..where((a) => a.ref.equals(reference))).write(
+        AchatsCompanion(
+          paye: Value(nouveauPaye),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
     });
 
     // Reglement d'une dette : Fournisseurs au debit, Tresorerie au credit.
@@ -543,7 +629,7 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
       reference: reference,
       date: DateTime.now(),
       mode: modeAchat ?? 'Espèces',
-      montant: montant,
+      montant: verse,
       estEncaissement: false,
     );
   }
@@ -577,19 +663,17 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
 
       final quantite = ligne.quantite.round();
       final nouveauStock = intrant.stock + quantite;
-      final nouveauPmp = nouveauStock <= 0
-          ? intrant.pmp
-          : ((intrant.stock * intrant.pmp + quantite * ligne.prixUnitaire) /
-                    nouveauStock)
-                .round();
+      final nouveauPmp = CalculPmp.apresReception(
+        stock: intrant.stock,
+        pmp: intrant.pmp,
+        quantite: quantite,
+        prixUnitaire: ligne.prixUnitaire,
+      );
 
       await (_db.update(
         _db.intrants,
       )..where((i) => i.code.equals(ligne.intrantCode))).write(
-        IntrantsCompanion(
-          stock: Value(nouveauStock),
-          pmp: Value(nouveauPmp),
-        ),
+        IntrantsCompanion(stock: Value(nouveauStock), pmp: Value(nouveauPmp)),
       );
 
       await _journaliser(
@@ -628,17 +712,20 @@ class ApprovisionnementRepositoryDrift implements ApprovisionnementRepository {
         );
   }
 
+  /// Référence officielle : `ACH-P2-2026-001` pour un poste appairé (DV-21),
+  /// `ACH-2026-001` sinon. Séquence continue par poste et par année.
   Future<String> _prochaineReference(int annee) async {
-    final prefixe = 'ACH-$annee-';
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    final prefixe = NumerotationPieces.prefixeAchat(annee, code);
     final existantes = await (_db.select(
       _db.achats,
     )..where((a) => a.ref.like('$prefixe%'))).get();
 
     var maximum = 0;
     for (final achat in existantes) {
-      final numero = int.tryParse(achat.ref.substring(prefixe.length));
+      final numero = NumerotationPieces.sequence(achat.ref, prefixe);
       if (numero != null && numero > maximum) maximum = numero;
     }
-    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+    return NumerotationPieces.composer(prefixe, maximum + 1);
   }
 }

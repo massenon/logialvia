@@ -236,7 +236,9 @@ class _PiedSidebar extends StatelessWidget {
           // web. Reproduire un bouton inerte contreviendrait au Master Prompt
           // §2.3. Il est retire tant qu'aucune synchronisation reelle n'existe
           // (l'application est hors-ligne par conception, Doc B1 §7).
-          // TODO(dette): le restaurer si une synchronisation reelle est ajoutee.
+          // Une synchronisation reelle existe desormais (poste appaire) : son etat
+          // et son declenchement manuel sont dans la barre du haut
+          // (`_IndicateurSynchro`) et dans Parametres > Appairage.
           Row(
             children: [
               Container(

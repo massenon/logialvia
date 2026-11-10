@@ -10,6 +10,12 @@
 /// la vente disparaisse.
 library;
 
+/// Identifiant du « poste » web : émetteur des factures émises depuis le web
+/// (`47a2_`). Le web n'a ni jeton ni accès à e-MECeF : ces factures se transmettent
+/// depuis un poste appairé, après une réservation au serveur (verrou contre la double
+/// normalisation).
+const String identifiantPosteWeb = '00000000-0000-0000-0000-000000000000';
+
 /// Nature de la pièce.
 enum TypeFacture {
   /// Facture de vente.
@@ -48,6 +54,18 @@ enum StatutFacture {
     (s) => s.code == code,
     orElse: () => StatutFacture.aTransmettre,
   );
+
+  /// Rang de la machine à états : `à transmettre` < `rejetée` < `normalisée`.
+  ///
+  /// Un statut **ne régresse jamais** : une facture normalisée est immuable
+  /// (règle fiscale), une rejetée peut être retransmise (donc devenir normalisée)
+  /// mais ne redevient jamais « à transmettre ». La synchronisation arbitre sur ce
+  /// rang, pas sur l'horloge (`46e_` §2).
+  int get rang => switch (this) {
+    StatutFacture.aTransmettre => 0,
+    StatutFacture.rejetee => 1,
+    StatutFacture.normalisee => 2,
+  };
 }
 
 /// Un groupe de la grille de taxation.
@@ -92,7 +110,8 @@ class LigneFacture {
     this.id,
   });
 
-  final int? id;
+  /// UUID de la ligne (DV-19).
+  final String? id;
   final String designation;
   final double quantite;
   final String? unite;
@@ -140,8 +159,12 @@ class FactureMecef {
     this.lienVerification,
     this.dateNormalisation,
     this.erreurTransmission,
+    this.origine,
+    this.id = '',
   });
 
+  /// UUID de la facture (DV-19) : son identité synchronisée.
+  final String id;
   final String reference;
   final TypeFacture type;
   final DateTime date;
@@ -165,6 +188,21 @@ class FactureMecef {
   final String? lienVerification;
   final DateTime? dateNormalisation;
   final String? erreurTransmission;
+
+  /// `null` : émise sur ce poste. Sinon l'identifiant du poste émetteur.
+  final String? origine;
+
+  /// Une facture absorbée du serveur : lisible, imprimable, mais **jamais
+  /// transmise d'ici** (un seul poste normalise, `46e_` §3).
+  ///
+  /// Une facture émise au **web** n'est PAS « d'un autre poste » : n'ayant pas de poste
+  /// émetteur, elle peut être transmise par n'importe quel poste appairé (après
+  /// réservation au serveur, voir [estWeb]).
+  bool get estDUnAutrePoste =>
+      origine != null && origine != identifiantPosteWeb;
+
+  /// Émise depuis le web : sa transmission passe par une réservation serveur.
+  bool get estWeb => origine == identifiantPosteWeb;
 
   double get totalHt => lignes.fold(0, (s, l) => s + l.montantHt);
   double get totalTaxe => lignes.fold(0, (s, l) => s + l.montantTaxe);
@@ -208,6 +246,10 @@ class FactureMecef {
 /// `FV-2026-001`, `FA-2026-001` : une séquence par type **et** par année. Le
 /// compteur repart à 1 le 1er janvier, comme l'exige une numérotation
 /// chronologique annuelle.
+///
+/// **Poste appairé (DV-21)** : `FV-P2-2026-001`, `FA-P2-2026-001`. Le préfixe de
+/// poste fait l'unicité entre postes sans passer par le serveur, et une facture
+/// déjà remise au client ne change jamais de numéro.
 class NumerotationFacture {
   const NumerotationFacture._();
 
@@ -219,15 +261,19 @@ class NumerotationFacture {
     required TypeFacture type,
     required DateTime date,
     String? derniere,
+    String? codePoste,
   }) {
-    final annee = date.year;
+    final prefixe = prefixeDe(type, date.year, codePoste);
     var rang = 1;
-    if (derniere != null) {
-      final morceaux = derniere.split('-');
-      if (morceaux.length == 3 && morceaux[1] == '$annee') {
-        rang = (int.tryParse(morceaux[2]) ?? 0) + 1;
-      }
+    if (derniere != null && derniere.startsWith(prefixe)) {
+      rang = (int.tryParse(derniere.substring(prefixe.length)) ?? 0) + 1;
     }
-    return '${type.code}-$annee-${rang.toString().padLeft(3, '0')}';
+    return '$prefixe${rang.toString().padLeft(3, '0')}';
   }
+
+  /// `FV-P2-2026-` ou, sans code de poste, `FV-2026-`.
+  static String prefixeDe(TypeFacture type, int annee, String? codePoste) =>
+      codePoste == null || codePoste.isEmpty
+      ? '${type.code}-$annee-'
+      : '${type.code}-$codePoste-$annee-';
 }

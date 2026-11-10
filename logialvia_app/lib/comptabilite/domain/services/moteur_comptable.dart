@@ -1,4 +1,5 @@
 import '../entities/comptabilite.dart';
+import '../plan_syscohada.dart';
 
 /// Validation d'une écriture — partie double.
 class EcritureValidator {
@@ -101,25 +102,39 @@ class BalanceCalculator {
     required List<Ecriture> ecrituresAnterieures,
     required List<Ecriture> ecrituresPeriode,
   }) {
+    final ouverture = <String, double>{};
+    for (final e in ecrituresAnterieures) {
+      ouverture[e.numeroCompte] =
+          (ouverture[e.numeroCompte] ?? 0) + e.debit - e.credit;
+    }
+    return calculerDepuis(
+      comptes: comptes,
+      ouvertureNet: ouverture,
+      ecrituresPeriode: ecrituresPeriode,
+    );
+  }
+
+  /// Balance dont l'ouverture est donnée en **soldes nets** (débit − crédit) par compte :
+  /// les à-nouveaux de l'exercice (voir `ReportANouveau.soldesOuverture`).
+  List<LigneBalance> calculerDepuis({
+    required List<CompteComptable> comptes,
+    required Map<String, double> ouvertureNet,
+    required List<Ecriture> ecrituresPeriode,
+  }) {
     final lignes = <LigneBalance>[];
 
     for (final compte in comptes) {
-      final anterieures = ecrituresAnterieures.where(
-        (e) => e.numeroCompte == compte.numero,
-      );
       final periode = ecrituresPeriode.where(
         (e) => e.numeroCompte == compte.numero,
       );
+      final aOuverture = ouvertureNet.containsKey(compte.numero);
 
-      if (anterieures.isEmpty && periode.isEmpty) continue;
+      if (!aOuverture && periode.isEmpty) continue;
 
-      final ouvertureNet =
-          anterieures.fold<double>(0, (s, e) => s + e.debit - e.credit);
-      final mouvementsDebit =
-          periode.fold<double>(0, (s, e) => s + e.debit);
-      final mouvementsCredit =
-          periode.fold<double>(0, (s, e) => s + e.credit);
-      final finalNet = ouvertureNet + mouvementsDebit - mouvementsCredit;
+      final ouvertureCompte = ouvertureNet[compte.numero] ?? 0;
+      final mouvementsDebit = periode.fold<double>(0, (s, e) => s + e.debit);
+      final mouvementsCredit = periode.fold<double>(0, (s, e) => s + e.credit);
+      final finalNet = ouvertureCompte + mouvementsDebit - mouvementsCredit;
 
       lignes.add(
         LigneBalance(
@@ -127,8 +142,8 @@ class BalanceCalculator {
           libelle: compte.libelle,
           // Un solde n'apparaît que d'un seul côté : positif au débit,
           // négatif au crédit (en valeur absolue).
-          ouvertureDebit: ouvertureNet > 0 ? ouvertureNet : 0,
-          ouvertureCredit: ouvertureNet < 0 ? -ouvertureNet : 0,
+          ouvertureDebit: ouvertureCompte > 0 ? ouvertureCompte : 0,
+          ouvertureCredit: ouvertureCompte < 0 ? -ouvertureCompte : 0,
           mouvementsDebit: mouvementsDebit,
           mouvementsCredit: mouvementsCredit,
           finalDebit: finalNet > 0 ? finalNet : 0,
@@ -173,6 +188,24 @@ class SoldesComptes {
     return total;
   }
 
+  /// Soldes débiteurs des comptes dont le numéro commence par [prefixe].
+  double debiteursParPrefixe(String prefixe) {
+    var total = 0.0;
+    _soldes.forEach((numero, solde) {
+      if (numero.startsWith(prefixe) && solde > 0) total += solde;
+    });
+    return total;
+  }
+
+  /// Soldes créditeurs (valeur absolue) des comptes dont le numéro commence par [prefixe].
+  double crediteursParPrefixe(String prefixe) {
+    var total = 0.0;
+    _soldes.forEach((numero, solde) {
+      if (numero.startsWith(prefixe) && solde < 0) total += -solde;
+    });
+    return total;
+  }
+
   /// Somme des soldes d'une classe entière.
   double parClasse(String classe) => parPrefixe(classe);
 
@@ -204,22 +237,26 @@ class SoldesComptes {
 class CalculerResultatNet {
   CalculerResultatNet._();
 
-  /// Résultat = Produits (classe 7, créditeurs) − Charges (classe 6, débiteurs).
+  /// Résultat = Produits (classe 7 + soldes créditeurs de la classe 8) − Charges (classe 6
+  /// + soldes débiteurs de la classe 8).
+  ///
+  /// La classe 8 (HAO, participation, impôt sur le résultat) fait partie du résultat net
+  /// SYSCOHADA : l'ignorer fausserait le compte 13 dès qu'un compte 8x est mouvementé.
   ///
   /// Les soldes étant stockés en net (débit − crédit) :
   /// - une charge a un solde **positif**,
   /// - un produit a un solde **négatif**.
   ///
-  /// D'où : Résultat = (−solde classe 7) − (solde classe 6).
+  /// D'où : Résultat = −(solde classe 6 + solde classe 7 + solde classe 8).
   static double calculer(SoldesComptes soldes) {
-    final produits = -soldes.parClasse('7');
-    final charges = soldes.parClasse('6');
-    return produits - charges;
+    return produits(soldes) - charges(soldes);
   }
 
-  static double produits(SoldesComptes soldes) => -soldes.parClasse('7');
+  static double produits(SoldesComptes soldes) =>
+      -soldes.parClasse('7') + soldes.crediteursParClasse('8');
 
-  static double charges(SoldesComptes soldes) => soldes.parClasse('6');
+  static double charges(SoldesComptes soldes) =>
+      soldes.parClasse('6') + soldes.debiteursParClasse('8');
 }
 
 /// Construction du Bilan SYSCOHADA — Doc F6 §4 Onglet 1.
@@ -233,10 +270,20 @@ class BilanCalculator {
     final chargesImmobilisees = soldes.parPrefixe('20');
     final incorporelles = soldes.parPrefixe('21');
     final corporelles =
-        soldes.parPrefixe('22') + soldes.parPrefixe('23') + soldes.parPrefixe('24');
+        soldes.parPrefixe('22') +
+        soldes.parPrefixe('23') +
+        soldes.parPrefixe('24') +
+        soldes.parPrefixe('25');
     final financieres = soldes.parPrefixe('26') + soldes.parPrefixe('27');
+    // Amortissements et dépréciations des immobilisations : soldes créditeurs, donc
+    // négatifs en net, ils MINORENT l'actif. Les omettre déséquilibrait le bilan.
+    final amortissements = soldes.parPrefixe('28') + soldes.parPrefixe('29');
     final totalImmobilise =
-        chargesImmobilisees + incorporelles + corporelles + financieres;
+        chargesImmobilisees +
+        incorporelles +
+        corporelles +
+        financieres +
+        amortissements;
 
     final stocks = soldes.parClasse('3');
     final creances = soldes.debiteursParClasse('4');
@@ -258,12 +305,17 @@ class BilanCalculator {
       PosteEtat(
         libelle: 'Immobilisations Corporelles',
         montant: corporelles,
-        detail: 'Comptes 22 à 24',
+        detail: 'Comptes 22 à 25',
       ),
       PosteEtat(
         libelle: 'Immobilisations Financières',
         montant: financieres,
         detail: 'Comptes 26-27',
+      ),
+      PosteEtat(
+        libelle: 'Amortissements et Dépréciations',
+        montant: amortissements,
+        detail: 'Comptes 28-29 (à déduire)',
       ),
       PosteEtat(
         libelle: 'Total Actif Immobilisé',
@@ -298,7 +350,12 @@ class BilanCalculator {
     // Réserves et Report à Nouveau (11-12), hors compte de résultat 13 qui est
     // recalculé ci-dessous pour garantir BR-CPT-005.
     final reserves = -(soldes.parPrefixe('11') + soldes.parPrefixe('12'));
-    final capitauxPropres = capital + reserves + resultatNet;
+    // Subventions d'investissement et provisions réglementées (14-15), et tout solde
+    // résiduel du compte 13 (une clôture affecte le 13 ; seule une écriture manuelle le laisse).
+    final subventions = -(soldes.parPrefixe('13') +
+        soldes.parPrefixe('14') +
+        soldes.parPrefixe('15'));
+    final capitauxPropres = capital + reserves + subventions + resultatNet;
 
     final dettesFinancieres = -(soldes.parPrefixe('16') +
         soldes.parPrefixe('17') +
@@ -315,6 +372,11 @@ class BilanCalculator {
         libelle: 'Réserves et Report à Nouveau',
         montant: reserves,
         detail: 'Comptes 11-12',
+      ),
+      PosteEtat(
+        libelle: 'Subventions et Provisions Réglementées',
+        montant: subventions,
+        detail: 'Comptes 13 (résiduel), 14-15',
       ),
       PosteEtat(
         libelle: 'Résultat Net de l\'Exercice',
@@ -371,20 +433,24 @@ class CompteResultatCalculator {
 
   CompteDeResultat calculer(SoldesComptes soldes) {
     // Produits : soldes créditeurs, donc négatifs en net -> on inverse.
-    final ventesMarchandises = -soldes.parPrefixe('707');
-    final ventesProduits = -soldes.parPrefixe('701');
+    final ventesMarchandises = -soldes.parPrefixe(PlanSyscohada.ventesMarchandises);
+    final ventesProduits = -soldes.parPrefixe(PlanSyscohada.ventesProduitsFinis);
     final ventesTotales = -soldes.parPrefixe('70');
 
     // Charges : soldes débiteurs, positifs en net.
-    final achatsMarchandises = soldes.parPrefixe('602');
-    final achatsMatieres = soldes.parPrefixe('601');
+    final achatsMarchandises = soldes.parPrefixe(PlanSyscohada.achatsMarchandises);
+    final achatsMatieres = soldes.parPrefixe(PlanSyscohada.achatsMatieres);
 
     final margeCommerciale = ventesMarchandises - achatsMarchandises;
 
     // Consommations en provenance des tiers : classes 60-62 hors marchandises.
+    // Toute la classe 60 hors marchandises (601 matières, 603-608 variations de stocks,
+    // fournitures), puis 61 transports, 62 et 63 services extérieurs.
     final consommationsTiers = achatsMatieres +
+        (soldes.parPrefixe('60') - achatsMarchandises - achatsMatieres) +
         soldes.parPrefixe('61') +
-        soldes.parPrefixe('62');
+        soldes.parPrefixe('62') +
+        soldes.parPrefixe('63');
 
     final valeurAjoutee =
         ventesTotales - achatsMarchandises - consommationsTiers;
@@ -393,9 +459,15 @@ class CompteResultatCalculator {
     final impotsTaxes = soldes.parPrefixe('64');
     final excedentBrut = valeurAjoutee - chargesPersonnel - impotsTaxes;
 
-    final autresProduits = -soldes.parPrefixe('75');
+    // Autres produits d'exploitation : tout ce que la classe 7 porte hors ventes (70) et
+    // produits financiers (77) : subventions 71, production immobilisée 72, variations de
+    // stocks 73, autres produits 75, transferts de charges 78, reprises 79.
+    final autresProduits =
+        -(soldes.parClasse('7') -
+            soldes.parPrefixe('70') -
+            soldes.parPrefixe('77'));
     final autresCharges = soldes.parPrefixe('65');
-    final dotations = soldes.parPrefixe('68');
+    final dotations = soldes.parPrefixe('68') + soldes.parPrefixe('69');
     final resultatExploitation =
         excedentBrut + autresProduits - autresCharges - dotations;
 
@@ -405,9 +477,11 @@ class CompteResultatCalculator {
     final resultatActivitesOrdinaires =
         resultatExploitation + resultatFinancier;
 
-    final produitsHao = -soldes.parPrefixe('78');
-    final chargesHao = soldes.parPrefixe('83');
-    final resultatHao = produitsHao - chargesHao;
+    // HAO : comptes 81 à 86 et 88 de la classe 8 (cessions, charges et produits HAO,
+    // dotations et reprises HAO, subventions d'équilibre), hors 87 et 89 ci-dessous.
+    final resultatHao = -(soldes.parClasse('8') -
+        soldes.parPrefixe('87') -
+        soldes.parPrefixe('89'));
 
     final participation = soldes.parPrefixe('87');
     final impotSocietes = soldes.parPrefixe('89');
@@ -422,12 +496,12 @@ class CompteResultatCalculator {
         PosteEtat(
           libelle: 'Ventes de Marchandises',
           montant: ventesMarchandises,
-          detail: 'Compte 707',
+          detail: 'Compte ${PlanSyscohada.ventesMarchandises}',
         ),
         PosteEtat(
           libelle: 'Achats de Marchandises Consommés',
           montant: -achatsMarchandises,
-          detail: 'Compte 602',
+          detail: 'Compte ${PlanSyscohada.achatsMarchandises}',
         ),
         PosteEtat(
           libelle: 'MARGE COMMERCIALE',
@@ -437,12 +511,12 @@ class CompteResultatCalculator {
         PosteEtat(
           libelle: 'Ventes de Produits Avicoles',
           montant: ventesProduits,
-          detail: 'Compte 701',
+          detail: 'Compte ${PlanSyscohada.ventesProduitsFinis}',
         ),
         PosteEtat(
           libelle: 'Consommations en Provenance des Tiers',
           montant: -consommationsTiers,
-          detail: 'Comptes 601, 61, 62',
+          detail: 'Comptes 60 (hors ${PlanSyscohada.achatsMarchandises}), 61, 62, 63',
         ),
         PosteEtat(
           libelle: 'VALEUR AJOUTÉE',
@@ -464,12 +538,16 @@ class CompteResultatCalculator {
           montant: excedentBrut,
           estSousTotal: true,
         ),
-        PosteEtat(libelle: 'Autres Produits', montant: autresProduits),
+        PosteEtat(
+          libelle: 'Autres Produits',
+          montant: autresProduits,
+          detail: 'Classe 7 hors 70 et 77',
+        ),
         PosteEtat(libelle: 'Autres Charges', montant: -autresCharges),
         PosteEtat(
           libelle: 'Dotations aux Amortissements et Provisions',
           montant: -dotations,
-          detail: 'Classe 68',
+          detail: 'Classes 68-69',
         ),
         PosteEtat(
           libelle: 'RÉSULTAT D\'EXPLOITATION',
@@ -503,34 +581,58 @@ class CompteResultatCalculator {
 }
 
 /// TAFIRE simplifié — Doc F6 §4 Onglet 3.
+///
+/// ## Identité garantie (vérifiée par un test)
+///
+/// Trésorerie d'ouverture + flux d'exploitation + flux d'investissement + flux de
+/// financement = **trésorerie de clôture** (soldes nets de la classe 5). Elle tient parce
+/// que tout le livre est équilibré : Σ classes 1 à 5 = résultat net (les classes 6 à 8 portent
+/// l'inverse), et les flux sont construits pour sommer exactement ce mouvement.
+///
+/// - **Exploitation** = résultat + charges non décaissées (variation des comptes 28, 29, 39,
+///   49, crédités par les dotations) − variation du besoin en fonds de roulement **brut**.
+/// - **Investissement** = − variation des immobilisations **brutes** (classe 2 hors 28-29).
+/// - **Financement** = − variation de la classe 1. Le résultat de l'exercice n'y figure pas :
+///   avant clôture il n'est pas encore au compte 13 (il est déjà dans l'exploitation) ; à
+///   l'ouverture suivante, son affectation (121, réserves, dividendes à payer 465) est dans
+///   l'ouverture, pas dans les flux.
 class TafireCalculator {
   const TafireCalculator();
+
+  /// Comptes de dotations/dépréciations, portés au crédit d'un compte d'actif.
+  static const List<String> comptesDeProvisions = ['28', '29', '39', '49'];
 
   Tafire calculer({
     required SoldesComptes soldes,
     required SoldesComptes soldesOuverture,
   }) {
     final resultatNet = CalculerResultatNet.calculer(soldes);
-    final dotations = soldes.parPrefixe('68');
 
-    // Variation du BFR = (stocks + créances − dettes circulantes) fin − début.
+    double provisions(SoldesComptes s) =>
+        comptesDeProvisions.fold(0.0, (t, p) => t + s.parPrefixe(p));
+    // Charges non décaissées : l'accroissement des provisions (soldes créditeurs, donc
+    // négatifs en net : on change le signe).
+    final nonDecaisse = -(provisions(soldes) - provisions(soldesOuverture));
+
+    // Variation du BFR brut = (stocks + créances − dettes circulantes) hors provisions.
     double bfr(SoldesComptes s) =>
-        s.parClasse('3') + s.debiteursParClasse('4') - s.crediteursParClasse('4');
+        s.parClasse('3') +
+        s.parClasse('4') -
+        s.parPrefixe('39') -
+        s.parPrefixe('49');
     final variationBfr = bfr(soldes) - bfr(soldesOuverture);
 
-    final fluxExploitation = resultatNet + dotations - variationBfr;
+    final fluxExploitation = resultatNet + nonDecaisse - variationBfr;
 
-    // Investissement : variation des immobilisations (classe 2).
-    final acquisitions =
-        soldes.parClasse('2') - soldesOuverture.parClasse('2');
+    // Investissement : variation des immobilisations brutes (classe 2 hors 28-29).
+    double immoBrutes(SoldesComptes s) =>
+        s.parClasse('2') - s.parPrefixe('28') - s.parPrefixe('29');
+    final acquisitions = immoBrutes(soldes) - immoBrutes(soldesOuverture);
     final fluxInvestissement = -acquisitions;
 
     // Financement : variation des capitaux et dettes financières (classe 1).
-    final financement =
+    final fluxFinancement =
         -(soldes.parClasse('1') - soldesOuverture.parClasse('1'));
-    // Le résultat de l'exercice fait partie de la classe 1 mais n'est pas un
-    // apport de financement — il est déjà compté dans le flux d'exploitation.
-    final fluxFinancement = financement - resultatNet;
 
     final tresorerieOuverture = soldesOuverture.parClasse('5');
 
@@ -542,9 +644,9 @@ class TafireCalculator {
       postes: [
         PosteEtat(libelle: 'Résultat Net de l\'Exercice', montant: resultatNet),
         PosteEtat(
-          libelle: 'Dotations aux Amortissements',
-          montant: dotations,
-          detail: 'Charge non décaissée',
+          libelle: 'Dotations aux Amortissements et Provisions',
+          montant: nonDecaisse,
+          detail: 'Charge non décaissée (comptes 28, 29, 39, 49)',
         ),
         PosteEtat(
           libelle: 'Variation du Besoin en Fonds de Roulement',

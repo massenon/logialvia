@@ -62,8 +62,9 @@ import 'inventaire_libelles.dart';
 /// en carrés vides — et le manuel montrerait une application que personne ne
 /// reconnaîtrait.
 ///
-/// Lancement : `flutter test test/manuel/captures_test.dart`
-/// Sortie : `docs/manuel/captures/*.png`
+/// Lancement : `GENERER_MANUEL=1 flutter test test/manuel/captures_test.dart`
+/// Sortie : `docs/manuel/captures/*.png` (avec `GENERER_MANUEL=1` ; sinon un
+/// dossier temporaire, le depot reste intact)
 /// Semer un mois de donnees passe par les vrais cas d'usage -- ventes,
 /// journees d'elevage, couveuse -- et prend plusieurs minutes. Ce travail
 /// tombe dans le budget du premier test, ou les 10 minutes par defaut ne
@@ -71,9 +72,18 @@ import 'inventaire_libelles.dart';
 const Timeout _large = Timeout(Duration(minutes: 30));
 
 void main() {
-  const dossier = '../docs/manuel/captures';
-  const dossierLibelles = '../docs/manuel/libelles';
-  const dossierReperes = '../docs/manuel/reperes';
+  // ⚠️ Ce test ne touche au depot QUE sur demande explicite
+  // (`GENERER_MANUEL=1`). Les captures et libelles dependent de la date du
+  // jour : un simple `flutter test` reecrivait 105 fichiers versionnes de
+  // `docs/manuel/`, que personne ne voulait committer. Sans le drapeau, la
+  // sortie part dans un dossier temporaire.
+  final versDepot = Platform.environment['GENERER_MANUEL'] == '1';
+  final racineSortie = versDepot
+      ? '../docs/manuel'
+      : Directory.systemTemp.createTempSync('logialvia-captures-').path;
+  final dossier = '$racineSortie/captures';
+  final dossierLibelles = '$racineSortie/libelles';
+  final dossierReperes = '$racineSortie/reperes';
   // Les sauvegardes de demonstration ne doivent pas atterrir dans les
   // Documents de qui lance les tests.
   final dossierSauvegardes = Directory.systemTemp.createTempSync(
@@ -413,6 +423,24 @@ void main() {
       t,
       const PageFicheEspece(configuration: ConfigurationsEspeces.lapins),
       '07-fiche-lapins',
+    ),
+    timeout: _large,
+  );
+  testWidgets(
+    '07b fiche escargots',
+    (t) => capturer(
+      t,
+      const PageFicheEspece(configuration: ConfigurationsEspeces.escargots),
+      '07b-fiche-escargots',
+    ),
+    timeout: _large,
+  );
+  testWidgets(
+    '07c fiche bovins',
+    (t) => capturer(
+      t,
+      const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
+      '07c-fiche-bovins',
     ),
     timeout: _large,
   );

@@ -101,6 +101,18 @@ class NavigationModel {
           moduleId: 'cuniculture',
         ),
         EntreeNavigation(
+          libelle: 'Fiche Escargots',
+          icone: Symbols.eco,
+          route: '/elevage/escargots',
+          moduleId: 'heliciculture',
+        ),
+        EntreeNavigation(
+          libelle: 'Fiche Bovins',
+          icone: Symbols.agriculture,
+          route: '/elevage/bovins',
+          moduleId: 'bovins',
+        ),
+        EntreeNavigation(
           libelle: 'Fiche Poulets/Pondeuses',
           icone: Symbols.egg_alt,
           route: '/elevage/poulets-pondeuses',

@@ -17,7 +17,7 @@ void main() {
   final aujourdhui = DateTime(2026, 8, 20);
 
   Bande bande({
-    int id = 1,
+    String id = 'bande-1',
     String espece = 'goliaths',
     String code = 'B-2026-001',
     DateTime? cloture,
@@ -30,7 +30,7 @@ void main() {
   );
 
   EcheanceProphylaxie echeance({
-    int id = 1,
+    String id = '1',
     String espece = 'goliaths',
     required int jour,
     String traitement = 'Vaccin Newcastle',
@@ -93,15 +93,15 @@ void main() {
   group('Ce qui fait taire un rappel', () {
     test('une échéance déjà planifiée sort de la liste', () {
       final soin = Soin(
-        id: 1,
+        id: '1',
         espece: 'goliaths',
         datePrevue: DateTime(2026, 8, 5),
         typeSoin: 'Vaccination',
         statut: StatutSoin.planifie,
         produit: 'ND-Lasota',
         remanenceJours: 0,
-        bandeId: 1,
-        echeanceProphylaxieId: 1,
+        bandeId: 'bande-1',
+        echeanceProphylaxieId: '1',
       );
 
       final rappels = RappelsProphylaxie(
@@ -161,9 +161,9 @@ void main() {
       final rappels = RappelsProphylaxie(
         bandes: [bande()],
         echeances: [
-          echeance(id: 1, jour: 15, traitement: 'Vermifuge'),
-          echeance(id: 2, jour: 3, traitement: 'Anti-stress'),
-          echeance(id: 3, jour: 8, traitement: 'Anti-coccidien'),
+          echeance(id: '1', jour: 15, traitement: 'Vermifuge'),
+          echeance(id: '2', jour: 3, traitement: 'Anti-stress'),
+          echeance(id: '3', jour: 8, traitement: 'Anti-coccidien'),
         ],
         soins: const [],
       ).dues(aujourdhui);
@@ -181,12 +181,12 @@ void main() {
       final rappels = RappelsProphylaxie(
         bandes: [
           bande(),
-          bande(id: 2, espece: 'pintades', code: 'B-2026-002'),
+          bande(id: 'bande-2', espece: 'pintades', code: 'B-2026-002'),
         ],
         echeances: [
-          echeance(id: 1, jour: 5),
-          echeance(id: 2, jour: 8),
-          echeance(id: 3, jour: 5, espece: 'pintades'),
+          echeance(id: '1', jour: 5),
+          echeance(id: '2', jour: 8),
+          echeance(id: '3', jour: 5, espece: 'pintades'),
         ],
         soins: const [],
       ).dues(aujourdhui);

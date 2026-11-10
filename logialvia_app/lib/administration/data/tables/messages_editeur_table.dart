@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Messages adressés à l'éditeur — `contact-editeur.html`.
 ///
 /// ## ⚠️ Pourquoi cette table existe
@@ -17,7 +19,10 @@ import 'package:drift/drift.dart';
 /// et l'écran dit exactement cela.
 @DataClassName('MessageEditeurRow')
 class MessagesEditeur extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID généré au poste (DV-19, doc 47u §4) : un message est un fait synchronisé,
+  /// lisible et gérable depuis le web et les autres postes. Les messages existants
+  /// reçoivent le leur à la migration v45.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   DateTimeColumn get horodatage => dateTime()();
 
@@ -39,6 +44,25 @@ class MessagesEditeur extends Table {
   /// la Gérante ne l'a pas transmis elle-même, puis elle le marque `transmis`.
   TextColumn get statut =>
       text().withDefault(const Constant(MessageEditeurStatut.enAttente))();
+
+  /// « Nom (identifiant) — Rôle » de la rédactrice : `utilisateur_id` est un entier
+  /// LOCAL qui n'a pas de sens sur le serveur ni sur un autre poste. `null` pour les
+  /// messages d'avant la v45.
+  TextColumn get auteurNom => text().nullable()();
+
+  // --- Synchronisation (`46_` §1) ---
+
+  /// `pending` (à envoyer) · `synced` · `conflict` (refusé, voir `syncMotif`).
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+
+  /// Motif du refus du serveur, en français ; `null` hors conflit.
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class MessageEditeurStatut {

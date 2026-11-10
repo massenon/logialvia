@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 import '../../../core/database/app_database.dart';
 
 /// Peuplement initial du catalogue de produits vendables.
@@ -201,6 +203,12 @@ class CatalogueSeeder {
         _db.produitsVendables,
         produits.indexed.map(
           (entree) => ProduitsVendablesCompanion.insert(
+            // Meme produit = meme UUID sur TOUS les postes (catalogue seme).
+            id: Value(
+              uuidDeterministe(
+                'produit:PRD-${(entree.$1 + 1).toString().padLeft(3, '0')}|${entree.$2.name}',
+              ),
+            ),
             // Le prototype affiche une colonne SKU sans documenter de regle de
             // codification : 'PRD-NNN' sequentiel, choix explicite.
             sku: Value('PRD-${(entree.$1 + 1).toString().padLeft(3, '0')}'),

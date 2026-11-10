@@ -42,6 +42,8 @@ class PermissionService {
       '/elevage/pintades',
       '/elevage/poissons-chats',
       '/elevage/lapins',
+      '/elevage/escargots',
+      '/elevage/bovins',
       '/elevage/poulets-pondeuses',
       '/elevage/soins',
       '/parametres/elevage',

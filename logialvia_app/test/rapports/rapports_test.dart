@@ -1,3 +1,5 @@
+import 'package:logialvia_app/approvisionnement/domain/entities/approvisionnement.dart';
+import 'package:logialvia_app/elevage/domain/entities/cycle_incubation.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/comptabilite/data/repositories/comptabilite_repository_drift.dart';
@@ -67,19 +69,19 @@ void main() {
         venteRef: 'V-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 10000,
             credit: 0,
             libelle: 'Vente comptant',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 6000,
             libelle: 'Vente avicole',
           ),
           LigneAEcrire(
-            numeroCompte: '707',
+            numeroCompte: '701',
             debit: 0,
             credit: 4000,
             libelle: 'Vente marchandises',
@@ -92,13 +94,13 @@ void main() {
         journal: 'CA',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '628',
+            numeroCompte: '658',
             debit: 1500,
             credit: 0,
             libelle: 'Entretien groupe électrogène',
           ),
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 0,
             credit: 1500,
             libelle: 'Entretien groupe électrogène',
@@ -133,9 +135,9 @@ void main() {
         for (final l in vm.donnees.recettesDepenses)
           l.categorie.split(' ').first: l.centre,
       };
-      expect(parCentre['701'], CentresProfit.aviculture);
-      expect(parCentre['707'], CentresProfit.commerceAnnexe);
-      expect(parCentre['628'], CentresProfit.chargeGenerale);
+      expect(parCentre['702'], CentresProfit.aviculture);
+      expect(parCentre['701'], CentresProfit.commerceAnnexe);
+      expect(parCentre['658'], CentresProfit.chargeGenerale);
     });
 
     test('le filtre par centre restreint la table et le solde cumulé', () {
@@ -165,13 +167,13 @@ void main() {
         journal: 'VT',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 50000,
             credit: 0,
             libelle: 'Vente de juillet',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 50000,
             libelle: 'Vente de juillet',
@@ -191,7 +193,7 @@ void main() {
         date: DateTime(annee, 7, 1),
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 20000,
             credit: 0,
             libelle: 'Apport initial',
@@ -211,13 +213,13 @@ void main() {
         venteRef: 'V-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '531',
+            numeroCompte: '571',
             debit: 4500,
             credit: 0,
             libelle: 'Vente comptant',
           ),
           LigneAEcrire(
-            numeroCompte: '701',
+            numeroCompte: '702',
             debit: 0,
             credit: 4500,
             libelle: 'Vente comptant',
@@ -231,13 +233,13 @@ void main() {
         achatRef: 'ACH-2026-001',
         lignes: const [
           LigneAEcrire(
-            numeroCompte: '601',
+            numeroCompte: '602',
             debit: 6000,
             credit: 0,
             libelle: 'Achat maïs',
           ),
           LigneAEcrire(
-            numeroCompte: '512',
+            numeroCompte: '552',
             debit: 0,
             credit: 6000,
             libelle: 'Achat maïs',
@@ -411,9 +413,15 @@ void main() {
 
   group('Onglet 4 — Dettes Fournisseurs', () {
     setUp(() async {
-      final id = await db
+      const id = 'f0000001-0000-4000-8000-000000000001';
+      await db
           .into(db.fournisseurs)
-          .insert(FournisseursCompanion.insert(nom: 'Fournisseur Maïs Local'));
+          .insert(
+            FournisseursCompanion.insert(
+              id: const Value(id),
+              nom: 'Fournisseur Maïs Local',
+            ),
+          );
       await db
           .into(db.achats)
           .insert(
@@ -453,6 +461,27 @@ void main() {
               'Le prototype date sa seule dette du 06/08 avec une echeance au '
               '05/08 : exigible la veille de son propre engagement.',
         );
+      },
+    );
+
+    test(
+      'un achat annulé n\'est jamais une dette (statut réel « Annulé »)',
+      () async {
+        await db
+            .into(db.achats)
+            .insert(
+              AchatsCompanion.insert(
+                ref: 'ACH-2026-042',
+                fournisseurId: 'f0000001-0000-4000-8000-000000000001',
+                dateAchat: DateTime(annee, 8, 7),
+                statut: StatutAchat.annule,
+                total: 90000,
+              ),
+            );
+        await vm.charger();
+
+        expect(vm.donnees.dettes, hasLength(1));
+        expect(vm.totalDettes, 12000);
       },
     );
 
@@ -503,7 +532,7 @@ void main() {
               dateIncubation: DateTime(annee, 7, 12),
               oeufsCouves: 200,
               poussinsNes: const Value(168),
-              statut: 'Éclos',
+              statut: StatutCycle.eclosionEffectuee,
             ),
           );
       await db
@@ -514,7 +543,7 @@ void main() {
               espece: const Value('pintade'),
               dateIncubation: DateTime(annee, 8, 1),
               oeufsCouves: 140,
-              statut: 'En cours',
+              statut: StatutCycle.enIncubation,
             ),
           );
       await vm.charger();
@@ -537,7 +566,7 @@ void main() {
     });
 
     test(
-      'l\'éclosion attendue dépend de l\'espèce — 21 j goliath, 27 j pintade',
+      'l\'éclosion attendue dépend de l\'espèce — 21 j goliath, 28 j pintade',
       () {
         final parCode = {for (final c in vm.donnees.couvoir) c.codeLot: c};
         expect(
@@ -546,7 +575,7 @@ void main() {
         );
         expect(
           parCode['C-2026-014']!.eclosionAttendue,
-          DateTime(annee, 8, 1).add(const Duration(days: 27)),
+          DateTime(annee, 8, 1).add(const Duration(days: 28)),
         );
       },
     );

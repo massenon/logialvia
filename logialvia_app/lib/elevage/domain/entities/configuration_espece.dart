@@ -5,9 +5,17 @@ class CategorieEspece {
     required this.rationGrammesParJour,
     this.recoitAchatEtNaissances = false,
     this.deduiteDesVentes = false,
+    this.stadesEquivalents = const [],
   });
 
   final String libelle;
+
+  /// Autres intitulés sous lesquels le **barème** de cette catégorie peut avoir été
+  /// semé ou saisi (`47e_`). Le barème est cherché par libellé de stade : sans cette
+  /// équivalence, une ration modifiée dans Paramètres Élevage pour « Sevré / Lapereaux »
+  /// ou « Alevins » (le stade de la pintade semé à tort, DV-09 l'interdit) restait sans
+  /// effet sur la provende calculée, sans le dire.
+  final List<String> stadesEquivalents;
 
   /// Ration normative en g/j, utilisee pour le calcul de provende.
   final int rationGrammesParJour;
@@ -40,6 +48,10 @@ class ConfigurationEspece {
     this.ageMaturiteJours,
     this.libelleAchats = 'Achats',
     required this.libelleNaissances,
+    this.rationEnPourcentagePoidsVif = false,
+    this.uniteClassePoids = 'kg',
+    this.tauxPoidsMaxPourcent = 10,
+    this.rationMaxGrammesParJour = 5000,
   });
 
   /// Valeur stockee dans `FICHE_JOURNEE.espece`.
@@ -90,6 +102,33 @@ class ConfigurationEspece {
   /// poissons-chats.
   final String libelleNaissances;
 
+  /// Vrai quand la provende se calcule en **% du poids vif** (matière sèche),
+  /// d'après la pesée du jour et le tableau « Taux de ration par classe de
+  /// poids » de Paramètres Élevage — le cas d'un ruminant (DV-17).
+  ///
+  /// À défaut de pesée, ou de classe pour le poids moyen, la fiche retombe sur
+  /// les rations en g/tête/j de [categories], qui restent indicatives.
+  final bool rationEnPourcentagePoidsVif;
+
+  /// Unité dans laquelle on saisit les bornes des classes de poids : `'kg'`
+  /// pour un bovin, `'g'` pour un poisson (classes de 5, 20, 100 g). Les poids
+  /// sont toujours **stockés en grammes**.
+  final String uniteClassePoids;
+
+  /// Ration par tête au-delà de laquelle la saisie est une faute de frappe :
+  /// 5 kg par jour pour une volaille, un lapin, un poisson ou un escargot, mais
+  /// un bovin adulte mange près de 10 kg de matière sèche par jour (plafond
+  /// 20 kg).
+  final int rationMaxGrammesParJour;
+
+  /// Taux de ration au-delà duquel la saisie est une faute de frappe : un
+  /// ruminant mange 2 à 4 % de son poids en matière sèche (plafond 10 %), mais
+  /// un alevin de poisson-chat jusqu'à 20 % de sa biomasse (plafond 25 %).
+  final double tauxPoidsMaxPourcent;
+
+  /// Grammes dans une unité de [uniteClassePoids].
+  int get grammesParUniteClassePoids => uniteClassePoids == 'g' ? 1 : 1000;
+
   int get nombreCategories => categories.length;
 
   int get indexCategorieJeune =>
@@ -99,7 +138,7 @@ class ConfigurationEspece {
       categories.indexWhere((c) => c.deduiteDesVentes);
 }
 
-/// Referentiel des 5 fiches — Doc 05 §3 (table de correspondance des
+/// Referentiel des fiches (6 d'origine, plus escargots et bovins) — Doc 05 §3 (table de correspondance des
 /// categories) et Doc F3.
 ///
 /// Les rations proviennent du tableau de rationnement reel de chaque fiche
@@ -148,6 +187,7 @@ class ConfigurationsEspeces {
         libelle: 'Poussins',
         rationGrammesParJour: 30,
         recoitAchatEtNaissances: true,
+        stadesEquivalents: ['Alevins'],
       ),
       CategorieEspece(
         libelle: 'Pintadau',
@@ -174,13 +214,16 @@ class ConfigurationsEspeces {
         libelle: 'Lapereau',
         rationGrammesParJour: 30,
         recoitAchatEtNaissances: true,
+        stadesEquivalents: ['Sevré / Lapereaux'],
       ),
       CategorieEspece(
         libelle: 'Chair',
         rationGrammesParJour: 60,
         deduiteDesVentes: true,
+        stadesEquivalents: ['Chair / Jeune'],
       ),
-      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 110),
+      // 120 g/j : la valeur confirmee du bareme seme (Q-ELV-2) ; le code disait 110.
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 120),
     ],
     etapesCycle: ['Naissance', 'Chair', 'Reproducteur'],
     libelleNaissances: 'Nés (Mise bas)',
@@ -192,22 +235,29 @@ class ConfigurationsEspeces {
     icone: 'set_meal',
     route: '/elevage/poissons-chats',
     categories: [
+      // Repli par tete SANS pesee, en g/poisson/j (`47e_`). L'ancien 30 / 60 / 110 g
+      // etait absurde : un alevin de 2 g ne mange pas 30 g (15 fois son poids). Ordres
+      // de grandeur : alevin ~2 g a 15 % de biomasse = 0,3 g, arrondi a 1 g (l'entier
+      // le plus petit) ; juvenile ~50 g a 4 % = 2 g, arrondi a 3 g ; adulte ~500 g a
+      // 1,5 % = 7,5 g, arrondi a 8 g. Des qu'une pesee existe, le % de biomasse prime.
       CategorieEspece(
         libelle: 'Alevin',
-        rationGrammesParJour: 30,
+        rationGrammesParJour: 1,
         recoitAchatEtNaissances: true,
       ),
       CategorieEspece(
         libelle: 'Juvénile',
-        rationGrammesParJour: 60,
+        rationGrammesParJour: 3,
         deduiteDesVentes: true,
       ),
-      CategorieEspece(libelle: 'Mature', rationGrammesParJour: 110),
+      CategorieEspece(libelle: 'Mature', rationGrammesParJour: 8),
     ],
     etapesCycle: ['Alevin', 'Juvénile', 'Mature'],
     noteRationnement:
-        'Seuils non confirmés pour cette filière — barème à valider avant '
-        'usage réel (signalé sur le Dashboard Élevage du prototype).',
+        'Provende calculée en % de la biomasse dès qu\'une pesée est saisie '
+        '(DV-01), d\'après le tableau par classe de poids de Paramètres '
+        'Élevage. Sans pesée : ration indicative par tête. Taux à valider par '
+        'le technicien.',
     // ÉCART_DELIBERE — arbitrage de la Gérante.
     // `fiche-poissons-chats.html` l.161 intitule cette colonne « Alevins
     // (Naissance/Empoissonnement) ». La Gérante demande « Nés » tout court :
@@ -216,6 +266,9 @@ class ConfigurationsEspeces {
     // dans la colonne Achats, pas ici. Le libellé du prototype mélangeait donc
     // les deux entrées que la ligne sépare.
     libelleNaissances: 'Nés',
+    rationEnPourcentagePoidsVif: true,
+    uniteClassePoids: 'g',
+    tauxPoidsMaxPourcent: 25,
   );
 
   static const ConfigurationEspece poulets = ConfigurationEspece(
@@ -273,6 +326,86 @@ class ConfigurationsEspeces {
     libelleNaissances: 'Nés / Transferts',
   );
 
+  /// Escargots (achatines) — filière ajoutée après le prototype (DV-16,
+  /// `docs/logialvia/16_DECISIONS_VALIDEES.md`). Sur le modèle des lapins :
+  /// 3 catégories, la plus jeune reçoit achats et éclosions, la deuxième est
+  /// commercialisée, à la pièce. Rations en g/tête/j : repères validés par
+  /// l'animalier, modifiables dans Paramètres Élevage.
+  static const ConfigurationEspece escargots = ConfigurationEspece(
+    identifiant: 'escargots',
+    libelle: 'Escargots',
+    icone: 'eco',
+    route: '/elevage/escargots',
+    categories: [
+      CategorieEspece(
+        libelle: 'Naissain',
+        rationGrammesParJour: 1,
+        recoitAchatEtNaissances: true,
+      ),
+      CategorieEspece(
+        libelle: 'Marchand',
+        rationGrammesParJour: 5,
+        deduiteDesVentes: true,
+      ),
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 8),
+    ],
+    etapesCycle: [
+      'Ponte et éclosion',
+      'Naissain',
+      'Marchand (≈ 6 à 8 mois, ≈ 100 g) — Éligible à la Vente',
+      'Reproducteur',
+    ],
+    noteRationnement:
+        'Barème indicatif d\'héliciculture — repères à valider par '
+        'l\'animalier. La notice de l\'aliment utilisé prévaut.',
+    poidsMaturiteGrammes: 100,
+    ageMaturiteJours: 180,
+    libelleNaissances: 'Nés (Éclosions)',
+  );
+
+  /// Bovins — filière ajoutée après le prototype (DV-17).
+  ///
+  /// ⚠️ Un ruminant se rationne en % de son poids vif (matière sèche), pas en
+  /// grammes fixes par tête : la provende suit le tableau par classe de poids
+  /// ([rationEnPourcentagePoidsVif]). Les rations ci-dessous (complément seul :
+  /// 1,5 / 7 / 9 kg de matière sèche) ne servent que de repli quand aucune
+  /// pesée n'est saisie. Vente à la tête, après embouche.
+  static const ConfigurationEspece bovins = ConfigurationEspece(
+    identifiant: 'bovins',
+    libelle: 'Bovins',
+    icone: 'agriculture',
+    route: '/elevage/bovins',
+    categories: [
+      CategorieEspece(
+        libelle: 'Veau',
+        rationGrammesParJour: 1500,
+        recoitAchatEtNaissances: true,
+      ),
+      CategorieEspece(
+        libelle: 'Embouche',
+        rationGrammesParJour: 7000,
+        deduiteDesVentes: true,
+      ),
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 9000),
+    ],
+    etapesCycle: [
+      'Naissance (vêlage)',
+      'Veau (0 → 6 mois)',
+      'Embouche (≥ 250 kg ou 24 mois) — Éligible à la Vente',
+      'Reproducteur',
+    ],
+    noteRationnement:
+        'Provende calculée en % du poids vif (matière sèche) dès qu\'une '
+        'pesée est saisie, d\'après le tableau par classe de poids de '
+        'Paramètres Élevage. Sans pesée : ration indicative par tête. Repères à '
+        'valider par l\'animalier.',
+    poidsMaturiteGrammes: 250000,
+    ageMaturiteJours: 730,
+    libelleNaissances: 'Nés (Vêlage)',
+    rationEnPourcentagePoidsVif: true,
+    rationMaxGrammesParJour: 20000,
+  );
+
   static const Map<String, ConfigurationEspece> parIdentifiant = {
     'goliaths': goliaths,
     'pintades': pintades,
@@ -280,5 +413,7 @@ class ConfigurationsEspeces {
     'poissons-chats': poissonsChats,
     'poulets': poulets,
     'pondeuses': pondeuses,
+    'escargots': escargots,
+    'bovins': bovins,
   };
 }

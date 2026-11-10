@@ -30,10 +30,10 @@ abstract class CycleCouveuseRepository {
     required EspeceCouvable espece,
     required DateTime dateChargement,
     required int oeufsCharges,
-    int? machineId,
+    String? machineId,
 
     /// Lot remplacé, si celui-ci prend sa place dans la machine.
-    int? lotParentId,
+    String? lotParentId,
   });
 
   /// Saisit un mirage — `B_i(7)` ou `M_i(14)` selon [jour].
@@ -41,7 +41,7 @@ abstract class CycleCouveuseRepository {
   /// Séparé de l'éclosion : les mirages se font en cours d'incubation, sur un
   /// lot toujours actif, et chacun retire réellement des œufs de la machine.
   Future<void> enregistrerMirage({
-    required int cycleId,
+    required String cycleId,
     required int jour,
     required int oeufsRetires,
   });
@@ -52,7 +52,7 @@ abstract class CycleCouveuseRepository {
   /// transaction pour combler la place libérée : le lot d'origine passe alors
   /// en « Remplacé » plutôt qu'en « Éclosion Effectuée ».
   Future<ResultatEclosion> enregistrerEclosion({
-    required int cycleId,
+    required String cycleId,
     required int poussinsEclos,
     required int oeufsPerdus,
     int? oeufsRemplacement,
@@ -63,17 +63,17 @@ abstract class CycleCouveuseRepository {
   /// Modifie un lot **en cours**. Le code n'est jamais modifiable : il est la
   /// référence portée par le journal d'élevage et les rapports.
   Future<void> modifier({
-    required int cycleId,
+    required String cycleId,
     required EspeceCouvable espece,
     required DateTime dateChargement,
     required int oeufsCharges,
-    int? machineId,
+    String? machineId,
   });
 
   /// Supprime un lot. Un lot éclos ne se supprime pas : ses poussins sont déjà
   /// entrés dans les effectifs (Doc F3).
   Future<void> supprimer(
-    int cycleId, {
+    String cycleId, {
     String? utilisateurId,
     String? utilisateurNom,
   });

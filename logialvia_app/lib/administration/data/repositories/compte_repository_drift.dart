@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../domain/entities/compte_utilisateur.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/services/hachage_mot_de_passe.dart';
 import '../tables/messages_editeur_table.dart';
 
@@ -37,11 +38,12 @@ abstract class CompteRepository {
     required String message,
     String? etapes,
     required String utilisateurId,
+    String? auteurNom,
   });
 
-  Future<void> marquerTransmis(int id);
+  Future<void> marquerTransmis(String id);
   Future<void> supprimerMessage(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   });
@@ -192,6 +194,9 @@ class CompteRepositoryDrift implements CompteRepository {
     final lignes =
         await (_db.select(_db.messagesEditeur)..orderBy([
               (m) => OrderingTerm.desc(m.horodatage),
+              // Deux messages de la même seconde : l'instant de saisie (µs) les départage
+              // (l'UUID, aléatoire, ne dit rien de l'ordre).
+              (m) => OrderingTerm.desc(m.updatedAt),
               (m) => OrderingTerm.desc(m.id),
             ]))
             .get();
@@ -206,6 +211,7 @@ class CompteRepositoryDrift implements CompteRepository {
           message: m.message,
           etapes: m.etapes,
           statut: m.statut,
+          auteurNom: m.auteurNom,
         ),
     ];
   }
@@ -217,12 +223,14 @@ class CompteRepositoryDrift implements CompteRepository {
     required String message,
     String? etapes,
     required String utilisateurId,
+    String? auteurNom,
   }) async {
     await _db
         .into(_db.messagesEditeur)
         .insert(
           MessagesEditeurCompanion.insert(
             horodatage: DateTime.now(),
+            auteurNom: Value(auteurNom),
             type: type,
             sujet: sujet,
             message: message,
@@ -233,33 +241,52 @@ class CompteRepositoryDrift implements CompteRepository {
   }
 
   @override
-  Future<void> marquerTransmis(int id) async {
+  Future<void> marquerTransmis(String id) async {
+    // Une modification : le message repart au serveur, daté de maintenant (doc 47u §4).
     await (_db.update(
       _db.messagesEditeur,
     )..where((m) => m.id.equals(id))).write(
-      const MessagesEditeurCompanion(
-        statut: Value(MessageEditeurStatut.transmis),
+      MessagesEditeurCompanion(
+        statut: const Value(MessageEditeurStatut.transmis),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }
 
   @override
   Future<void> supprimerMessage(
-    int id, {
+    String id, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
-    final ligne = await (_db.select(
-      _db.messagesEditeur,
-    )..where((m) => m.id.equals(id))).getSingleOrNull();
+    await _db.transaction(() async {
+      // La suppression est un fait daté : l'instantané de la corbeille porte l'instant de
+      // saisie de la suppression, et repart au serveur en pierre tombale (doc 47u §4).
+      await (_db.update(
+        _db.messagesEditeur,
+      )..where((m) => m.id.equals(id))).write(
+        MessagesEditeurCompanion(
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
+      final ligne = await (_db.select(
+        _db.messagesEditeur,
+      )..where((m) => m.id.equals(id))).getSingleOrNull();
 
-    await ServiceArchivage(_db).archiver(
-      type: TypeArchivable.messages,
-      cle: id,
-      designation: ligne?.sujet ?? 'Message #$id',
-      utilisateurId: utilisateurId,
-      utilisateurNom: utilisateurNom,
-    );
+      await ServiceArchivage(_db).archiver(
+        type: TypeArchivable.messages,
+        cle: id,
+        designation:
+            ligne?.sujet ??
+            'Message ${id.substring(0, id.length < 8 ? id.length : 8)}',
+        utilisateurId: utilisateurId,
+        utilisateurNom: utilisateurNom,
+      );
+    });
   }
 }
 

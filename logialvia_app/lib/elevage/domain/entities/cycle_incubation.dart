@@ -126,7 +126,7 @@ class CycleIncubation {
     this.lotParentCode,
   });
 
-  final int id;
+  final String id;
   final String code;
   final EspeceCouvable espece;
 
@@ -146,7 +146,7 @@ class CycleIncubation {
   final int? oeufsPerdus;
 
   /// Incubateur occupé — plusieurs machines peuvent tourner en parallèle.
-  final int? machineId;
+  final String? machineId;
   final String? machineCode;
 
   /// `B_i(7)` : œufs clairs retirés au premier mirage.
@@ -156,7 +156,7 @@ class CycleIncubation {
   final int? oeufsGatesJ14;
 
   /// Lot d'origine si celui-ci le remplace. `null` pour un lot racine.
-  final int? lotParentId;
+  final String? lotParentId;
   final String? lotParentCode;
 
   bool get estEnCours => statut == StatutCycle.enIncubation;
@@ -333,7 +333,7 @@ class MachineIncubateur {
     this.active = true,
   });
 
-  final int id;
+  final String id;
   final String code;
   final String libelle;
 

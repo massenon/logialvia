@@ -8,7 +8,7 @@
 ///
 /// ⚠️ **Ce contrat n'a pas été éprouvé contre le service réel.** Ni jeton ni
 /// accès réseau n'étaient disponibles à l'écriture. Les noms de champs de
-/// [_corps] et de [ReponseMecef.depuisJson] doivent être confrontés à la
+/// [ClientMecefHttp.corps] et de [ReponseMecef.depuisJson] doivent être confrontés à la
 /// documentation de la DGI avant la première transmission en production —
 /// c'est une correspondance à vérifier, pas une devinette à laisser vivre.
 ///
@@ -19,6 +19,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -156,7 +157,7 @@ class ClientMecefHttp implements ClientMecef {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $jeton',
             },
-            body: jsonEncode(_corps(facture)),
+            body: jsonEncode(corps(facture)),
           )
           .timeout(const Duration(seconds: 20));
 
@@ -187,8 +188,12 @@ class ClientMecefHttp implements ClientMecef {
     }
   }
 
-  /// ⚠️ Noms de champs à confirmer contre la documentation DGI.
-  Map<String, dynamic> _corps(FactureMecef facture) => {
+  /// Corps de la requête. ⚠️ Noms de champs à confirmer contre la documentation DGI.
+  ///
+  /// Prix envoyés en **TTC, montants entiers FCFA** (le pilote documente « Prix avec TVA » ; même règle
+  /// qu'AgriERP, `MecefFactureBuilder`) : jamais le hors taxe.
+  @visibleForTesting
+  Map<String, dynamic> corps(FactureMecef facture) => {
     'ifu': ifuEmetteur,
     'type': facture.type.code,
     'reference': facture.reference,
@@ -200,16 +205,52 @@ class ClientMecefHttp implements ClientMecef {
       if (facture.clientIfu != null) 'ifu': facture.clientIfu,
       if (facture.clientAdresse != null) 'adresse': facture.clientAdresse,
     },
-    'items': [
-      for (final l in facture.lignes)
-        {
-          'name': l.designation,
-          'quantity': l.quantite,
-          'price': l.prixUnitaireHt,
-          'taxGroup': l.groupeTaxe,
-        },
-    ],
+    'items': [for (final l in facture.lignes) ligneTtc(l)],
   };
+
+  /// Longueur maximale d'un libellé d'article (pilote : 60).
+  static const int nomMax = 60;
+
+  /// L'unique arrondi de montant : au FCFA le plus proche, la moitié vers le haut.
+  static int arrondi(double montant) => (montant + 0.5 + 1e-9).floor();
+
+  /// Une ligne au format e-MECeF : prix unitaire TTC entier, tel que prix × quantité = montant TTC de la ligne.
+  /// Si la division ne tombe pas juste, quantité 1 au montant de la ligne et quantité réelle dans le libellé.
+  static Map<String, dynamic> ligneTtc(LigneFacture l) {
+    final net = arrondi(l.montantTtc);
+    final milliemes = (l.quantite * 1000).round();
+    if (milliemes <= 0) {
+      throw EchecTransmission(
+        'Quantité nulle pour l’article « ${l.designation} » : rien à normaliser.',
+      );
+    }
+    var nom = l.designation;
+    num prix;
+    num quantite;
+    if ((net * 1000) % milliemes == 0) {
+      prix = net * 1000 ~/ milliemes;
+      quantite = milliemes % 1000 == 0 ? milliemes ~/ 1000 : milliemes / 1000;
+    } else {
+      prix = net;
+      quantite = 1;
+      final reelle = (milliemes / 1000)
+          .toStringAsFixed(3)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+      final unite = (l.unite ?? '').isNotEmpty ? ' ${l.unite}' : '';
+      final suffixe = ' (${reelle.replaceAll('.', ',')}$unite)';
+      final place = nomMax - suffixe.length;
+      if (nom.length > place) nom = nom.substring(0, place < 0 ? 0 : place);
+      nom = '$nom$suffixe';
+    }
+    if (nom.length > nomMax) nom = nom.substring(0, nomMax);
+    return {
+      'name': nom,
+      'quantity': quantite,
+      'price': prix,
+      'taxGroup': l.groupeTaxe,
+    };
+  }
 
   static String _extraitLisible(String corps) {
     final nettoye = corps.trim();

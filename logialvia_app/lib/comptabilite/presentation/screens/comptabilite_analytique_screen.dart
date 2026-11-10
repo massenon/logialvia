@@ -29,8 +29,8 @@ import 'widgets/communs_compta.dart';
 /// un sac de maïs entre plusieurs espèces qui le partagent.
 ///
 /// Cet écran affiche donc la seule ventilation que le grand livre permet
-/// réellement : **Avicole** (701 / 601 + 622) et **Commerce Annexe** (707 /
-/// 602) — la même que le KPI « Chiffre d'Affaires » du tableau de bord. Les
+/// réellement : **Avicole** (702 / 602 + 604) et **Commerce Annexe** (701 /
+/// 601) — la même que le KPI « Chiffre d'Affaires » du tableau de bord. Les
 /// charges de structure non affectables sont montrées à part au lieu d'être
 /// réparties arbitrairement, et le manque est énoncé à l'écran.
 class ComptabiliteAnalytiqueScreen extends StatelessWidget {

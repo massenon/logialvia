@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Les tables de la facturation normalisée MeCeF.
 ///
 /// ## Ce que MeCeF exige, et ce que ce logiciel peut en faire
@@ -48,7 +50,28 @@ class GroupesTaxe extends Table {
 /// se réécrit pas.
 @DataClassName('FactureRow')
 class Factures extends Table {
-  /// 'FV-2026-001' ou 'FA-2026-001'.
+  /// UUID de la facture (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste
+  /// [ref] (les lignes et les ventes s'y rattachent par texte) ; `ref` est le
+  /// numero OFFICIEL de la piece (`FV-P2-2026-001`, DV-21), jamais renumerote.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
+
+  /// `null` : facture emise sur CE poste. Sinon l'identifiant du poste qui l'a
+  /// emise (facture absorbee du serveur). **Seul le poste emetteur transmet** a la
+  /// DGI : une facture d'un autre poste n'offre ni transmission ni saisie
+  /// manuelle, pour qu'elle ne soit pas normalisee deux fois (`46e_` §3).
+  TextColumn get origine => text().nullable()();
+
+  // --- Synchronisation (`46_` §1) ---
+
+  /// `pending` · `synced` · `conflict`.
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) : emission, puis derniere
+  /// transmission ou saisie du code. Jamais l'instant d'envoi.
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  /// 'FV-P2-2026-001' / 'FA-P2-2026-001' (poste appaire) ou 'FV-2026-001'.
   TextColumn get ref => text()();
 
   /// [TypeFacture.vente] ou [TypeFacture.avoir].
@@ -106,6 +129,11 @@ class Factures extends Table {
 
   @override
   Set<Column> get primaryKey => {ref};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {id},
+  ];
 }
 
 /// Table `LIGNES_FACTURE`.
@@ -114,7 +142,9 @@ class Factures extends Table {
 /// ne doit pas changer parce que le tarif du catalogue a bougé depuis.
 @DataClassName('LigneFactureRow')
 class LignesFacture extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19) : une ligne de facture est un fait synchronise, et voyage DANS
+  /// sa facture, jamais seule.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   TextColumn get factureRef => text()();
 
@@ -136,4 +166,7 @@ class LignesFacture extends Table {
 
   RealColumn get montantHt => real()();
   RealColumn get montantTaxe => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

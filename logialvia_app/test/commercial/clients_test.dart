@@ -341,6 +341,7 @@ void main() {
         unite: cible.unite,
         stock: 0,
         seuil: cible.seuil,
+        motifCorrection: 'Stock épuisé',
       );
 
       expect(catalogue.produitsSousSeuil, hasLength(1));

@@ -2,6 +2,7 @@ import '../../domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../sync/depot_demandes_referentiel.dart';
 import '../../domain/entities/parametres_entreprise.dart';
 import '../../domain/entities/role_utilisateur.dart';
 import '../../domain/entities/utilisateur.dart';
@@ -82,6 +83,8 @@ class ParametresRepositoryDrift implements ParametresRepository {
             modeDonneesTest: Value(parametres.modeDonneesTest),
           ),
         );
+    // Les parametres appartiennent au serveur : le poste les PROPOSE (`46_` §4.3).
+    await DepotDemandesReferentiel(_db).proposerParametres();
   }
 
   @override

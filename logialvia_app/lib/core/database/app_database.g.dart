@@ -2237,6 +2237,32 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
     requiredDuringInsert: false,
     defaultValue: const Constant('B'),
   );
+  static const VerificationMeta _prefixeBacMeta = const VerificationMeta(
+    'prefixeBac',
+  );
+  @override
+  late final GeneratedColumn<String> prefixeBac = GeneratedColumn<String>(
+    'prefixe_bac',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 4),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('BAC'),
+  );
+  static const VerificationMeta _prefixeParcMeta = const VerificationMeta(
+    'prefixeParc',
+  );
+  @override
+  late final GeneratedColumn<String> prefixeParc = GeneratedColumn<String>(
+    'prefixe_parc',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 4),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PARC'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2261,6 +2287,8 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
     prefixeCage,
     prefixeBande,
     prefixeBassin,
+    prefixeBac,
+    prefixeParc,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2439,6 +2467,21 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
         ),
       );
     }
+    if (data.containsKey('prefixe_bac')) {
+      context.handle(
+        _prefixeBacMeta,
+        prefixeBac.isAcceptableOrUnknown(data['prefixe_bac']!, _prefixeBacMeta),
+      );
+    }
+    if (data.containsKey('prefixe_parc')) {
+      context.handle(
+        _prefixeParcMeta,
+        prefixeParc.isAcceptableOrUnknown(
+          data['prefixe_parc']!,
+          _prefixeParcMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2539,6 +2582,14 @@ class $ParametresEntrepriseTable extends ParametresEntreprise
         DriftSqlType.string,
         data['${effectivePrefix}prefixe_bassin'],
       )!,
+      prefixeBac: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prefixe_bac'],
+      )!,
+      prefixeParc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prefixe_parc'],
+      )!,
     );
   }
 
@@ -2616,6 +2667,14 @@ class ParametresEntrepriseRow extends DataClass
 
   /// Prefixe des bassins — Pisciculture (Poissons-Chats). Apercu « B1, B2, B3 ».
   final String prefixeBassin;
+
+  /// Prefixe des bacs — Heliciculture (Escargots), DV-16. Apercu « BAC1, BAC2 ».
+  /// Ajoute en v29 : la filiere n'existait pas dans le prototype.
+  final String prefixeBac;
+
+  /// Prefixe des parcs — Elevage bovin (Bovins), DV-17. Apercu « PARC1, PARC2 ».
+  /// Ajoute en v29.
+  final String prefixeParc;
   const ParametresEntrepriseRow({
     required this.id,
     required this.raisonSociale,
@@ -2639,6 +2698,8 @@ class ParametresEntrepriseRow extends DataClass
     required this.prefixeCage,
     required this.prefixeBande,
     required this.prefixeBassin,
+    required this.prefixeBac,
+    required this.prefixeParc,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2693,6 +2754,8 @@ class ParametresEntrepriseRow extends DataClass
     map['prefixe_cage'] = Variable<String>(prefixeCage);
     map['prefixe_bande'] = Variable<String>(prefixeBande);
     map['prefixe_bassin'] = Variable<String>(prefixeBassin);
+    map['prefixe_bac'] = Variable<String>(prefixeBac);
+    map['prefixe_parc'] = Variable<String>(prefixeParc);
     return map;
   }
 
@@ -2744,6 +2807,8 @@ class ParametresEntrepriseRow extends DataClass
       prefixeCage: Value(prefixeCage),
       prefixeBande: Value(prefixeBande),
       prefixeBassin: Value(prefixeBassin),
+      prefixeBac: Value(prefixeBac),
+      prefixeParc: Value(prefixeParc),
     );
   }
 
@@ -2775,6 +2840,8 @@ class ParametresEntrepriseRow extends DataClass
       prefixeCage: serializer.fromJson<String>(json['prefixeCage']),
       prefixeBande: serializer.fromJson<String>(json['prefixeBande']),
       prefixeBassin: serializer.fromJson<String>(json['prefixeBassin']),
+      prefixeBac: serializer.fromJson<String>(json['prefixeBac']),
+      prefixeParc: serializer.fromJson<String>(json['prefixeParc']),
     );
   }
   @override
@@ -2803,6 +2870,8 @@ class ParametresEntrepriseRow extends DataClass
       'prefixeCage': serializer.toJson<String>(prefixeCage),
       'prefixeBande': serializer.toJson<String>(prefixeBande),
       'prefixeBassin': serializer.toJson<String>(prefixeBassin),
+      'prefixeBac': serializer.toJson<String>(prefixeBac),
+      'prefixeParc': serializer.toJson<String>(prefixeParc),
     };
   }
 
@@ -2829,6 +2898,8 @@ class ParametresEntrepriseRow extends DataClass
     String? prefixeCage,
     String? prefixeBande,
     String? prefixeBassin,
+    String? prefixeBac,
+    String? prefixeParc,
   }) => ParametresEntrepriseRow(
     id: id ?? this.id,
     raisonSociale: raisonSociale ?? this.raisonSociale,
@@ -2856,6 +2927,8 @@ class ParametresEntrepriseRow extends DataClass
     prefixeCage: prefixeCage ?? this.prefixeCage,
     prefixeBande: prefixeBande ?? this.prefixeBande,
     prefixeBassin: prefixeBassin ?? this.prefixeBassin,
+    prefixeBac: prefixeBac ?? this.prefixeBac,
+    prefixeParc: prefixeParc ?? this.prefixeParc,
   );
   ParametresEntrepriseRow copyWithCompanion(
     ParametresEntrepriseCompanion data,
@@ -2911,6 +2984,12 @@ class ParametresEntrepriseRow extends DataClass
       prefixeBassin: data.prefixeBassin.present
           ? data.prefixeBassin.value
           : this.prefixeBassin,
+      prefixeBac: data.prefixeBac.present
+          ? data.prefixeBac.value
+          : this.prefixeBac,
+      prefixeParc: data.prefixeParc.present
+          ? data.prefixeParc.value
+          : this.prefixeParc,
     );
   }
 
@@ -2938,7 +3017,9 @@ class ParametresEntrepriseRow extends DataClass
           ..write('prefixeEnclos: $prefixeEnclos, ')
           ..write('prefixeCage: $prefixeCage, ')
           ..write('prefixeBande: $prefixeBande, ')
-          ..write('prefixeBassin: $prefixeBassin')
+          ..write('prefixeBassin: $prefixeBassin, ')
+          ..write('prefixeBac: $prefixeBac, ')
+          ..write('prefixeParc: $prefixeParc')
           ..write(')'))
         .toString();
   }
@@ -2967,6 +3048,8 @@ class ParametresEntrepriseRow extends DataClass
     prefixeCage,
     prefixeBande,
     prefixeBassin,
+    prefixeBac,
+    prefixeParc,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2993,7 +3076,9 @@ class ParametresEntrepriseRow extends DataClass
           other.prefixeEnclos == this.prefixeEnclos &&
           other.prefixeCage == this.prefixeCage &&
           other.prefixeBande == this.prefixeBande &&
-          other.prefixeBassin == this.prefixeBassin);
+          other.prefixeBassin == this.prefixeBassin &&
+          other.prefixeBac == this.prefixeBac &&
+          other.prefixeParc == this.prefixeParc);
 }
 
 class ParametresEntrepriseCompanion
@@ -3020,6 +3105,8 @@ class ParametresEntrepriseCompanion
   final Value<String> prefixeCage;
   final Value<String> prefixeBande;
   final Value<String> prefixeBassin;
+  final Value<String> prefixeBac;
+  final Value<String> prefixeParc;
   const ParametresEntrepriseCompanion({
     this.id = const Value.absent(),
     this.raisonSociale = const Value.absent(),
@@ -3043,6 +3130,8 @@ class ParametresEntrepriseCompanion
     this.prefixeCage = const Value.absent(),
     this.prefixeBande = const Value.absent(),
     this.prefixeBassin = const Value.absent(),
+    this.prefixeBac = const Value.absent(),
+    this.prefixeParc = const Value.absent(),
   });
   ParametresEntrepriseCompanion.insert({
     this.id = const Value.absent(),
@@ -3067,6 +3156,8 @@ class ParametresEntrepriseCompanion
     this.prefixeCage = const Value.absent(),
     this.prefixeBande = const Value.absent(),
     this.prefixeBassin = const Value.absent(),
+    this.prefixeBac = const Value.absent(),
+    this.prefixeParc = const Value.absent(),
   });
   static Insertable<ParametresEntrepriseRow> custom({
     Expression<int>? id,
@@ -3091,6 +3182,8 @@ class ParametresEntrepriseCompanion
     Expression<String>? prefixeCage,
     Expression<String>? prefixeBande,
     Expression<String>? prefixeBassin,
+    Expression<String>? prefixeBac,
+    Expression<String>? prefixeParc,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3116,6 +3209,8 @@ class ParametresEntrepriseCompanion
       if (prefixeCage != null) 'prefixe_cage': prefixeCage,
       if (prefixeBande != null) 'prefixe_bande': prefixeBande,
       if (prefixeBassin != null) 'prefixe_bassin': prefixeBassin,
+      if (prefixeBac != null) 'prefixe_bac': prefixeBac,
+      if (prefixeParc != null) 'prefixe_parc': prefixeParc,
     });
   }
 
@@ -3142,6 +3237,8 @@ class ParametresEntrepriseCompanion
     Value<String>? prefixeCage,
     Value<String>? prefixeBande,
     Value<String>? prefixeBassin,
+    Value<String>? prefixeBac,
+    Value<String>? prefixeParc,
   }) {
     return ParametresEntrepriseCompanion(
       id: id ?? this.id,
@@ -3166,6 +3263,8 @@ class ParametresEntrepriseCompanion
       prefixeCage: prefixeCage ?? this.prefixeCage,
       prefixeBande: prefixeBande ?? this.prefixeBande,
       prefixeBassin: prefixeBassin ?? this.prefixeBassin,
+      prefixeBac: prefixeBac ?? this.prefixeBac,
+      prefixeParc: prefixeParc ?? this.prefixeParc,
     );
   }
 
@@ -3238,6 +3337,12 @@ class ParametresEntrepriseCompanion
     if (prefixeBassin.present) {
       map['prefixe_bassin'] = Variable<String>(prefixeBassin.value);
     }
+    if (prefixeBac.present) {
+      map['prefixe_bac'] = Variable<String>(prefixeBac.value);
+    }
+    if (prefixeParc.present) {
+      map['prefixe_parc'] = Variable<String>(prefixeParc.value);
+    }
     return map;
   }
 
@@ -3265,7 +3370,9 @@ class ParametresEntrepriseCompanion
           ..write('prefixeEnclos: $prefixeEnclos, ')
           ..write('prefixeCage: $prefixeCage, ')
           ..write('prefixeBande: $prefixeBande, ')
-          ..write('prefixeBassin: $prefixeBassin')
+          ..write('prefixeBassin: $prefixeBassin, ')
+          ..write('prefixeBac: $prefixeBac, ')
+          ..write('prefixeParc: $prefixeParc')
           ..write(')'))
         .toString();
   }
@@ -3279,16 +3386,13 @@ class $MessagesEditeurTable extends MessagesEditeur
   $MessagesEditeurTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _horodatageMeta = const VerificationMeta(
     'horodatage',
@@ -3360,6 +3464,52 @@ class $MessagesEditeurTable extends MessagesEditeur
     requiredDuringInsert: false,
     defaultValue: const Constant(MessageEditeurStatut.enAttente),
   );
+  static const VerificationMeta _auteurNomMeta = const VerificationMeta(
+    'auteurNom',
+  );
+  @override
+  late final GeneratedColumn<String> auteurNom = GeneratedColumn<String>(
+    'auteur_nom',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3370,6 +3520,10 @@ class $MessagesEditeurTable extends MessagesEditeur
     etapes,
     utilisateurId,
     statut,
+    auteurNom,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3441,6 +3595,30 @@ class $MessagesEditeurTable extends MessagesEditeur
         statut.isAcceptableOrUnknown(data['statut']!, _statutMeta),
       );
     }
+    if (data.containsKey('auteur_nom')) {
+      context.handle(
+        _auteurNomMeta,
+        auteurNom.isAcceptableOrUnknown(data['auteur_nom']!, _auteurNomMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -3451,7 +3629,7 @@ class $MessagesEditeurTable extends MessagesEditeur
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MessageEditeurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       horodatage: attachedDatabase.typeMapping.read(
@@ -3482,6 +3660,22 @@ class $MessagesEditeurTable extends MessagesEditeur
         DriftSqlType.string,
         data['${effectivePrefix}statut'],
       )!,
+      auteurNom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auteur_nom'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -3493,7 +3687,10 @@ class $MessagesEditeurTable extends MessagesEditeur
 
 class MessageEditeurRow extends DataClass
     implements Insertable<MessageEditeurRow> {
-  final int id;
+  /// UUID généré au poste (DV-19, doc 47u §4) : un message est un fait synchronisé,
+  /// lisible et gérable depuis le web et les autres postes. Les messages existants
+  /// reçoivent le leur à la migration v45.
+  final String id;
   final DateTime horodatage;
 
   /// `question` ou `bug` — les 2 onglets du formulaire.
@@ -3512,6 +3709,20 @@ class MessageEditeurRow extends DataClass
   /// Aucun envoi automatique n'existe : le message reste `enAttente` tant que
   /// la Gérante ne l'a pas transmis elle-même, puis elle le marque `transmis`.
   final String statut;
+
+  /// « Nom (identifiant) — Rôle » de la rédactrice : `utilisateur_id` est un entier
+  /// LOCAL qui n'a pas de sens sur le serveur ni sur un autre poste. `null` pour les
+  /// messages d'avant la v45.
+  final String? auteurNom;
+
+  /// `pending` (à envoyer) · `synced` · `conflict` (refusé, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en français ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const MessageEditeurRow({
     required this.id,
     required this.horodatage,
@@ -3521,11 +3732,15 @@ class MessageEditeurRow extends DataClass
     this.etapes,
     required this.utilisateurId,
     required this.statut,
+    this.auteurNom,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['horodatage'] = Variable<DateTime>(horodatage);
     map['type'] = Variable<String>(type);
     map['sujet'] = Variable<String>(sujet);
@@ -3535,6 +3750,14 @@ class MessageEditeurRow extends DataClass
     }
     map['utilisateur_id'] = Variable<String>(utilisateurId);
     map['statut'] = Variable<String>(statut);
+    if (!nullToAbsent || auteurNom != null) {
+      map['auteur_nom'] = Variable<String>(auteurNom);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -3550,6 +3773,14 @@ class MessageEditeurRow extends DataClass
           : Value(etapes),
       utilisateurId: Value(utilisateurId),
       statut: Value(statut),
+      auteurNom: auteurNom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auteurNom),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -3559,7 +3790,7 @@ class MessageEditeurRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MessageEditeurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       horodatage: serializer.fromJson<DateTime>(json['horodatage']),
       type: serializer.fromJson<String>(json['type']),
       sujet: serializer.fromJson<String>(json['sujet']),
@@ -3567,13 +3798,17 @@ class MessageEditeurRow extends DataClass
       etapes: serializer.fromJson<String?>(json['etapes']),
       utilisateurId: serializer.fromJson<String>(json['utilisateurId']),
       statut: serializer.fromJson<String>(json['statut']),
+      auteurNom: serializer.fromJson<String?>(json['auteurNom']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'horodatage': serializer.toJson<DateTime>(horodatage),
       'type': serializer.toJson<String>(type),
       'sujet': serializer.toJson<String>(sujet),
@@ -3581,11 +3816,15 @@ class MessageEditeurRow extends DataClass
       'etapes': serializer.toJson<String?>(etapes),
       'utilisateurId': serializer.toJson<String>(utilisateurId),
       'statut': serializer.toJson<String>(statut),
+      'auteurNom': serializer.toJson<String?>(auteurNom),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   MessageEditeurRow copyWith({
-    int? id,
+    String? id,
     DateTime? horodatage,
     String? type,
     String? sujet,
@@ -3593,6 +3832,10 @@ class MessageEditeurRow extends DataClass
     Value<String?> etapes = const Value.absent(),
     String? utilisateurId,
     String? statut,
+    Value<String?> auteurNom = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => MessageEditeurRow(
     id: id ?? this.id,
     horodatage: horodatage ?? this.horodatage,
@@ -3602,6 +3845,10 @@ class MessageEditeurRow extends DataClass
     etapes: etapes.present ? etapes.value : this.etapes,
     utilisateurId: utilisateurId ?? this.utilisateurId,
     statut: statut ?? this.statut,
+    auteurNom: auteurNom.present ? auteurNom.value : this.auteurNom,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   MessageEditeurRow copyWithCompanion(MessagesEditeurCompanion data) {
     return MessageEditeurRow(
@@ -3617,6 +3864,12 @@ class MessageEditeurRow extends DataClass
           ? data.utilisateurId.value
           : this.utilisateurId,
       statut: data.statut.present ? data.statut.value : this.statut,
+      auteurNom: data.auteurNom.present ? data.auteurNom.value : this.auteurNom,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -3630,7 +3883,11 @@ class MessageEditeurRow extends DataClass
           ..write('message: $message, ')
           ..write('etapes: $etapes, ')
           ..write('utilisateurId: $utilisateurId, ')
-          ..write('statut: $statut')
+          ..write('statut: $statut, ')
+          ..write('auteurNom: $auteurNom, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -3645,6 +3902,10 @@ class MessageEditeurRow extends DataClass
     etapes,
     utilisateurId,
     statut,
+    auteurNom,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -3657,11 +3918,15 @@ class MessageEditeurRow extends DataClass
           other.message == this.message &&
           other.etapes == this.etapes &&
           other.utilisateurId == this.utilisateurId &&
-          other.statut == this.statut);
+          other.statut == this.statut &&
+          other.auteurNom == this.auteurNom &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<DateTime> horodatage;
   final Value<String> type;
   final Value<String> sujet;
@@ -3669,6 +3934,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
   final Value<String?> etapes;
   final Value<String> utilisateurId;
   final Value<String> statut;
+  final Value<String?> auteurNom;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const MessagesEditeurCompanion({
     this.id = const Value.absent(),
     this.horodatage = const Value.absent(),
@@ -3678,6 +3948,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     this.etapes = const Value.absent(),
     this.utilisateurId = const Value.absent(),
     this.statut = const Value.absent(),
+    this.auteurNom = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MessagesEditeurCompanion.insert({
     this.id = const Value.absent(),
@@ -3688,13 +3963,18 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     this.etapes = const Value.absent(),
     required String utilisateurId,
     this.statut = const Value.absent(),
+    this.auteurNom = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : horodatage = Value(horodatage),
        type = Value(type),
        sujet = Value(sujet),
        message = Value(message),
        utilisateurId = Value(utilisateurId);
   static Insertable<MessageEditeurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<DateTime>? horodatage,
     Expression<String>? type,
     Expression<String>? sujet,
@@ -3702,6 +3982,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     Expression<String>? etapes,
     Expression<String>? utilisateurId,
     Expression<String>? statut,
+    Expression<String>? auteurNom,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3712,11 +3997,16 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
       if (etapes != null) 'etapes': etapes,
       if (utilisateurId != null) 'utilisateur_id': utilisateurId,
       if (statut != null) 'statut': statut,
+      if (auteurNom != null) 'auteur_nom': auteurNom,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MessagesEditeurCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<DateTime>? horodatage,
     Value<String>? type,
     Value<String>? sujet,
@@ -3724,6 +4014,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     Value<String?>? etapes,
     Value<String>? utilisateurId,
     Value<String>? statut,
+    Value<String?>? auteurNom,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return MessagesEditeurCompanion(
       id: id ?? this.id,
@@ -3734,6 +4029,11 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
       etapes: etapes ?? this.etapes,
       utilisateurId: utilisateurId ?? this.utilisateurId,
       statut: statut ?? this.statut,
+      auteurNom: auteurNom ?? this.auteurNom,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -3741,7 +4041,7 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (horodatage.present) {
       map['horodatage'] = Variable<DateTime>(horodatage.value);
@@ -3764,6 +4064,21 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
     if (statut.present) {
       map['statut'] = Variable<String>(statut.value);
     }
+    if (auteurNom.present) {
+      map['auteur_nom'] = Variable<String>(auteurNom.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -3777,7 +4092,12 @@ class MessagesEditeurCompanion extends UpdateCompanion<MessageEditeurRow> {
           ..write('message: $message, ')
           ..write('etapes: $etapes, ')
           ..write('utilisateurId: $utilisateurId, ')
-          ..write('statut: $statut')
+          ..write('statut: $statut, ')
+          ..write('auteurNom: $auteurNom, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -4585,6 +4905,1202 @@ class CorbeilleCompanion extends UpdateCompanion<ElementArchiveRow> {
   }
 }
 
+class $DemandesReferentielTable extends DemandesReferentiel
+    with TableInfo<$DemandesReferentielTable, DemandeReferentielRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DemandesReferentielTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cleMeta = const VerificationMeta('cle');
+  @override
+  late final GeneratedColumn<String> cle = GeneratedColumn<String>(
+    'cle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _donneesMeta = const VerificationMeta(
+    'donnees',
+  );
+  @override
+  late final GeneratedColumn<String> donnees = GeneratedColumn<String>(
+    'donnees',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saisiLeMeta = const VerificationMeta(
+    'saisiLe',
+  );
+  @override
+  late final GeneratedColumn<String> saisiLe = GeneratedColumn<String>(
+    'saisi_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    type,
+    cle,
+    donnees,
+    saisiLe,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'demandes_referentiel';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DemandeReferentielRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('cle')) {
+      context.handle(
+        _cleMeta,
+        cle.isAcceptableOrUnknown(data['cle']!, _cleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cleMeta);
+    }
+    if (data.containsKey('donnees')) {
+      context.handle(
+        _donneesMeta,
+        donnees.isAcceptableOrUnknown(data['donnees']!, _donneesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_donneesMeta);
+    }
+    if (data.containsKey('saisi_le')) {
+      context.handle(
+        _saisiLeMeta,
+        saisiLe.isAcceptableOrUnknown(data['saisi_le']!, _saisiLeMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DemandeReferentielRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DemandeReferentielRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      cle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cle'],
+      )!,
+      donnees: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}donnees'],
+      )!,
+      saisiLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}saisi_le'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $DemandesReferentielTable createAlias(String alias) {
+    return $DemandesReferentielTable(attachedDatabase, alias);
+  }
+}
+
+class DemandeReferentielRow extends DataClass
+    implements Insertable<DemandeReferentielRow> {
+  /// UUID de la demande : le serveur la rend idempotente par cet identifiant.
+  final String id;
+
+  /// `module_actif` ou `parametres_entreprise`.
+  final String type;
+
+  /// `module_id`, ou `parametres` (ligne unique).
+  final String cle;
+
+  /// Corps JSON de la demande.
+  final String donnees;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String saisiLe;
+
+  /// `pending` · `synced` · `conflict` (refusée, voir `syncMotif`).
+  final String syncStatus;
+  final String? syncMotif;
+  const DemandeReferentielRow({
+    required this.id,
+    required this.type,
+    required this.cle,
+    required this.donnees,
+    required this.saisiLe,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['type'] = Variable<String>(type);
+    map['cle'] = Variable<String>(cle);
+    map['donnees'] = Variable<String>(donnees);
+    map['saisi_le'] = Variable<String>(saisiLe);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  DemandesReferentielCompanion toCompanion(bool nullToAbsent) {
+    return DemandesReferentielCompanion(
+      id: Value(id),
+      type: Value(type),
+      cle: Value(cle),
+      donnees: Value(donnees),
+      saisiLe: Value(saisiLe),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory DemandeReferentielRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DemandeReferentielRow(
+      id: serializer.fromJson<String>(json['id']),
+      type: serializer.fromJson<String>(json['type']),
+      cle: serializer.fromJson<String>(json['cle']),
+      donnees: serializer.fromJson<String>(json['donnees']),
+      saisiLe: serializer.fromJson<String>(json['saisiLe']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'type': serializer.toJson<String>(type),
+      'cle': serializer.toJson<String>(cle),
+      'donnees': serializer.toJson<String>(donnees),
+      'saisiLe': serializer.toJson<String>(saisiLe),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  DemandeReferentielRow copyWith({
+    String? id,
+    String? type,
+    String? cle,
+    String? donnees,
+    String? saisiLe,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => DemandeReferentielRow(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    cle: cle ?? this.cle,
+    donnees: donnees ?? this.donnees,
+    saisiLe: saisiLe ?? this.saisiLe,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  DemandeReferentielRow copyWithCompanion(DemandesReferentielCompanion data) {
+    return DemandeReferentielRow(
+      id: data.id.present ? data.id.value : this.id,
+      type: data.type.present ? data.type.value : this.type,
+      cle: data.cle.present ? data.cle.value : this.cle,
+      donnees: data.donnees.present ? data.donnees.value : this.donnees,
+      saisiLe: data.saisiLe.present ? data.saisiLe.value : this.saisiLe,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemandeReferentielRow(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('cle: $cle, ')
+          ..write('donnees: $donnees, ')
+          ..write('saisiLe: $saisiLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, type, cle, donnees, saisiLe, syncStatus, syncMotif);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DemandeReferentielRow &&
+          other.id == this.id &&
+          other.type == this.type &&
+          other.cle == this.cle &&
+          other.donnees == this.donnees &&
+          other.saisiLe == this.saisiLe &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class DemandesReferentielCompanion
+    extends UpdateCompanion<DemandeReferentielRow> {
+  final Value<String> id;
+  final Value<String> type;
+  final Value<String> cle;
+  final Value<String> donnees;
+  final Value<String> saisiLe;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const DemandesReferentielCompanion({
+    this.id = const Value.absent(),
+    this.type = const Value.absent(),
+    this.cle = const Value.absent(),
+    this.donnees = const Value.absent(),
+    this.saisiLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DemandesReferentielCompanion.insert({
+    this.id = const Value.absent(),
+    required String type,
+    required String cle,
+    required String donnees,
+    this.saisiLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : type = Value(type),
+       cle = Value(cle),
+       donnees = Value(donnees);
+  static Insertable<DemandeReferentielRow> custom({
+    Expression<String>? id,
+    Expression<String>? type,
+    Expression<String>? cle,
+    Expression<String>? donnees,
+    Expression<String>? saisiLe,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (type != null) 'type': type,
+      if (cle != null) 'cle': cle,
+      if (donnees != null) 'donnees': donnees,
+      if (saisiLe != null) 'saisi_le': saisiLe,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DemandesReferentielCompanion copyWith({
+    Value<String>? id,
+    Value<String>? type,
+    Value<String>? cle,
+    Value<String>? donnees,
+    Value<String>? saisiLe,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return DemandesReferentielCompanion(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      cle: cle ?? this.cle,
+      donnees: donnees ?? this.donnees,
+      saisiLe: saisiLe ?? this.saisiLe,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (cle.present) {
+      map['cle'] = Variable<String>(cle.value);
+    }
+    if (donnees.present) {
+      map['donnees'] = Variable<String>(donnees.value);
+    }
+    if (saisiLe.present) {
+      map['saisi_le'] = Variable<String>(saisiLe.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DemandesReferentielCompanion(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('cle: $cle, ')
+          ..write('donnees: $donnees, ')
+          ..write('saisiLe: $saisiLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EffetsAppliquesTable extends EffetsAppliques
+    with TableInfo<$EffetsAppliquesTable, EffetAppliqueRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EffetsAppliquesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _faitTypeMeta = const VerificationMeta(
+    'faitType',
+  );
+  @override
+  late final GeneratedColumn<String> faitType = GeneratedColumn<String>(
+    'fait_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _faitIdMeta = const VerificationMeta('faitId');
+  @override
+  late final GeneratedColumn<String> faitId = GeneratedColumn<String>(
+    'fait_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _natureMeta = const VerificationMeta('nature');
+  @override
+  late final GeneratedColumn<String> nature = GeneratedColumn<String>(
+    'nature',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _referenceMeta = const VerificationMeta(
+    'reference',
+  );
+  @override
+  late final GeneratedColumn<String> reference = GeneratedColumn<String>(
+    'reference',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _libelleMeta = const VerificationMeta(
+    'libelle',
+  );
+  @override
+  late final GeneratedColumn<String> libelle = GeneratedColumn<String>(
+    'libelle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _etatMeta = const VerificationMeta('etat');
+  @override
+  late final GeneratedColumn<String> etat = GeneratedColumn<String>(
+    'etat',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _avertissementMeta = const VerificationMeta(
+    'avertissement',
+  );
+  @override
+  late final GeneratedColumn<String> avertissement = GeneratedColumn<String>(
+    'avertissement',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _appliqueLeMeta = const VerificationMeta(
+    'appliqueLe',
+  );
+  @override
+  late final GeneratedColumn<String> appliqueLe = GeneratedColumn<String>(
+    'applique_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    faitType,
+    faitId,
+    nature,
+    reference,
+    libelle,
+    etat,
+    avertissement,
+    appliqueLe,
+    origine,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'effets_appliques';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EffetAppliqueRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('fait_type')) {
+      context.handle(
+        _faitTypeMeta,
+        faitType.isAcceptableOrUnknown(data['fait_type']!, _faitTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_faitTypeMeta);
+    }
+    if (data.containsKey('fait_id')) {
+      context.handle(
+        _faitIdMeta,
+        faitId.isAcceptableOrUnknown(data['fait_id']!, _faitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_faitIdMeta);
+    }
+    if (data.containsKey('nature')) {
+      context.handle(
+        _natureMeta,
+        nature.isAcceptableOrUnknown(data['nature']!, _natureMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_natureMeta);
+    }
+    if (data.containsKey('reference')) {
+      context.handle(
+        _referenceMeta,
+        reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
+      );
+    }
+    if (data.containsKey('libelle')) {
+      context.handle(
+        _libelleMeta,
+        libelle.isAcceptableOrUnknown(data['libelle']!, _libelleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_libelleMeta);
+    }
+    if (data.containsKey('etat')) {
+      context.handle(
+        _etatMeta,
+        etat.isAcceptableOrUnknown(data['etat']!, _etatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_etatMeta);
+    }
+    if (data.containsKey('avertissement')) {
+      context.handle(
+        _avertissementMeta,
+        avertissement.isAcceptableOrUnknown(
+          data['avertissement']!,
+          _avertissementMeta,
+        ),
+      );
+    }
+    if (data.containsKey('applique_le')) {
+      context.handle(
+        _appliqueLeMeta,
+        appliqueLe.isAcceptableOrUnknown(data['applique_le']!, _appliqueLeMeta),
+      );
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {faitId, nature},
+  ];
+  @override
+  EffetAppliqueRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EffetAppliqueRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      faitType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fait_type'],
+      )!,
+      faitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fait_id'],
+      )!,
+      nature: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nature'],
+      )!,
+      reference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference'],
+      ),
+      libelle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}libelle'],
+      )!,
+      etat: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etat'],
+      )!,
+      avertissement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avertissement'],
+      ),
+      appliqueLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}applique_le'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $EffetsAppliquesTable createAlias(String alias) {
+    return $EffetsAppliquesTable(attachedDatabase, alias);
+  }
+}
+
+class EffetAppliqueRow extends DataClass
+    implements Insertable<EffetAppliqueRow> {
+  /// UUID v5 de `effet:<nature>:<fait_id>`.
+  final String id;
+
+  /// `achat` · `vente` · `mouvement_produit`.
+  final String faitType;
+
+  /// Identifiant (UUID) du fait web qui a produit l'effet.
+  final String faitId;
+
+  /// `reception` · `annulation_reception` · `vente` · `annulation_vente` · `correction`.
+  final String nature;
+
+  /// Référence lisible du fait (`ACH-WEB-2026-001`, `V-WEB-2026-004`), si elle existe.
+  final String? reference;
+
+  /// Résumé en français de ce qui a été fait au stock.
+  final String libelle;
+
+  /// `applique` · `avertissement` (appliqué avec plancher à 0) · `ignore` (non appliqué).
+  final String etat;
+
+  /// Motif de l'avertissement ou de l'abstention (« Stock insuffisant au poste… »).
+  final String? avertissement;
+
+  /// Instant (UTC, ISO 8601) où ce poste a appliqué l'effet.
+  final String appliqueLe;
+
+  /// `null` = CE poste ; sinon le poste qui a appliqué l'effet (historique).
+  final String? origine;
+  final String syncStatus;
+  final String? syncMotif;
+  const EffetAppliqueRow({
+    required this.id,
+    required this.faitType,
+    required this.faitId,
+    required this.nature,
+    this.reference,
+    required this.libelle,
+    required this.etat,
+    this.avertissement,
+    required this.appliqueLe,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['fait_type'] = Variable<String>(faitType);
+    map['fait_id'] = Variable<String>(faitId);
+    map['nature'] = Variable<String>(nature);
+    if (!nullToAbsent || reference != null) {
+      map['reference'] = Variable<String>(reference);
+    }
+    map['libelle'] = Variable<String>(libelle);
+    map['etat'] = Variable<String>(etat);
+    if (!nullToAbsent || avertissement != null) {
+      map['avertissement'] = Variable<String>(avertissement);
+    }
+    map['applique_le'] = Variable<String>(appliqueLe);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  EffetsAppliquesCompanion toCompanion(bool nullToAbsent) {
+    return EffetsAppliquesCompanion(
+      id: Value(id),
+      faitType: Value(faitType),
+      faitId: Value(faitId),
+      nature: Value(nature),
+      reference: reference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reference),
+      libelle: Value(libelle),
+      etat: Value(etat),
+      avertissement: avertissement == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avertissement),
+      appliqueLe: Value(appliqueLe),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory EffetAppliqueRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EffetAppliqueRow(
+      id: serializer.fromJson<String>(json['id']),
+      faitType: serializer.fromJson<String>(json['faitType']),
+      faitId: serializer.fromJson<String>(json['faitId']),
+      nature: serializer.fromJson<String>(json['nature']),
+      reference: serializer.fromJson<String?>(json['reference']),
+      libelle: serializer.fromJson<String>(json['libelle']),
+      etat: serializer.fromJson<String>(json['etat']),
+      avertissement: serializer.fromJson<String?>(json['avertissement']),
+      appliqueLe: serializer.fromJson<String>(json['appliqueLe']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'faitType': serializer.toJson<String>(faitType),
+      'faitId': serializer.toJson<String>(faitId),
+      'nature': serializer.toJson<String>(nature),
+      'reference': serializer.toJson<String?>(reference),
+      'libelle': serializer.toJson<String>(libelle),
+      'etat': serializer.toJson<String>(etat),
+      'avertissement': serializer.toJson<String?>(avertissement),
+      'appliqueLe': serializer.toJson<String>(appliqueLe),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  EffetAppliqueRow copyWith({
+    String? id,
+    String? faitType,
+    String? faitId,
+    String? nature,
+    Value<String?> reference = const Value.absent(),
+    String? libelle,
+    String? etat,
+    Value<String?> avertissement = const Value.absent(),
+    String? appliqueLe,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => EffetAppliqueRow(
+    id: id ?? this.id,
+    faitType: faitType ?? this.faitType,
+    faitId: faitId ?? this.faitId,
+    nature: nature ?? this.nature,
+    reference: reference.present ? reference.value : this.reference,
+    libelle: libelle ?? this.libelle,
+    etat: etat ?? this.etat,
+    avertissement: avertissement.present
+        ? avertissement.value
+        : this.avertissement,
+    appliqueLe: appliqueLe ?? this.appliqueLe,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  EffetAppliqueRow copyWithCompanion(EffetsAppliquesCompanion data) {
+    return EffetAppliqueRow(
+      id: data.id.present ? data.id.value : this.id,
+      faitType: data.faitType.present ? data.faitType.value : this.faitType,
+      faitId: data.faitId.present ? data.faitId.value : this.faitId,
+      nature: data.nature.present ? data.nature.value : this.nature,
+      reference: data.reference.present ? data.reference.value : this.reference,
+      libelle: data.libelle.present ? data.libelle.value : this.libelle,
+      etat: data.etat.present ? data.etat.value : this.etat,
+      avertissement: data.avertissement.present
+          ? data.avertissement.value
+          : this.avertissement,
+      appliqueLe: data.appliqueLe.present
+          ? data.appliqueLe.value
+          : this.appliqueLe,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EffetAppliqueRow(')
+          ..write('id: $id, ')
+          ..write('faitType: $faitType, ')
+          ..write('faitId: $faitId, ')
+          ..write('nature: $nature, ')
+          ..write('reference: $reference, ')
+          ..write('libelle: $libelle, ')
+          ..write('etat: $etat, ')
+          ..write('avertissement: $avertissement, ')
+          ..write('appliqueLe: $appliqueLe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    faitType,
+    faitId,
+    nature,
+    reference,
+    libelle,
+    etat,
+    avertissement,
+    appliqueLe,
+    origine,
+    syncStatus,
+    syncMotif,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EffetAppliqueRow &&
+          other.id == this.id &&
+          other.faitType == this.faitType &&
+          other.faitId == this.faitId &&
+          other.nature == this.nature &&
+          other.reference == this.reference &&
+          other.libelle == this.libelle &&
+          other.etat == this.etat &&
+          other.avertissement == this.avertissement &&
+          other.appliqueLe == this.appliqueLe &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class EffetsAppliquesCompanion extends UpdateCompanion<EffetAppliqueRow> {
+  final Value<String> id;
+  final Value<String> faitType;
+  final Value<String> faitId;
+  final Value<String> nature;
+  final Value<String?> reference;
+  final Value<String> libelle;
+  final Value<String> etat;
+  final Value<String?> avertissement;
+  final Value<String> appliqueLe;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const EffetsAppliquesCompanion({
+    this.id = const Value.absent(),
+    this.faitType = const Value.absent(),
+    this.faitId = const Value.absent(),
+    this.nature = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.libelle = const Value.absent(),
+    this.etat = const Value.absent(),
+    this.avertissement = const Value.absent(),
+    this.appliqueLe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EffetsAppliquesCompanion.insert({
+    required String id,
+    required String faitType,
+    required String faitId,
+    required String nature,
+    this.reference = const Value.absent(),
+    required String libelle,
+    required String etat,
+    this.avertissement = const Value.absent(),
+    this.appliqueLe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       faitType = Value(faitType),
+       faitId = Value(faitId),
+       nature = Value(nature),
+       libelle = Value(libelle),
+       etat = Value(etat);
+  static Insertable<EffetAppliqueRow> custom({
+    Expression<String>? id,
+    Expression<String>? faitType,
+    Expression<String>? faitId,
+    Expression<String>? nature,
+    Expression<String>? reference,
+    Expression<String>? libelle,
+    Expression<String>? etat,
+    Expression<String>? avertissement,
+    Expression<String>? appliqueLe,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (faitType != null) 'fait_type': faitType,
+      if (faitId != null) 'fait_id': faitId,
+      if (nature != null) 'nature': nature,
+      if (reference != null) 'reference': reference,
+      if (libelle != null) 'libelle': libelle,
+      if (etat != null) 'etat': etat,
+      if (avertissement != null) 'avertissement': avertissement,
+      if (appliqueLe != null) 'applique_le': appliqueLe,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EffetsAppliquesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? faitType,
+    Value<String>? faitId,
+    Value<String>? nature,
+    Value<String?>? reference,
+    Value<String>? libelle,
+    Value<String>? etat,
+    Value<String?>? avertissement,
+    Value<String>? appliqueLe,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return EffetsAppliquesCompanion(
+      id: id ?? this.id,
+      faitType: faitType ?? this.faitType,
+      faitId: faitId ?? this.faitId,
+      nature: nature ?? this.nature,
+      reference: reference ?? this.reference,
+      libelle: libelle ?? this.libelle,
+      etat: etat ?? this.etat,
+      avertissement: avertissement ?? this.avertissement,
+      appliqueLe: appliqueLe ?? this.appliqueLe,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (faitType.present) {
+      map['fait_type'] = Variable<String>(faitType.value);
+    }
+    if (faitId.present) {
+      map['fait_id'] = Variable<String>(faitId.value);
+    }
+    if (nature.present) {
+      map['nature'] = Variable<String>(nature.value);
+    }
+    if (reference.present) {
+      map['reference'] = Variable<String>(reference.value);
+    }
+    if (libelle.present) {
+      map['libelle'] = Variable<String>(libelle.value);
+    }
+    if (etat.present) {
+      map['etat'] = Variable<String>(etat.value);
+    }
+    if (avertissement.present) {
+      map['avertissement'] = Variable<String>(avertissement.value);
+    }
+    if (appliqueLe.present) {
+      map['applique_le'] = Variable<String>(appliqueLe.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EffetsAppliquesCompanion(')
+          ..write('id: $id, ')
+          ..write('faitType: $faitType, ')
+          ..write('faitId: $faitId, ')
+          ..write('nature: $nature, ')
+          ..write('reference: $reference, ')
+          ..write('libelle: $libelle, ')
+          ..write('etat: $etat, ')
+          ..write('avertissement: $avertissement, ')
+          ..write('appliqueLe: $appliqueLe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ProduitsVendablesTable extends ProduitsVendables
     with TableInfo<$ProduitsVendablesTable, ProduitVendableRow> {
   @override
@@ -4593,16 +6109,13 @@ class $ProduitsVendablesTable extends ProduitsVendables
   $ProduitsVendablesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _skuMeta = const VerificationMeta('sku');
   @override
@@ -4851,7 +6364,7 @@ class $ProduitsVendablesTable extends ProduitsVendables
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ProduitVendableRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       sku: attachedDatabase.typeMapping.read(
@@ -4913,7 +6426,10 @@ class $ProduitsVendablesTable extends ProduitsVendables
 
 class ProduitVendableRow extends DataClass
     implements Insertable<ProduitVendableRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46_`) : un produit cree sur deux postes ne
+  /// peut pas porter le meme entier. Les anciens produits recoivent le leur a la
+  /// migration v33.
+  final String id;
 
   /// ⚠️ AJOUTEE — colonne « SKU », 1ʳᵉ du tableau de `catalogue-produits.html`
   /// (l.126) et absente de Doc D1. Genere sous la forme 'PRD-001' faute de
@@ -4978,7 +6494,7 @@ class ProduitVendableRow extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     if (!nullToAbsent || sku != null) {
       map['sku'] = Variable<String>(sku);
     }
@@ -5032,7 +6548,7 @@ class ProduitVendableRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ProduitVendableRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       sku: serializer.fromJson<String?>(json['sku']),
       name: serializer.fromJson<String>(json['name']),
       cat: serializer.fromJson<String>(json['cat']),
@@ -5051,7 +6567,7 @@ class ProduitVendableRow extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'sku': serializer.toJson<String?>(sku),
       'name': serializer.toJson<String>(name),
       'cat': serializer.toJson<String>(cat),
@@ -5068,7 +6584,7 @@ class ProduitVendableRow extends DataClass
   }
 
   ProduitVendableRow copyWith({
-    int? id,
+    String? id,
     Value<String?> sku = const Value.absent(),
     String? name,
     String? cat,
@@ -5174,7 +6690,7 @@ class ProduitVendableRow extends DataClass
 }
 
 class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String?> sku;
   final Value<String> name;
   final Value<String> cat;
@@ -5187,6 +6703,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
   final Value<int> stock;
   final Value<int> threshold;
   final Value<String?> espece;
+  final Value<int> rowid;
   const ProduitsVendablesCompanion({
     this.id = const Value.absent(),
     this.sku = const Value.absent(),
@@ -5201,6 +6718,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     this.stock = const Value.absent(),
     this.threshold = const Value.absent(),
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ProduitsVendablesCompanion.insert({
     this.id = const Value.absent(),
@@ -5216,6 +6734,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     required int stock,
     required int threshold,
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : name = Value(name),
        cat = Value(cat),
        price = Value(price),
@@ -5224,7 +6743,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
        stock = Value(stock),
        threshold = Value(threshold);
   static Insertable<ProduitVendableRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? sku,
     Expression<String>? name,
     Expression<String>? cat,
@@ -5237,6 +6756,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     Expression<int>? stock,
     Expression<int>? threshold,
     Expression<String>? espece,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5252,11 +6772,12 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
       if (stock != null) 'stock': stock,
       if (threshold != null) 'threshold': threshold,
       if (espece != null) 'espece': espece,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ProduitsVendablesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String?>? sku,
     Value<String>? name,
     Value<String>? cat,
@@ -5269,6 +6790,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     Value<int>? stock,
     Value<int>? threshold,
     Value<String?>? espece,
+    Value<int>? rowid,
   }) {
     return ProduitsVendablesCompanion(
       id: id ?? this.id,
@@ -5284,6 +6806,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
       stock: stock ?? this.stock,
       threshold: threshold ?? this.threshold,
       espece: espece ?? this.espece,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -5291,7 +6814,7 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (sku.present) {
       map['sku'] = Variable<String>(sku.value);
@@ -5329,6 +6852,9 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -5347,7 +6873,633 @@ class ProduitsVendablesCompanion extends UpdateCompanion<ProduitVendableRow> {
           ..write('groupeTaxe: $groupeTaxe, ')
           ..write('stock: $stock, ')
           ..write('threshold: $threshold, ')
-          ..write('espece: $espece')
+          ..write('espece: $espece, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MouvementsProduitTable extends MouvementsProduit
+    with TableInfo<$MouvementsProduitTable, MouvementProduitRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MouvementsProduitTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _horodatageMeta = const VerificationMeta(
+    'horodatage',
+  );
+  @override
+  late final GeneratedColumn<DateTime> horodatage = GeneratedColumn<DateTime>(
+    'horodatage',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _produitIdMeta = const VerificationMeta(
+    'produitId',
+  );
+  @override
+  late final GeneratedColumn<String> produitId = GeneratedColumn<String>(
+    'produit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES produits_vendables (id)',
+    ),
+  );
+  static const VerificationMeta _articleMeta = const VerificationMeta(
+    'article',
+  );
+  @override
+  late final GeneratedColumn<String> article = GeneratedColumn<String>(
+    'article',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _motifMeta = const VerificationMeta('motif');
+  @override
+  late final GeneratedColumn<String> motif = GeneratedColumn<String>(
+    'motif',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantiteMeta = const VerificationMeta(
+    'quantite',
+  );
+  @override
+  late final GeneratedColumn<double> quantite = GeneratedColumn<double>(
+    'quantite',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    horodatage,
+    produitId,
+    article,
+    motif,
+    quantite,
+    origine,
+    posteCible,
+    syncStatus,
+    syncMotif,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mouvements_produit';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MouvementProduitRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('horodatage')) {
+      context.handle(
+        _horodatageMeta,
+        horodatage.isAcceptableOrUnknown(data['horodatage']!, _horodatageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horodatageMeta);
+    }
+    if (data.containsKey('produit_id')) {
+      context.handle(
+        _produitIdMeta,
+        produitId.isAcceptableOrUnknown(data['produit_id']!, _produitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_produitIdMeta);
+    }
+    if (data.containsKey('article')) {
+      context.handle(
+        _articleMeta,
+        article.isAcceptableOrUnknown(data['article']!, _articleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_articleMeta);
+    }
+    if (data.containsKey('motif')) {
+      context.handle(
+        _motifMeta,
+        motif.isAcceptableOrUnknown(data['motif']!, _motifMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_motifMeta);
+    }
+    if (data.containsKey('quantite')) {
+      context.handle(
+        _quantiteMeta,
+        quantite.isAcceptableOrUnknown(data['quantite']!, _quantiteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_quantiteMeta);
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MouvementProduitRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MouvementProduitRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      horodatage: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}horodatage'],
+      )!,
+      produitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}produit_id'],
+      )!,
+      article: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}article'],
+      )!,
+      motif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}motif'],
+      )!,
+      quantite: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantite'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+    );
+  }
+
+  @override
+  $MouvementsProduitTable createAlias(String alias) {
+    return $MouvementsProduitTable(attachedDatabase, alias);
+  }
+}
+
+class MouvementProduitRow extends DataClass
+    implements Insertable<MouvementProduitRow> {
+  final String id;
+  final DateTime horodatage;
+  final String produitId;
+
+  /// Nom du produit au moment de la correction (l'historique reste lisible).
+  final String article;
+  final String motif;
+
+  /// Variation SIGNÉE du stock de CE poste ; jamais nulle.
+  final double quantite;
+
+  /// `null` = CE poste ; sinon l'identifiant du poste d'origine (historique pur).
+  final String? origine;
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun. Sur une
+  /// correction saisie au web, le poste désigné applique la variation à SON stock (une fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+  final String syncStatus;
+  final String? syncMotif;
+  const MouvementProduitRow({
+    required this.id,
+    required this.horodatage,
+    required this.produitId,
+    required this.article,
+    required this.motif,
+    required this.quantite,
+    this.origine,
+    this.posteCible,
+    required this.syncStatus,
+    this.syncMotif,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['horodatage'] = Variable<DateTime>(horodatage);
+    map['produit_id'] = Variable<String>(produitId);
+    map['article'] = Variable<String>(article);
+    map['motif'] = Variable<String>(motif);
+    map['quantite'] = Variable<double>(quantite);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    return map;
+  }
+
+  MouvementsProduitCompanion toCompanion(bool nullToAbsent) {
+    return MouvementsProduitCompanion(
+      id: Value(id),
+      horodatage: Value(horodatage),
+      produitId: Value(produitId),
+      article: Value(article),
+      motif: Value(motif),
+      quantite: Value(quantite),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+    );
+  }
+
+  factory MouvementProduitRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MouvementProduitRow(
+      id: serializer.fromJson<String>(json['id']),
+      horodatage: serializer.fromJson<DateTime>(json['horodatage']),
+      produitId: serializer.fromJson<String>(json['produitId']),
+      article: serializer.fromJson<String>(json['article']),
+      motif: serializer.fromJson<String>(json['motif']),
+      quantite: serializer.fromJson<double>(json['quantite']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'horodatage': serializer.toJson<DateTime>(horodatage),
+      'produitId': serializer.toJson<String>(produitId),
+      'article': serializer.toJson<String>(article),
+      'motif': serializer.toJson<String>(motif),
+      'quantite': serializer.toJson<double>(quantite),
+      'origine': serializer.toJson<String?>(origine),
+      'posteCible': serializer.toJson<String?>(posteCible),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+    };
+  }
+
+  MouvementProduitRow copyWith({
+    String? id,
+    DateTime? horodatage,
+    String? produitId,
+    String? article,
+    String? motif,
+    double? quantite,
+    Value<String?> origine = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+  }) => MouvementProduitRow(
+    id: id ?? this.id,
+    horodatage: horodatage ?? this.horodatage,
+    produitId: produitId ?? this.produitId,
+    article: article ?? this.article,
+    motif: motif ?? this.motif,
+    quantite: quantite ?? this.quantite,
+    origine: origine.present ? origine.value : this.origine,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+  );
+  MouvementProduitRow copyWithCompanion(MouvementsProduitCompanion data) {
+    return MouvementProduitRow(
+      id: data.id.present ? data.id.value : this.id,
+      horodatage: data.horodatage.present
+          ? data.horodatage.value
+          : this.horodatage,
+      produitId: data.produitId.present ? data.produitId.value : this.produitId,
+      article: data.article.present ? data.article.value : this.article,
+      motif: data.motif.present ? data.motif.value : this.motif,
+      quantite: data.quantite.present ? data.quantite.value : this.quantite,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MouvementProduitRow(')
+          ..write('id: $id, ')
+          ..write('horodatage: $horodatage, ')
+          ..write('produitId: $produitId, ')
+          ..write('article: $article, ')
+          ..write('motif: $motif, ')
+          ..write('quantite: $quantite, ')
+          ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    horodatage,
+    produitId,
+    article,
+    motif,
+    quantite,
+    origine,
+    posteCible,
+    syncStatus,
+    syncMotif,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MouvementProduitRow &&
+          other.id == this.id &&
+          other.horodatage == this.horodatage &&
+          other.produitId == this.produitId &&
+          other.article == this.article &&
+          other.motif == this.motif &&
+          other.quantite == this.quantite &&
+          other.origine == this.origine &&
+          other.posteCible == this.posteCible &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
+}
+
+class MouvementsProduitCompanion extends UpdateCompanion<MouvementProduitRow> {
+  final Value<String> id;
+  final Value<DateTime> horodatage;
+  final Value<String> produitId;
+  final Value<String> article;
+  final Value<String> motif;
+  final Value<double> quantite;
+  final Value<String?> origine;
+  final Value<String?> posteCible;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
+  const MouvementsProduitCompanion({
+    this.id = const Value.absent(),
+    this.horodatage = const Value.absent(),
+    this.produitId = const Value.absent(),
+    this.article = const Value.absent(),
+    this.motif = const Value.absent(),
+    this.quantite = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MouvementsProduitCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime horodatage,
+    required String produitId,
+    required String article,
+    required String motif,
+    required double quantite,
+    this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : horodatage = Value(horodatage),
+       produitId = Value(produitId),
+       article = Value(article),
+       motif = Value(motif),
+       quantite = Value(quantite);
+  static Insertable<MouvementProduitRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? horodatage,
+    Expression<String>? produitId,
+    Expression<String>? article,
+    Expression<String>? motif,
+    Expression<double>? quantite,
+    Expression<String>? origine,
+    Expression<String>? posteCible,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (horodatage != null) 'horodatage': horodatage,
+      if (produitId != null) 'produit_id': produitId,
+      if (article != null) 'article': article,
+      if (motif != null) 'motif': motif,
+      if (quantite != null) 'quantite': quantite,
+      if (origine != null) 'origine': origine,
+      if (posteCible != null) 'poste_cible': posteCible,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MouvementsProduitCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? horodatage,
+    Value<String>? produitId,
+    Value<String>? article,
+    Value<String>? motif,
+    Value<double>? quantite,
+    Value<String?>? origine,
+    Value<String?>? posteCible,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
+  }) {
+    return MouvementsProduitCompanion(
+      id: id ?? this.id,
+      horodatage: horodatage ?? this.horodatage,
+      produitId: produitId ?? this.produitId,
+      article: article ?? this.article,
+      motif: motif ?? this.motif,
+      quantite: quantite ?? this.quantite,
+      origine: origine ?? this.origine,
+      posteCible: posteCible ?? this.posteCible,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (horodatage.present) {
+      map['horodatage'] = Variable<DateTime>(horodatage.value);
+    }
+    if (produitId.present) {
+      map['produit_id'] = Variable<String>(produitId.value);
+    }
+    if (article.present) {
+      map['article'] = Variable<String>(article.value);
+    }
+    if (motif.present) {
+      map['motif'] = Variable<String>(motif.value);
+    }
+    if (quantite.present) {
+      map['quantite'] = Variable<double>(quantite.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MouvementsProduitCompanion(')
+          ..write('id: $id, ')
+          ..write('horodatage: $horodatage, ')
+          ..write('produitId: $produitId, ')
+          ..write('article: $article, ')
+          ..write('motif: $motif, ')
+          ..write('quantite: $quantite, ')
+          ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -5360,16 +7512,13 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
   $ClientsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _nomMeta = const VerificationMeta('nom');
   @override
@@ -5427,6 +7576,41 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5435,6 +7619,9 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
     soldeCreance,
     dateNaissance,
     dernierContact,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5492,6 +7679,24 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -5502,7 +7707,7 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ClientRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       nom: attachedDatabase.typeMapping.read(
@@ -5525,6 +7730,18 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}dernier_contact'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -5535,7 +7752,10 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, ClientRow> {
 }
 
 class ClientRow extends DataClass implements Insertable<ClientRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46_`) : jamais un entier auto-incremente,
+  /// que deux postes attribueraient chacun de leur cote. Les anciennes lignes
+  /// recoivent le leur a la migration v31.
+  final String id;
   final String nom;
   final String? telephone;
 
@@ -5555,6 +7775,15 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
 
   /// ⚠️ AJOUTEE — colonne « Dernier Contact » du tableau CRM (l.251).
   final DateTime? dernierContact;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const ClientRow({
     required this.id,
     required this.nom,
@@ -5562,11 +7791,14 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     required this.soldeCreance,
     this.dateNaissance,
     this.dernierContact,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['nom'] = Variable<String>(nom);
     if (!nullToAbsent || telephone != null) {
       map['telephone'] = Variable<String>(telephone);
@@ -5578,6 +7810,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     if (!nullToAbsent || dernierContact != null) {
       map['dernier_contact'] = Variable<DateTime>(dernierContact);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -5595,6 +7832,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
       dernierContact: dernierContact == null && nullToAbsent
           ? const Value.absent()
           : Value(dernierContact),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -5604,34 +7846,43 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ClientRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       nom: serializer.fromJson<String>(json['nom']),
       telephone: serializer.fromJson<String?>(json['telephone']),
       soldeCreance: serializer.fromJson<double>(json['soldeCreance']),
       dateNaissance: serializer.fromJson<DateTime?>(json['dateNaissance']),
       dernierContact: serializer.fromJson<DateTime?>(json['dernierContact']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'nom': serializer.toJson<String>(nom),
       'telephone': serializer.toJson<String?>(telephone),
       'soldeCreance': serializer.toJson<double>(soldeCreance),
       'dateNaissance': serializer.toJson<DateTime?>(dateNaissance),
       'dernierContact': serializer.toJson<DateTime?>(dernierContact),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   ClientRow copyWith({
-    int? id,
+    String? id,
     String? nom,
     Value<String?> telephone = const Value.absent(),
     double? soldeCreance,
     Value<DateTime?> dateNaissance = const Value.absent(),
     Value<DateTime?> dernierContact = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => ClientRow(
     id: id ?? this.id,
     nom: nom ?? this.nom,
@@ -5643,6 +7894,9 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     dernierContact: dernierContact.present
         ? dernierContact.value
         : this.dernierContact,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   ClientRow copyWithCompanion(ClientsCompanion data) {
     return ClientRow(
@@ -5658,6 +7912,11 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
       dernierContact: data.dernierContact.present
           ? data.dernierContact.value
           : this.dernierContact,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -5669,7 +7928,10 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
           ..write('telephone: $telephone, ')
           ..write('soldeCreance: $soldeCreance, ')
           ..write('dateNaissance: $dateNaissance, ')
-          ..write('dernierContact: $dernierContact')
+          ..write('dernierContact: $dernierContact, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -5682,6 +7944,9 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
     soldeCreance,
     dateNaissance,
     dernierContact,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -5692,16 +7957,23 @@ class ClientRow extends DataClass implements Insertable<ClientRow> {
           other.telephone == this.telephone &&
           other.soldeCreance == this.soldeCreance &&
           other.dateNaissance == this.dateNaissance &&
-          other.dernierContact == this.dernierContact);
+          other.dernierContact == this.dernierContact &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ClientsCompanion extends UpdateCompanion<ClientRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> nom;
   final Value<String?> telephone;
   final Value<double> soldeCreance;
   final Value<DateTime?> dateNaissance;
   final Value<DateTime?> dernierContact;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const ClientsCompanion({
     this.id = const Value.absent(),
     this.nom = const Value.absent(),
@@ -5709,6 +7981,10 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     this.soldeCreance = const Value.absent(),
     this.dateNaissance = const Value.absent(),
     this.dernierContact = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ClientsCompanion.insert({
     this.id = const Value.absent(),
@@ -5717,14 +7993,22 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     this.soldeCreance = const Value.absent(),
     this.dateNaissance = const Value.absent(),
     this.dernierContact = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : nom = Value(nom);
   static Insertable<ClientRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? nom,
     Expression<String>? telephone,
     Expression<double>? soldeCreance,
     Expression<DateTime>? dateNaissance,
     Expression<DateTime>? dernierContact,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5733,16 +8017,24 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
       if (soldeCreance != null) 'solde_creance': soldeCreance,
       if (dateNaissance != null) 'date_naissance': dateNaissance,
       if (dernierContact != null) 'dernier_contact': dernierContact,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ClientsCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? nom,
     Value<String?>? telephone,
     Value<double>? soldeCreance,
     Value<DateTime?>? dateNaissance,
     Value<DateTime?>? dernierContact,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return ClientsCompanion(
       id: id ?? this.id,
@@ -5751,6 +8043,10 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
       soldeCreance: soldeCreance ?? this.soldeCreance,
       dateNaissance: dateNaissance ?? this.dateNaissance,
       dernierContact: dernierContact ?? this.dernierContact,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -5758,7 +8054,7 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (nom.present) {
       map['nom'] = Variable<String>(nom.value);
@@ -5775,6 +8071,18 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
     if (dernierContact.present) {
       map['dernier_contact'] = Variable<DateTime>(dernierContact.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -5786,7 +8094,11 @@ class ClientsCompanion extends UpdateCompanion<ClientRow> {
           ..write('telephone: $telephone, ')
           ..write('soldeCreance: $soldeCreance, ')
           ..write('dateNaissance: $dateNaissance, ')
-          ..write('dernierContact: $dernierContact')
+          ..write('dernierContact: $dernierContact, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -5797,6 +8109,73 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $VentesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   static const VerificationMeta _refMeta = const VerificationMeta('ref');
   @override
   late final GeneratedColumn<String> ref = GeneratedColumn<String>(
@@ -5941,6 +8320,12 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
   );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
+    clientId,
+    posteCible,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     client,
     dateVente,
@@ -5968,6 +8353,39 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     if (data.containsKey('ref')) {
       context.handle(
         _refMeta,
@@ -6090,9 +8508,37 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
   @override
   Set<GeneratedColumn> get $primaryKey => {ref};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {id},
+  ];
+  @override
   VenteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return VenteRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
       ref: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
@@ -6159,6 +8605,29 @@ class $VentesTable extends Ventes with TableInfo<$VentesTable, VenteRow> {
 }
 
 class VenteRow extends DataClass implements Insertable<VenteRow> {
+  /// UUID de la vente (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste
+  /// [ref] (les lignes, les ecritures et les factures s'y rattachent par texte) ;
+  /// `ref` est le numero OFFICIEL remis au client (`V-P2-2026-001`, DV-21), jamais
+  /// renumerote.
+  final String id;
+
+  /// Le client, quand il est identifiable. `null` si la vente porte un nom libre
+  /// (« Client Comptant ») ou si le nom designe PLUSIEURS clients (homonymes) :
+  /// on ne devine pas qui a achete.
+  final String? clientId;
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun effet de stock
+  /// délégué. Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
+
   /// Reference unique, format 'V-AAAA-NNN'.
   final String ref;
 
@@ -6222,6 +8691,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   /// `null` pour tout règlement en espèces.
   final String? ligneMobileMoney;
   const VenteRow({
+    required this.id,
+    this.clientId,
+    this.posteCible,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
     required this.ref,
     required this.client,
     required this.dateVente,
@@ -6240,6 +8715,18 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     map['ref'] = Variable<String>(ref);
     map['client'] = Variable<String>(client);
     map['date_vente'] = Variable<DateTime>(dateVente);
@@ -6273,6 +8760,18 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
 
   VentesCompanion toCompanion(bool nullToAbsent) {
     return VentesCompanion(
+      id: Value(id),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
       ref: Value(ref),
       client: Value(client),
       dateVente: Value(dateVente),
@@ -6310,6 +8809,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return VenteRow(
+      id: serializer.fromJson<String>(json['id']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
       ref: serializer.fromJson<String>(json['ref']),
       client: serializer.fromJson<String>(json['client']),
       dateVente: serializer.fromJson<DateTime>(json['dateVente']),
@@ -6330,6 +8835,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'clientId': serializer.toJson<String?>(clientId),
+      'posteCible': serializer.toJson<String?>(posteCible),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
       'ref': serializer.toJson<String>(ref),
       'client': serializer.toJson<String>(client),
       'dateVente': serializer.toJson<DateTime>(dateVente),
@@ -6348,6 +8859,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   }
 
   VenteRow copyWith({
+    String? id,
+    Value<String?> clientId = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
     String? ref,
     String? client,
     DateTime? dateVente,
@@ -6363,6 +8880,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
     Value<DateTime?> echeance = const Value.absent(),
     Value<String?> ligneMobileMoney = const Value.absent(),
   }) => VenteRow(
+    id: id ?? this.id,
+    clientId: clientId.present ? clientId.value : this.clientId,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
     ref: ref ?? this.ref,
     client: client ?? this.client,
     dateVente: dateVente ?? this.dateVente,
@@ -6392,6 +8915,16 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   );
   VenteRow copyWithCompanion(VentesCompanion data) {
     return VenteRow(
+      id: data.id.present ? data.id.value : this.id,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       ref: data.ref.present ? data.ref.value : this.ref,
       client: data.client.present ? data.client.value : this.client,
       dateVente: data.dateVente.present ? data.dateVente.value : this.dateVente,
@@ -6424,6 +8957,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   @override
   String toString() {
     return (StringBuffer('VenteRow(')
+          ..write('id: $id, ')
+          ..write('clientId: $clientId, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('client: $client, ')
           ..write('dateVente: $dateVente, ')
@@ -6444,6 +8983,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
 
   @override
   int get hashCode => Object.hash(
+    id,
+    clientId,
+    posteCible,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     client,
     dateVente,
@@ -6463,6 +9008,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is VenteRow &&
+          other.id == this.id &&
+          other.clientId == this.clientId &&
+          other.posteCible == this.posteCible &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt &&
           other.ref == this.ref &&
           other.client == this.client &&
           other.dateVente == this.dateVente &&
@@ -6480,6 +9031,12 @@ class VenteRow extends DataClass implements Insertable<VenteRow> {
 }
 
 class VentesCompanion extends UpdateCompanion<VenteRow> {
+  final Value<String> id;
+  final Value<String?> clientId;
+  final Value<String?> posteCible;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<String> ref;
   final Value<String> client;
   final Value<DateTime> dateVente;
@@ -6496,6 +9053,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   final Value<String?> ligneMobileMoney;
   final Value<int> rowid;
   const VentesCompanion({
+    this.id = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.ref = const Value.absent(),
     this.client = const Value.absent(),
     this.dateVente = const Value.absent(),
@@ -6513,6 +9076,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     this.rowid = const Value.absent(),
   });
   VentesCompanion.insert({
+    this.id = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     required String ref,
     required String client,
     required DateTime dateVente,
@@ -6536,6 +9105,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
        total = Value(total),
        paye = Value(paye);
   static Insertable<VenteRow> custom({
+    Expression<String>? id,
+    Expression<String>? clientId,
+    Expression<String>? posteCible,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<String>? ref,
     Expression<String>? client,
     Expression<DateTime>? dateVente,
@@ -6553,6 +9128,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (clientId != null) 'client_id': clientId,
+      if (posteCible != null) 'poste_cible': posteCible,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (ref != null) 'ref': ref,
       if (client != null) 'client': client,
       if (dateVente != null) 'date_vente': dateVente,
@@ -6572,6 +9153,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   }
 
   VentesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? clientId,
+    Value<String?>? posteCible,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<String>? ref,
     Value<String>? client,
     Value<DateTime>? dateVente,
@@ -6589,6 +9176,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
     Value<int>? rowid,
   }) {
     return VentesCompanion(
+      id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
+      posteCible: posteCible ?? this.posteCible,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       ref: ref ?? this.ref,
       client: client ?? this.client,
       dateVente: dateVente ?? this.dateVente,
@@ -6610,6 +9203,24 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
@@ -6661,6 +9272,12 @@ class VentesCompanion extends UpdateCompanion<VenteRow> {
   @override
   String toString() {
     return (StringBuffer('VentesCompanion(')
+          ..write('id: $id, ')
+          ..write('clientId: $clientId, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('client: $client, ')
           ..write('dateVente: $dateVente, ')
@@ -6689,16 +9306,13 @@ class $LignesVenteTable extends LignesVente
   $LignesVenteTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _venteRefMeta = const VerificationMeta(
     'venteRef',
@@ -6718,11 +9332,11 @@ class $LignesVenteTable extends LignesVente
     'produitId',
   );
   @override
-  late final GeneratedColumn<int> produitId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> produitId = GeneratedColumn<String>(
     'produit_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES produits_vendables (id)',
@@ -6842,7 +9456,7 @@ class $LignesVenteTable extends LignesVente
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneVenteRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       venteRef: attachedDatabase.typeMapping.read(
@@ -6850,7 +9464,7 @@ class $LignesVenteTable extends LignesVente
         data['${effectivePrefix}vente_ref'],
       )!,
       produitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}produit_id'],
       )!,
       name: attachedDatabase.typeMapping.read(
@@ -6879,9 +9493,10 @@ class $LignesVenteTable extends LignesVente
 }
 
 class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne de vente est un fait synchronise.
+  final String id;
   final String venteRef;
-  final int produitId;
+  final String produitId;
 
   /// Nom du produit **au moment de la vente** — denormalise volontairement,
   /// pour que l'historique reste fidele si le produit est renomme plus tard.
@@ -6903,9 +9518,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['vente_ref'] = Variable<String>(venteRef);
-    map['produit_id'] = Variable<int>(produitId);
+    map['produit_id'] = Variable<String>(produitId);
     map['name'] = Variable<String>(name);
     map['qte'] = Variable<double>(qte);
     map['pu'] = Variable<double>(pu);
@@ -6935,9 +9550,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneVenteRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       venteRef: serializer.fromJson<String>(json['venteRef']),
-      produitId: serializer.fromJson<int>(json['produitId']),
+      produitId: serializer.fromJson<String>(json['produitId']),
       name: serializer.fromJson<String>(json['name']),
       qte: serializer.fromJson<double>(json['qte']),
       pu: serializer.fromJson<double>(json['pu']),
@@ -6948,9 +9563,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'venteRef': serializer.toJson<String>(venteRef),
-      'produitId': serializer.toJson<int>(produitId),
+      'produitId': serializer.toJson<String>(produitId),
       'name': serializer.toJson<String>(name),
       'qte': serializer.toJson<double>(qte),
       'pu': serializer.toJson<double>(pu),
@@ -6959,9 +9574,9 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
   }
 
   LigneVenteRow copyWith({
-    int? id,
+    String? id,
     String? venteRef,
-    int? produitId,
+    String? produitId,
     String? name,
     double? qte,
     double? pu,
@@ -7018,13 +9633,14 @@ class LigneVenteRow extends DataClass implements Insertable<LigneVenteRow> {
 }
 
 class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> venteRef;
-  final Value<int> produitId;
+  final Value<String> produitId;
   final Value<String> name;
   final Value<double> qte;
   final Value<double> pu;
   final Value<String?> espece;
+  final Value<int> rowid;
   const LignesVenteCompanion({
     this.id = const Value.absent(),
     this.venteRef = const Value.absent(),
@@ -7033,28 +9649,31 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
     this.qte = const Value.absent(),
     this.pu = const Value.absent(),
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesVenteCompanion.insert({
     this.id = const Value.absent(),
     required String venteRef,
-    required int produitId,
+    required String produitId,
     required String name,
     required double qte,
     required double pu,
     this.espece = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : venteRef = Value(venteRef),
        produitId = Value(produitId),
        name = Value(name),
        qte = Value(qte),
        pu = Value(pu);
   static Insertable<LigneVenteRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? venteRef,
-    Expression<int>? produitId,
+    Expression<String>? produitId,
     Expression<String>? name,
     Expression<double>? qte,
     Expression<double>? pu,
     Expression<String>? espece,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7064,17 +9683,19 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
       if (qte != null) 'qte': qte,
       if (pu != null) 'pu': pu,
       if (espece != null) 'espece': espece,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesVenteCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? venteRef,
-    Value<int>? produitId,
+    Value<String>? produitId,
     Value<String>? name,
     Value<double>? qte,
     Value<double>? pu,
     Value<String?>? espece,
+    Value<int>? rowid,
   }) {
     return LignesVenteCompanion(
       id: id ?? this.id,
@@ -7084,6 +9705,7 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
       qte: qte ?? this.qte,
       pu: pu ?? this.pu,
       espece: espece ?? this.espece,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -7091,13 +9713,13 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (venteRef.present) {
       map['vente_ref'] = Variable<String>(venteRef.value);
     }
     if (produitId.present) {
-      map['produit_id'] = Variable<int>(produitId.value);
+      map['produit_id'] = Variable<String>(produitId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -7111,6 +9733,9 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -7123,7 +9748,8 @@ class LignesVenteCompanion extends UpdateCompanion<LigneVenteRow> {
           ..write('name: $name, ')
           ..write('qte: $qte, ')
           ..write('pu: $pu, ')
-          ..write('espece: $espece')
+          ..write('espece: $espece, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -7136,16 +9762,13 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
   $DevisTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _referenceMeta = const VerificationMeta(
     'reference',
@@ -7211,6 +9834,62 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _statutMeta = const VerificationMeta('statut');
+  @override
+  late final GeneratedColumn<String> statut = GeneratedColumn<String>(
+    'statut',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('emis'),
+  );
+  static const VerificationMeta _supprimeLeMeta = const VerificationMeta(
+    'supprimeLe',
+  );
+  @override
+  late final GeneratedColumn<String> supprimeLe = GeneratedColumn<String>(
+    'supprime_le',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7220,6 +9899,11 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     montantEstime,
     validiteJours,
     dateEmission,
+    statut,
+    supprimeLe,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7291,6 +9975,36 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     } else if (isInserting) {
       context.missing(_dateEmissionMeta);
     }
+    if (data.containsKey('statut')) {
+      context.handle(
+        _statutMeta,
+        statut.isAcceptableOrUnknown(data['statut']!, _statutMeta),
+      );
+    }
+    if (data.containsKey('supprime_le')) {
+      context.handle(
+        _supprimeLeMeta,
+        supprimeLe.isAcceptableOrUnknown(data['supprime_le']!, _supprimeLeMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -7301,7 +10015,7 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DevisRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       reference: attachedDatabase.typeMapping.read(
@@ -7328,6 +10042,26 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_emission'],
       )!,
+      statut: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}statut'],
+      )!,
+      supprimeLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supprime_le'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -7338,9 +10072,12 @@ class $DevisTable extends Devis with TableInfo<$DevisTable, DevisRow> {
 }
 
 class DevisRow extends DataClass implements Insertable<DevisRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, v43) : l'identite SYNCHRONISEE du devis. Les
+  /// anciens devis (entier auto-incremente) recoivent le leur a la migration.
+  final String id;
 
-  /// Format 'DV-AAAA-NNN'.
+  /// Numero OFFICIEL, jamais renumerote : `DV-P2-2026-001` (poste appaire),
+  /// `DV-2026-001` (poste jamais appaire), `DV-WEB-2026-001` (emis au web).
   final String reference;
   final String client;
 
@@ -7351,6 +10088,24 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
   /// Durée de validité en jours — 15 par défaut (Doc H1).
   final int validiteJours;
   final DateTime dateEmission;
+
+  /// Cycle de vie : `emis` (a la signature du client) puis `accepte` ou `refuse`.
+  /// « Expire » n'est PAS stocke : il se deduit de la date d'expiration.
+  /// Un devis `accepte` ne se modifie plus et ne se supprime pas (v43).
+  final String statut;
+
+  /// Pierre tombale (instant de suppression, ISO UTC) : la ligne reste, cachee,
+  /// pour que la suppression se propage et que le numero ne soit jamais reutilise.
+  final String? supprimeLe;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const DevisRow({
     required this.id,
     required this.reference,
@@ -7359,17 +10114,31 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     required this.montantEstime,
     required this.validiteJours,
     required this.dateEmission,
+    required this.statut,
+    this.supprimeLe,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['reference'] = Variable<String>(reference);
     map['client'] = Variable<String>(client);
     map['objet'] = Variable<String>(objet);
     map['montant_estime'] = Variable<double>(montantEstime);
     map['validite_jours'] = Variable<int>(validiteJours);
     map['date_emission'] = Variable<DateTime>(dateEmission);
+    map['statut'] = Variable<String>(statut);
+    if (!nullToAbsent || supprimeLe != null) {
+      map['supprime_le'] = Variable<String>(supprimeLe);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -7382,6 +10151,15 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
       montantEstime: Value(montantEstime),
       validiteJours: Value(validiteJours),
       dateEmission: Value(dateEmission),
+      statut: Value(statut),
+      supprimeLe: supprimeLe == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supprimeLe),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -7391,37 +10169,52 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DevisRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       reference: serializer.fromJson<String>(json['reference']),
       client: serializer.fromJson<String>(json['client']),
       objet: serializer.fromJson<String>(json['objet']),
       montantEstime: serializer.fromJson<double>(json['montantEstime']),
       validiteJours: serializer.fromJson<int>(json['validiteJours']),
       dateEmission: serializer.fromJson<DateTime>(json['dateEmission']),
+      statut: serializer.fromJson<String>(json['statut']),
+      supprimeLe: serializer.fromJson<String?>(json['supprimeLe']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'reference': serializer.toJson<String>(reference),
       'client': serializer.toJson<String>(client),
       'objet': serializer.toJson<String>(objet),
       'montantEstime': serializer.toJson<double>(montantEstime),
       'validiteJours': serializer.toJson<int>(validiteJours),
       'dateEmission': serializer.toJson<DateTime>(dateEmission),
+      'statut': serializer.toJson<String>(statut),
+      'supprimeLe': serializer.toJson<String?>(supprimeLe),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   DevisRow copyWith({
-    int? id,
+    String? id,
     String? reference,
     String? client,
     String? objet,
     double? montantEstime,
     int? validiteJours,
     DateTime? dateEmission,
+    String? statut,
+    Value<String?> supprimeLe = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => DevisRow(
     id: id ?? this.id,
     reference: reference ?? this.reference,
@@ -7430,6 +10223,11 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     montantEstime: montantEstime ?? this.montantEstime,
     validiteJours: validiteJours ?? this.validiteJours,
     dateEmission: dateEmission ?? this.dateEmission,
+    statut: statut ?? this.statut,
+    supprimeLe: supprimeLe.present ? supprimeLe.value : this.supprimeLe,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   DevisRow copyWithCompanion(DevisCompanion data) {
     return DevisRow(
@@ -7446,6 +10244,15 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
       dateEmission: data.dateEmission.present
           ? data.dateEmission.value
           : this.dateEmission,
+      statut: data.statut.present ? data.statut.value : this.statut,
+      supprimeLe: data.supprimeLe.present
+          ? data.supprimeLe.value
+          : this.supprimeLe,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -7458,7 +10265,12 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
           ..write('objet: $objet, ')
           ..write('montantEstime: $montantEstime, ')
           ..write('validiteJours: $validiteJours, ')
-          ..write('dateEmission: $dateEmission')
+          ..write('dateEmission: $dateEmission, ')
+          ..write('statut: $statut, ')
+          ..write('supprimeLe: $supprimeLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -7472,6 +10284,11 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
     montantEstime,
     validiteJours,
     dateEmission,
+    statut,
+    supprimeLe,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -7483,17 +10300,28 @@ class DevisRow extends DataClass implements Insertable<DevisRow> {
           other.objet == this.objet &&
           other.montantEstime == this.montantEstime &&
           other.validiteJours == this.validiteJours &&
-          other.dateEmission == this.dateEmission);
+          other.dateEmission == this.dateEmission &&
+          other.statut == this.statut &&
+          other.supprimeLe == this.supprimeLe &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class DevisCompanion extends UpdateCompanion<DevisRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> reference;
   final Value<String> client;
   final Value<String> objet;
   final Value<double> montantEstime;
   final Value<int> validiteJours;
   final Value<DateTime> dateEmission;
+  final Value<String> statut;
+  final Value<String?> supprimeLe;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const DevisCompanion({
     this.id = const Value.absent(),
     this.reference = const Value.absent(),
@@ -7502,6 +10330,12 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     this.montantEstime = const Value.absent(),
     this.validiteJours = const Value.absent(),
     this.dateEmission = const Value.absent(),
+    this.statut = const Value.absent(),
+    this.supprimeLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   DevisCompanion.insert({
     this.id = const Value.absent(),
@@ -7511,19 +10345,31 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     required double montantEstime,
     this.validiteJours = const Value.absent(),
     required DateTime dateEmission,
+    this.statut = const Value.absent(),
+    this.supprimeLe = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : reference = Value(reference),
        client = Value(client),
        objet = Value(objet),
        montantEstime = Value(montantEstime),
        dateEmission = Value(dateEmission);
   static Insertable<DevisRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? reference,
     Expression<String>? client,
     Expression<String>? objet,
     Expression<double>? montantEstime,
     Expression<int>? validiteJours,
     Expression<DateTime>? dateEmission,
+    Expression<String>? statut,
+    Expression<String>? supprimeLe,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7533,17 +10379,29 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
       if (montantEstime != null) 'montant_estime': montantEstime,
       if (validiteJours != null) 'validite_jours': validiteJours,
       if (dateEmission != null) 'date_emission': dateEmission,
+      if (statut != null) 'statut': statut,
+      if (supprimeLe != null) 'supprime_le': supprimeLe,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   DevisCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? reference,
     Value<String>? client,
     Value<String>? objet,
     Value<double>? montantEstime,
     Value<int>? validiteJours,
     Value<DateTime>? dateEmission,
+    Value<String>? statut,
+    Value<String?>? supprimeLe,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return DevisCompanion(
       id: id ?? this.id,
@@ -7553,6 +10411,12 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
       montantEstime: montantEstime ?? this.montantEstime,
       validiteJours: validiteJours ?? this.validiteJours,
       dateEmission: dateEmission ?? this.dateEmission,
+      statut: statut ?? this.statut,
+      supprimeLe: supprimeLe ?? this.supprimeLe,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -7560,7 +10424,7 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (reference.present) {
       map['reference'] = Variable<String>(reference.value);
@@ -7580,6 +10444,24 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
     if (dateEmission.present) {
       map['date_emission'] = Variable<DateTime>(dateEmission.value);
     }
+    if (statut.present) {
+      map['statut'] = Variable<String>(statut.value);
+    }
+    if (supprimeLe.present) {
+      map['supprime_le'] = Variable<String>(supprimeLe.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -7592,7 +10474,13 @@ class DevisCompanion extends UpdateCompanion<DevisRow> {
           ..write('objet: $objet, ')
           ..write('montantEstime: $montantEstime, ')
           ..write('validiteJours: $validiteJours, ')
-          ..write('dateEmission: $dateEmission')
+          ..write('dateEmission: $dateEmission, ')
+          ..write('statut: $statut, ')
+          ..write('supprimeLe: $supprimeLe, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -7918,6 +10806,62 @@ class $FacturesTable extends Factures
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $FacturesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   static const VerificationMeta _refMeta = const VerificationMeta('ref');
   @override
   late final GeneratedColumn<String> ref = GeneratedColumn<String>(
@@ -8128,6 +11072,11 @@ class $FacturesTable extends Factures
   );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     type,
     venteRef,
@@ -8161,6 +11110,33 @@ class $FacturesTable extends Factures
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     if (data.containsKey('ref')) {
       context.handle(
         _refMeta,
@@ -8318,9 +11294,33 @@ class $FacturesTable extends Factures
   @override
   Set<GeneratedColumn> get $primaryKey => {ref};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {id},
+  ];
+  @override
   FactureRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FactureRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
       ref: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
@@ -8411,7 +11411,26 @@ class $FacturesTable extends Factures
 }
 
 class FactureRow extends DataClass implements Insertable<FactureRow> {
-  /// 'FV-2026-001' ou 'FA-2026-001'.
+  /// UUID de la facture (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste
+  /// [ref] (les lignes et les ventes s'y rattachent par texte) ; `ref` est le
+  /// numero OFFICIEL de la piece (`FV-P2-2026-001`, DV-21), jamais renumerote.
+  final String id;
+
+  /// `null` : facture emise sur CE poste. Sinon l'identifiant du poste qui l'a
+  /// emise (facture absorbee du serveur). **Seul le poste emetteur transmet** a la
+  /// DGI : une facture d'un autre poste n'offre ni transmission ni saisie
+  /// manuelle, pour qu'elle ne soit pas normalisee deux fois (`46e_` §3).
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) : emission, puis derniere
+  /// transmission ou saisie du code. Jamais l'instant d'envoi.
+  final String updatedAt;
+
+  /// 'FV-P2-2026-001' / 'FA-P2-2026-001' (poste appaire) ou 'FV-2026-001'.
   final String ref;
 
   /// [TypeFacture.vente] ou [TypeFacture.avoir].
@@ -8459,6 +11478,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   final String? erreurTransmission;
   final DateTime creeLe;
   const FactureRow({
+    required this.id,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
     required this.ref,
     required this.type,
     this.venteRef,
@@ -8483,6 +11507,15 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     map['ref'] = Variable<String>(ref);
     map['type'] = Variable<String>(type);
     if (!nullToAbsent || venteRef != null) {
@@ -8530,6 +11563,15 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
 
   FacturesCompanion toCompanion(bool nullToAbsent) {
     return FacturesCompanion(
+      id: Value(id),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
       ref: Value(ref),
       type: Value(type),
       venteRef: venteRef == null && nullToAbsent
@@ -8579,6 +11621,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FactureRow(
+      id: serializer.fromJson<String>(json['id']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
       ref: serializer.fromJson<String>(json['ref']),
       type: serializer.fromJson<String>(json['type']),
       venteRef: serializer.fromJson<String?>(json['venteRef']),
@@ -8609,6 +11656,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
       'ref': serializer.toJson<String>(ref),
       'type': serializer.toJson<String>(type),
       'venteRef': serializer.toJson<String?>(venteRef),
@@ -8633,6 +11685,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }
 
   FactureRow copyWith({
+    String? id,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
     String? ref,
     String? type,
     Value<String?> venteRef = const Value.absent(),
@@ -8654,6 +11711,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
     Value<String?> erreurTransmission = const Value.absent(),
     DateTime? creeLe,
   }) => FactureRow(
+    id: id ?? this.id,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
     ref: ref ?? this.ref,
     type: type ?? this.type,
     venteRef: venteRef.present ? venteRef.value : this.venteRef,
@@ -8685,6 +11747,13 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   );
   FactureRow copyWithCompanion(FacturesCompanion data) {
     return FactureRow(
+      id: data.id.present ? data.id.value : this.id,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       ref: data.ref.present ? data.ref.value : this.ref,
       type: data.type.present ? data.type.value : this.type,
       venteRef: data.venteRef.present ? data.venteRef.value : this.venteRef,
@@ -8723,6 +11792,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   @override
   String toString() {
     return (StringBuffer('FactureRow(')
+          ..write('id: $id, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('type: $type, ')
           ..write('venteRef: $venteRef, ')
@@ -8748,7 +11822,12 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
+    id,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
     ref,
     type,
     venteRef,
@@ -8769,11 +11848,16 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
     dateNormalisation,
     erreurTransmission,
     creeLe,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FactureRow &&
+          other.id == this.id &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt &&
           other.ref == this.ref &&
           other.type == this.type &&
           other.venteRef == this.venteRef &&
@@ -8797,6 +11881,11 @@ class FactureRow extends DataClass implements Insertable<FactureRow> {
 }
 
 class FacturesCompanion extends UpdateCompanion<FactureRow> {
+  final Value<String> id;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<String> ref;
   final Value<String> type;
   final Value<String?> venteRef;
@@ -8819,6 +11908,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   final Value<DateTime> creeLe;
   final Value<int> rowid;
   const FacturesCompanion({
+    this.id = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.ref = const Value.absent(),
     this.type = const Value.absent(),
     this.venteRef = const Value.absent(),
@@ -8842,6 +11936,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     this.rowid = const Value.absent(),
   });
   FacturesCompanion.insert({
+    this.id = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     required String ref,
     required String type,
     this.venteRef = const Value.absent(),
@@ -8872,6 +11971,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
        totalTtc = Value(totalTtc),
        statut = Value(statut);
   static Insertable<FactureRow> custom({
+    Expression<String>? id,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<String>? ref,
     Expression<String>? type,
     Expression<String>? venteRef,
@@ -8895,6 +11999,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (ref != null) 'ref': ref,
       if (type != null) 'type': type,
       if (venteRef != null) 'vente_ref': venteRef,
@@ -8920,6 +12029,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   }
 
   FacturesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<String>? ref,
     Value<String>? type,
     Value<String?>? venteRef,
@@ -8943,6 +12057,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
     Value<int>? rowid,
   }) {
     return FacturesCompanion(
+      id: id ?? this.id,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       ref: ref ?? this.ref,
       type: type ?? this.type,
       venteRef: venteRef ?? this.venteRef,
@@ -8970,6 +12089,21 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
@@ -9039,6 +12173,11 @@ class FacturesCompanion extends UpdateCompanion<FactureRow> {
   @override
   String toString() {
     return (StringBuffer('FacturesCompanion(')
+          ..write('id: $id, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('ref: $ref, ')
           ..write('type: $type, ')
           ..write('venteRef: $venteRef, ')
@@ -9073,16 +12212,13 @@ class $LignesFactureTable extends LignesFacture
   $LignesFactureTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _factureRefMeta = const VerificationMeta(
     'factureRef',
@@ -9298,7 +12434,7 @@ class $LignesFactureTable extends LignesFacture
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneFactureRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       factureRef: attachedDatabase.typeMapping.read(
@@ -9347,7 +12483,9 @@ class $LignesFactureTable extends LignesFacture
 }
 
 class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne de facture est un fait synchronise, et voyage DANS
+  /// sa facture, jamais seule.
+  final String id;
   final String factureRef;
   final String designation;
   final double quantite;
@@ -9379,7 +12517,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['facture_ref'] = Variable<String>(factureRef);
     map['designation'] = Variable<String>(designation);
     map['quantite'] = Variable<double>(quantite);
@@ -9417,7 +12555,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneFactureRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       factureRef: serializer.fromJson<String>(json['factureRef']),
       designation: serializer.fromJson<String>(json['designation']),
       quantite: serializer.fromJson<double>(json['quantite']),
@@ -9433,7 +12571,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'factureRef': serializer.toJson<String>(factureRef),
       'designation': serializer.toJson<String>(designation),
       'quantite': serializer.toJson<double>(quantite),
@@ -9447,7 +12585,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
   }
 
   LigneFactureRow copyWith({
-    int? id,
+    String? id,
     String? factureRef,
     String? designation,
     double? quantite,
@@ -9541,7 +12679,7 @@ class LigneFactureRow extends DataClass implements Insertable<LigneFactureRow> {
 }
 
 class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> factureRef;
   final Value<String> designation;
   final Value<double> quantite;
@@ -9551,6 +12689,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
   final Value<double> tauxTaxe;
   final Value<double> montantHt;
   final Value<double> montantTaxe;
+  final Value<int> rowid;
   const LignesFactureCompanion({
     this.id = const Value.absent(),
     this.factureRef = const Value.absent(),
@@ -9562,6 +12701,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     this.tauxTaxe = const Value.absent(),
     this.montantHt = const Value.absent(),
     this.montantTaxe = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesFactureCompanion.insert({
     this.id = const Value.absent(),
@@ -9574,6 +12714,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     required double tauxTaxe,
     required double montantHt,
     required double montantTaxe,
+    this.rowid = const Value.absent(),
   }) : factureRef = Value(factureRef),
        designation = Value(designation),
        quantite = Value(quantite),
@@ -9583,7 +12724,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
        montantHt = Value(montantHt),
        montantTaxe = Value(montantTaxe);
   static Insertable<LigneFactureRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? factureRef,
     Expression<String>? designation,
     Expression<double>? quantite,
@@ -9593,6 +12734,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     Expression<double>? tauxTaxe,
     Expression<double>? montantHt,
     Expression<double>? montantTaxe,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -9605,11 +12747,12 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
       if (tauxTaxe != null) 'taux_taxe': tauxTaxe,
       if (montantHt != null) 'montant_ht': montantHt,
       if (montantTaxe != null) 'montant_taxe': montantTaxe,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesFactureCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? factureRef,
     Value<String>? designation,
     Value<double>? quantite,
@@ -9619,6 +12762,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     Value<double>? tauxTaxe,
     Value<double>? montantHt,
     Value<double>? montantTaxe,
+    Value<int>? rowid,
   }) {
     return LignesFactureCompanion(
       id: id ?? this.id,
@@ -9631,6 +12775,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
       tauxTaxe: tauxTaxe ?? this.tauxTaxe,
       montantHt: montantHt ?? this.montantHt,
       montantTaxe: montantTaxe ?? this.montantTaxe,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -9638,7 +12783,7 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (factureRef.present) {
       map['facture_ref'] = Variable<String>(factureRef.value);
@@ -9667,6 +12812,9 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
     if (montantTaxe.present) {
       map['montant_taxe'] = Variable<double>(montantTaxe.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -9682,7 +12830,8 @@ class LignesFactureCompanion extends UpdateCompanion<LigneFactureRow> {
           ..write('groupeTaxe: $groupeTaxe, ')
           ..write('tauxTaxe: $tauxTaxe, ')
           ..write('montantHt: $montantHt, ')
-          ..write('montantTaxe: $montantTaxe')
+          ..write('montantTaxe: $montantTaxe, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -10150,16 +13299,13 @@ class $FournisseursTable extends Fournisseurs
   $FournisseursTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _nomMeta = const VerificationMeta('nom');
   @override
@@ -10203,8 +13349,52 @@ class $FournisseursTable extends Fournisseurs
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, nom, telephone, adresse, fournit];
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    nom,
+    telephone,
+    adresse,
+    fournit,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -10246,6 +13436,24 @@ class $FournisseursTable extends Fournisseurs
         fournit.isAcceptableOrUnknown(data['fournit']!, _fournitMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -10256,7 +13464,7 @@ class $FournisseursTable extends Fournisseurs
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FournisseurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       nom: attachedDatabase.typeMapping.read(
@@ -10275,6 +13483,18 @@ class $FournisseursTable extends Fournisseurs
         DriftSqlType.string,
         data['${effectivePrefix}fournit'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -10285,7 +13505,9 @@ class $FournisseursTable extends Fournisseurs
 }
 
 class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
-  final int id;
+  /// UUID genere au poste (DV-19) : un fournisseur cree sur deux postes ne peut pas
+  /// porter le meme entier. Les anciens recoivent le leur a la migration v35.
+  final String id;
   final String nom;
 
   /// Doc D1 nomme cette colonne `contact` ; le tableau reel (`fournisseurs.html`
@@ -10296,17 +13518,27 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
   /// ⚠️ AJOUTEE — colonne « Fournit » du tableau reel (l.136) : ce que le
   /// fournisseur approvisionne. Absente de Doc D1.
   final String? fournit;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const FournisseurRow({
     required this.id,
     required this.nom,
     this.telephone,
     this.adresse,
     this.fournit,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['nom'] = Variable<String>(nom);
     if (!nullToAbsent || telephone != null) {
       map['telephone'] = Variable<String>(telephone);
@@ -10317,6 +13549,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
     if (!nullToAbsent || fournit != null) {
       map['fournit'] = Variable<String>(fournit);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -10333,6 +13570,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
       fournit: fournit == null && nullToAbsent
           ? const Value.absent()
           : Value(fournit),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -10342,37 +13584,49 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FournisseurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       nom: serializer.fromJson<String>(json['nom']),
       telephone: serializer.fromJson<String?>(json['telephone']),
       adresse: serializer.fromJson<String?>(json['adresse']),
       fournit: serializer.fromJson<String?>(json['fournit']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'nom': serializer.toJson<String>(nom),
       'telephone': serializer.toJson<String?>(telephone),
       'adresse': serializer.toJson<String?>(adresse),
       'fournit': serializer.toJson<String?>(fournit),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   FournisseurRow copyWith({
-    int? id,
+    String? id,
     String? nom,
     Value<String?> telephone = const Value.absent(),
     Value<String?> adresse = const Value.absent(),
     Value<String?> fournit = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => FournisseurRow(
     id: id ?? this.id,
     nom: nom ?? this.nom,
     telephone: telephone.present ? telephone.value : this.telephone,
     adresse: adresse.present ? adresse.value : this.adresse,
     fournit: fournit.present ? fournit.value : this.fournit,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   FournisseurRow copyWithCompanion(FournisseursCompanion data) {
     return FournisseurRow(
@@ -10381,6 +13635,11 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
       telephone: data.telephone.present ? data.telephone.value : this.telephone,
       adresse: data.adresse.present ? data.adresse.value : this.adresse,
       fournit: data.fournit.present ? data.fournit.value : this.fournit,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -10391,13 +13650,25 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
           ..write('nom: $nom, ')
           ..write('telephone: $telephone, ')
           ..write('adresse: $adresse, ')
-          ..write('fournit: $fournit')
+          ..write('fournit: $fournit, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, nom, telephone, adresse, fournit);
+  int get hashCode => Object.hash(
+    id,
+    nom,
+    telephone,
+    adresse,
+    fournit,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10406,21 +13677,32 @@ class FournisseurRow extends DataClass implements Insertable<FournisseurRow> {
           other.nom == this.nom &&
           other.telephone == this.telephone &&
           other.adresse == this.adresse &&
-          other.fournit == this.fournit);
+          other.fournit == this.fournit &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> nom;
   final Value<String?> telephone;
   final Value<String?> adresse;
   final Value<String?> fournit;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const FournisseursCompanion({
     this.id = const Value.absent(),
     this.nom = const Value.absent(),
     this.telephone = const Value.absent(),
     this.adresse = const Value.absent(),
     this.fournit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FournisseursCompanion.insert({
     this.id = const Value.absent(),
@@ -10428,13 +13710,21 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
     this.telephone = const Value.absent(),
     this.adresse = const Value.absent(),
     this.fournit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : nom = Value(nom);
   static Insertable<FournisseurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? nom,
     Expression<String>? telephone,
     Expression<String>? adresse,
     Expression<String>? fournit,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -10442,15 +13732,23 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
       if (telephone != null) 'telephone': telephone,
       if (adresse != null) 'adresse': adresse,
       if (fournit != null) 'fournit': fournit,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FournisseursCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? nom,
     Value<String?>? telephone,
     Value<String?>? adresse,
     Value<String?>? fournit,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return FournisseursCompanion(
       id: id ?? this.id,
@@ -10458,6 +13756,10 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
       telephone: telephone ?? this.telephone,
       adresse: adresse ?? this.adresse,
       fournit: fournit ?? this.fournit,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -10465,7 +13767,7 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (nom.present) {
       map['nom'] = Variable<String>(nom.value);
@@ -10479,6 +13781,18 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
     if (fournit.present) {
       map['fournit'] = Variable<String>(fournit.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -10489,7 +13803,11 @@ class FournisseursCompanion extends UpdateCompanion<FournisseurRow> {
           ..write('nom: $nom, ')
           ..write('telephone: $telephone, ')
           ..write('adresse: $adresse, ')
-          ..write('fournit: $fournit')
+          ..write('fournit: $fournit, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -10500,6 +13818,16 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $AchatsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
   static const VerificationMeta _refMeta = const VerificationMeta('ref');
   @override
   late final GeneratedColumn<String> ref = GeneratedColumn<String>(
@@ -10513,11 +13841,11 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     'fournisseurId',
   );
   @override
-  late final GeneratedColumn<int> fournisseurId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> fournisseurId = GeneratedColumn<String>(
     'fournisseur_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES fournisseurs (id)',
@@ -10582,8 +13910,55 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
     ref,
     fournisseurId,
     dateAchat,
@@ -10592,6 +13967,10 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
     paye,
     mode,
     echeance,
+    posteCible,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10605,6 +13984,9 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('ref')) {
       context.handle(
         _refMeta,
@@ -10666,21 +14048,53 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         echeance.isAcceptableOrUnknown(data['echeance']!, _echeanceMeta),
       );
     }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {ref};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {id},
+  ];
+  @override
   AchatRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AchatRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
       ref: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
       )!,
       fournisseurId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}fournisseur_id'],
       )!,
       dateAchat: attachedDatabase.typeMapping.read(
@@ -10707,6 +14121,22 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}echeance'],
       ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -10717,9 +14147,14 @@ class $AchatsTable extends Achats with TableInfo<$AchatsTable, AchatRow> {
 }
 
 class AchatRow extends DataClass implements Insertable<AchatRow> {
+  /// UUID de l'achat (DV-19) : l'identite SYNCHRONISEE. La cle primaire reste [ref]
+  /// (les lignes, les ecritures et les mouvements s'y rattachent par texte) ; `ref`
+  /// est le numero OFFICIEL (`ACH-P2-2026-001`, DV-21), jamais renumerote.
+  final String id;
+
   /// Format 'ACH-AAAA-NNN'.
   final String ref;
-  final int fournisseurId;
+  final String fournisseurId;
   final DateTime dateAchat;
 
   /// 'Commandé', 'Livré', 'Annulé'
@@ -10741,7 +14176,20 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
   /// de l'achat. Le prototype fait pire — sa seule dette est datée de la
   /// **veille** de l'achat qu'elle règle. `null` = aucun délai convenu.
   final DateTime? echeance;
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun effet de stock
+  /// délégué. Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
+  /// `pending` · `synced` · `conflict`.
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const AchatRow({
+    required this.id,
     required this.ref,
     required this.fournisseurId,
     required this.dateAchat,
@@ -10750,12 +14198,17 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     required this.paye,
     this.mode,
     this.echeance,
+    this.posteCible,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
     map['ref'] = Variable<String>(ref);
-    map['fournisseur_id'] = Variable<int>(fournisseurId);
+    map['fournisseur_id'] = Variable<String>(fournisseurId);
     map['date_achat'] = Variable<DateTime>(dateAchat);
     map['statut'] = Variable<String>(statut);
     map['total'] = Variable<double>(total);
@@ -10766,11 +14219,20 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     if (!nullToAbsent || echeance != null) {
       map['echeance'] = Variable<DateTime>(echeance);
     }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
   AchatsCompanion toCompanion(bool nullToAbsent) {
     return AchatsCompanion(
+      id: Value(id),
       ref: Value(ref),
       fournisseurId: Value(fournisseurId),
       dateAchat: Value(dateAchat),
@@ -10781,6 +14243,14 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       echeance: echeance == null && nullToAbsent
           ? const Value.absent()
           : Value(echeance),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -10790,41 +14260,57 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AchatRow(
+      id: serializer.fromJson<String>(json['id']),
       ref: serializer.fromJson<String>(json['ref']),
-      fournisseurId: serializer.fromJson<int>(json['fournisseurId']),
+      fournisseurId: serializer.fromJson<String>(json['fournisseurId']),
       dateAchat: serializer.fromJson<DateTime>(json['dateAchat']),
       statut: serializer.fromJson<String>(json['statut']),
       total: serializer.fromJson<double>(json['total']),
       paye: serializer.fromJson<double>(json['paye']),
       mode: serializer.fromJson<String?>(json['mode']),
       echeance: serializer.fromJson<DateTime?>(json['echeance']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
       'ref': serializer.toJson<String>(ref),
-      'fournisseurId': serializer.toJson<int>(fournisseurId),
+      'fournisseurId': serializer.toJson<String>(fournisseurId),
       'dateAchat': serializer.toJson<DateTime>(dateAchat),
       'statut': serializer.toJson<String>(statut),
       'total': serializer.toJson<double>(total),
       'paye': serializer.toJson<double>(paye),
       'mode': serializer.toJson<String?>(mode),
       'echeance': serializer.toJson<DateTime?>(echeance),
+      'posteCible': serializer.toJson<String?>(posteCible),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   AchatRow copyWith({
+    String? id,
     String? ref,
-    int? fournisseurId,
+    String? fournisseurId,
     DateTime? dateAchat,
     String? statut,
     double? total,
     double? paye,
     Value<String?> mode = const Value.absent(),
     Value<DateTime?> echeance = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => AchatRow(
+    id: id ?? this.id,
     ref: ref ?? this.ref,
     fournisseurId: fournisseurId ?? this.fournisseurId,
     dateAchat: dateAchat ?? this.dateAchat,
@@ -10833,9 +14319,14 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye: paye ?? this.paye,
     mode: mode.present ? mode.value : this.mode,
     echeance: echeance.present ? echeance.value : this.echeance,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   AchatRow copyWithCompanion(AchatsCompanion data) {
     return AchatRow(
+      id: data.id.present ? data.id.value : this.id,
       ref: data.ref.present ? data.ref.value : this.ref,
       fournisseurId: data.fournisseurId.present
           ? data.fournisseurId.value
@@ -10846,12 +14337,21 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
       paye: data.paye.present ? data.paye.value : this.paye,
       mode: data.mode.present ? data.mode.value : this.mode,
       echeance: data.echeance.present ? data.echeance.value : this.echeance,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('AchatRow(')
+          ..write('id: $id, ')
           ..write('ref: $ref, ')
           ..write('fournisseurId: $fournisseurId, ')
           ..write('dateAchat: $dateAchat, ')
@@ -10859,13 +14359,18 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           ..write('total: $total, ')
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
-          ..write('echeance: $echeance')
+          ..write('echeance: $echeance, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
+    id,
     ref,
     fournisseurId,
     dateAchat,
@@ -10874,11 +14379,16 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
     paye,
     mode,
     echeance,
+    posteCible,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AchatRow &&
+          other.id == this.id &&
           other.ref == this.ref &&
           other.fournisseurId == this.fournisseurId &&
           other.dateAchat == this.dateAchat &&
@@ -10886,20 +14396,30 @@ class AchatRow extends DataClass implements Insertable<AchatRow> {
           other.total == this.total &&
           other.paye == this.paye &&
           other.mode == this.mode &&
-          other.echeance == this.echeance);
+          other.echeance == this.echeance &&
+          other.posteCible == this.posteCible &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class AchatsCompanion extends UpdateCompanion<AchatRow> {
+  final Value<String> id;
   final Value<String> ref;
-  final Value<int> fournisseurId;
+  final Value<String> fournisseurId;
   final Value<DateTime> dateAchat;
   final Value<String> statut;
   final Value<double> total;
   final Value<double> paye;
   final Value<String?> mode;
   final Value<DateTime?> echeance;
+  final Value<String?> posteCible;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<int> rowid;
   const AchatsCompanion({
+    this.id = const Value.absent(),
     this.ref = const Value.absent(),
     this.fournisseurId = const Value.absent(),
     this.dateAchat = const Value.absent(),
@@ -10908,17 +14428,26 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AchatsCompanion.insert({
+    this.id = const Value.absent(),
     required String ref,
-    required int fournisseurId,
+    required String fournisseurId,
     required DateTime dateAchat,
     required String statut,
     required double total,
     this.paye = const Value.absent(),
     this.mode = const Value.absent(),
     this.echeance = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : ref = Value(ref),
        fournisseurId = Value(fournisseurId),
@@ -10926,17 +14455,23 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
        statut = Value(statut),
        total = Value(total);
   static Insertable<AchatRow> custom({
+    Expression<String>? id,
     Expression<String>? ref,
-    Expression<int>? fournisseurId,
+    Expression<String>? fournisseurId,
     Expression<DateTime>? dateAchat,
     Expression<String>? statut,
     Expression<double>? total,
     Expression<double>? paye,
     Expression<String>? mode,
     Expression<DateTime>? echeance,
+    Expression<String>? posteCible,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (ref != null) 'ref': ref,
       if (fournisseurId != null) 'fournisseur_id': fournisseurId,
       if (dateAchat != null) 'date_achat': dateAchat,
@@ -10945,22 +14480,32 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       if (paye != null) 'paye': paye,
       if (mode != null) 'mode': mode,
       if (echeance != null) 'echeance': echeance,
+      if (posteCible != null) 'poste_cible': posteCible,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   AchatsCompanion copyWith({
+    Value<String>? id,
     Value<String>? ref,
-    Value<int>? fournisseurId,
+    Value<String>? fournisseurId,
     Value<DateTime>? dateAchat,
     Value<String>? statut,
     Value<double>? total,
     Value<double>? paye,
     Value<String?>? mode,
     Value<DateTime?>? echeance,
+    Value<String?>? posteCible,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
     return AchatsCompanion(
+      id: id ?? this.id,
       ref: ref ?? this.ref,
       fournisseurId: fournisseurId ?? this.fournisseurId,
       dateAchat: dateAchat ?? this.dateAchat,
@@ -10969,6 +14514,10 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
       paye: paye ?? this.paye,
       mode: mode ?? this.mode,
       echeance: echeance ?? this.echeance,
+      posteCible: posteCible ?? this.posteCible,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10976,11 +14525,14 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
     if (fournisseurId.present) {
-      map['fournisseur_id'] = Variable<int>(fournisseurId.value);
+      map['fournisseur_id'] = Variable<String>(fournisseurId.value);
     }
     if (dateAchat.present) {
       map['date_achat'] = Variable<DateTime>(dateAchat.value);
@@ -11000,6 +14552,18 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
     if (echeance.present) {
       map['echeance'] = Variable<DateTime>(echeance.value);
     }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11009,6 +14573,7 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
   @override
   String toString() {
     return (StringBuffer('AchatsCompanion(')
+          ..write('id: $id, ')
           ..write('ref: $ref, ')
           ..write('fournisseurId: $fournisseurId, ')
           ..write('dateAchat: $dateAchat, ')
@@ -11017,6 +14582,10 @@ class AchatsCompanion extends UpdateCompanion<AchatRow> {
           ..write('paye: $paye, ')
           ..write('mode: $mode, ')
           ..write('echeance: $echeance, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11031,16 +14600,13 @@ class $LignesAchatTable extends LignesAchat
   $LignesAchatTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _achatRefMeta = const VerificationMeta(
     'achatRef',
@@ -11176,7 +14742,7 @@ class $LignesAchatTable extends LignesAchat
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LigneAchatRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       achatRef: attachedDatabase.typeMapping.read(
@@ -11209,7 +14775,8 @@ class $LignesAchatTable extends LignesAchat
 }
 
 class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne d'achat est un fait synchronise.
+  final String id;
   final String achatRef;
   final String intrantCode;
 
@@ -11229,7 +14796,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['achat_ref'] = Variable<String>(achatRef);
     map['intrant_code'] = Variable<String>(intrantCode);
     map['nom'] = Variable<String>(nom);
@@ -11255,7 +14822,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LigneAchatRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       achatRef: serializer.fromJson<String>(json['achatRef']),
       intrantCode: serializer.fromJson<String>(json['intrantCode']),
       nom: serializer.fromJson<String>(json['nom']),
@@ -11267,7 +14834,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'achatRef': serializer.toJson<String>(achatRef),
       'intrantCode': serializer.toJson<String>(intrantCode),
       'nom': serializer.toJson<String>(nom),
@@ -11277,7 +14844,7 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
   }
 
   LigneAchatRow copyWith({
-    int? id,
+    String? id,
     String? achatRef,
     String? intrantCode,
     String? nom,
@@ -11332,12 +14899,13 @@ class LigneAchatRow extends DataClass implements Insertable<LigneAchatRow> {
 }
 
 class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> achatRef;
   final Value<String> intrantCode;
   final Value<String> nom;
   final Value<double> qte;
   final Value<double> puAchat;
+  final Value<int> rowid;
   const LignesAchatCompanion({
     this.id = const Value.absent(),
     this.achatRef = const Value.absent(),
@@ -11345,6 +14913,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     this.nom = const Value.absent(),
     this.qte = const Value.absent(),
     this.puAchat = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   LignesAchatCompanion.insert({
     this.id = const Value.absent(),
@@ -11353,18 +14922,20 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     required String nom,
     required double qte,
     required double puAchat,
+    this.rowid = const Value.absent(),
   }) : achatRef = Value(achatRef),
        intrantCode = Value(intrantCode),
        nom = Value(nom),
        qte = Value(qte),
        puAchat = Value(puAchat);
   static Insertable<LigneAchatRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? achatRef,
     Expression<String>? intrantCode,
     Expression<String>? nom,
     Expression<double>? qte,
     Expression<double>? puAchat,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -11373,16 +14944,18 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
       if (nom != null) 'nom': nom,
       if (qte != null) 'qte': qte,
       if (puAchat != null) 'pu_achat': puAchat,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   LignesAchatCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? achatRef,
     Value<String>? intrantCode,
     Value<String>? nom,
     Value<double>? qte,
     Value<double>? puAchat,
+    Value<int>? rowid,
   }) {
     return LignesAchatCompanion(
       id: id ?? this.id,
@@ -11391,6 +14964,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
       nom: nom ?? this.nom,
       qte: qte ?? this.qte,
       puAchat: puAchat ?? this.puAchat,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -11398,7 +14972,7 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (achatRef.present) {
       map['achat_ref'] = Variable<String>(achatRef.value);
@@ -11415,6 +14989,9 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
     if (puAchat.present) {
       map['pu_achat'] = Variable<double>(puAchat.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -11426,7 +15003,8 @@ class LignesAchatCompanion extends UpdateCompanion<LigneAchatRow> {
           ..write('intrantCode: $intrantCode, ')
           ..write('nom: $nom, ')
           ..write('qte: $qte, ')
-          ..write('puAchat: $puAchat')
+          ..write('puAchat: $puAchat, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -11440,16 +15018,13 @@ class $MouvementsIntrantTable extends MouvementsIntrant
   $MouvementsIntrantTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _horodatageMeta = const VerificationMeta(
     'horodatage',
@@ -11527,6 +15102,51 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _posteCibleMeta = const VerificationMeta(
+    'posteCible',
+  );
+  @override
+  late final GeneratedColumn<String> posteCible = GeneratedColumn<String>(
+    'poste_cible',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -11537,6 +15157,10 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     motif,
     quantite,
     reference,
+    origine,
+    posteCible,
+    syncStatus,
+    syncMotif,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11610,6 +15234,30 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
       );
     }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('poste_cible')) {
+      context.handle(
+        _posteCibleMeta,
+        posteCible.isAcceptableOrUnknown(data['poste_cible']!, _posteCibleMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
     return context;
   }
 
@@ -11620,7 +15268,7 @@ class $MouvementsIntrantTable extends MouvementsIntrant
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MouvementIntrantRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       horodatage: attachedDatabase.typeMapping.read(
@@ -11651,6 +15299,22 @@ class $MouvementsIntrantTable extends MouvementsIntrant
         DriftSqlType.string,
         data['${effectivePrefix}reference'],
       ),
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      posteCible: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}poste_cible'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
     );
   }
 
@@ -11662,7 +15326,8 @@ class $MouvementsIntrantTable extends MouvementsIntrant
 
 class MouvementIntrantRow extends DataClass
     implements Insertable<MouvementIntrantRow> {
-  final int id;
+  /// UUID (DV-19) : un mouvement est un fait synchronise, jamais renumerote.
+  final String id;
   final DateTime horodatage;
   final String intrantCode;
 
@@ -11681,6 +15346,22 @@ class MouvementIntrantRow extends DataClass
 
   /// Référence de l'opération d'origine (achat, ajustement), si elle existe.
   final String? reference;
+
+  /// D'ou vient ce mouvement : `null` = CE poste ; sinon l'identifiant du poste qui
+  /// l'a saisi. Un mouvement d'un autre poste est une ligne d'HISTORIQUE : il
+  /// n'entre dans aucun calcul de stock ni d'inventaire de ce poste (decision du
+  /// client : « stock propre a chaque poste + journal partage »).
+  final String? origine;
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun.
+  /// **Informatif** pour un mouvement d'intrant : l'effet de stock d'une réception web
+  /// est porté par l'ACHAT, jamais par ces lignes (sinon il serait appliqué deux fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  final String? posteCible;
+
+  /// `pending` · `synced` · `conflict`. Un mouvement est IMMUABLE : pas d'`updated_at`.
+  final String syncStatus;
+  final String? syncMotif;
   const MouvementIntrantRow({
     required this.id,
     required this.horodatage,
@@ -11690,11 +15371,15 @@ class MouvementIntrantRow extends DataClass
     required this.motif,
     required this.quantite,
     this.reference,
+    this.origine,
+    this.posteCible,
+    required this.syncStatus,
+    this.syncMotif,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['horodatage'] = Variable<DateTime>(horodatage);
     map['intrant_code'] = Variable<String>(intrantCode);
     map['article'] = Variable<String>(article);
@@ -11703,6 +15388,16 @@ class MouvementIntrantRow extends DataClass
     map['quantite'] = Variable<double>(quantite);
     if (!nullToAbsent || reference != null) {
       map['reference'] = Variable<String>(reference);
+    }
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    if (!nullToAbsent || posteCible != null) {
+      map['poste_cible'] = Variable<String>(posteCible);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
     }
     return map;
   }
@@ -11719,6 +15414,16 @@ class MouvementIntrantRow extends DataClass
       reference: reference == null && nullToAbsent
           ? const Value.absent()
           : Value(reference),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      posteCible: posteCible == null && nullToAbsent
+          ? const Value.absent()
+          : Value(posteCible),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
     );
   }
 
@@ -11728,7 +15433,7 @@ class MouvementIntrantRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MouvementIntrantRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       horodatage: serializer.fromJson<DateTime>(json['horodatage']),
       intrantCode: serializer.fromJson<String>(json['intrantCode']),
       article: serializer.fromJson<String>(json['article']),
@@ -11736,13 +15441,17 @@ class MouvementIntrantRow extends DataClass
       motif: serializer.fromJson<String>(json['motif']),
       quantite: serializer.fromJson<double>(json['quantite']),
       reference: serializer.fromJson<String?>(json['reference']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      posteCible: serializer.fromJson<String?>(json['posteCible']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'horodatage': serializer.toJson<DateTime>(horodatage),
       'intrantCode': serializer.toJson<String>(intrantCode),
       'article': serializer.toJson<String>(article),
@@ -11750,11 +15459,15 @@ class MouvementIntrantRow extends DataClass
       'motif': serializer.toJson<String>(motif),
       'quantite': serializer.toJson<double>(quantite),
       'reference': serializer.toJson<String?>(reference),
+      'origine': serializer.toJson<String?>(origine),
+      'posteCible': serializer.toJson<String?>(posteCible),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
     };
   }
 
   MouvementIntrantRow copyWith({
-    int? id,
+    String? id,
     DateTime? horodatage,
     String? intrantCode,
     String? article,
@@ -11762,6 +15475,10 @@ class MouvementIntrantRow extends DataClass
     String? motif,
     double? quantite,
     Value<String?> reference = const Value.absent(),
+    Value<String?> origine = const Value.absent(),
+    Value<String?> posteCible = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
   }) => MouvementIntrantRow(
     id: id ?? this.id,
     horodatage: horodatage ?? this.horodatage,
@@ -11771,6 +15488,10 @@ class MouvementIntrantRow extends DataClass
     motif: motif ?? this.motif,
     quantite: quantite ?? this.quantite,
     reference: reference.present ? reference.value : this.reference,
+    origine: origine.present ? origine.value : this.origine,
+    posteCible: posteCible.present ? posteCible.value : this.posteCible,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
   );
   MouvementIntrantRow copyWithCompanion(MouvementsIntrantCompanion data) {
     return MouvementIntrantRow(
@@ -11786,6 +15507,14 @@ class MouvementIntrantRow extends DataClass
       motif: data.motif.present ? data.motif.value : this.motif,
       quantite: data.quantite.present ? data.quantite.value : this.quantite,
       reference: data.reference.present ? data.reference.value : this.reference,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      posteCible: data.posteCible.present
+          ? data.posteCible.value
+          : this.posteCible,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
     );
   }
 
@@ -11799,7 +15528,11 @@ class MouvementIntrantRow extends DataClass
           ..write('type: $type, ')
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif')
           ..write(')'))
         .toString();
   }
@@ -11814,6 +15547,10 @@ class MouvementIntrantRow extends DataClass
     motif,
     quantite,
     reference,
+    origine,
+    posteCible,
+    syncStatus,
+    syncMotif,
   );
   @override
   bool operator ==(Object other) =>
@@ -11826,11 +15563,15 @@ class MouvementIntrantRow extends DataClass
           other.type == this.type &&
           other.motif == this.motif &&
           other.quantite == this.quantite &&
-          other.reference == this.reference);
+          other.reference == this.reference &&
+          other.origine == this.origine &&
+          other.posteCible == this.posteCible &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif);
 }
 
 class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<DateTime> horodatage;
   final Value<String> intrantCode;
   final Value<String> article;
@@ -11838,6 +15579,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
   final Value<String> motif;
   final Value<double> quantite;
   final Value<String?> reference;
+  final Value<String?> origine;
+  final Value<String?> posteCible;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<int> rowid;
   const MouvementsIntrantCompanion({
     this.id = const Value.absent(),
     this.horodatage = const Value.absent(),
@@ -11847,6 +15593,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     this.motif = const Value.absent(),
     this.quantite = const Value.absent(),
     this.reference = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MouvementsIntrantCompanion.insert({
     this.id = const Value.absent(),
@@ -11857,6 +15608,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     required String motif,
     required double quantite,
     this.reference = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.posteCible = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : horodatage = Value(horodatage),
        intrantCode = Value(intrantCode),
        article = Value(article),
@@ -11864,7 +15620,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
        motif = Value(motif),
        quantite = Value(quantite);
   static Insertable<MouvementIntrantRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<DateTime>? horodatage,
     Expression<String>? intrantCode,
     Expression<String>? article,
@@ -11872,6 +15628,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Expression<String>? motif,
     Expression<double>? quantite,
     Expression<String>? reference,
+    Expression<String>? origine,
+    Expression<String>? posteCible,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -11882,11 +15643,16 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       if (motif != null) 'motif': motif,
       if (quantite != null) 'quantite': quantite,
       if (reference != null) 'reference': reference,
+      if (origine != null) 'origine': origine,
+      if (posteCible != null) 'poste_cible': posteCible,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MouvementsIntrantCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<DateTime>? horodatage,
     Value<String>? intrantCode,
     Value<String>? article,
@@ -11894,6 +15660,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     Value<String>? motif,
     Value<double>? quantite,
     Value<String?>? reference,
+    Value<String?>? origine,
+    Value<String?>? posteCible,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<int>? rowid,
   }) {
     return MouvementsIntrantCompanion(
       id: id ?? this.id,
@@ -11904,6 +15675,11 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
       motif: motif ?? this.motif,
       quantite: quantite ?? this.quantite,
       reference: reference ?? this.reference,
+      origine: origine ?? this.origine,
+      posteCible: posteCible ?? this.posteCible,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -11911,7 +15687,7 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (horodatage.present) {
       map['horodatage'] = Variable<DateTime>(horodatage.value);
@@ -11934,6 +15710,21 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
     if (reference.present) {
       map['reference'] = Variable<String>(reference.value);
     }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (posteCible.present) {
+      map['poste_cible'] = Variable<String>(posteCible.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -11947,7 +15738,12 @@ class MouvementsIntrantCompanion extends UpdateCompanion<MouvementIntrantRow> {
           ..write('type: $type, ')
           ..write('motif: $motif, ')
           ..write('quantite: $quantite, ')
-          ..write('reference: $reference')
+          ..write('reference: $reference, ')
+          ..write('origine: $origine, ')
+          ..write('posteCible: $posteCible, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -11961,16 +15757,13 @@ class $FicheJourneeTable extends FicheJournee
   $FicheJourneeTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -12287,6 +16080,78 @@ class $FicheJourneeTable extends FicheJournee
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  static const VerificationMeta _baseMajMeta = const VerificationMeta(
+    'baseMaj',
+  );
+  @override
+  late final GeneratedColumn<String> baseMaj = GeneratedColumn<String>(
+    'base_maj',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _variantesMeta = const VerificationMeta(
+    'variantes',
+  );
+  @override
+  late final GeneratedColumn<String> variantes = GeneratedColumn<String>(
+    'variantes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resolutionMeta = const VerificationMeta(
+    'resolution',
+  );
+  @override
+  late final GeneratedColumn<bool> resolution = GeneratedColumn<bool>(
+    'resolution',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("resolution" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -12318,6 +16183,12 @@ class $FicheJourneeTable extends FicheJournee
     traitementObs,
     traitementValide,
     isRecorded,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+    baseMaj,
+    variantes,
+    resolution,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -12533,6 +16404,42 @@ class $FicheJourneeTable extends FicheJournee
         isRecorded.isAcceptableOrUnknown(data['is_recorded']!, _isRecordedMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('base_maj')) {
+      context.handle(
+        _baseMajMeta,
+        baseMaj.isAcceptableOrUnknown(data['base_maj']!, _baseMajMeta),
+      );
+    }
+    if (data.containsKey('variantes')) {
+      context.handle(
+        _variantesMeta,
+        variantes.isAcceptableOrUnknown(data['variantes']!, _variantesMeta),
+      );
+    }
+    if (data.containsKey('resolution')) {
+      context.handle(
+        _resolutionMeta,
+        resolution.isAcceptableOrUnknown(data['resolution']!, _resolutionMeta),
+      );
+    }
     return context;
   }
 
@@ -12547,7 +16454,7 @@ class $FicheJourneeTable extends FicheJournee
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FicheJourneeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -12662,6 +16569,30 @@ class $FicheJourneeTable extends FicheJournee
         DriftSqlType.bool,
         data['${effectivePrefix}is_recorded'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      baseMaj: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_maj'],
+      ),
+      variantes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variantes'],
+      ),
+      resolution: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}resolution'],
+      )!,
     );
   }
 
@@ -12672,9 +16603,9 @@ class $FicheJourneeTable extends FicheJournee
 }
 
 class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
-  final int id;
+  final String id;
 
-  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats'
+  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
   final String espece;
   final DateTime date;
   final int achat;
@@ -12723,6 +16654,26 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
 
   /// Distingue un jour reellement saisi d'un jour projete/vide.
   final bool isRecorded;
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de **saisie** (UTC, microsecondes) : il departage deux postes.
+  final String updatedAt;
+
+  /// Instant (`updated_at` du serveur) de la version DONT CETTE FICHE EST PARTIE : celle
+  /// qu'on a tiree ou envoyee en dernier. Il est envoye avec la fiche (`base_updated_at`) :
+  /// le serveur sait ainsi si le poste avait vu la version courante (modification
+  /// successive normale) ou non (divergence). `null` : aucune version du serveur connue.
+  final String? baseMaj;
+
+  /// Les AUTRES versions de la meme fiche (JSON : liste de `{origine, updated_at,
+  /// contenu}`), tant que la divergence n'est pas resolue. Non `null` = « modifiee
+  /// ailleurs ».
+  final String? variantes;
+
+  /// Vrai quand cette ecriture RESOUT une divergence (l'utilisatrice a choisi) : le
+  /// serveur efface alors les variantes. Remis a faux a l'accuse.
+  final bool resolution;
   const FicheJourneeRow({
     required this.id,
     required this.espece,
@@ -12753,11 +16704,17 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     this.traitementObs,
     required this.traitementValide,
     required this.isRecorded,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
+    this.baseMaj,
+    this.variantes,
+    required this.resolution,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['date'] = Variable<DateTime>(date);
     map['achat'] = Variable<int>(achat);
@@ -12808,6 +16765,18 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     }
     map['traitement_valide'] = Variable<bool>(traitementValide);
     map['is_recorded'] = Variable<bool>(isRecorded);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || baseMaj != null) {
+      map['base_maj'] = Variable<String>(baseMaj);
+    }
+    if (!nullToAbsent || variantes != null) {
+      map['variantes'] = Variable<String>(variantes);
+    }
+    map['resolution'] = Variable<bool>(resolution);
     return map;
   }
 
@@ -12860,6 +16829,18 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           : Value(traitementObs),
       traitementValide: Value(traitementValide),
       isRecorded: Value(isRecorded),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
+      baseMaj: baseMaj == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseMaj),
+      variantes: variantes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variantes),
+      resolution: Value(resolution),
     );
   }
 
@@ -12869,7 +16850,7 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FicheJourneeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       date: serializer.fromJson<DateTime>(json['date']),
       achat: serializer.fromJson<int>(json['achat']),
@@ -12898,13 +16879,19 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       traitementObs: serializer.fromJson<String?>(json['traitementObs']),
       traitementValide: serializer.fromJson<bool>(json['traitementValide']),
       isRecorded: serializer.fromJson<bool>(json['isRecorded']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      baseMaj: serializer.fromJson<String?>(json['baseMaj']),
+      variantes: serializer.fromJson<String?>(json['variantes']),
+      resolution: serializer.fromJson<bool>(json['resolution']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'date': serializer.toJson<DateTime>(date),
       'achat': serializer.toJson<int>(achat),
@@ -12933,11 +16920,17 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       'traitementObs': serializer.toJson<String?>(traitementObs),
       'traitementValide': serializer.toJson<bool>(traitementValide),
       'isRecorded': serializer.toJson<bool>(isRecorded),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'baseMaj': serializer.toJson<String?>(baseMaj),
+      'variantes': serializer.toJson<String?>(variantes),
+      'resolution': serializer.toJson<bool>(resolution),
     };
   }
 
   FicheJourneeRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     DateTime? date,
     int? achat,
@@ -12966,6 +16959,12 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     Value<String?> traitementObs = const Value.absent(),
     bool? traitementValide,
     bool? isRecorded,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
+    Value<String?> baseMaj = const Value.absent(),
+    Value<String?> variantes = const Value.absent(),
+    bool? resolution,
   }) => FicheJourneeRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -13004,6 +17003,12 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
         : this.traitementObs,
     traitementValide: traitementValide ?? this.traitementValide,
     isRecorded: isRecorded ?? this.isRecorded,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
+    baseMaj: baseMaj.present ? baseMaj.value : this.baseMaj,
+    variantes: variantes.present ? variantes.value : this.variantes,
+    resolution: resolution ?? this.resolution,
   );
   FicheJourneeRow copyWithCompanion(FicheJourneeCompanion data) {
     return FicheJourneeRow(
@@ -13060,6 +17065,16 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
       isRecorded: data.isRecorded.present
           ? data.isRecorded.value
           : this.isRecorded,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      baseMaj: data.baseMaj.present ? data.baseMaj.value : this.baseMaj,
+      variantes: data.variantes.present ? data.variantes.value : this.variantes,
+      resolution: data.resolution.present
+          ? data.resolution.value
+          : this.resolution,
     );
   }
 
@@ -13094,7 +17109,13 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           ..write('poidsGeneralG: $poidsGeneralG, ')
           ..write('traitementObs: $traitementObs, ')
           ..write('traitementValide: $traitementValide, ')
-          ..write('isRecorded: $isRecorded')
+          ..write('isRecorded: $isRecorded, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('baseMaj: $baseMaj, ')
+          ..write('variantes: $variantes, ')
+          ..write('resolution: $resolution')
           ..write(')'))
         .toString();
   }
@@ -13130,6 +17151,12 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
     traitementObs,
     traitementValide,
     isRecorded,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+    baseMaj,
+    variantes,
+    resolution,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -13163,11 +17190,17 @@ class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
           other.poidsGeneralG == this.poidsGeneralG &&
           other.traitementObs == this.traitementObs &&
           other.traitementValide == this.traitementValide &&
-          other.isRecorded == this.isRecorded);
+          other.isRecorded == this.isRecorded &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt &&
+          other.baseMaj == this.baseMaj &&
+          other.variantes == this.variantes &&
+          other.resolution == this.resolution);
 }
 
 class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<DateTime> date;
   final Value<int> achat;
@@ -13196,6 +17229,13 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
   final Value<String?> traitementObs;
   final Value<bool> traitementValide;
   final Value<bool> isRecorded;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<String?> baseMaj;
+  final Value<String?> variantes;
+  final Value<bool> resolution;
+  final Value<int> rowid;
   const FicheJourneeCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -13226,6 +17266,13 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.traitementObs = const Value.absent(),
     this.traitementValide = const Value.absent(),
     this.isRecorded = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.baseMaj = const Value.absent(),
+    this.variantes = const Value.absent(),
+    this.resolution = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FicheJourneeCompanion.insert({
     this.id = const Value.absent(),
@@ -13257,10 +17304,17 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     this.traitementObs = const Value.absent(),
     this.traitementValide = const Value.absent(),
     this.isRecorded = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.baseMaj = const Value.absent(),
+    this.variantes = const Value.absent(),
+    this.resolution = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        date = Value(date);
   static Insertable<FicheJourneeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<DateTime>? date,
     Expression<int>? achat,
@@ -13289,6 +17343,13 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Expression<String>? traitementObs,
     Expression<bool>? traitementValide,
     Expression<bool>? isRecorded,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<String>? baseMaj,
+    Expression<String>? variantes,
+    Expression<bool>? resolution,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -13320,11 +17381,18 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       if (traitementObs != null) 'traitement_obs': traitementObs,
       if (traitementValide != null) 'traitement_valide': traitementValide,
       if (isRecorded != null) 'is_recorded': isRecorded,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (baseMaj != null) 'base_maj': baseMaj,
+      if (variantes != null) 'variantes': variantes,
+      if (resolution != null) 'resolution': resolution,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FicheJourneeCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<DateTime>? date,
     Value<int>? achat,
@@ -13353,6 +17421,13 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     Value<String?>? traitementObs,
     Value<bool>? traitementValide,
     Value<bool>? isRecorded,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<String?>? baseMaj,
+    Value<String?>? variantes,
+    Value<bool>? resolution,
+    Value<int>? rowid,
   }) {
     return FicheJourneeCompanion(
       id: id ?? this.id,
@@ -13384,6 +17459,13 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
       traitementObs: traitementObs ?? this.traitementObs,
       traitementValide: traitementValide ?? this.traitementValide,
       isRecorded: isRecorded ?? this.isRecorded,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      baseMaj: baseMaj ?? this.baseMaj,
+      variantes: variantes ?? this.variantes,
+      resolution: resolution ?? this.resolution,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -13391,7 +17473,7 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -13477,6 +17559,27 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
     if (isRecorded.present) {
       map['is_recorded'] = Variable<bool>(isRecorded.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (baseMaj.present) {
+      map['base_maj'] = Variable<String>(baseMaj.value);
+    }
+    if (variantes.present) {
+      map['variantes'] = Variable<String>(variantes.value);
+    }
+    if (resolution.present) {
+      map['resolution'] = Variable<bool>(resolution.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -13511,7 +17614,14 @@ class FicheJourneeCompanion extends UpdateCompanion<FicheJourneeRow> {
           ..write('poidsGeneralG: $poidsGeneralG, ')
           ..write('traitementObs: $traitementObs, ')
           ..write('traitementValide: $traitementValide, ')
-          ..write('isRecorded: $isRecorded')
+          ..write('isRecorded: $isRecorded, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('baseMaj: $baseMaj, ')
+          ..write('variantes: $variantes, ')
+          ..write('resolution: $resolution, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -13525,16 +17635,13 @@ class $FicheVentesJourTable extends FicheVentesJour
   $FicheVentesJourTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -13564,8 +17671,63 @@ class $FicheVentesJourTable extends FicheVentesJour
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, espece, date, qte];
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    espece,
+    date,
+    qte,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -13603,21 +17765,41 @@ class $FicheVentesJourTable extends FicheVentesJour
         qte.isAcceptableOrUnknown(data['qte']!, _qteMeta),
       );
     }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {espece, date},
-  ];
-  @override
   FicheVenteJourRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FicheVenteJourRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -13632,6 +17814,22 @@ class $FicheVentesJourTable extends FicheVentesJour
         DriftSqlType.int,
         data['${effectivePrefix}qte'],
       )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -13643,25 +17841,43 @@ class $FicheVentesJourTable extends FicheVentesJour
 
 class FicheVenteJourRow extends DataClass
     implements Insertable<FicheVenteJourRow> {
-  final int id;
+  final String id;
   final String espece;
 
   /// Normalisee a minuit.
   final DateTime date;
   final int qte;
+
+  /// Identifiant du poste qui a vendu. `NULL` = CE poste (son compteur propre).
+  final String? origine;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const FicheVenteJourRow({
     required this.id,
     required this.espece,
     required this.date,
     required this.qte,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['date'] = Variable<DateTime>(date);
     map['qte'] = Variable<int>(qte);
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -13671,6 +17887,14 @@ class FicheVenteJourRow extends DataClass
       espece: Value(espece),
       date: Value(date),
       qte: Value(qte),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -13680,33 +17904,49 @@ class FicheVenteJourRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return FicheVenteJourRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       date: serializer.fromJson<DateTime>(json['date']),
       qte: serializer.fromJson<int>(json['qte']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'date': serializer.toJson<DateTime>(date),
       'qte': serializer.toJson<int>(qte),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   FicheVenteJourRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     DateTime? date,
     int? qte,
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => FicheVenteJourRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
     date: date ?? this.date,
     qte: qte ?? this.qte,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   FicheVenteJourRow copyWithCompanion(FicheVentesJourCompanion data) {
     return FicheVenteJourRow(
@@ -13714,6 +17954,12 @@ class FicheVenteJourRow extends DataClass
       espece: data.espece.present ? data.espece.value : this.espece,
       date: data.date.present ? data.date.value : this.date,
       qte: data.qte.present ? data.qte.value : this.qte,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -13723,13 +17969,26 @@ class FicheVenteJourRow extends DataClass
           ..write('id: $id, ')
           ..write('espece: $espece, ')
           ..write('date: $date, ')
-          ..write('qte: $qte')
+          ..write('qte: $qte, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, espece, date, qte);
+  int get hashCode => Object.hash(
+    id,
+    espece,
+    date,
+    qte,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -13737,52 +17996,91 @@ class FicheVenteJourRow extends DataClass
           other.id == this.id &&
           other.espece == this.espece &&
           other.date == this.date &&
-          other.qte == this.qte);
+          other.qte == this.qte &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<DateTime> date;
   final Value<int> qte;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const FicheVentesJourCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
     this.date = const Value.absent(),
     this.qte = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   FicheVentesJourCompanion.insert({
     this.id = const Value.absent(),
     required String espece,
     required DateTime date,
     this.qte = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        date = Value(date);
   static Insertable<FicheVenteJourRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<DateTime>? date,
     Expression<int>? qte,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (espece != null) 'espece': espece,
       if (date != null) 'date': date,
       if (qte != null) 'qte': qte,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   FicheVentesJourCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<DateTime>? date,
     Value<int>? qte,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return FicheVentesJourCompanion(
       id: id ?? this.id,
       espece: espece ?? this.espece,
       date: date ?? this.date,
       qte: qte ?? this.qte,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -13790,7 +18088,7 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -13801,6 +18099,21 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
     if (qte.present) {
       map['qte'] = Variable<int>(qte.value);
     }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -13810,7 +18123,12 @@ class FicheVentesJourCompanion extends UpdateCompanion<FicheVenteJourRow> {
           ..write('id: $id, ')
           ..write('espece: $espece, ')
           ..write('date: $date, ')
-          ..write('qte: $qte')
+          ..write('qte: $qte, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -13824,16 +18142,13 @@ class $MachinesIncubateurTable extends MachinesIncubateur
   $MachinesIncubateurTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _codeMeta = const VerificationMeta('code');
   @override
@@ -13880,6 +18195,41 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -13887,6 +18237,9 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     libelle,
     capaciteOeufs,
     active,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -13934,6 +18287,24 @@ class $MachinesIncubateurTable extends MachinesIncubateur
         active.isAcceptableOrUnknown(data['active']!, _activeMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -13944,7 +18315,7 @@ class $MachinesIncubateurTable extends MachinesIncubateur
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MachineIncubateurRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       code: attachedDatabase.typeMapping.read(
@@ -13963,6 +18334,18 @@ class $MachinesIncubateurTable extends MachinesIncubateur
         DriftSqlType.bool,
         data['${effectivePrefix}active'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -13974,7 +18357,9 @@ class $MachinesIncubateurTable extends MachinesIncubateur
 
 class MachineIncubateurRow extends DataClass
     implements Insertable<MachineIncubateurRow> {
-  final int id;
+  /// UUID **deterministe depuis le code** (`machine:inc-01`) : deux postes qui
+  /// declarent « INC-01 » designent le MEME incubateur (decision a valider, `46b_`).
+  final String id;
 
   /// Ex. 'INC-01'.
   final String code;
@@ -13984,23 +18369,36 @@ class MachineIncubateurRow extends DataClass
   /// pas a la bloquer : la Gerante sait ce que sa machine encaisse.
   final int? capaciteOeufs;
   final bool active;
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const MachineIncubateurRow({
     required this.id,
     required this.code,
     required this.libelle,
     this.capaciteOeufs,
     required this.active,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['code'] = Variable<String>(code);
     map['libelle'] = Variable<String>(libelle);
     if (!nullToAbsent || capaciteOeufs != null) {
       map['capacite_oeufs'] = Variable<int>(capaciteOeufs);
     }
     map['active'] = Variable<bool>(active);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -14013,6 +18411,11 @@ class MachineIncubateurRow extends DataClass
           ? const Value.absent()
           : Value(capaciteOeufs),
       active: Value(active),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -14022,31 +18425,40 @@ class MachineIncubateurRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MachineIncubateurRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       code: serializer.fromJson<String>(json['code']),
       libelle: serializer.fromJson<String>(json['libelle']),
       capaciteOeufs: serializer.fromJson<int?>(json['capaciteOeufs']),
       active: serializer.fromJson<bool>(json['active']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'code': serializer.toJson<String>(code),
       'libelle': serializer.toJson<String>(libelle),
       'capaciteOeufs': serializer.toJson<int?>(capaciteOeufs),
       'active': serializer.toJson<bool>(active),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   MachineIncubateurRow copyWith({
-    int? id,
+    String? id,
     String? code,
     String? libelle,
     Value<int?> capaciteOeufs = const Value.absent(),
     bool? active,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => MachineIncubateurRow(
     id: id ?? this.id,
     code: code ?? this.code,
@@ -14055,6 +18467,9 @@ class MachineIncubateurRow extends DataClass
         ? capaciteOeufs.value
         : this.capaciteOeufs,
     active: active ?? this.active,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   MachineIncubateurRow copyWithCompanion(MachinesIncubateurCompanion data) {
     return MachineIncubateurRow(
@@ -14065,6 +18480,11 @@ class MachineIncubateurRow extends DataClass
           ? data.capaciteOeufs.value
           : this.capaciteOeufs,
       active: data.active.present ? data.active.value : this.active,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -14075,13 +18495,25 @@ class MachineIncubateurRow extends DataClass
           ..write('code: $code, ')
           ..write('libelle: $libelle, ')
           ..write('capaciteOeufs: $capaciteOeufs, ')
-          ..write('active: $active')
+          ..write('active: $active, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, code, libelle, capaciteOeufs, active);
+  int get hashCode => Object.hash(
+    id,
+    code,
+    libelle,
+    capaciteOeufs,
+    active,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14090,22 +18522,33 @@ class MachineIncubateurRow extends DataClass
           other.code == this.code &&
           other.libelle == this.libelle &&
           other.capaciteOeufs == this.capaciteOeufs &&
-          other.active == this.active);
+          other.active == this.active &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class MachinesIncubateurCompanion
     extends UpdateCompanion<MachineIncubateurRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> code;
   final Value<String> libelle;
   final Value<int?> capaciteOeufs;
   final Value<bool> active;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const MachinesIncubateurCompanion({
     this.id = const Value.absent(),
     this.code = const Value.absent(),
     this.libelle = const Value.absent(),
     this.capaciteOeufs = const Value.absent(),
     this.active = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MachinesIncubateurCompanion.insert({
     this.id = const Value.absent(),
@@ -14113,14 +18556,22 @@ class MachinesIncubateurCompanion
     required String libelle,
     this.capaciteOeufs = const Value.absent(),
     this.active = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : code = Value(code),
        libelle = Value(libelle);
   static Insertable<MachineIncubateurRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? code,
     Expression<String>? libelle,
     Expression<int>? capaciteOeufs,
     Expression<bool>? active,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -14128,15 +18579,23 @@ class MachinesIncubateurCompanion
       if (libelle != null) 'libelle': libelle,
       if (capaciteOeufs != null) 'capacite_oeufs': capaciteOeufs,
       if (active != null) 'active': active,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MachinesIncubateurCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? code,
     Value<String>? libelle,
     Value<int?>? capaciteOeufs,
     Value<bool>? active,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return MachinesIncubateurCompanion(
       id: id ?? this.id,
@@ -14144,6 +18603,10 @@ class MachinesIncubateurCompanion
       libelle: libelle ?? this.libelle,
       capaciteOeufs: capaciteOeufs ?? this.capaciteOeufs,
       active: active ?? this.active,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -14151,7 +18614,7 @@ class MachinesIncubateurCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (code.present) {
       map['code'] = Variable<String>(code.value);
@@ -14165,6 +18628,18 @@ class MachinesIncubateurCompanion
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -14175,7 +18650,11 @@ class MachinesIncubateurCompanion
           ..write('code: $code, ')
           ..write('libelle: $libelle, ')
           ..write('capaciteOeufs: $capaciteOeufs, ')
-          ..write('active: $active')
+          ..write('active: $active, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -14189,16 +18668,13 @@ class $CycleCouveuseTable extends CycleCouveuse
   $CycleCouveuseTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _codeIncubationMeta = const VerificationMeta(
     'codeIncubation',
@@ -14291,11 +18767,11 @@ class $CycleCouveuseTable extends CycleCouveuse
     'machineId',
   );
   @override
-  late final GeneratedColumn<int> machineId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> machineId = GeneratedColumn<String>(
     'machine_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES machines_incubateur (id)',
@@ -14327,12 +18803,47 @@ class $CycleCouveuseTable extends CycleCouveuse
     'lotParentId',
   );
   @override
-  late final GeneratedColumn<int> lotParentId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> lotParentId = GeneratedColumn<String>(
     'lot_parent_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -14349,6 +18860,9 @@ class $CycleCouveuseTable extends CycleCouveuse
     oeufsBlancsJ7,
     oeufsGatesJ14,
     lotParentId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14472,6 +18986,24 @@ class $CycleCouveuseTable extends CycleCouveuse
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -14482,7 +19014,7 @@ class $CycleCouveuseTable extends CycleCouveuse
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return CycleCouveuseRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       codeIncubation: attachedDatabase.typeMapping.read(
@@ -14518,7 +19050,7 @@ class $CycleCouveuseTable extends CycleCouveuse
         data['${effectivePrefix}statut'],
       )!,
       machineId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}machine_id'],
       ),
       oeufsBlancsJ7: attachedDatabase.typeMapping.read(
@@ -14530,9 +19062,21 @@ class $CycleCouveuseTable extends CycleCouveuse
         data['${effectivePrefix}oeufs_gates_j14'],
       ),
       lotParentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}lot_parent_id'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -14544,7 +19088,10 @@ class $CycleCouveuseTable extends CycleCouveuse
 
 class CycleCouveuseRow extends DataClass
     implements Insertable<CycleCouveuseRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46b_`) : un lot est un fait synchronise, jamais
+  /// un entier que deux postes attribueraient chacun de leur cote. Les lots
+  /// existants recoivent le leur a la migration v39.
+  final String id;
 
   /// Ex. 'C-2026-014'.
   final String codeIncubation;
@@ -14575,7 +19122,7 @@ class CycleCouveuseRow extends DataClass
 
   /// Incubateur occupe — le couvoir peut en compter plusieurs.
   /// Nullable : les lots anterieurs a la v21 n'en designent aucun.
-  final int? machineId;
+  final String? machineId;
 
   /// `B_i(7)` — oeufs clairs retires au **premier mirage**, a J+7.
   /// `null` tant que le mirage n'a pas ete fait : c'est ce qui distingue
@@ -14592,7 +19139,16 @@ class CycleCouveuseRow extends DataClass
   /// sous-lot lui-meme. Les stocker deux fois les laisserait diverger.
   ///
   /// L'historique des remplacements est la chaine de ces liens.
-  final int? lotParentId;
+  final String? lotParentId;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const CycleCouveuseRow({
     required this.id,
     required this.codeIncubation,
@@ -14607,11 +19163,14 @@ class CycleCouveuseRow extends DataClass
     this.oeufsBlancsJ7,
     this.oeufsGatesJ14,
     this.lotParentId,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['code_incubation'] = Variable<String>(codeIncubation);
     map['espece'] = Variable<String>(espece);
     if (!nullToAbsent || bandeReproducteurs != null) {
@@ -14627,7 +19186,7 @@ class CycleCouveuseRow extends DataClass
     }
     map['statut'] = Variable<String>(statut);
     if (!nullToAbsent || machineId != null) {
-      map['machine_id'] = Variable<int>(machineId);
+      map['machine_id'] = Variable<String>(machineId);
     }
     if (!nullToAbsent || oeufsBlancsJ7 != null) {
       map['oeufs_blancs_j7'] = Variable<int>(oeufsBlancsJ7);
@@ -14636,8 +19195,13 @@ class CycleCouveuseRow extends DataClass
       map['oeufs_gates_j14'] = Variable<int>(oeufsGatesJ14);
     }
     if (!nullToAbsent || lotParentId != null) {
-      map['lot_parent_id'] = Variable<int>(lotParentId);
+      map['lot_parent_id'] = Variable<String>(lotParentId);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -14670,6 +19234,11 @@ class CycleCouveuseRow extends DataClass
       lotParentId: lotParentId == null && nullToAbsent
           ? const Value.absent()
           : Value(lotParentId),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -14679,7 +19248,7 @@ class CycleCouveuseRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CycleCouveuseRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       codeIncubation: serializer.fromJson<String>(json['codeIncubation']),
       espece: serializer.fromJson<String>(json['espece']),
       bandeReproducteurs: serializer.fromJson<String?>(
@@ -14690,17 +19259,20 @@ class CycleCouveuseRow extends DataClass
       poussinsNes: serializer.fromJson<int?>(json['poussinsNes']),
       oeufsPerdus: serializer.fromJson<int?>(json['oeufsPerdus']),
       statut: serializer.fromJson<String>(json['statut']),
-      machineId: serializer.fromJson<int?>(json['machineId']),
+      machineId: serializer.fromJson<String?>(json['machineId']),
       oeufsBlancsJ7: serializer.fromJson<int?>(json['oeufsBlancsJ7']),
       oeufsGatesJ14: serializer.fromJson<int?>(json['oeufsGatesJ14']),
-      lotParentId: serializer.fromJson<int?>(json['lotParentId']),
+      lotParentId: serializer.fromJson<String?>(json['lotParentId']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'codeIncubation': serializer.toJson<String>(codeIncubation),
       'espece': serializer.toJson<String>(espece),
       'bandeReproducteurs': serializer.toJson<String?>(bandeReproducteurs),
@@ -14709,15 +19281,18 @@ class CycleCouveuseRow extends DataClass
       'poussinsNes': serializer.toJson<int?>(poussinsNes),
       'oeufsPerdus': serializer.toJson<int?>(oeufsPerdus),
       'statut': serializer.toJson<String>(statut),
-      'machineId': serializer.toJson<int?>(machineId),
+      'machineId': serializer.toJson<String?>(machineId),
       'oeufsBlancsJ7': serializer.toJson<int?>(oeufsBlancsJ7),
       'oeufsGatesJ14': serializer.toJson<int?>(oeufsGatesJ14),
-      'lotParentId': serializer.toJson<int?>(lotParentId),
+      'lotParentId': serializer.toJson<String?>(lotParentId),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   CycleCouveuseRow copyWith({
-    int? id,
+    String? id,
     String? codeIncubation,
     String? espece,
     Value<String?> bandeReproducteurs = const Value.absent(),
@@ -14726,10 +19301,13 @@ class CycleCouveuseRow extends DataClass
     Value<int?> poussinsNes = const Value.absent(),
     Value<int?> oeufsPerdus = const Value.absent(),
     String? statut,
-    Value<int?> machineId = const Value.absent(),
+    Value<String?> machineId = const Value.absent(),
     Value<int?> oeufsBlancsJ7 = const Value.absent(),
     Value<int?> oeufsGatesJ14 = const Value.absent(),
-    Value<int?> lotParentId = const Value.absent(),
+    Value<String?> lotParentId = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => CycleCouveuseRow(
     id: id ?? this.id,
     codeIncubation: codeIncubation ?? this.codeIncubation,
@@ -14750,6 +19328,9 @@ class CycleCouveuseRow extends DataClass
         ? oeufsGatesJ14.value
         : this.oeufsGatesJ14,
     lotParentId: lotParentId.present ? lotParentId.value : this.lotParentId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   CycleCouveuseRow copyWithCompanion(CycleCouveuseCompanion data) {
     return CycleCouveuseRow(
@@ -14784,6 +19365,11 @@ class CycleCouveuseRow extends DataClass
       lotParentId: data.lotParentId.present
           ? data.lotParentId.value
           : this.lotParentId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -14802,7 +19388,10 @@ class CycleCouveuseRow extends DataClass
           ..write('machineId: $machineId, ')
           ..write('oeufsBlancsJ7: $oeufsBlancsJ7, ')
           ..write('oeufsGatesJ14: $oeufsGatesJ14, ')
-          ..write('lotParentId: $lotParentId')
+          ..write('lotParentId: $lotParentId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -14822,6 +19411,9 @@ class CycleCouveuseRow extends DataClass
     oeufsBlancsJ7,
     oeufsGatesJ14,
     lotParentId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -14839,11 +19431,14 @@ class CycleCouveuseRow extends DataClass
           other.machineId == this.machineId &&
           other.oeufsBlancsJ7 == this.oeufsBlancsJ7 &&
           other.oeufsGatesJ14 == this.oeufsGatesJ14 &&
-          other.lotParentId == this.lotParentId);
+          other.lotParentId == this.lotParentId &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> codeIncubation;
   final Value<String> espece;
   final Value<String?> bandeReproducteurs;
@@ -14852,10 +19447,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
   final Value<int?> poussinsNes;
   final Value<int?> oeufsPerdus;
   final Value<String> statut;
-  final Value<int?> machineId;
+  final Value<String?> machineId;
   final Value<int?> oeufsBlancsJ7;
   final Value<int?> oeufsGatesJ14;
-  final Value<int?> lotParentId;
+  final Value<String?> lotParentId;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const CycleCouveuseCompanion({
     this.id = const Value.absent(),
     this.codeIncubation = const Value.absent(),
@@ -14870,6 +19469,10 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     this.oeufsBlancsJ7 = const Value.absent(),
     this.oeufsGatesJ14 = const Value.absent(),
     this.lotParentId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   CycleCouveuseCompanion.insert({
     this.id = const Value.absent(),
@@ -14885,12 +19488,16 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     this.oeufsBlancsJ7 = const Value.absent(),
     this.oeufsGatesJ14 = const Value.absent(),
     this.lotParentId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : codeIncubation = Value(codeIncubation),
        dateIncubation = Value(dateIncubation),
        oeufsCouves = Value(oeufsCouves),
        statut = Value(statut);
   static Insertable<CycleCouveuseRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? codeIncubation,
     Expression<String>? espece,
     Expression<String>? bandeReproducteurs,
@@ -14899,10 +19506,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     Expression<int>? poussinsNes,
     Expression<int>? oeufsPerdus,
     Expression<String>? statut,
-    Expression<int>? machineId,
+    Expression<String>? machineId,
     Expression<int>? oeufsBlancsJ7,
     Expression<int>? oeufsGatesJ14,
-    Expression<int>? lotParentId,
+    Expression<String>? lotParentId,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -14918,11 +19529,15 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       if (oeufsBlancsJ7 != null) 'oeufs_blancs_j7': oeufsBlancsJ7,
       if (oeufsGatesJ14 != null) 'oeufs_gates_j14': oeufsGatesJ14,
       if (lotParentId != null) 'lot_parent_id': lotParentId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   CycleCouveuseCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? codeIncubation,
     Value<String>? espece,
     Value<String?>? bandeReproducteurs,
@@ -14931,10 +19546,14 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
     Value<int?>? poussinsNes,
     Value<int?>? oeufsPerdus,
     Value<String>? statut,
-    Value<int?>? machineId,
+    Value<String?>? machineId,
     Value<int?>? oeufsBlancsJ7,
     Value<int?>? oeufsGatesJ14,
-    Value<int?>? lotParentId,
+    Value<String?>? lotParentId,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return CycleCouveuseCompanion(
       id: id ?? this.id,
@@ -14950,6 +19569,10 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       oeufsBlancsJ7: oeufsBlancsJ7 ?? this.oeufsBlancsJ7,
       oeufsGatesJ14: oeufsGatesJ14 ?? this.oeufsGatesJ14,
       lotParentId: lotParentId ?? this.lotParentId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -14957,7 +19580,7 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (codeIncubation.present) {
       map['code_incubation'] = Variable<String>(codeIncubation.value);
@@ -14984,7 +19607,7 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       map['statut'] = Variable<String>(statut.value);
     }
     if (machineId.present) {
-      map['machine_id'] = Variable<int>(machineId.value);
+      map['machine_id'] = Variable<String>(machineId.value);
     }
     if (oeufsBlancsJ7.present) {
       map['oeufs_blancs_j7'] = Variable<int>(oeufsBlancsJ7.value);
@@ -14993,7 +19616,19 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
       map['oeufs_gates_j14'] = Variable<int>(oeufsGatesJ14.value);
     }
     if (lotParentId.present) {
-      map['lot_parent_id'] = Variable<int>(lotParentId.value);
+      map['lot_parent_id'] = Variable<String>(lotParentId.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -15013,7 +19648,11 @@ class CycleCouveuseCompanion extends UpdateCompanion<CycleCouveuseRow> {
           ..write('machineId: $machineId, ')
           ..write('oeufsBlancsJ7: $oeufsBlancsJ7, ')
           ..write('oeufsGatesJ14: $oeufsGatesJ14, ')
-          ..write('lotParentId: $lotParentId')
+          ..write('lotParentId: $lotParentId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -15027,16 +19666,13 @@ class $SoinsCalendrierTable extends SoinsCalendrier
   $SoinsCalendrierTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -15159,22 +19795,58 @@ class $SoinsCalendrierTable extends SoinsCalendrier
     'bandeId',
   );
   @override
-  late final GeneratedColumn<int> bandeId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> bandeId = GeneratedColumn<String>(
     'bande_id',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _echeanceProphylaxieIdMeta =
       const VerificationMeta('echeanceProphylaxieId');
   @override
-  late final GeneratedColumn<int> echeanceProphylaxieId = GeneratedColumn<int>(
-    'echeance_prophylaxie_id',
+  late final GeneratedColumn<String> echeanceProphylaxieId =
+      GeneratedColumn<String>(
+        'echeance_prophylaxie_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -15192,6 +19864,9 @@ class $SoinsCalendrierTable extends SoinsCalendrier
     coutFcfa,
     bandeId,
     echeanceProphylaxieId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -15306,6 +19981,24 @@ class $SoinsCalendrierTable extends SoinsCalendrier
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -15316,7 +20009,7 @@ class $SoinsCalendrierTable extends SoinsCalendrier
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SoinCalendrierRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -15364,13 +20057,25 @@ class $SoinsCalendrierTable extends SoinsCalendrier
         data['${effectivePrefix}cout_fcfa'],
       )!,
       bandeId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}bande_id'],
       ),
       echeanceProphylaxieId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}echeance_prophylaxie_id'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -15382,7 +20087,10 @@ class $SoinsCalendrierTable extends SoinsCalendrier
 
 class SoinCalendrierRow extends DataClass
     implements Insertable<SoinCalendrierRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46c_`) : un soin saisi sur deux postes ne
+  /// peut pas porter le meme entier. Les anciens soins recoivent le leur a la
+  /// migration v40.
+  final String id;
   final String espece;
   final DateTime datePrevue;
   final String typeSoin;
@@ -15407,7 +20115,8 @@ class SoinCalendrierRow extends DataClass
   final int coutFcfa;
 
   /// Bande dont ce soin decoule (`BANDES.id`).
-  final int? bandeId;
+  /// UUID de la bande (schema v38 : `bandes.id` est desormais un UUID).
+  final String? bandeId;
 
   /// Echeance du calendrier dont ce soin decoule
   /// (`CALENDRIER_PROPHYLAXIE.id`).
@@ -15417,7 +20126,19 @@ class SoinCalendrierRow extends DataClass
   /// simple comparaison (espece, date, traitement) ne suffirait pas — deux
   /// bandes mises en place le meme jour partagent exactement ces trois
   /// valeurs.
-  final int? echeanceProphylaxieId;
+  ///
+  /// Texte (UUID de l'echeance) depuis la v40 : le calendrier de prophylaxie
+  /// est synchronise, ses identifiants sont des UUID.
+  final String? echeanceProphylaxieId;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const SoinCalendrierRow({
     required this.id,
     required this.espece,
@@ -15433,11 +20154,14 @@ class SoinCalendrierRow extends DataClass
     required this.coutFcfa,
     this.bandeId,
     this.echeanceProphylaxieId,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['date_prevue'] = Variable<DateTime>(datePrevue);
     map['type_soin'] = Variable<String>(typeSoin);
@@ -15460,11 +20184,16 @@ class SoinCalendrierRow extends DataClass
     }
     map['cout_fcfa'] = Variable<int>(coutFcfa);
     if (!nullToAbsent || bandeId != null) {
-      map['bande_id'] = Variable<int>(bandeId);
+      map['bande_id'] = Variable<String>(bandeId);
     }
     if (!nullToAbsent || echeanceProphylaxieId != null) {
-      map['echeance_prophylaxie_id'] = Variable<int>(echeanceProphylaxieId);
+      map['echeance_prophylaxie_id'] = Variable<String>(echeanceProphylaxieId);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -15496,6 +20225,11 @@ class SoinCalendrierRow extends DataClass
       echeanceProphylaxieId: echeanceProphylaxieId == null && nullToAbsent
           ? const Value.absent()
           : Value(echeanceProphylaxieId),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -15505,7 +20239,7 @@ class SoinCalendrierRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SoinCalendrierRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       datePrevue: serializer.fromJson<DateTime>(json['datePrevue']),
       typeSoin: serializer.fromJson<String>(json['typeSoin']),
@@ -15517,17 +20251,20 @@ class SoinCalendrierRow extends DataClass
       veterinaire: serializer.fromJson<String?>(json['veterinaire']),
       symptomes: serializer.fromJson<String?>(json['symptomes']),
       coutFcfa: serializer.fromJson<int>(json['coutFcfa']),
-      bandeId: serializer.fromJson<int?>(json['bandeId']),
-      echeanceProphylaxieId: serializer.fromJson<int?>(
+      bandeId: serializer.fromJson<String?>(json['bandeId']),
+      echeanceProphylaxieId: serializer.fromJson<String?>(
         json['echeanceProphylaxieId'],
       ),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'datePrevue': serializer.toJson<DateTime>(datePrevue),
       'typeSoin': serializer.toJson<String>(typeSoin),
@@ -15539,13 +20276,18 @@ class SoinCalendrierRow extends DataClass
       'veterinaire': serializer.toJson<String?>(veterinaire),
       'symptomes': serializer.toJson<String?>(symptomes),
       'coutFcfa': serializer.toJson<int>(coutFcfa),
-      'bandeId': serializer.toJson<int?>(bandeId),
-      'echeanceProphylaxieId': serializer.toJson<int?>(echeanceProphylaxieId),
+      'bandeId': serializer.toJson<String?>(bandeId),
+      'echeanceProphylaxieId': serializer.toJson<String?>(
+        echeanceProphylaxieId,
+      ),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   SoinCalendrierRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     DateTime? datePrevue,
     String? typeSoin,
@@ -15557,8 +20299,11 @@ class SoinCalendrierRow extends DataClass
     Value<String?> veterinaire = const Value.absent(),
     Value<String?> symptomes = const Value.absent(),
     int? coutFcfa,
-    Value<int?> bandeId = const Value.absent(),
-    Value<int?> echeanceProphylaxieId = const Value.absent(),
+    Value<String?> bandeId = const Value.absent(),
+    Value<String?> echeanceProphylaxieId = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => SoinCalendrierRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -15576,6 +20321,9 @@ class SoinCalendrierRow extends DataClass
     echeanceProphylaxieId: echeanceProphylaxieId.present
         ? echeanceProphylaxieId.value
         : this.echeanceProphylaxieId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   SoinCalendrierRow copyWithCompanion(SoinsCalendrierCompanion data) {
     return SoinCalendrierRow(
@@ -15603,6 +20351,11 @@ class SoinCalendrierRow extends DataClass
       echeanceProphylaxieId: data.echeanceProphylaxieId.present
           ? data.echeanceProphylaxieId.value
           : this.echeanceProphylaxieId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -15622,7 +20375,10 @@ class SoinCalendrierRow extends DataClass
           ..write('symptomes: $symptomes, ')
           ..write('coutFcfa: $coutFcfa, ')
           ..write('bandeId: $bandeId, ')
-          ..write('echeanceProphylaxieId: $echeanceProphylaxieId')
+          ..write('echeanceProphylaxieId: $echeanceProphylaxieId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -15643,6 +20399,9 @@ class SoinCalendrierRow extends DataClass
     coutFcfa,
     bandeId,
     echeanceProphylaxieId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -15661,11 +20420,14 @@ class SoinCalendrierRow extends DataClass
           other.symptomes == this.symptomes &&
           other.coutFcfa == this.coutFcfa &&
           other.bandeId == this.bandeId &&
-          other.echeanceProphylaxieId == this.echeanceProphylaxieId);
+          other.echeanceProphylaxieId == this.echeanceProphylaxieId &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<DateTime> datePrevue;
   final Value<String> typeSoin;
@@ -15677,8 +20439,12 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
   final Value<String?> veterinaire;
   final Value<String?> symptomes;
   final Value<int> coutFcfa;
-  final Value<int?> bandeId;
-  final Value<int?> echeanceProphylaxieId;
+  final Value<String?> bandeId;
+  final Value<String?> echeanceProphylaxieId;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const SoinsCalendrierCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -15694,6 +20460,10 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     this.coutFcfa = const Value.absent(),
     this.bandeId = const Value.absent(),
     this.echeanceProphylaxieId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   SoinsCalendrierCompanion.insert({
     this.id = const Value.absent(),
@@ -15710,12 +20480,16 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     this.coutFcfa = const Value.absent(),
     this.bandeId = const Value.absent(),
     this.echeanceProphylaxieId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        datePrevue = Value(datePrevue),
        typeSoin = Value(typeSoin),
        statut = Value(statut);
   static Insertable<SoinCalendrierRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<DateTime>? datePrevue,
     Expression<String>? typeSoin,
@@ -15727,8 +20501,12 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     Expression<String>? veterinaire,
     Expression<String>? symptomes,
     Expression<int>? coutFcfa,
-    Expression<int>? bandeId,
-    Expression<int>? echeanceProphylaxieId,
+    Expression<String>? bandeId,
+    Expression<String>? echeanceProphylaxieId,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -15746,11 +20524,15 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
       if (bandeId != null) 'bande_id': bandeId,
       if (echeanceProphylaxieId != null)
         'echeance_prophylaxie_id': echeanceProphylaxieId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   SoinsCalendrierCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<DateTime>? datePrevue,
     Value<String>? typeSoin,
@@ -15762,8 +20544,12 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
     Value<String?>? veterinaire,
     Value<String?>? symptomes,
     Value<int>? coutFcfa,
-    Value<int?>? bandeId,
-    Value<int?>? echeanceProphylaxieId,
+    Value<String?>? bandeId,
+    Value<String?>? echeanceProphylaxieId,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return SoinsCalendrierCompanion(
       id: id ?? this.id,
@@ -15781,6 +20567,10 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
       bandeId: bandeId ?? this.bandeId,
       echeanceProphylaxieId:
           echeanceProphylaxieId ?? this.echeanceProphylaxieId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -15788,7 +20578,7 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -15824,12 +20614,24 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
       map['cout_fcfa'] = Variable<int>(coutFcfa.value);
     }
     if (bandeId.present) {
-      map['bande_id'] = Variable<int>(bandeId.value);
+      map['bande_id'] = Variable<String>(bandeId.value);
     }
     if (echeanceProphylaxieId.present) {
-      map['echeance_prophylaxie_id'] = Variable<int>(
+      map['echeance_prophylaxie_id'] = Variable<String>(
         echeanceProphylaxieId.value,
       );
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -15850,7 +20652,11 @@ class SoinsCalendrierCompanion extends UpdateCompanion<SoinCalendrierRow> {
           ..write('symptomes: $symptomes, ')
           ..write('coutFcfa: $coutFcfa, ')
           ..write('bandeId: $bandeId, ')
-          ..write('echeanceProphylaxieId: $echeanceProphylaxieId')
+          ..write('echeanceProphylaxieId: $echeanceProphylaxieId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -15864,16 +20670,13 @@ class $InfirmerieTable extends Infirmerie
   $InfirmerieTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _dateEntreeMeta = const VerificationMeta(
     'dateEntree',
@@ -15954,6 +20757,41 @@ class $InfirmerieTable extends Infirmerie
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -15965,6 +20803,9 @@ class $InfirmerieTable extends Infirmerie
     dateSortie,
     espece,
     categorieMortalite,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -16045,6 +20886,24 @@ class $InfirmerieTable extends Infirmerie
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -16055,7 +20914,7 @@ class $InfirmerieTable extends Infirmerie
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return InfirmerieRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       dateEntree: attachedDatabase.typeMapping.read(
@@ -16090,6 +20949,18 @@ class $InfirmerieTable extends Infirmerie
         DriftSqlType.int,
         data['${effectivePrefix}categorie_mortalite'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -16100,7 +20971,9 @@ class $InfirmerieTable extends Infirmerie
 }
 
 class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
-  final int id;
+  /// UUID genere au poste (DV-19, `46c_`). Les anciennes entrees recoivent le leur
+  /// a la migration v40.
+  final String id;
   final DateTime dateEntree;
 
   /// Texte libre — le prototype accepte un lot ou un sujet identifie,
@@ -16130,6 +21003,15 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
   /// Sans elle, un deces pourrait etre reporte deux fois : une a la cloture,
   /// une a la main sur la fiche. La colonne rend le report VERIFIABLE.
   final int? categorieMortalite;
+
+  /// `pending` (a envoyer) · `synced` · `conflict` (refuse, voir `syncMotif`).
+  final String syncStatus;
+
+  /// Motif du refus du serveur, en francais ; `null` hors conflit.
+  final String? syncMotif;
+
+  /// Instant de SAISIE (UTC, ISO 8601, microsecondes) — voir [instantSaisie].
+  final String updatedAt;
   const InfirmerieRow({
     required this.id,
     required this.dateEntree,
@@ -16140,11 +21022,14 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
     this.dateSortie,
     this.espece,
     this.categorieMortalite,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['date_entree'] = Variable<DateTime>(dateEntree);
     map['sujet'] = Variable<String>(sujet);
     map['motif'] = Variable<String>(motif);
@@ -16159,6 +21044,11 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
     if (!nullToAbsent || categorieMortalite != null) {
       map['categorie_mortalite'] = Variable<int>(categorieMortalite);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -16179,6 +21069,11 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
       categorieMortalite: categorieMortalite == null && nullToAbsent
           ? const Value.absent()
           : Value(categorieMortalite),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -16188,7 +21083,7 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return InfirmerieRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       dateEntree: serializer.fromJson<DateTime>(json['dateEntree']),
       sujet: serializer.fromJson<String>(json['sujet']),
       motif: serializer.fromJson<String>(json['motif']),
@@ -16197,13 +21092,16 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
       dateSortie: serializer.fromJson<DateTime?>(json['dateSortie']),
       espece: serializer.fromJson<String?>(json['espece']),
       categorieMortalite: serializer.fromJson<int?>(json['categorieMortalite']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'dateEntree': serializer.toJson<DateTime>(dateEntree),
       'sujet': serializer.toJson<String>(sujet),
       'motif': serializer.toJson<String>(motif),
@@ -16212,11 +21110,14 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
       'dateSortie': serializer.toJson<DateTime?>(dateSortie),
       'espece': serializer.toJson<String?>(espece),
       'categorieMortalite': serializer.toJson<int?>(categorieMortalite),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   InfirmerieRow copyWith({
-    int? id,
+    String? id,
     DateTime? dateEntree,
     String? sujet,
     String? motif,
@@ -16225,6 +21126,9 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
     Value<DateTime?> dateSortie = const Value.absent(),
     Value<String?> espece = const Value.absent(),
     Value<int?> categorieMortalite = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => InfirmerieRow(
     id: id ?? this.id,
     dateEntree: dateEntree ?? this.dateEntree,
@@ -16237,6 +21141,9 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
     categorieMortalite: categorieMortalite.present
         ? categorieMortalite.value
         : this.categorieMortalite,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   InfirmerieRow copyWithCompanion(InfirmerieCompanion data) {
     return InfirmerieRow(
@@ -16257,6 +21164,11 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
       categorieMortalite: data.categorieMortalite.present
           ? data.categorieMortalite.value
           : this.categorieMortalite,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -16271,7 +21183,10 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
           ..write('statut: $statut, ')
           ..write('dateSortie: $dateSortie, ')
           ..write('espece: $espece, ')
-          ..write('categorieMortalite: $categorieMortalite')
+          ..write('categorieMortalite: $categorieMortalite, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -16287,6 +21202,9 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
     dateSortie,
     espece,
     categorieMortalite,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -16300,11 +21218,14 @@ class InfirmerieRow extends DataClass implements Insertable<InfirmerieRow> {
           other.statut == this.statut &&
           other.dateSortie == this.dateSortie &&
           other.espece == this.espece &&
-          other.categorieMortalite == this.categorieMortalite);
+          other.categorieMortalite == this.categorieMortalite &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<DateTime> dateEntree;
   final Value<String> sujet;
   final Value<String> motif;
@@ -16313,6 +21234,10 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
   final Value<DateTime?> dateSortie;
   final Value<String?> espece;
   final Value<int?> categorieMortalite;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const InfirmerieCompanion({
     this.id = const Value.absent(),
     this.dateEntree = const Value.absent(),
@@ -16323,6 +21248,10 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
     this.dateSortie = const Value.absent(),
     this.espece = const Value.absent(),
     this.categorieMortalite = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   InfirmerieCompanion.insert({
     this.id = const Value.absent(),
@@ -16334,13 +21263,17 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
     this.dateSortie = const Value.absent(),
     this.espece = const Value.absent(),
     this.categorieMortalite = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : dateEntree = Value(dateEntree),
        sujet = Value(sujet),
        motif = Value(motif),
        niveauIsolement = Value(niveauIsolement),
        statut = Value(statut);
   static Insertable<InfirmerieRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<DateTime>? dateEntree,
     Expression<String>? sujet,
     Expression<String>? motif,
@@ -16349,6 +21282,10 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
     Expression<DateTime>? dateSortie,
     Expression<String>? espece,
     Expression<int>? categorieMortalite,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -16360,11 +21297,15 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
       if (dateSortie != null) 'date_sortie': dateSortie,
       if (espece != null) 'espece': espece,
       if (categorieMortalite != null) 'categorie_mortalite': categorieMortalite,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   InfirmerieCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<DateTime>? dateEntree,
     Value<String>? sujet,
     Value<String>? motif,
@@ -16373,6 +21314,10 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
     Value<DateTime?>? dateSortie,
     Value<String?>? espece,
     Value<int?>? categorieMortalite,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return InfirmerieCompanion(
       id: id ?? this.id,
@@ -16384,6 +21329,10 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
       dateSortie: dateSortie ?? this.dateSortie,
       espece: espece ?? this.espece,
       categorieMortalite: categorieMortalite ?? this.categorieMortalite,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -16391,7 +21340,7 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (dateEntree.present) {
       map['date_entree'] = Variable<DateTime>(dateEntree.value);
@@ -16417,6 +21366,18 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
     if (categorieMortalite.present) {
       map['categorie_mortalite'] = Variable<int>(categorieMortalite.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -16431,7 +21392,11 @@ class InfirmerieCompanion extends UpdateCompanion<InfirmerieRow> {
           ..write('statut: $statut, ')
           ..write('dateSortie: $dateSortie, ')
           ..write('espece: $espece, ')
-          ..write('categorieMortalite: $categorieMortalite')
+          ..write('categorieMortalite: $categorieMortalite, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -16444,16 +21409,13 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
   $BandesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -16518,6 +21480,41 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -16527,6 +21524,9 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     effectifInitial,
     dateCloture,
     observations,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -16597,6 +21597,24 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -16611,7 +21629,7 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return BandeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -16638,6 +21656,18 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
         DriftSqlType.string,
         data['${effectivePrefix}observations'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -16648,7 +21678,7 @@ class $BandesTable extends Bandes with TableInfo<$BandesTable, BandeRow> {
 }
 
 class BandeRow extends DataClass implements Insertable<BandeRow> {
-  final int id;
+  final String id;
 
   /// Identifiant de filière — même valeur que `FICHE_JOURNEE.espece`.
   final String espece;
@@ -16668,6 +21698,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
   /// `null` = bande en cours.
   final DateTime? dateCloture;
   final String? observations;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const BandeRow({
     required this.id,
     required this.espece,
@@ -16676,11 +21709,14 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     this.effectifInitial,
     this.dateCloture,
     this.observations,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['code'] = Variable<String>(code);
     map['date_mise_en_bande'] = Variable<DateTime>(dateMiseEnBande);
@@ -16693,6 +21729,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     if (!nullToAbsent || observations != null) {
       map['observations'] = Variable<String>(observations);
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -16711,6 +21752,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
       observations: observations == null && nullToAbsent
           ? const Value.absent()
           : Value(observations),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -16720,37 +21766,46 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BandeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       code: serializer.fromJson<String>(json['code']),
       dateMiseEnBande: serializer.fromJson<DateTime>(json['dateMiseEnBande']),
       effectifInitial: serializer.fromJson<int?>(json['effectifInitial']),
       dateCloture: serializer.fromJson<DateTime?>(json['dateCloture']),
       observations: serializer.fromJson<String?>(json['observations']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'code': serializer.toJson<String>(code),
       'dateMiseEnBande': serializer.toJson<DateTime>(dateMiseEnBande),
       'effectifInitial': serializer.toJson<int?>(effectifInitial),
       'dateCloture': serializer.toJson<DateTime?>(dateCloture),
       'observations': serializer.toJson<String?>(observations),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   BandeRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     String? code,
     DateTime? dateMiseEnBande,
     Value<int?> effectifInitial = const Value.absent(),
     Value<DateTime?> dateCloture = const Value.absent(),
     Value<String?> observations = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => BandeRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -16761,6 +21816,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
         : this.effectifInitial,
     dateCloture: dateCloture.present ? dateCloture.value : this.dateCloture,
     observations: observations.present ? observations.value : this.observations,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   BandeRow copyWithCompanion(BandesCompanion data) {
     return BandeRow(
@@ -16779,6 +21837,11 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
       observations: data.observations.present
           ? data.observations.value
           : this.observations,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -16791,7 +21854,10 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
           ..write('dateMiseEnBande: $dateMiseEnBande, ')
           ..write('effectifInitial: $effectifInitial, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('observations: $observations')
+          ..write('observations: $observations, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -16805,6 +21871,9 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
     effectifInitial,
     dateCloture,
     observations,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -16816,17 +21885,24 @@ class BandeRow extends DataClass implements Insertable<BandeRow> {
           other.dateMiseEnBande == this.dateMiseEnBande &&
           other.effectifInitial == this.effectifInitial &&
           other.dateCloture == this.dateCloture &&
-          other.observations == this.observations);
+          other.observations == this.observations &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class BandesCompanion extends UpdateCompanion<BandeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<String> code;
   final Value<DateTime> dateMiseEnBande;
   final Value<int?> effectifInitial;
   final Value<DateTime?> dateCloture;
   final Value<String?> observations;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const BandesCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -16835,6 +21911,10 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     this.effectifInitial = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.observations = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   BandesCompanion.insert({
     this.id = const Value.absent(),
@@ -16844,17 +21924,25 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     this.effectifInitial = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.observations = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        code = Value(code),
        dateMiseEnBande = Value(dateMiseEnBande);
   static Insertable<BandeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<String>? code,
     Expression<DateTime>? dateMiseEnBande,
     Expression<int>? effectifInitial,
     Expression<DateTime>? dateCloture,
     Expression<String>? observations,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -16864,17 +21952,25 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
       if (effectifInitial != null) 'effectif_initial': effectifInitial,
       if (dateCloture != null) 'date_cloture': dateCloture,
       if (observations != null) 'observations': observations,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   BandesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<String>? code,
     Value<DateTime>? dateMiseEnBande,
     Value<int?>? effectifInitial,
     Value<DateTime?>? dateCloture,
     Value<String?>? observations,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return BandesCompanion(
       id: id ?? this.id,
@@ -16884,6 +21980,10 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
       effectifInitial: effectifInitial ?? this.effectifInitial,
       dateCloture: dateCloture ?? this.dateCloture,
       observations: observations ?? this.observations,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -16891,7 +21991,7 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -16911,6 +22011,18 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
     if (observations.present) {
       map['observations'] = Variable<String>(observations.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -16923,7 +22035,11 @@ class BandesCompanion extends UpdateCompanion<BandeRow> {
           ..write('dateMiseEnBande: $dateMiseEnBande, ')
           ..write('effectifInitial: $effectifInitial, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('observations: $observations')
+          ..write('observations: $observations, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -16937,16 +22053,13 @@ class $BaremesRationTable extends BaremesRation
   $BaremesRationTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -17061,7 +22174,7 @@ class $BaremesRationTable extends BaremesRation
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return BaremeRationRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -17090,7 +22203,9 @@ class $BaremesRationTable extends BaremesRation
 }
 
 class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
-  final int id;
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  final String id;
 
   /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
   final String espece;
@@ -17115,7 +22230,7 @@ class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['stade'] = Variable<String>(stade);
     map['ration_grammes_par_jour'] = Variable<int>(rationGrammesParJour);
@@ -17139,7 +22254,7 @@ class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BaremeRationRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       stade: serializer.fromJson<String>(json['stade']),
       rationGrammesParJour: serializer.fromJson<int>(
@@ -17152,7 +22267,7 @@ class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'stade': serializer.toJson<String>(stade),
       'rationGrammesParJour': serializer.toJson<int>(rationGrammesParJour),
@@ -17161,7 +22276,7 @@ class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
   }
 
   BaremeRationRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     String? stade,
     int? rationGrammesParJour,
@@ -17212,17 +22327,19 @@ class BaremeRationRow extends DataClass implements Insertable<BaremeRationRow> {
 }
 
 class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<String> stade;
   final Value<int> rationGrammesParJour;
   final Value<bool> confirme;
+  final Value<int> rowid;
   const BaremesRationCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
     this.stade = const Value.absent(),
     this.rationGrammesParJour = const Value.absent(),
     this.confirme = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   BaremesRationCompanion.insert({
     this.id = const Value.absent(),
@@ -17230,15 +22347,17 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
     required String stade,
     required int rationGrammesParJour,
     this.confirme = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        stade = Value(stade),
        rationGrammesParJour = Value(rationGrammesParJour);
   static Insertable<BaremeRationRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<String>? stade,
     Expression<int>? rationGrammesParJour,
     Expression<bool>? confirme,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -17247,15 +22366,17 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
       if (rationGrammesParJour != null)
         'ration_grammes_par_jour': rationGrammesParJour,
       if (confirme != null) 'confirme': confirme,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   BaremesRationCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<String>? stade,
     Value<int>? rationGrammesParJour,
     Value<bool>? confirme,
+    Value<int>? rowid,
   }) {
     return BaremesRationCompanion(
       id: id ?? this.id,
@@ -17263,6 +22384,7 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
       stade: stade ?? this.stade,
       rationGrammesParJour: rationGrammesParJour ?? this.rationGrammesParJour,
       confirme: confirme ?? this.confirme,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -17270,7 +22392,7 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -17286,6 +22408,9 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
     if (confirme.present) {
       map['confirme'] = Variable<bool>(confirme.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -17296,7 +22421,8 @@ class BaremesRationCompanion extends UpdateCompanion<BaremeRationRow> {
           ..write('espece: $espece, ')
           ..write('stade: $stade, ')
           ..write('rationGrammesParJour: $rationGrammesParJour, ')
-          ..write('confirme: $confirme')
+          ..write('confirme: $confirme, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -17310,16 +22436,13 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
   $CalendrierProphylaxieTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _especeMeta = const VerificationMeta('espece');
   @override
@@ -17375,6 +22498,15 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _doseMeta = const VerificationMeta('dose');
+  @override
+  late final GeneratedColumn<String> dose = GeneratedColumn<String>(
+    'dose',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -17383,6 +22515,7 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
     traitement,
     produit,
     remanenceJours,
+    dose,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -17440,6 +22573,12 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
         ),
       );
     }
+    if (data.containsKey('dose')) {
+      context.handle(
+        _doseMeta,
+        dose.isAcceptableOrUnknown(data['dose']!, _doseMeta),
+      );
+    }
     return context;
   }
 
@@ -17450,7 +22589,7 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return EcheanceProphylaxieRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       espece: attachedDatabase.typeMapping.read(
@@ -17473,6 +22612,10 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
         DriftSqlType.int,
         data['${effectivePrefix}remanence_jours'],
       )!,
+      dose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dose'],
+      ),
     );
   }
 
@@ -17484,7 +22627,9 @@ class $CalendrierProphylaxieTable extends CalendrierProphylaxie
 
 class EcheanceProphylaxieRow extends DataClass
     implements Insertable<EcheanceProphylaxieRow> {
-  final int id;
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  final String id;
   final String espece;
 
   /// Jour du cycle (J1, J5, J15…), tel que saisi dans la modale.
@@ -17495,6 +22640,14 @@ class EcheanceProphylaxieRow extends DataClass
   /// Rémanence en jours — délai avant lequel les produits (œufs, viande) ne
   /// doivent pas être commercialisés. 0 = aucune.
   final int remanenceJours;
+
+  /// Dose du produit, texte libre (ex. « 7,5 mg par kg de poids vif, voie
+  /// orale »). Reprise telle quelle sur le soin lors de l'injection du
+  /// calendrier. NULL sur les echeances saisies avant la v27 : leur dose n'a
+  /// jamais ete renseignee, et en inventer une serait pire que l'absence.
+  ///
+  /// La notice du produit utilise prevaut toujours sur cette valeur.
+  final String? dose;
   const EcheanceProphylaxieRow({
     required this.id,
     required this.espece,
@@ -17502,16 +22655,20 @@ class EcheanceProphylaxieRow extends DataClass
     required this.traitement,
     required this.produit,
     required this.remanenceJours,
+    this.dose,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['espece'] = Variable<String>(espece);
     map['jour_cycle'] = Variable<int>(jourCycle);
     map['traitement'] = Variable<String>(traitement);
     map['produit'] = Variable<String>(produit);
     map['remanence_jours'] = Variable<int>(remanenceJours);
+    if (!nullToAbsent || dose != null) {
+      map['dose'] = Variable<String>(dose);
+    }
     return map;
   }
 
@@ -17523,6 +22680,7 @@ class EcheanceProphylaxieRow extends DataClass
       traitement: Value(traitement),
       produit: Value(produit),
       remanenceJours: Value(remanenceJours),
+      dose: dose == null && nullToAbsent ? const Value.absent() : Value(dose),
     );
   }
 
@@ -17532,34 +22690,37 @@ class EcheanceProphylaxieRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return EcheanceProphylaxieRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       espece: serializer.fromJson<String>(json['espece']),
       jourCycle: serializer.fromJson<int>(json['jourCycle']),
       traitement: serializer.fromJson<String>(json['traitement']),
       produit: serializer.fromJson<String>(json['produit']),
       remanenceJours: serializer.fromJson<int>(json['remanenceJours']),
+      dose: serializer.fromJson<String?>(json['dose']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'espece': serializer.toJson<String>(espece),
       'jourCycle': serializer.toJson<int>(jourCycle),
       'traitement': serializer.toJson<String>(traitement),
       'produit': serializer.toJson<String>(produit),
       'remanenceJours': serializer.toJson<int>(remanenceJours),
+      'dose': serializer.toJson<String?>(dose),
     };
   }
 
   EcheanceProphylaxieRow copyWith({
-    int? id,
+    String? id,
     String? espece,
     int? jourCycle,
     String? traitement,
     String? produit,
     int? remanenceJours,
+    Value<String?> dose = const Value.absent(),
   }) => EcheanceProphylaxieRow(
     id: id ?? this.id,
     espece: espece ?? this.espece,
@@ -17567,6 +22728,7 @@ class EcheanceProphylaxieRow extends DataClass
     traitement: traitement ?? this.traitement,
     produit: produit ?? this.produit,
     remanenceJours: remanenceJours ?? this.remanenceJours,
+    dose: dose.present ? dose.value : this.dose,
   );
   EcheanceProphylaxieRow copyWithCompanion(
     CalendrierProphylaxieCompanion data,
@@ -17582,6 +22744,7 @@ class EcheanceProphylaxieRow extends DataClass
       remanenceJours: data.remanenceJours.present
           ? data.remanenceJours.value
           : this.remanenceJours,
+      dose: data.dose.present ? data.dose.value : this.dose,
     );
   }
 
@@ -17593,14 +22756,22 @@ class EcheanceProphylaxieRow extends DataClass
           ..write('jourCycle: $jourCycle, ')
           ..write('traitement: $traitement, ')
           ..write('produit: $produit, ')
-          ..write('remanenceJours: $remanenceJours')
+          ..write('remanenceJours: $remanenceJours, ')
+          ..write('dose: $dose')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, espece, jourCycle, traitement, produit, remanenceJours);
+  int get hashCode => Object.hash(
+    id,
+    espece,
+    jourCycle,
+    traitement,
+    produit,
+    remanenceJours,
+    dose,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -17610,17 +22781,20 @@ class EcheanceProphylaxieRow extends DataClass
           other.jourCycle == this.jourCycle &&
           other.traitement == this.traitement &&
           other.produit == this.produit &&
-          other.remanenceJours == this.remanenceJours);
+          other.remanenceJours == this.remanenceJours &&
+          other.dose == this.dose);
 }
 
 class CalendrierProphylaxieCompanion
     extends UpdateCompanion<EcheanceProphylaxieRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> espece;
   final Value<int> jourCycle;
   final Value<String> traitement;
   final Value<String> produit;
   final Value<int> remanenceJours;
+  final Value<String?> dose;
+  final Value<int> rowid;
   const CalendrierProphylaxieCompanion({
     this.id = const Value.absent(),
     this.espece = const Value.absent(),
@@ -17628,6 +22802,8 @@ class CalendrierProphylaxieCompanion
     this.traitement = const Value.absent(),
     this.produit = const Value.absent(),
     this.remanenceJours = const Value.absent(),
+    this.dose = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   CalendrierProphylaxieCompanion.insert({
     this.id = const Value.absent(),
@@ -17636,17 +22812,21 @@ class CalendrierProphylaxieCompanion
     required String traitement,
     required String produit,
     this.remanenceJours = const Value.absent(),
+    this.dose = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : espece = Value(espece),
        jourCycle = Value(jourCycle),
        traitement = Value(traitement),
        produit = Value(produit);
   static Insertable<EcheanceProphylaxieRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? espece,
     Expression<int>? jourCycle,
     Expression<String>? traitement,
     Expression<String>? produit,
     Expression<int>? remanenceJours,
+    Expression<String>? dose,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -17655,16 +22835,20 @@ class CalendrierProphylaxieCompanion
       if (traitement != null) 'traitement': traitement,
       if (produit != null) 'produit': produit,
       if (remanenceJours != null) 'remanence_jours': remanenceJours,
+      if (dose != null) 'dose': dose,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   CalendrierProphylaxieCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? espece,
     Value<int>? jourCycle,
     Value<String>? traitement,
     Value<String>? produit,
     Value<int>? remanenceJours,
+    Value<String?>? dose,
+    Value<int>? rowid,
   }) {
     return CalendrierProphylaxieCompanion(
       id: id ?? this.id,
@@ -17673,6 +22857,8 @@ class CalendrierProphylaxieCompanion
       traitement: traitement ?? this.traitement,
       produit: produit ?? this.produit,
       remanenceJours: remanenceJours ?? this.remanenceJours,
+      dose: dose ?? this.dose,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -17680,7 +22866,7 @@ class CalendrierProphylaxieCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (espece.present) {
       map['espece'] = Variable<String>(espece.value);
@@ -17697,6 +22883,12 @@ class CalendrierProphylaxieCompanion
     if (remanenceJours.present) {
       map['remanence_jours'] = Variable<int>(remanenceJours.value);
     }
+    if (dose.present) {
+      map['dose'] = Variable<String>(dose.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -17708,7 +22900,435 @@ class CalendrierProphylaxieCompanion
           ..write('jourCycle: $jourCycle, ')
           ..write('traitement: $traitement, ')
           ..write('produit: $produit, ')
-          ..write('remanenceJours: $remanenceJours')
+          ..write('remanenceJours: $remanenceJours, ')
+          ..write('dose: $dose, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TauxRationPoidsTable extends TauxRationPoids
+    with TableInfo<$TauxRationPoidsTable, TauxRationPoidsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TauxRationPoidsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _especeMeta = const VerificationMeta('espece');
+  @override
+  late final GeneratedColumn<String> espece = GeneratedColumn<String>(
+    'espece',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poidsMinGMeta = const VerificationMeta(
+    'poidsMinG',
+  );
+  @override
+  late final GeneratedColumn<int> poidsMinG = GeneratedColumn<int>(
+    'poids_min_g',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poidsMaxGMeta = const VerificationMeta(
+    'poidsMaxG',
+  );
+  @override
+  late final GeneratedColumn<int> poidsMaxG = GeneratedColumn<int>(
+    'poids_max_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tauxPourcentMeta = const VerificationMeta(
+    'tauxPourcent',
+  );
+  @override
+  late final GeneratedColumn<double> tauxPourcent = GeneratedColumn<double>(
+    'taux_pourcent',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmeMeta = const VerificationMeta(
+    'confirme',
+  );
+  @override
+  late final GeneratedColumn<bool> confirme = GeneratedColumn<bool>(
+    'confirme',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("confirme" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    espece,
+    poidsMinG,
+    poidsMaxG,
+    tauxPourcent,
+    confirme,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'taux_ration_poids';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TauxRationPoidsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('espece')) {
+      context.handle(
+        _especeMeta,
+        espece.isAcceptableOrUnknown(data['espece']!, _especeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_especeMeta);
+    }
+    if (data.containsKey('poids_min_g')) {
+      context.handle(
+        _poidsMinGMeta,
+        poidsMinG.isAcceptableOrUnknown(data['poids_min_g']!, _poidsMinGMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_poidsMinGMeta);
+    }
+    if (data.containsKey('poids_max_g')) {
+      context.handle(
+        _poidsMaxGMeta,
+        poidsMaxG.isAcceptableOrUnknown(data['poids_max_g']!, _poidsMaxGMeta),
+      );
+    }
+    if (data.containsKey('taux_pourcent')) {
+      context.handle(
+        _tauxPourcentMeta,
+        tauxPourcent.isAcceptableOrUnknown(
+          data['taux_pourcent']!,
+          _tauxPourcentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tauxPourcentMeta);
+    }
+    if (data.containsKey('confirme')) {
+      context.handle(
+        _confirmeMeta,
+        confirme.isAcceptableOrUnknown(data['confirme']!, _confirmeMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {espece, poidsMinG},
+  ];
+  @override
+  TauxRationPoidsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TauxRationPoidsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      espece: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}espece'],
+      )!,
+      poidsMinG: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poids_min_g'],
+      )!,
+      poidsMaxG: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poids_max_g'],
+      ),
+      tauxPourcent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}taux_pourcent'],
+      )!,
+      confirme: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}confirme'],
+      )!,
+    );
+  }
+
+  @override
+  $TauxRationPoidsTable createAlias(String alias) {
+    return $TauxRationPoidsTable(attachedDatabase, alias);
+  }
+}
+
+class TauxRationPoidsRow extends DataClass
+    implements Insertable<TauxRationPoidsRow> {
+  /// UUID (DV-19, `46c_`). Semes : UUID DETERMINISTE (meme identifiant sur tous les
+  /// postes) ; saisis par l'utilisatrice : UUID aleatoire. Migration v40 pour l'existant.
+  final String id;
+
+  /// Identifiant d'espèce — même valeur que `FICHE_JOURNEE.espece`.
+  final String espece;
+  final int poidsMinG;
+  final int? poidsMaxG;
+
+  /// Pourcentage du poids vif par jour, en matière sèche (ex. 3.5).
+  final double tauxPourcent;
+
+  /// Faux tant que l'animalier n'a pas validé le repère.
+  final bool confirme;
+  const TauxRationPoidsRow({
+    required this.id,
+    required this.espece,
+    required this.poidsMinG,
+    this.poidsMaxG,
+    required this.tauxPourcent,
+    required this.confirme,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['espece'] = Variable<String>(espece);
+    map['poids_min_g'] = Variable<int>(poidsMinG);
+    if (!nullToAbsent || poidsMaxG != null) {
+      map['poids_max_g'] = Variable<int>(poidsMaxG);
+    }
+    map['taux_pourcent'] = Variable<double>(tauxPourcent);
+    map['confirme'] = Variable<bool>(confirme);
+    return map;
+  }
+
+  TauxRationPoidsCompanion toCompanion(bool nullToAbsent) {
+    return TauxRationPoidsCompanion(
+      id: Value(id),
+      espece: Value(espece),
+      poidsMinG: Value(poidsMinG),
+      poidsMaxG: poidsMaxG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(poidsMaxG),
+      tauxPourcent: Value(tauxPourcent),
+      confirme: Value(confirme),
+    );
+  }
+
+  factory TauxRationPoidsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TauxRationPoidsRow(
+      id: serializer.fromJson<String>(json['id']),
+      espece: serializer.fromJson<String>(json['espece']),
+      poidsMinG: serializer.fromJson<int>(json['poidsMinG']),
+      poidsMaxG: serializer.fromJson<int?>(json['poidsMaxG']),
+      tauxPourcent: serializer.fromJson<double>(json['tauxPourcent']),
+      confirme: serializer.fromJson<bool>(json['confirme']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'espece': serializer.toJson<String>(espece),
+      'poidsMinG': serializer.toJson<int>(poidsMinG),
+      'poidsMaxG': serializer.toJson<int?>(poidsMaxG),
+      'tauxPourcent': serializer.toJson<double>(tauxPourcent),
+      'confirme': serializer.toJson<bool>(confirme),
+    };
+  }
+
+  TauxRationPoidsRow copyWith({
+    String? id,
+    String? espece,
+    int? poidsMinG,
+    Value<int?> poidsMaxG = const Value.absent(),
+    double? tauxPourcent,
+    bool? confirme,
+  }) => TauxRationPoidsRow(
+    id: id ?? this.id,
+    espece: espece ?? this.espece,
+    poidsMinG: poidsMinG ?? this.poidsMinG,
+    poidsMaxG: poidsMaxG.present ? poidsMaxG.value : this.poidsMaxG,
+    tauxPourcent: tauxPourcent ?? this.tauxPourcent,
+    confirme: confirme ?? this.confirme,
+  );
+  TauxRationPoidsRow copyWithCompanion(TauxRationPoidsCompanion data) {
+    return TauxRationPoidsRow(
+      id: data.id.present ? data.id.value : this.id,
+      espece: data.espece.present ? data.espece.value : this.espece,
+      poidsMinG: data.poidsMinG.present ? data.poidsMinG.value : this.poidsMinG,
+      poidsMaxG: data.poidsMaxG.present ? data.poidsMaxG.value : this.poidsMaxG,
+      tauxPourcent: data.tauxPourcent.present
+          ? data.tauxPourcent.value
+          : this.tauxPourcent,
+      confirme: data.confirme.present ? data.confirme.value : this.confirme,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TauxRationPoidsRow(')
+          ..write('id: $id, ')
+          ..write('espece: $espece, ')
+          ..write('poidsMinG: $poidsMinG, ')
+          ..write('poidsMaxG: $poidsMaxG, ')
+          ..write('tauxPourcent: $tauxPourcent, ')
+          ..write('confirme: $confirme')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, espece, poidsMinG, poidsMaxG, tauxPourcent, confirme);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TauxRationPoidsRow &&
+          other.id == this.id &&
+          other.espece == this.espece &&
+          other.poidsMinG == this.poidsMinG &&
+          other.poidsMaxG == this.poidsMaxG &&
+          other.tauxPourcent == this.tauxPourcent &&
+          other.confirme == this.confirme);
+}
+
+class TauxRationPoidsCompanion extends UpdateCompanion<TauxRationPoidsRow> {
+  final Value<String> id;
+  final Value<String> espece;
+  final Value<int> poidsMinG;
+  final Value<int?> poidsMaxG;
+  final Value<double> tauxPourcent;
+  final Value<bool> confirme;
+  final Value<int> rowid;
+  const TauxRationPoidsCompanion({
+    this.id = const Value.absent(),
+    this.espece = const Value.absent(),
+    this.poidsMinG = const Value.absent(),
+    this.poidsMaxG = const Value.absent(),
+    this.tauxPourcent = const Value.absent(),
+    this.confirme = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TauxRationPoidsCompanion.insert({
+    this.id = const Value.absent(),
+    required String espece,
+    required int poidsMinG,
+    this.poidsMaxG = const Value.absent(),
+    required double tauxPourcent,
+    this.confirme = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : espece = Value(espece),
+       poidsMinG = Value(poidsMinG),
+       tauxPourcent = Value(tauxPourcent);
+  static Insertable<TauxRationPoidsRow> custom({
+    Expression<String>? id,
+    Expression<String>? espece,
+    Expression<int>? poidsMinG,
+    Expression<int>? poidsMaxG,
+    Expression<double>? tauxPourcent,
+    Expression<bool>? confirme,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (espece != null) 'espece': espece,
+      if (poidsMinG != null) 'poids_min_g': poidsMinG,
+      if (poidsMaxG != null) 'poids_max_g': poidsMaxG,
+      if (tauxPourcent != null) 'taux_pourcent': tauxPourcent,
+      if (confirme != null) 'confirme': confirme,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TauxRationPoidsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? espece,
+    Value<int>? poidsMinG,
+    Value<int?>? poidsMaxG,
+    Value<double>? tauxPourcent,
+    Value<bool>? confirme,
+    Value<int>? rowid,
+  }) {
+    return TauxRationPoidsCompanion(
+      id: id ?? this.id,
+      espece: espece ?? this.espece,
+      poidsMinG: poidsMinG ?? this.poidsMinG,
+      poidsMaxG: poidsMaxG ?? this.poidsMaxG,
+      tauxPourcent: tauxPourcent ?? this.tauxPourcent,
+      confirme: confirme ?? this.confirme,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (espece.present) {
+      map['espece'] = Variable<String>(espece.value);
+    }
+    if (poidsMinG.present) {
+      map['poids_min_g'] = Variable<int>(poidsMinG.value);
+    }
+    if (poidsMaxG.present) {
+      map['poids_max_g'] = Variable<int>(poidsMaxG.value);
+    }
+    if (tauxPourcent.present) {
+      map['taux_pourcent'] = Variable<double>(tauxPourcent.value);
+    }
+    if (confirme.present) {
+      map['confirme'] = Variable<bool>(confirme.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TauxRationPoidsCompanion(')
+          ..write('id: $id, ')
+          ..write('espece: $espece, ')
+          ..write('poidsMinG: $poidsMinG, ')
+          ..write('poidsMaxG: $poidsMaxG, ')
+          ..write('tauxPourcent: $tauxPourcent, ')
+          ..write('confirme: $confirme, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -17755,8 +23375,62 @@ class $ExerciceComptableTable extends ExerciceComptable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _affectationMeta = const VerificationMeta(
+    'affectation',
+  );
   @override
-  List<GeneratedColumn> get $columns => [annee, isCloture, dateCloture];
+  late final GeneratedColumn<String> affectation = GeneratedColumn<String>(
+    'affectation',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    annee,
+    isCloture,
+    dateCloture,
+    affectation,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -17790,6 +23464,33 @@ class $ExerciceComptableTable extends ExerciceComptable
         ),
       );
     }
+    if (data.containsKey('affectation')) {
+      context.handle(
+        _affectationMeta,
+        affectation.isAcceptableOrUnknown(
+          data['affectation']!,
+          _affectationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -17811,6 +23512,22 @@ class $ExerciceComptableTable extends ExerciceComptable
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_cloture'],
       ),
+      affectation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}affectation'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -17827,10 +23544,23 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
   /// BR-CPT-001 — verrouillage **définitif**, aucun mécanisme de déclôture.
   final bool isCloture;
   final DateTime? dateCloture;
+
+  /// Décision d'affectation du résultat prise à la clôture (JSON :
+  /// `{reserve_legale, autres_reserves, dividendes}`), `null` = tout au report à nouveau.
+  /// Elle voyage avec le fait de clôture : le serveur génère les mêmes écritures
+  /// (`47c_` §3). Schéma v44.
+  final String? affectation;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const ExerciceRow({
     required this.annee,
     required this.isCloture,
     this.dateCloture,
+    this.affectation,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -17840,6 +23570,14 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     if (!nullToAbsent || dateCloture != null) {
       map['date_cloture'] = Variable<DateTime>(dateCloture);
     }
+    if (!nullToAbsent || affectation != null) {
+      map['affectation'] = Variable<String>(affectation);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -17850,6 +23588,14 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: dateCloture == null && nullToAbsent
           ? const Value.absent()
           : Value(dateCloture),
+      affectation: affectation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(affectation),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -17862,6 +23608,10 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       annee: serializer.fromJson<int>(json['annee']),
       isCloture: serializer.fromJson<bool>(json['isCloture']),
       dateCloture: serializer.fromJson<DateTime?>(json['dateCloture']),
+      affectation: serializer.fromJson<String?>(json['affectation']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -17871,6 +23621,10 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       'annee': serializer.toJson<int>(annee),
       'isCloture': serializer.toJson<bool>(isCloture),
       'dateCloture': serializer.toJson<DateTime?>(dateCloture),
+      'affectation': serializer.toJson<String?>(affectation),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -17878,10 +23632,18 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     int? annee,
     bool? isCloture,
     Value<DateTime?> dateCloture = const Value.absent(),
+    Value<String?> affectation = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => ExerciceRow(
     annee: annee ?? this.annee,
     isCloture: isCloture ?? this.isCloture,
     dateCloture: dateCloture.present ? dateCloture.value : this.dateCloture,
+    affectation: affectation.present ? affectation.value : this.affectation,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   ExerciceRow copyWithCompanion(ExerciceComptableCompanion data) {
     return ExerciceRow(
@@ -17890,6 +23652,14 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
       dateCloture: data.dateCloture.present
           ? data.dateCloture.value
           : this.dateCloture,
+      affectation: data.affectation.present
+          ? data.affectation.value
+          : this.affectation,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -17898,45 +23668,81 @@ class ExerciceRow extends DataClass implements Insertable<ExerciceRow> {
     return (StringBuffer('ExerciceRow(')
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
-          ..write('dateCloture: $dateCloture')
+          ..write('dateCloture: $dateCloture, ')
+          ..write('affectation: $affectation, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(annee, isCloture, dateCloture);
+  int get hashCode => Object.hash(
+    annee,
+    isCloture,
+    dateCloture,
+    affectation,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ExerciceRow &&
           other.annee == this.annee &&
           other.isCloture == this.isCloture &&
-          other.dateCloture == this.dateCloture);
+          other.dateCloture == this.dateCloture &&
+          other.affectation == this.affectation &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
   final Value<int> annee;
   final Value<bool> isCloture;
   final Value<DateTime?> dateCloture;
+  final Value<String?> affectation;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   const ExerciceComptableCompanion({
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.affectation = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ExerciceComptableCompanion.insert({
     this.annee = const Value.absent(),
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
+    this.affectation = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   static Insertable<ExerciceRow> custom({
     Expression<int>? annee,
     Expression<bool>? isCloture,
     Expression<DateTime>? dateCloture,
+    Expression<String>? affectation,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (annee != null) 'annee': annee,
       if (isCloture != null) 'is_cloture': isCloture,
       if (dateCloture != null) 'date_cloture': dateCloture,
+      if (affectation != null) 'affectation': affectation,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -17944,11 +23750,19 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     Value<int>? annee,
     Value<bool>? isCloture,
     Value<DateTime?>? dateCloture,
+    Value<String?>? affectation,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
   }) {
     return ExerciceComptableCompanion(
       annee: annee ?? this.annee,
       isCloture: isCloture ?? this.isCloture,
       dateCloture: dateCloture ?? this.dateCloture,
+      affectation: affectation ?? this.affectation,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -17964,6 +23778,18 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     if (dateCloture.present) {
       map['date_cloture'] = Variable<DateTime>(dateCloture.value);
     }
+    if (affectation.present) {
+      map['affectation'] = Variable<String>(affectation.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     return map;
   }
 
@@ -17972,7 +23798,11 @@ class ExerciceComptableCompanion extends UpdateCompanion<ExerciceRow> {
     return (StringBuffer('ExerciceComptableCompanion(')
           ..write('annee: $annee, ')
           ..write('isCloture: $isCloture, ')
-          ..write('dateCloture: $dateCloture')
+          ..write('dateCloture: $dateCloture, ')
+          ..write('affectation: $affectation, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -18117,7 +23947,7 @@ class $PlanComptableTable extends PlanComptable
 }
 
 class CompteRow extends DataClass implements Insertable<CompteRow> {
-  /// Ex. '531' (Caisse), '701' (Ventes de Produits Avicoles).
+  /// Ex. '571' (Caisse), '702' (Ventes de produits finis).
   final String numeroCompte;
   final String libelle;
 
@@ -18317,16 +24147,25 @@ class $EcritureComptableTable extends EcritureComptable
   $EcritureComptableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
+  );
+  static const VerificationMeta _pieceIdMeta = const VerificationMeta(
+    'pieceId',
+  );
+  @override
+  late final GeneratedColumn<String> pieceId = GeneratedColumn<String>(
+    'piece_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _exerciceAnneeMeta = const VerificationMeta(
     'exerciceAnnee',
@@ -18469,9 +24308,67 @@ class $EcritureComptableTable extends EcritureComptable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _contrepasseDeMeta = const VerificationMeta(
+    'contrepasseDe',
+  );
+  @override
+  late final GeneratedColumn<String> contrepasseDe = GeneratedColumn<String>(
+    'contrepasse_de',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    pieceId,
     exerciceAnnee,
     numeroCompte,
     dateEcriture,
@@ -18484,6 +24381,11 @@ class $EcritureComptableTable extends EcritureComptable
     achatRef,
     axeAnalytique,
     isLocked,
+    contrepasseDe,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -18499,6 +24401,12 @@ class $EcritureComptableTable extends EcritureComptable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('piece_id')) {
+      context.handle(
+        _pieceIdMeta,
+        pieceId.isAcceptableOrUnknown(data['piece_id']!, _pieceIdMeta),
+      );
     }
     if (data.containsKey('exercice_annee')) {
       context.handle(
@@ -18598,6 +24506,39 @@ class $EcritureComptableTable extends EcritureComptable
         isLocked.isAcceptableOrUnknown(data['is_locked']!, _isLockedMeta),
       );
     }
+    if (data.containsKey('contrepasse_de')) {
+      context.handle(
+        _contrepasseDeMeta,
+        contrepasseDe.isAcceptableOrUnknown(
+          data['contrepasse_de']!,
+          _contrepasseDeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -18608,8 +24549,12 @@ class $EcritureComptableTable extends EcritureComptable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return EcritureRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
+      )!,
+      pieceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_id'],
       )!,
       exerciceAnnee: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -18659,6 +24604,26 @@ class $EcritureComptableTable extends EcritureComptable
         DriftSqlType.bool,
         data['${effectivePrefix}is_locked'],
       )!,
+      contrepasseDe: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contrepasse_de'],
+      ),
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -18669,7 +24634,15 @@ class $EcritureComptableTable extends EcritureComptable
 }
 
 class EcritureRow extends DataClass implements Insertable<EcritureRow> {
-  final int id;
+  /// UUID (DV-19) : une ligne d'écriture est un FAIT synchronisé, immuable une fois
+  /// transmis.
+  final String id;
+
+  /// UUID commun à toutes les lignes d'une **pièce** (partie double). La pièce est
+  /// l'unité de synchronisation : elle voyage entière, équilibrée ou refusée.
+  /// Le numéro de pièce, lui, n'est PAS unique (`REG-V-…` revient à chaque
+  /// règlement partiel d'une même vente).
+  final String pieceId;
   final int exerciceAnnee;
   final String numeroCompte;
   final DateTime dateEcriture;
@@ -18709,8 +24682,27 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
 
   /// Vrai si l'exercice parent est clôturé.
   final bool isLocked;
+
+  /// `piece_id` de la pièce que celle-ci **contrepasse** (annulation d'une pièce
+  /// déjà transmise : un fait synchronisé ne se modifie ni ne se supprime, il
+  /// s'annule par l'écriture inverse). `null` pour une pièce ordinaire.
+  final String? contrepasseDe;
+
+  /// D'où vient cette ligne : `null` = CE poste ; sinon l'identifiant du poste
+  /// qui l'a saisie. La ligne d'un autre poste compte au grand livre (le grand
+  /// livre de chaque poste est la somme de TOUS les faits) mais ne se modifie
+  /// jamais ici, et son arrivée n'a engendré AUCUNE écriture locale.
+  final String? origine;
+
+  /// `pending` · `synced` · `conflict` (refusée par le serveur, voir `syncMotif`).
+  final String syncStatus;
+  final String? syncMotif;
+
+  /// Instant de SAISIE de la pièce (UTC, ISO 8601, microsecondes).
+  final String updatedAt;
   const EcritureRow({
     required this.id,
+    required this.pieceId,
     required this.exerciceAnnee,
     required this.numeroCompte,
     required this.dateEcriture,
@@ -18723,11 +24715,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     this.achatRef,
     this.axeAnalytique,
     required this.isLocked,
+    this.contrepasseDe,
+    this.origine,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
+    map['piece_id'] = Variable<String>(pieceId);
     map['exercice_annee'] = Variable<int>(exerciceAnnee);
     map['numero_compte'] = Variable<String>(numeroCompte);
     map['date_ecriture'] = Variable<DateTime>(dateEcriture);
@@ -18748,12 +24746,24 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       map['axe_analytique'] = Variable<String>(axeAnalytique);
     }
     map['is_locked'] = Variable<bool>(isLocked);
+    if (!nullToAbsent || contrepasseDe != null) {
+      map['contrepasse_de'] = Variable<String>(contrepasseDe);
+    }
+    if (!nullToAbsent || origine != null) {
+      map['origine'] = Variable<String>(origine);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
   EcritureComptableCompanion toCompanion(bool nullToAbsent) {
     return EcritureComptableCompanion(
       id: Value(id),
+      pieceId: Value(pieceId),
       exerciceAnnee: Value(exerciceAnnee),
       numeroCompte: Value(numeroCompte),
       dateEcriture: Value(dateEcriture),
@@ -18774,6 +24784,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ? const Value.absent()
           : Value(axeAnalytique),
       isLocked: Value(isLocked),
+      contrepasseDe: contrepasseDe == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contrepasseDe),
+      origine: origine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(origine),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -18783,7 +24804,8 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return EcritureRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
+      pieceId: serializer.fromJson<String>(json['pieceId']),
       exerciceAnnee: serializer.fromJson<int>(json['exerciceAnnee']),
       numeroCompte: serializer.fromJson<String>(json['numeroCompte']),
       dateEcriture: serializer.fromJson<DateTime>(json['dateEcriture']),
@@ -18796,13 +24818,19 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       achatRef: serializer.fromJson<String?>(json['achatRef']),
       axeAnalytique: serializer.fromJson<String?>(json['axeAnalytique']),
       isLocked: serializer.fromJson<bool>(json['isLocked']),
+      contrepasseDe: serializer.fromJson<String?>(json['contrepasseDe']),
+      origine: serializer.fromJson<String?>(json['origine']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
+      'pieceId': serializer.toJson<String>(pieceId),
       'exerciceAnnee': serializer.toJson<int>(exerciceAnnee),
       'numeroCompte': serializer.toJson<String>(numeroCompte),
       'dateEcriture': serializer.toJson<DateTime>(dateEcriture),
@@ -18815,11 +24843,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
       'achatRef': serializer.toJson<String?>(achatRef),
       'axeAnalytique': serializer.toJson<String?>(axeAnalytique),
       'isLocked': serializer.toJson<bool>(isLocked),
+      'contrepasseDe': serializer.toJson<String?>(contrepasseDe),
+      'origine': serializer.toJson<String?>(origine),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   EcritureRow copyWith({
-    int? id,
+    String? id,
+    String? pieceId,
     int? exerciceAnnee,
     String? numeroCompte,
     DateTime? dateEcriture,
@@ -18832,8 +24866,14 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     Value<String?> achatRef = const Value.absent(),
     Value<String?> axeAnalytique = const Value.absent(),
     bool? isLocked,
+    Value<String?> contrepasseDe = const Value.absent(),
+    Value<String?> origine = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => EcritureRow(
     id: id ?? this.id,
+    pieceId: pieceId ?? this.pieceId,
     exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
     numeroCompte: numeroCompte ?? this.numeroCompte,
     dateEcriture: dateEcriture ?? this.dateEcriture,
@@ -18848,10 +24888,18 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
         ? axeAnalytique.value
         : this.axeAnalytique,
     isLocked: isLocked ?? this.isLocked,
+    contrepasseDe: contrepasseDe.present
+        ? contrepasseDe.value
+        : this.contrepasseDe,
+    origine: origine.present ? origine.value : this.origine,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   EcritureRow copyWithCompanion(EcritureComptableCompanion data) {
     return EcritureRow(
       id: data.id.present ? data.id.value : this.id,
+      pieceId: data.pieceId.present ? data.pieceId.value : this.pieceId,
       exerciceAnnee: data.exerciceAnnee.present
           ? data.exerciceAnnee.value
           : this.exerciceAnnee,
@@ -18876,6 +24924,15 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ? data.axeAnalytique.value
           : this.axeAnalytique,
       isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
+      contrepasseDe: data.contrepasseDe.present
+          ? data.contrepasseDe.value
+          : this.contrepasseDe,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -18883,6 +24940,7 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   String toString() {
     return (StringBuffer('EcritureRow(')
           ..write('id: $id, ')
+          ..write('pieceId: $pieceId, ')
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroCompte: $numeroCompte, ')
           ..write('dateEcriture: $dateEcriture, ')
@@ -18894,7 +24952,12 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           ..write('venteRef: $venteRef, ')
           ..write('achatRef: $achatRef, ')
           ..write('axeAnalytique: $axeAnalytique, ')
-          ..write('isLocked: $isLocked')
+          ..write('isLocked: $isLocked, ')
+          ..write('contrepasseDe: $contrepasseDe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -18902,6 +24965,7 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
   @override
   int get hashCode => Object.hash(
     id,
+    pieceId,
     exerciceAnnee,
     numeroCompte,
     dateEcriture,
@@ -18914,12 +24978,18 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
     achatRef,
     axeAnalytique,
     isLocked,
+    contrepasseDe,
+    origine,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is EcritureRow &&
           other.id == this.id &&
+          other.pieceId == this.pieceId &&
           other.exerciceAnnee == this.exerciceAnnee &&
           other.numeroCompte == this.numeroCompte &&
           other.dateEcriture == this.dateEcriture &&
@@ -18931,11 +25001,17 @@ class EcritureRow extends DataClass implements Insertable<EcritureRow> {
           other.venteRef == this.venteRef &&
           other.achatRef == this.achatRef &&
           other.axeAnalytique == this.axeAnalytique &&
-          other.isLocked == this.isLocked);
+          other.isLocked == this.isLocked &&
+          other.contrepasseDe == this.contrepasseDe &&
+          other.origine == this.origine &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
-  final Value<int> id;
+  final Value<String> id;
+  final Value<String> pieceId;
   final Value<int> exerciceAnnee;
   final Value<String> numeroCompte;
   final Value<DateTime> dateEcriture;
@@ -18948,8 +25024,15 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   final Value<String?> achatRef;
   final Value<String?> axeAnalytique;
   final Value<bool> isLocked;
+  final Value<String?> contrepasseDe;
+  final Value<String?> origine;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const EcritureComptableCompanion({
     this.id = const Value.absent(),
+    this.pieceId = const Value.absent(),
     this.exerciceAnnee = const Value.absent(),
     this.numeroCompte = const Value.absent(),
     this.dateEcriture = const Value.absent(),
@@ -18962,9 +25045,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     this.achatRef = const Value.absent(),
     this.axeAnalytique = const Value.absent(),
     this.isLocked = const Value.absent(),
+    this.contrepasseDe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   EcritureComptableCompanion.insert({
     this.id = const Value.absent(),
+    this.pieceId = const Value.absent(),
     required int exerciceAnnee,
     required String numeroCompte,
     required DateTime dateEcriture,
@@ -18977,12 +25067,19 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     this.achatRef = const Value.absent(),
     this.axeAnalytique = const Value.absent(),
     this.isLocked = const Value.absent(),
+    this.contrepasseDe = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : exerciceAnnee = Value(exerciceAnnee),
        numeroCompte = Value(numeroCompte),
        dateEcriture = Value(dateEcriture),
        libelle = Value(libelle);
   static Insertable<EcritureRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
+    Expression<String>? pieceId,
     Expression<int>? exerciceAnnee,
     Expression<String>? numeroCompte,
     Expression<DateTime>? dateEcriture,
@@ -18995,9 +25092,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     Expression<String>? achatRef,
     Expression<String>? axeAnalytique,
     Expression<bool>? isLocked,
+    Expression<String>? contrepasseDe,
+    Expression<String>? origine,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (pieceId != null) 'piece_id': pieceId,
       if (exerciceAnnee != null) 'exercice_annee': exerciceAnnee,
       if (numeroCompte != null) 'numero_compte': numeroCompte,
       if (dateEcriture != null) 'date_ecriture': dateEcriture,
@@ -19010,11 +25114,18 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
       if (achatRef != null) 'achat_ref': achatRef,
       if (axeAnalytique != null) 'axe_analytique': axeAnalytique,
       if (isLocked != null) 'is_locked': isLocked,
+      if (contrepasseDe != null) 'contrepasse_de': contrepasseDe,
+      if (origine != null) 'origine': origine,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   EcritureComptableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
+    Value<String>? pieceId,
     Value<int>? exerciceAnnee,
     Value<String>? numeroCompte,
     Value<DateTime>? dateEcriture,
@@ -19027,9 +25138,16 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     Value<String?>? achatRef,
     Value<String?>? axeAnalytique,
     Value<bool>? isLocked,
+    Value<String?>? contrepasseDe,
+    Value<String?>? origine,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return EcritureComptableCompanion(
       id: id ?? this.id,
+      pieceId: pieceId ?? this.pieceId,
       exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
       numeroCompte: numeroCompte ?? this.numeroCompte,
       dateEcriture: dateEcriture ?? this.dateEcriture,
@@ -19042,6 +25160,12 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
       achatRef: achatRef ?? this.achatRef,
       axeAnalytique: axeAnalytique ?? this.axeAnalytique,
       isLocked: isLocked ?? this.isLocked,
+      contrepasseDe: contrepasseDe ?? this.contrepasseDe,
+      origine: origine ?? this.origine,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -19049,7 +25173,10 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
+    }
+    if (pieceId.present) {
+      map['piece_id'] = Variable<String>(pieceId.value);
     }
     if (exerciceAnnee.present) {
       map['exercice_annee'] = Variable<int>(exerciceAnnee.value);
@@ -19087,6 +25214,24 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
     if (isLocked.present) {
       map['is_locked'] = Variable<bool>(isLocked.value);
     }
+    if (contrepasseDe.present) {
+      map['contrepasse_de'] = Variable<String>(contrepasseDe.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -19094,6 +25239,7 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
   String toString() {
     return (StringBuffer('EcritureComptableCompanion(')
           ..write('id: $id, ')
+          ..write('pieceId: $pieceId, ')
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroCompte: $numeroCompte, ')
           ..write('dateEcriture: $dateEcriture, ')
@@ -19105,7 +25251,13 @@ class EcritureComptableCompanion extends UpdateCompanion<EcritureRow> {
           ..write('venteRef: $venteRef, ')
           ..write('achatRef: $achatRef, ')
           ..write('axeAnalytique: $axeAnalytique, ')
-          ..write('isLocked: $isLocked')
+          ..write('isLocked: $isLocked, ')
+          ..write('contrepasseDe: $contrepasseDe, ')
+          ..write('origine: $origine, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -19119,16 +25271,13 @@ class $NotesAnnexesTable extends NotesAnnexes
   $NotesAnnexesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    clientDefault: nouvelUuid,
   );
   static const VerificationMeta _exerciceAnneeMeta = const VerificationMeta(
     'exerciceAnnee',
@@ -19175,6 +25324,41 @@ class $NotesAnnexesTable extends NotesAnnexes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -19182,6 +25366,9 @@ class $NotesAnnexesTable extends NotesAnnexes
     numeroNote,
     titre,
     contenu,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -19233,6 +25420,24 @@ class $NotesAnnexesTable extends NotesAnnexes
     } else if (isInserting) {
       context.missing(_contenuMeta);
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -19247,7 +25452,7 @@ class $NotesAnnexesTable extends NotesAnnexes
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return NoteAnnexeRow(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       exerciceAnnee: attachedDatabase.typeMapping.read(
@@ -19266,6 +25471,18 @@ class $NotesAnnexesTable extends NotesAnnexes
         DriftSqlType.string,
         data['${effectivePrefix}contenu'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -19276,28 +25493,42 @@ class $NotesAnnexesTable extends NotesAnnexes
 }
 
 class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
-  final int id;
+  /// UUID **déterministe** de (exercice, numéro) : deux postes qui rédigent la
+  /// note 1 de 2026 la désignent par le même identifiant (« dernier écrivain
+  /// gagne »), sans doublon.
+  final String id;
   final int exerciceAnnee;
 
   /// 1 à 5 — voir Doc F6 §4 Onglet 4 pour le contenu attendu de chacune.
   final int numeroNote;
   final String titre;
   final String contenu;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const NoteAnnexeRow({
     required this.id,
     required this.exerciceAnnee,
     required this.numeroNote,
     required this.titre,
     required this.contenu,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['exercice_annee'] = Variable<int>(exerciceAnnee);
     map['numero_note'] = Variable<int>(numeroNote);
     map['titre'] = Variable<String>(titre);
     map['contenu'] = Variable<String>(contenu);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -19308,6 +25539,11 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
       numeroNote: Value(numeroNote),
       titre: Value(titre),
       contenu: Value(contenu),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -19317,37 +25553,49 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return NoteAnnexeRow(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       exerciceAnnee: serializer.fromJson<int>(json['exerciceAnnee']),
       numeroNote: serializer.fromJson<int>(json['numeroNote']),
       titre: serializer.fromJson<String>(json['titre']),
       contenu: serializer.fromJson<String>(json['contenu']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'exerciceAnnee': serializer.toJson<int>(exerciceAnnee),
       'numeroNote': serializer.toJson<int>(numeroNote),
       'titre': serializer.toJson<String>(titre),
       'contenu': serializer.toJson<String>(contenu),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   NoteAnnexeRow copyWith({
-    int? id,
+    String? id,
     int? exerciceAnnee,
     int? numeroNote,
     String? titre,
     String? contenu,
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => NoteAnnexeRow(
     id: id ?? this.id,
     exerciceAnnee: exerciceAnnee ?? this.exerciceAnnee,
     numeroNote: numeroNote ?? this.numeroNote,
     titre: titre ?? this.titre,
     contenu: contenu ?? this.contenu,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   NoteAnnexeRow copyWithCompanion(NotesAnnexesCompanion data) {
     return NoteAnnexeRow(
@@ -19360,6 +25608,11 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           : this.numeroNote,
       titre: data.titre.present ? data.titre.value : this.titre,
       contenu: data.contenu.present ? data.contenu.value : this.contenu,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -19370,14 +25623,25 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroNote: $numeroNote, ')
           ..write('titre: $titre, ')
-          ..write('contenu: $contenu')
+          ..write('contenu: $contenu, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, exerciceAnnee, numeroNote, titre, contenu);
+  int get hashCode => Object.hash(
+    id,
+    exerciceAnnee,
+    numeroNote,
+    titre,
+    contenu,
+    syncStatus,
+    syncMotif,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -19386,21 +25650,32 @@ class NoteAnnexeRow extends DataClass implements Insertable<NoteAnnexeRow> {
           other.exerciceAnnee == this.exerciceAnnee &&
           other.numeroNote == this.numeroNote &&
           other.titre == this.titre &&
-          other.contenu == this.contenu);
+          other.contenu == this.contenu &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<int> exerciceAnnee;
   final Value<int> numeroNote;
   final Value<String> titre;
   final Value<String> contenu;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
   const NotesAnnexesCompanion({
     this.id = const Value.absent(),
     this.exerciceAnnee = const Value.absent(),
     this.numeroNote = const Value.absent(),
     this.titre = const Value.absent(),
     this.contenu = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   NotesAnnexesCompanion.insert({
     this.id = const Value.absent(),
@@ -19408,16 +25683,24 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
     required int numeroNote,
     required String titre,
     required String contenu,
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : exerciceAnnee = Value(exerciceAnnee),
        numeroNote = Value(numeroNote),
        titre = Value(titre),
        contenu = Value(contenu);
   static Insertable<NoteAnnexeRow> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<int>? exerciceAnnee,
     Expression<int>? numeroNote,
     Expression<String>? titre,
     Expression<String>? contenu,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -19425,15 +25708,23 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
       if (numeroNote != null) 'numero_note': numeroNote,
       if (titre != null) 'titre': titre,
       if (contenu != null) 'contenu': contenu,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   NotesAnnexesCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<int>? exerciceAnnee,
     Value<int>? numeroNote,
     Value<String>? titre,
     Value<String>? contenu,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
   }) {
     return NotesAnnexesCompanion(
       id: id ?? this.id,
@@ -19441,6 +25732,10 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
       numeroNote: numeroNote ?? this.numeroNote,
       titre: titre ?? this.titre,
       contenu: contenu ?? this.contenu,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -19448,7 +25743,7 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (exerciceAnnee.present) {
       map['exercice_annee'] = Variable<int>(exerciceAnnee.value);
@@ -19462,6 +25757,18 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
     if (contenu.present) {
       map['contenu'] = Variable<String>(contenu.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -19472,7 +25779,11 @@ class NotesAnnexesCompanion extends UpdateCompanion<NoteAnnexeRow> {
           ..write('exerciceAnnee: $exerciceAnnee, ')
           ..write('numeroNote: $numeroNote, ')
           ..write('titre: $titre, ')
-          ..write('contenu: $contenu')
+          ..write('contenu: $contenu, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -19539,6 +25850,41 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _syncMotifMeta = const VerificationMeta(
+    'syncMotif',
+  );
+  @override
+  late final GeneratedColumn<String> syncMotif = GeneratedColumn<String>(
+    'sync_motif',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: instantSaisie,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     annee,
@@ -19546,6 +25892,9 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
     isCloture,
     dateCloture,
     declotureParUtilisateurId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -19599,6 +25948,24 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         ),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('sync_motif')) {
+      context.handle(
+        _syncMotifMeta,
+        syncMotif.isAcceptableOrUnknown(data['sync_motif']!, _syncMotifMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -19628,6 +25995,18 @@ class $CloturesPeriodiquesTable extends CloturesPeriodiques
         DriftSqlType.string,
         data['${effectivePrefix}decloture_par_utilisateur_id'],
       ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      syncMotif: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_motif'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -19647,12 +26026,18 @@ class CloturePeriodiqueRow extends DataClass
   /// Traçabilité du déblocage exceptionnel (BR-ADM-003), rôle `admin`
   /// uniquement.
   final String? declotureParUtilisateurId;
+  final String syncStatus;
+  final String? syncMotif;
+  final String updatedAt;
   const CloturePeriodiqueRow({
     required this.annee,
     required this.mois,
     required this.isCloture,
     this.dateCloture,
     this.declotureParUtilisateurId,
+    required this.syncStatus,
+    this.syncMotif,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -19668,6 +26053,11 @@ class CloturePeriodiqueRow extends DataClass
         declotureParUtilisateurId,
       );
     }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || syncMotif != null) {
+      map['sync_motif'] = Variable<String>(syncMotif);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -19683,6 +26073,11 @@ class CloturePeriodiqueRow extends DataClass
           declotureParUtilisateurId == null && nullToAbsent
           ? const Value.absent()
           : Value(declotureParUtilisateurId),
+      syncStatus: Value(syncStatus),
+      syncMotif: syncMotif == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncMotif),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -19699,6 +26094,9 @@ class CloturePeriodiqueRow extends DataClass
       declotureParUtilisateurId: serializer.fromJson<String?>(
         json['declotureParUtilisateurId'],
       ),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      syncMotif: serializer.fromJson<String?>(json['syncMotif']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -19712,6 +26110,9 @@ class CloturePeriodiqueRow extends DataClass
       'declotureParUtilisateurId': serializer.toJson<String?>(
         declotureParUtilisateurId,
       ),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'syncMotif': serializer.toJson<String?>(syncMotif),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -19721,6 +26122,9 @@ class CloturePeriodiqueRow extends DataClass
     bool? isCloture,
     Value<DateTime?> dateCloture = const Value.absent(),
     Value<String?> declotureParUtilisateurId = const Value.absent(),
+    String? syncStatus,
+    Value<String?> syncMotif = const Value.absent(),
+    String? updatedAt,
   }) => CloturePeriodiqueRow(
     annee: annee ?? this.annee,
     mois: mois ?? this.mois,
@@ -19729,6 +26133,9 @@ class CloturePeriodiqueRow extends DataClass
     declotureParUtilisateurId: declotureParUtilisateurId.present
         ? declotureParUtilisateurId.value
         : this.declotureParUtilisateurId,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncMotif: syncMotif.present ? syncMotif.value : this.syncMotif,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   CloturePeriodiqueRow copyWithCompanion(CloturesPeriodiquesCompanion data) {
     return CloturePeriodiqueRow(
@@ -19741,6 +26148,11 @@ class CloturePeriodiqueRow extends DataClass
       declotureParUtilisateurId: data.declotureParUtilisateurId.present
           ? data.declotureParUtilisateurId.value
           : this.declotureParUtilisateurId,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncMotif: data.syncMotif.present ? data.syncMotif.value : this.syncMotif,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -19751,7 +26163,10 @@ class CloturePeriodiqueRow extends DataClass
           ..write('mois: $mois, ')
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
-          ..write('declotureParUtilisateurId: $declotureParUtilisateurId')
+          ..write('declotureParUtilisateurId: $declotureParUtilisateurId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -19763,6 +26178,9 @@ class CloturePeriodiqueRow extends DataClass
     isCloture,
     dateCloture,
     declotureParUtilisateurId,
+    syncStatus,
+    syncMotif,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -19772,7 +26190,10 @@ class CloturePeriodiqueRow extends DataClass
           other.mois == this.mois &&
           other.isCloture == this.isCloture &&
           other.dateCloture == this.dateCloture &&
-          other.declotureParUtilisateurId == this.declotureParUtilisateurId);
+          other.declotureParUtilisateurId == this.declotureParUtilisateurId &&
+          other.syncStatus == this.syncStatus &&
+          other.syncMotif == this.syncMotif &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CloturesPeriodiquesCompanion
@@ -19782,6 +26203,9 @@ class CloturesPeriodiquesCompanion
   final Value<bool> isCloture;
   final Value<DateTime?> dateCloture;
   final Value<String?> declotureParUtilisateurId;
+  final Value<String> syncStatus;
+  final Value<String?> syncMotif;
+  final Value<String> updatedAt;
   final Value<int> rowid;
   const CloturesPeriodiquesCompanion({
     this.annee = const Value.absent(),
@@ -19789,6 +26213,9 @@ class CloturesPeriodiquesCompanion
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.declotureParUtilisateurId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CloturesPeriodiquesCompanion.insert({
@@ -19797,6 +26224,9 @@ class CloturesPeriodiquesCompanion
     this.isCloture = const Value.absent(),
     this.dateCloture = const Value.absent(),
     this.declotureParUtilisateurId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncMotif = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : annee = Value(annee),
        mois = Value(mois);
@@ -19806,6 +26236,9 @@ class CloturesPeriodiquesCompanion
     Expression<bool>? isCloture,
     Expression<DateTime>? dateCloture,
     Expression<String>? declotureParUtilisateurId,
+    Expression<String>? syncStatus,
+    Expression<String>? syncMotif,
+    Expression<String>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -19815,6 +26248,9 @@ class CloturesPeriodiquesCompanion
       if (dateCloture != null) 'date_cloture': dateCloture,
       if (declotureParUtilisateurId != null)
         'decloture_par_utilisateur_id': declotureParUtilisateurId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncMotif != null) 'sync_motif': syncMotif,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -19825,6 +26261,9 @@ class CloturesPeriodiquesCompanion
     Value<bool>? isCloture,
     Value<DateTime?>? dateCloture,
     Value<String?>? declotureParUtilisateurId,
+    Value<String>? syncStatus,
+    Value<String?>? syncMotif,
+    Value<String>? updatedAt,
     Value<int>? rowid,
   }) {
     return CloturesPeriodiquesCompanion(
@@ -19834,6 +26273,9 @@ class CloturesPeriodiquesCompanion
       dateCloture: dateCloture ?? this.dateCloture,
       declotureParUtilisateurId:
           declotureParUtilisateurId ?? this.declotureParUtilisateurId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncMotif: syncMotif ?? this.syncMotif,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -19858,6 +26300,15 @@ class CloturesPeriodiquesCompanion
         declotureParUtilisateurId.value,
       );
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (syncMotif.present) {
+      map['sync_motif'] = Variable<String>(syncMotif.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -19872,6 +26323,9 @@ class CloturesPeriodiquesCompanion
           ..write('isCloture: $isCloture, ')
           ..write('dateCloture: $dateCloture, ')
           ..write('declotureParUtilisateurId: $declotureParUtilisateurId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncMotif: $syncMotif, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -19898,8 +26352,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $CorbeilleTable corbeille = $CorbeilleTable(this);
+  late final $DemandesReferentielTable demandesReferentiel =
+      $DemandesReferentielTable(this);
+  late final $EffetsAppliquesTable effetsAppliques = $EffetsAppliquesTable(
+    this,
+  );
   late final $ProduitsVendablesTable produitsVendables =
       $ProduitsVendablesTable(this);
+  late final $MouvementsProduitTable mouvementsProduit =
+      $MouvementsProduitTable(this);
   late final $ClientsTable clients = $ClientsTable(this);
   late final $VentesTable ventes = $VentesTable(this);
   late final $LignesVenteTable lignesVente = $LignesVenteTable(this);
@@ -19928,6 +26389,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BaremesRationTable baremesRation = $BaremesRationTable(this);
   late final $CalendrierProphylaxieTable calendrierProphylaxie =
       $CalendrierProphylaxieTable(this);
+  late final $TauxRationPoidsTable tauxRationPoids = $TauxRationPoidsTable(
+    this,
+  );
   late final $ExerciceComptableTable exerciceComptable =
       $ExerciceComptableTable(this);
   late final $PlanComptableTable planComptable = $PlanComptableTable(this);
@@ -19951,7 +26415,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     messagesEditeur,
     preferencesPoste,
     corbeille,
+    demandesReferentiel,
+    effetsAppliques,
     produitsVendables,
+    mouvementsProduit,
     clients,
     ventes,
     lignesVente,
@@ -19973,6 +26440,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bandes,
     baremesRation,
     calendrierProphylaxie,
+    tauxRationPoids,
     exerciceComptable,
     planComptable,
     ecritureComptable,
@@ -21576,6 +28044,8 @@ typedef $$ParametresEntrepriseTableCreateCompanionBuilder =
       Value<String> prefixeCage,
       Value<String> prefixeBande,
       Value<String> prefixeBassin,
+      Value<String> prefixeBac,
+      Value<String> prefixeParc,
     });
 typedef $$ParametresEntrepriseTableUpdateCompanionBuilder =
     ParametresEntrepriseCompanion Function({
@@ -21601,6 +28071,8 @@ typedef $$ParametresEntrepriseTableUpdateCompanionBuilder =
       Value<String> prefixeCage,
       Value<String> prefixeBande,
       Value<String> prefixeBassin,
+      Value<String> prefixeBac,
+      Value<String> prefixeParc,
     });
 
 class $$ParametresEntrepriseTableFilterComposer
@@ -21719,6 +28191,16 @@ class $$ParametresEntrepriseTableFilterComposer
 
   ColumnFilters<String> get prefixeBassin => $composableBuilder(
     column: $table.prefixeBassin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -21841,6 +28323,16 @@ class $$ParametresEntrepriseTableOrderingComposer
     column: $table.prefixeBassin,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ParametresEntrepriseTableAnnotationComposer
@@ -21945,6 +28437,16 @@ class $$ParametresEntrepriseTableAnnotationComposer
     column: $table.prefixeBassin,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get prefixeBac => $composableBuilder(
+    column: $table.prefixeBac,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get prefixeParc => $composableBuilder(
+    column: $table.prefixeParc,
+    builder: (column) => column,
+  );
 }
 
 class $$ParametresEntrepriseTableTableManager
@@ -22012,6 +28514,8 @@ class $$ParametresEntrepriseTableTableManager
                 Value<String> prefixeCage = const Value.absent(),
                 Value<String> prefixeBande = const Value.absent(),
                 Value<String> prefixeBassin = const Value.absent(),
+                Value<String> prefixeBac = const Value.absent(),
+                Value<String> prefixeParc = const Value.absent(),
               }) => ParametresEntrepriseCompanion(
                 id: id,
                 raisonSociale: raisonSociale,
@@ -22035,6 +28539,8 @@ class $$ParametresEntrepriseTableTableManager
                 prefixeCage: prefixeCage,
                 prefixeBande: prefixeBande,
                 prefixeBassin: prefixeBassin,
+                prefixeBac: prefixeBac,
+                prefixeParc: prefixeParc,
               ),
           createCompanionCallback:
               ({
@@ -22060,6 +28566,8 @@ class $$ParametresEntrepriseTableTableManager
                 Value<String> prefixeCage = const Value.absent(),
                 Value<String> prefixeBande = const Value.absent(),
                 Value<String> prefixeBassin = const Value.absent(),
+                Value<String> prefixeBac = const Value.absent(),
+                Value<String> prefixeParc = const Value.absent(),
               }) => ParametresEntrepriseCompanion.insert(
                 id: id,
                 raisonSociale: raisonSociale,
@@ -22083,6 +28591,8 @@ class $$ParametresEntrepriseTableTableManager
                 prefixeCage: prefixeCage,
                 prefixeBande: prefixeBande,
                 prefixeBassin: prefixeBassin,
+                prefixeBac: prefixeBac,
+                prefixeParc: prefixeParc,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -22115,7 +28625,7 @@ typedef $$ParametresEntrepriseTableProcessedTableManager =
     >;
 typedef $$MessagesEditeurTableCreateCompanionBuilder =
     MessagesEditeurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required DateTime horodatage,
       required String type,
       required String sujet,
@@ -22123,10 +28633,15 @@ typedef $$MessagesEditeurTableCreateCompanionBuilder =
       Value<String?> etapes,
       required String utilisateurId,
       Value<String> statut,
+      Value<String?> auteurNom,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$MessagesEditeurTableUpdateCompanionBuilder =
     MessagesEditeurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<DateTime> horodatage,
       Value<String> type,
       Value<String> sujet,
@@ -22134,6 +28649,11 @@ typedef $$MessagesEditeurTableUpdateCompanionBuilder =
       Value<String?> etapes,
       Value<String> utilisateurId,
       Value<String> statut,
+      Value<String?> auteurNom,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$MessagesEditeurTableFilterComposer
@@ -22145,7 +28665,7 @@ class $$MessagesEditeurTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -22184,6 +28704,26 @@ class $$MessagesEditeurTableFilterComposer
     column: $table.statut,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get auteurNom => $composableBuilder(
+    column: $table.auteurNom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$MessagesEditeurTableOrderingComposer
@@ -22195,7 +28735,7 @@ class $$MessagesEditeurTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -22234,6 +28774,26 @@ class $$MessagesEditeurTableOrderingComposer
     column: $table.statut,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get auteurNom => $composableBuilder(
+    column: $table.auteurNom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MessagesEditeurTableAnnotationComposer
@@ -22245,7 +28805,7 @@ class $$MessagesEditeurTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get horodatage => $composableBuilder(
@@ -22272,6 +28832,20 @@ class $$MessagesEditeurTableAnnotationComposer
 
   GeneratedColumn<String> get statut =>
       $composableBuilder(column: $table.statut, builder: (column) => column);
+
+  GeneratedColumn<String> get auteurNom =>
+      $composableBuilder(column: $table.auteurNom, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$MessagesEditeurTableTableManager
@@ -22311,7 +28885,7 @@ class $$MessagesEditeurTableTableManager
               $$MessagesEditeurTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<DateTime> horodatage = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String> sujet = const Value.absent(),
@@ -22319,6 +28893,11 @@ class $$MessagesEditeurTableTableManager
                 Value<String?> etapes = const Value.absent(),
                 Value<String> utilisateurId = const Value.absent(),
                 Value<String> statut = const Value.absent(),
+                Value<String?> auteurNom = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MessagesEditeurCompanion(
                 id: id,
                 horodatage: horodatage,
@@ -22328,10 +28907,15 @@ class $$MessagesEditeurTableTableManager
                 etapes: etapes,
                 utilisateurId: utilisateurId,
                 statut: statut,
+                auteurNom: auteurNom,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required DateTime horodatage,
                 required String type,
                 required String sujet,
@@ -22339,6 +28923,11 @@ class $$MessagesEditeurTableTableManager
                 Value<String?> etapes = const Value.absent(),
                 required String utilisateurId,
                 Value<String> statut = const Value.absent(),
+                Value<String?> auteurNom = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MessagesEditeurCompanion.insert(
                 id: id,
                 horodatage: horodatage,
@@ -22348,6 +28937,11 @@ class $$MessagesEditeurTableTableManager
                 etapes: etapes,
                 utilisateurId: utilisateurId,
                 statut: statut,
+                auteurNom: auteurNom,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -22807,9 +29401,610 @@ typedef $$CorbeilleTableProcessedTableManager =
       ElementArchiveRow,
       PrefetchHooks Function()
     >;
+typedef $$DemandesReferentielTableCreateCompanionBuilder =
+    DemandesReferentielCompanion Function({
+      Value<String> id,
+      required String type,
+      required String cle,
+      required String donnees,
+      Value<String> saisiLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$DemandesReferentielTableUpdateCompanionBuilder =
+    DemandesReferentielCompanion Function({
+      Value<String> id,
+      Value<String> type,
+      Value<String> cle,
+      Value<String> donnees,
+      Value<String> saisiLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+class $$DemandesReferentielTableFilterComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cle => $composableBuilder(
+    column: $table.cle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get donnees => $composableBuilder(
+    column: $table.donnees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get saisiLe => $composableBuilder(
+    column: $table.saisiLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DemandesReferentielTableOrderingComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cle => $composableBuilder(
+    column: $table.cle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get donnees => $composableBuilder(
+    column: $table.donnees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get saisiLe => $composableBuilder(
+    column: $table.saisiLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DemandesReferentielTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DemandesReferentielTable> {
+  $$DemandesReferentielTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get cle =>
+      $composableBuilder(column: $table.cle, builder: (column) => column);
+
+  GeneratedColumn<String> get donnees =>
+      $composableBuilder(column: $table.donnees, builder: (column) => column);
+
+  GeneratedColumn<String> get saisiLe =>
+      $composableBuilder(column: $table.saisiLe, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+}
+
+class $$DemandesReferentielTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DemandesReferentielTable,
+          DemandeReferentielRow,
+          $$DemandesReferentielTableFilterComposer,
+          $$DemandesReferentielTableOrderingComposer,
+          $$DemandesReferentielTableAnnotationComposer,
+          $$DemandesReferentielTableCreateCompanionBuilder,
+          $$DemandesReferentielTableUpdateCompanionBuilder,
+          (
+            DemandeReferentielRow,
+            BaseReferences<
+              _$AppDatabase,
+              $DemandesReferentielTable,
+              DemandeReferentielRow
+            >,
+          ),
+          DemandeReferentielRow,
+          PrefetchHooks Function()
+        > {
+  $$DemandesReferentielTableTableManager(
+    _$AppDatabase db,
+    $DemandesReferentielTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DemandesReferentielTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DemandesReferentielTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$DemandesReferentielTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> cle = const Value.absent(),
+                Value<String> donnees = const Value.absent(),
+                Value<String> saisiLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemandesReferentielCompanion(
+                id: id,
+                type: type,
+                cle: cle,
+                donnees: donnees,
+                saisiLe: saisiLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String type,
+                required String cle,
+                required String donnees,
+                Value<String> saisiLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DemandesReferentielCompanion.insert(
+                id: id,
+                type: type,
+                cle: cle,
+                donnees: donnees,
+                saisiLe: saisiLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DemandesReferentielTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DemandesReferentielTable,
+      DemandeReferentielRow,
+      $$DemandesReferentielTableFilterComposer,
+      $$DemandesReferentielTableOrderingComposer,
+      $$DemandesReferentielTableAnnotationComposer,
+      $$DemandesReferentielTableCreateCompanionBuilder,
+      $$DemandesReferentielTableUpdateCompanionBuilder,
+      (
+        DemandeReferentielRow,
+        BaseReferences<
+          _$AppDatabase,
+          $DemandesReferentielTable,
+          DemandeReferentielRow
+        >,
+      ),
+      DemandeReferentielRow,
+      PrefetchHooks Function()
+    >;
+typedef $$EffetsAppliquesTableCreateCompanionBuilder =
+    EffetsAppliquesCompanion Function({
+      required String id,
+      required String faitType,
+      required String faitId,
+      required String nature,
+      Value<String?> reference,
+      required String libelle,
+      required String etat,
+      Value<String?> avertissement,
+      Value<String> appliqueLe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$EffetsAppliquesTableUpdateCompanionBuilder =
+    EffetsAppliquesCompanion Function({
+      Value<String> id,
+      Value<String> faitType,
+      Value<String> faitId,
+      Value<String> nature,
+      Value<String?> reference,
+      Value<String> libelle,
+      Value<String> etat,
+      Value<String?> avertissement,
+      Value<String> appliqueLe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+class $$EffetsAppliquesTableFilterComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get faitType => $composableBuilder(
+    column: $table.faitType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get faitId => $composableBuilder(
+    column: $table.faitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nature => $composableBuilder(
+    column: $table.nature,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get libelle => $composableBuilder(
+    column: $table.libelle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etat => $composableBuilder(
+    column: $table.etat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EffetsAppliquesTableOrderingComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get faitType => $composableBuilder(
+    column: $table.faitType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get faitId => $composableBuilder(
+    column: $table.faitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nature => $composableBuilder(
+    column: $table.nature,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get libelle => $composableBuilder(
+    column: $table.libelle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etat => $composableBuilder(
+    column: $table.etat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EffetsAppliquesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EffetsAppliquesTable> {
+  $$EffetsAppliquesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get faitType =>
+      $composableBuilder(column: $table.faitType, builder: (column) => column);
+
+  GeneratedColumn<String> get faitId =>
+      $composableBuilder(column: $table.faitId, builder: (column) => column);
+
+  GeneratedColumn<String> get nature =>
+      $composableBuilder(column: $table.nature, builder: (column) => column);
+
+  GeneratedColumn<String> get reference =>
+      $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get libelle =>
+      $composableBuilder(column: $table.libelle, builder: (column) => column);
+
+  GeneratedColumn<String> get etat =>
+      $composableBuilder(column: $table.etat, builder: (column) => column);
+
+  GeneratedColumn<String> get avertissement => $composableBuilder(
+    column: $table.avertissement,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get appliqueLe => $composableBuilder(
+    column: $table.appliqueLe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+}
+
+class $$EffetsAppliquesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EffetsAppliquesTable,
+          EffetAppliqueRow,
+          $$EffetsAppliquesTableFilterComposer,
+          $$EffetsAppliquesTableOrderingComposer,
+          $$EffetsAppliquesTableAnnotationComposer,
+          $$EffetsAppliquesTableCreateCompanionBuilder,
+          $$EffetsAppliquesTableUpdateCompanionBuilder,
+          (
+            EffetAppliqueRow,
+            BaseReferences<
+              _$AppDatabase,
+              $EffetsAppliquesTable,
+              EffetAppliqueRow
+            >,
+          ),
+          EffetAppliqueRow,
+          PrefetchHooks Function()
+        > {
+  $$EffetsAppliquesTableTableManager(
+    _$AppDatabase db,
+    $EffetsAppliquesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EffetsAppliquesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EffetsAppliquesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EffetsAppliquesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> faitType = const Value.absent(),
+                Value<String> faitId = const Value.absent(),
+                Value<String> nature = const Value.absent(),
+                Value<String?> reference = const Value.absent(),
+                Value<String> libelle = const Value.absent(),
+                Value<String> etat = const Value.absent(),
+                Value<String?> avertissement = const Value.absent(),
+                Value<String> appliqueLe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EffetsAppliquesCompanion(
+                id: id,
+                faitType: faitType,
+                faitId: faitId,
+                nature: nature,
+                reference: reference,
+                libelle: libelle,
+                etat: etat,
+                avertissement: avertissement,
+                appliqueLe: appliqueLe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String faitType,
+                required String faitId,
+                required String nature,
+                Value<String?> reference = const Value.absent(),
+                required String libelle,
+                required String etat,
+                Value<String?> avertissement = const Value.absent(),
+                Value<String> appliqueLe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EffetsAppliquesCompanion.insert(
+                id: id,
+                faitType: faitType,
+                faitId: faitId,
+                nature: nature,
+                reference: reference,
+                libelle: libelle,
+                etat: etat,
+                avertissement: avertissement,
+                appliqueLe: appliqueLe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EffetsAppliquesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EffetsAppliquesTable,
+      EffetAppliqueRow,
+      $$EffetsAppliquesTableFilterComposer,
+      $$EffetsAppliquesTableOrderingComposer,
+      $$EffetsAppliquesTableAnnotationComposer,
+      $$EffetsAppliquesTableCreateCompanionBuilder,
+      $$EffetsAppliquesTableUpdateCompanionBuilder,
+      (
+        EffetAppliqueRow,
+        BaseReferences<_$AppDatabase, $EffetsAppliquesTable, EffetAppliqueRow>,
+      ),
+      EffetAppliqueRow,
+      PrefetchHooks Function()
+    >;
 typedef $$ProduitsVendablesTableCreateCompanionBuilder =
     ProduitsVendablesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String?> sku,
       required String name,
       required String cat,
@@ -22822,10 +30017,11 @@ typedef $$ProduitsVendablesTableCreateCompanionBuilder =
       required int stock,
       required int threshold,
       Value<String?> espece,
+      Value<int> rowid,
     });
 typedef $$ProduitsVendablesTableUpdateCompanionBuilder =
     ProduitsVendablesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String?> sku,
       Value<String> name,
       Value<String> cat,
@@ -22838,6 +30034,7 @@ typedef $$ProduitsVendablesTableUpdateCompanionBuilder =
       Value<int> stock,
       Value<int> threshold,
       Value<String?> espece,
+      Value<int> rowid,
     });
 
 final class $$ProduitsVendablesTableReferences
@@ -22853,6 +30050,27 @@ final class $$ProduitsVendablesTableReferences
     super.$_typedResult,
   );
 
+  static MultiTypedResultKey<$MouvementsProduitTable, List<MouvementProduitRow>>
+  _mouvementsProduitRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.mouvementsProduit,
+        aliasName: 'produits_vendables__id__mouvements_produit__produit_id',
+      );
+
+  $$MouvementsProduitTableProcessedTableManager get mouvementsProduitRefs {
+    final manager = $$MouvementsProduitTableTableManager(
+      $_db,
+      $_db.mouvementsProduit,
+    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _mouvementsProduitRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$LignesVenteTable, List<LigneVenteRow>>
   _lignesVenteRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.lignesVente,
@@ -22863,7 +30081,7 @@ final class $$ProduitsVendablesTableReferences
     final manager = $$LignesVenteTableTableManager(
       $_db,
       $_db.lignesVente,
-    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.produitId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_lignesVenteRefsTable($_db));
     return ProcessedTableManager(
@@ -22881,7 +30099,7 @@ class $$ProduitsVendablesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -22946,6 +30164,31 @@ class $$ProduitsVendablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  Expression<bool> mouvementsProduitRefs(
+    Expression<bool> Function($$MouvementsProduitTableFilterComposer f) f,
+  ) {
+    final $$MouvementsProduitTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.mouvementsProduit,
+      getReferencedColumn: (t) => t.produitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MouvementsProduitTableFilterComposer(
+            $db: $db,
+            $table: $db.mouvementsProduit,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> lignesVenteRefs(
     Expression<bool> Function($$LignesVenteTableFilterComposer f) f,
   ) {
@@ -22981,7 +30224,7 @@ class $$ProduitsVendablesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -23056,7 +30299,7 @@ class $$ProduitsVendablesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get sku =>
@@ -23099,6 +30342,32 @@ class $$ProduitsVendablesTableAnnotationComposer
   GeneratedColumn<String> get espece =>
       $composableBuilder(column: $table.espece, builder: (column) => column);
 
+  Expression<T> mouvementsProduitRefs<T extends Object>(
+    Expression<T> Function($$MouvementsProduitTableAnnotationComposer a) f,
+  ) {
+    final $$MouvementsProduitTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.mouvementsProduit,
+          getReferencedColumn: (t) => t.produitId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MouvementsProduitTableAnnotationComposer(
+                $db: $db,
+                $table: $db.mouvementsProduit,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> lignesVenteRefs<T extends Object>(
     Expression<T> Function($$LignesVenteTableAnnotationComposer a) f,
   ) {
@@ -23138,7 +30407,10 @@ class $$ProduitsVendablesTableTableManager
           $$ProduitsVendablesTableUpdateCompanionBuilder,
           (ProduitVendableRow, $$ProduitsVendablesTableReferences),
           ProduitVendableRow,
-          PrefetchHooks Function({bool lignesVenteRefs})
+          PrefetchHooks Function({
+            bool mouvementsProduitRefs,
+            bool lignesVenteRefs,
+          })
         > {
   $$ProduitsVendablesTableTableManager(
     _$AppDatabase db,
@@ -23158,7 +30430,7 @@ class $$ProduitsVendablesTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String?> sku = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> cat = const Value.absent(),
@@ -23171,6 +30443,7 @@ class $$ProduitsVendablesTableTableManager
                 Value<int> stock = const Value.absent(),
                 Value<int> threshold = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ProduitsVendablesCompanion(
                 id: id,
                 sku: sku,
@@ -23185,10 +30458,11 @@ class $$ProduitsVendablesTableTableManager
                 stock: stock,
                 threshold: threshold,
                 espece: espece,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String?> sku = const Value.absent(),
                 required String name,
                 required String cat,
@@ -23201,6 +30475,7 @@ class $$ProduitsVendablesTableTableManager
                 required int stock,
                 required int threshold,
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ProduitsVendablesCompanion.insert(
                 id: id,
                 sku: sku,
@@ -23215,6 +30490,7 @@ class $$ProduitsVendablesTableTableManager
                 stock: stock,
                 threshold: threshold,
                 espece: espece,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -23224,36 +30500,63 @@ class $$ProduitsVendablesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({lignesVenteRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (lignesVenteRefs) db.lignesVente],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (lignesVenteRefs)
-                    await $_getPrefetchedData<
-                      ProduitVendableRow,
-                      $ProduitsVendablesTable,
-                      LigneVenteRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ProduitsVendablesTableReferences
-                          ._lignesVenteRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ProduitsVendablesTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).lignesVenteRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.produitId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({mouvementsProduitRefs = false, lignesVenteRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (mouvementsProduitRefs) db.mouvementsProduit,
+                    if (lignesVenteRefs) db.lignesVente,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (mouvementsProduitRefs)
+                        await $_getPrefetchedData<
+                          ProduitVendableRow,
+                          $ProduitsVendablesTable,
+                          MouvementProduitRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ProduitsVendablesTableReferences
+                              ._mouvementsProduitRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ProduitsVendablesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).mouvementsProduitRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.produitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (lignesVenteRefs)
+                        await $_getPrefetchedData<
+                          ProduitVendableRow,
+                          $ProduitsVendablesTable,
+                          LigneVenteRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ProduitsVendablesTableReferences
+                              ._lignesVenteRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ProduitsVendablesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).lignesVenteRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.produitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -23270,25 +30573,469 @@ typedef $$ProduitsVendablesTableProcessedTableManager =
       $$ProduitsVendablesTableUpdateCompanionBuilder,
       (ProduitVendableRow, $$ProduitsVendablesTableReferences),
       ProduitVendableRow,
-      PrefetchHooks Function({bool lignesVenteRefs})
+      PrefetchHooks Function({bool mouvementsProduitRefs, bool lignesVenteRefs})
+    >;
+typedef $$MouvementsProduitTableCreateCompanionBuilder =
+    MouvementsProduitCompanion Function({
+      Value<String> id,
+      required DateTime horodatage,
+      required String produitId,
+      required String article,
+      required String motif,
+      required double quantite,
+      Value<String?> origine,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+typedef $$MouvementsProduitTableUpdateCompanionBuilder =
+    MouvementsProduitCompanion Function({
+      Value<String> id,
+      Value<DateTime> horodatage,
+      Value<String> produitId,
+      Value<String> article,
+      Value<String> motif,
+      Value<double> quantite,
+      Value<String?> origine,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
+    });
+
+final class $$MouvementsProduitTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MouvementsProduitTable,
+          MouvementProduitRow
+        > {
+  $$MouvementsProduitTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ProduitsVendablesTable _produitIdTable(_$AppDatabase db) => db
+      .produitsVendables
+      .createAlias('mouvements_produit__produit_id__produits_vendables__id');
+
+  $$ProduitsVendablesTableProcessedTableManager get produitId {
+    final $_column = $_itemColumn<String>('produit_id')!;
+
+    final manager = $$ProduitsVendablesTableTableManager(
+      $_db,
+      $_db.produitsVendables,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_produitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MouvementsProduitTableFilterComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get article => $composableBuilder(
+    column: $table.article,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motif => $composableBuilder(
+    column: $table.motif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get quantite => $composableBuilder(
+    column: $table.quantite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ProduitsVendablesTableFilterComposer get produitId {
+    final $$ProduitsVendablesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produitId,
+      referencedTable: $db.produitsVendables,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProduitsVendablesTableFilterComposer(
+            $db: $db,
+            $table: $db.produitsVendables,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableOrderingComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get article => $composableBuilder(
+    column: $table.article,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motif => $composableBuilder(
+    column: $table.motif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get quantite => $composableBuilder(
+    column: $table.quantite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ProduitsVendablesTableOrderingComposer get produitId {
+    final $$ProduitsVendablesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produitId,
+      referencedTable: $db.produitsVendables,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProduitsVendablesTableOrderingComposer(
+            $db: $db,
+            $table: $db.produitsVendables,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MouvementsProduitTable> {
+  $$MouvementsProduitTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get horodatage => $composableBuilder(
+    column: $table.horodatage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get article =>
+      $composableBuilder(column: $table.article, builder: (column) => column);
+
+  GeneratedColumn<String> get motif =>
+      $composableBuilder(column: $table.motif, builder: (column) => column);
+
+  GeneratedColumn<double> get quantite =>
+      $composableBuilder(column: $table.quantite, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  $$ProduitsVendablesTableAnnotationComposer get produitId {
+    final $$ProduitsVendablesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.produitId,
+          referencedTable: $db.produitsVendables,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ProduitsVendablesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.produitsVendables,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MouvementsProduitTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MouvementsProduitTable,
+          MouvementProduitRow,
+          $$MouvementsProduitTableFilterComposer,
+          $$MouvementsProduitTableOrderingComposer,
+          $$MouvementsProduitTableAnnotationComposer,
+          $$MouvementsProduitTableCreateCompanionBuilder,
+          $$MouvementsProduitTableUpdateCompanionBuilder,
+          (MouvementProduitRow, $$MouvementsProduitTableReferences),
+          MouvementProduitRow,
+          PrefetchHooks Function({bool produitId})
+        > {
+  $$MouvementsProduitTableTableManager(
+    _$AppDatabase db,
+    $MouvementsProduitTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MouvementsProduitTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MouvementsProduitTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MouvementsProduitTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> horodatage = const Value.absent(),
+                Value<String> produitId = const Value.absent(),
+                Value<String> article = const Value.absent(),
+                Value<String> motif = const Value.absent(),
+                Value<double> quantite = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MouvementsProduitCompanion(
+                id: id,
+                horodatage: horodatage,
+                produitId: produitId,
+                article: article,
+                motif: motif,
+                quantite: quantite,
+                origine: origine,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required DateTime horodatage,
+                required String produitId,
+                required String article,
+                required String motif,
+                required double quantite,
+                Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MouvementsProduitCompanion.insert(
+                id: id,
+                horodatage: horodatage,
+                produitId: produitId,
+                article: article,
+                motif: motif,
+                quantite: quantite,
+                origine: origine,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MouvementsProduitTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({produitId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (produitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.produitId,
+                                referencedTable:
+                                    $$MouvementsProduitTableReferences
+                                        ._produitIdTable(db),
+                                referencedColumn:
+                                    $$MouvementsProduitTableReferences
+                                        ._produitIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MouvementsProduitTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MouvementsProduitTable,
+      MouvementProduitRow,
+      $$MouvementsProduitTableFilterComposer,
+      $$MouvementsProduitTableOrderingComposer,
+      $$MouvementsProduitTableAnnotationComposer,
+      $$MouvementsProduitTableCreateCompanionBuilder,
+      $$MouvementsProduitTableUpdateCompanionBuilder,
+      (MouvementProduitRow, $$MouvementsProduitTableReferences),
+      MouvementProduitRow,
+      PrefetchHooks Function({bool produitId})
     >;
 typedef $$ClientsTableCreateCompanionBuilder =
     ClientsCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String nom,
       Value<String?> telephone,
       Value<double> soldeCreance,
       Value<DateTime?> dateNaissance,
       Value<DateTime?> dernierContact,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$ClientsTableUpdateCompanionBuilder =
     ClientsCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> nom,
       Value<String?> telephone,
       Value<double> soldeCreance,
       Value<DateTime?> dateNaissance,
       Value<DateTime?> dernierContact,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$ClientsTableFilterComposer
@@ -23300,7 +31047,7 @@ class $$ClientsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -23329,6 +31076,21 @@ class $$ClientsTableFilterComposer
     column: $table.dernierContact,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ClientsTableOrderingComposer
@@ -23340,7 +31102,7 @@ class $$ClientsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -23369,6 +31131,21 @@ class $$ClientsTableOrderingComposer
     column: $table.dernierContact,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClientsTableAnnotationComposer
@@ -23380,7 +31157,7 @@ class $$ClientsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -23403,6 +31180,17 @@ class $$ClientsTableAnnotationComposer
     column: $table.dernierContact,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$ClientsTableTableManager
@@ -23433,12 +31221,16 @@ class $$ClientsTableTableManager
               $$ClientsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<String?> telephone = const Value.absent(),
                 Value<double> soldeCreance = const Value.absent(),
                 Value<DateTime?> dateNaissance = const Value.absent(),
                 Value<DateTime?> dernierContact = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ClientsCompanion(
                 id: id,
                 nom: nom,
@@ -23446,15 +31238,23 @@ class $$ClientsTableTableManager
                 soldeCreance: soldeCreance,
                 dateNaissance: dateNaissance,
                 dernierContact: dernierContact,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String nom,
                 Value<String?> telephone = const Value.absent(),
                 Value<double> soldeCreance = const Value.absent(),
                 Value<DateTime?> dateNaissance = const Value.absent(),
                 Value<DateTime?> dernierContact = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ClientsCompanion.insert(
                 id: id,
                 nom: nom,
@@ -23462,6 +31262,10 @@ class $$ClientsTableTableManager
                 soldeCreance: soldeCreance,
                 dateNaissance: dateNaissance,
                 dernierContact: dernierContact,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -23487,6 +31291,12 @@ typedef $$ClientsTableProcessedTableManager =
     >;
 typedef $$VentesTableCreateCompanionBuilder =
     VentesCompanion Function({
+      Value<String> id,
+      Value<String?> clientId,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       required String ref,
       required String client,
       required DateTime dateVente,
@@ -23505,6 +31315,12 @@ typedef $$VentesTableCreateCompanionBuilder =
     });
 typedef $$VentesTableUpdateCompanionBuilder =
     VentesCompanion Function({
+      Value<String> id,
+      Value<String?> clientId,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<String> ref,
       Value<String> client,
       Value<DateTime> dateVente,
@@ -23554,6 +31370,36 @@ class $$VentesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnFilters(column),
@@ -23659,6 +31505,36 @@ class $$VentesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
@@ -23739,6 +31615,28 @@ class $$VentesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
 
@@ -23847,6 +31745,12 @@ class $$VentesTableTableManager
               $$VentesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<String> ref = const Value.absent(),
                 Value<String> client = const Value.absent(),
                 Value<DateTime> dateVente = const Value.absent(),
@@ -23863,6 +31767,12 @@ class $$VentesTableTableManager
                 Value<String?> ligneMobileMoney = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VentesCompanion(
+                id: id,
+                clientId: clientId,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 client: client,
                 dateVente: dateVente,
@@ -23881,6 +31791,12 @@ class $$VentesTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 required String ref,
                 required String client,
                 required DateTime dateVente,
@@ -23897,6 +31813,12 @@ class $$VentesTableTableManager
                 Value<String?> ligneMobileMoney = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VentesCompanion.insert(
+                id: id,
+                clientId: clientId,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 client: client,
                 dateVente: dateVente,
@@ -23968,23 +31890,25 @@ typedef $$VentesTableProcessedTableManager =
     >;
 typedef $$LignesVenteTableCreateCompanionBuilder =
     LignesVenteCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String venteRef,
-      required int produitId,
+      required String produitId,
       required String name,
       required double qte,
       required double pu,
       Value<String?> espece,
+      Value<int> rowid,
     });
 typedef $$LignesVenteTableUpdateCompanionBuilder =
     LignesVenteCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> venteRef,
-      Value<int> produitId,
+      Value<String> produitId,
       Value<String> name,
       Value<double> qte,
       Value<double> pu,
       Value<String?> espece,
+      Value<int> rowid,
     });
 
 final class $$LignesVenteTableReferences
@@ -24013,7 +31937,7 @@ final class $$LignesVenteTableReferences
       .createAlias('lignes_vente__produit_id__produits_vendables__id');
 
   $$ProduitsVendablesTableProcessedTableManager get produitId {
-    final $_column = $_itemColumn<int>('produit_id')!;
+    final $_column = $_itemColumn<String>('produit_id')!;
 
     final manager = $$ProduitsVendablesTableTableManager(
       $_db,
@@ -24036,7 +31960,7 @@ class $$LignesVenteTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -24117,7 +32041,7 @@ class $$LignesVenteTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -24198,7 +32122,7 @@ class $$LignesVenteTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
@@ -24289,13 +32213,14 @@ class $$LignesVenteTableTableManager
               $$LignesVenteTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> venteRef = const Value.absent(),
-                Value<int> produitId = const Value.absent(),
+                Value<String> produitId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<double> qte = const Value.absent(),
                 Value<double> pu = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesVenteCompanion(
                 id: id,
                 venteRef: venteRef,
@@ -24304,16 +32229,18 @@ class $$LignesVenteTableTableManager
                 qte: qte,
                 pu: pu,
                 espece: espece,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String venteRef,
-                required int produitId,
+                required String produitId,
                 required String name,
                 required double qte,
                 required double pu,
                 Value<String?> espece = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesVenteCompanion.insert(
                 id: id,
                 venteRef: venteRef,
@@ -24322,6 +32249,7 @@ class $$LignesVenteTableTableManager
                 qte: qte,
                 pu: pu,
                 espece: espece,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -24405,23 +32333,35 @@ typedef $$LignesVenteTableProcessedTableManager =
     >;
 typedef $$DevisTableCreateCompanionBuilder =
     DevisCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String reference,
       required String client,
       required String objet,
       required double montantEstime,
       Value<int> validiteJours,
       required DateTime dateEmission,
+      Value<String> statut,
+      Value<String?> supprimeLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$DevisTableUpdateCompanionBuilder =
     DevisCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> reference,
       Value<String> client,
       Value<String> objet,
       Value<double> montantEstime,
       Value<int> validiteJours,
       Value<DateTime> dateEmission,
+      Value<String> statut,
+      Value<String?> supprimeLe,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
@@ -24432,7 +32372,7 @@ class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -24466,6 +32406,31 @@ class $$DevisTableFilterComposer extends Composer<_$AppDatabase, $DevisTable> {
     column: $table.dateEmission,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get statut => $composableBuilder(
+    column: $table.statut,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$DevisTableOrderingComposer
@@ -24477,7 +32442,7 @@ class $$DevisTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -24511,6 +32476,31 @@ class $$DevisTableOrderingComposer
     column: $table.dateEmission,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get statut => $composableBuilder(
+    column: $table.statut,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DevisTableAnnotationComposer
@@ -24522,7 +32512,7 @@ class $$DevisTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get reference =>
@@ -24548,6 +32538,25 @@ class $$DevisTableAnnotationComposer
     column: $table.dateEmission,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get statut =>
+      $composableBuilder(column: $table.statut, builder: (column) => column);
+
+  GeneratedColumn<String> get supprimeLe => $composableBuilder(
+    column: $table.supprimeLe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$DevisTableTableManager
@@ -24578,13 +32587,19 @@ class $$DevisTableTableManager
               $$DevisTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> reference = const Value.absent(),
                 Value<String> client = const Value.absent(),
                 Value<String> objet = const Value.absent(),
                 Value<double> montantEstime = const Value.absent(),
                 Value<int> validiteJours = const Value.absent(),
                 Value<DateTime> dateEmission = const Value.absent(),
+                Value<String> statut = const Value.absent(),
+                Value<String?> supprimeLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DevisCompanion(
                 id: id,
                 reference: reference,
@@ -24593,16 +32608,28 @@ class $$DevisTableTableManager
                 montantEstime: montantEstime,
                 validiteJours: validiteJours,
                 dateEmission: dateEmission,
+                statut: statut,
+                supprimeLe: supprimeLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String reference,
                 required String client,
                 required String objet,
                 required double montantEstime,
                 Value<int> validiteJours = const Value.absent(),
                 required DateTime dateEmission,
+                Value<String> statut = const Value.absent(),
+                Value<String?> supprimeLe = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DevisCompanion.insert(
                 id: id,
                 reference: reference,
@@ -24611,6 +32638,12 @@ class $$DevisTableTableManager
                 montantEstime: montantEstime,
                 validiteJours: validiteJours,
                 dateEmission: dateEmission,
+                statut: statut,
+                supprimeLe: supprimeLe,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -24817,6 +32850,11 @@ typedef $$GroupesTaxeTableProcessedTableManager =
     >;
 typedef $$FacturesTableCreateCompanionBuilder =
     FacturesCompanion Function({
+      Value<String> id,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       required String ref,
       required String type,
       Value<String?> venteRef,
@@ -24841,6 +32879,11 @@ typedef $$FacturesTableCreateCompanionBuilder =
     });
 typedef $$FacturesTableUpdateCompanionBuilder =
     FacturesCompanion Function({
+      Value<String> id,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<String> ref,
       Value<String> type,
       Value<String?> venteRef,
@@ -24873,6 +32916,31 @@ class $$FacturesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnFilters(column),
@@ -24983,6 +33051,31 @@ class $$FacturesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
@@ -25093,6 +33186,23 @@ class $$FacturesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
 
@@ -25197,6 +33307,11 @@ class $$FacturesTableTableManager
               $$FacturesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<String> ref = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String?> venteRef = const Value.absent(),
@@ -25219,6 +33334,11 @@ class $$FacturesTableTableManager
                 Value<DateTime> creeLe = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacturesCompanion(
+                id: id,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 type: type,
                 venteRef: venteRef,
@@ -25243,6 +33363,11 @@ class $$FacturesTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 required String ref,
                 required String type,
                 Value<String?> venteRef = const Value.absent(),
@@ -25265,6 +33390,11 @@ class $$FacturesTableTableManager
                 Value<DateTime> creeLe = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacturesCompanion.insert(
+                id: id,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 ref: ref,
                 type: type,
                 venteRef: venteRef,
@@ -25311,7 +33441,7 @@ typedef $$FacturesTableProcessedTableManager =
     >;
 typedef $$LignesFactureTableCreateCompanionBuilder =
     LignesFactureCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String factureRef,
       required String designation,
       required double quantite,
@@ -25321,10 +33451,11 @@ typedef $$LignesFactureTableCreateCompanionBuilder =
       required double tauxTaxe,
       required double montantHt,
       required double montantTaxe,
+      Value<int> rowid,
     });
 typedef $$LignesFactureTableUpdateCompanionBuilder =
     LignesFactureCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> factureRef,
       Value<String> designation,
       Value<double> quantite,
@@ -25334,6 +33465,7 @@ typedef $$LignesFactureTableUpdateCompanionBuilder =
       Value<double> tauxTaxe,
       Value<double> montantHt,
       Value<double> montantTaxe,
+      Value<int> rowid,
     });
 
 class $$LignesFactureTableFilterComposer
@@ -25345,7 +33477,7 @@ class $$LignesFactureTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -25405,7 +33537,7 @@ class $$LignesFactureTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -25465,7 +33597,7 @@ class $$LignesFactureTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get factureRef => $composableBuilder(
@@ -25537,7 +33669,7 @@ class $$LignesFactureTableTableManager
               $$LignesFactureTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> factureRef = const Value.absent(),
                 Value<String> designation = const Value.absent(),
                 Value<double> quantite = const Value.absent(),
@@ -25547,6 +33679,7 @@ class $$LignesFactureTableTableManager
                 Value<double> tauxTaxe = const Value.absent(),
                 Value<double> montantHt = const Value.absent(),
                 Value<double> montantTaxe = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesFactureCompanion(
                 id: id,
                 factureRef: factureRef,
@@ -25558,10 +33691,11 @@ class $$LignesFactureTableTableManager
                 tauxTaxe: tauxTaxe,
                 montantHt: montantHt,
                 montantTaxe: montantTaxe,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String factureRef,
                 required String designation,
                 required double quantite,
@@ -25571,6 +33705,7 @@ class $$LignesFactureTableTableManager
                 required double tauxTaxe,
                 required double montantHt,
                 required double montantTaxe,
+                Value<int> rowid = const Value.absent(),
               }) => LignesFactureCompanion.insert(
                 id: id,
                 factureRef: factureRef,
@@ -25582,6 +33717,7 @@ class $$LignesFactureTableTableManager
                 tauxTaxe: tauxTaxe,
                 montantHt: montantHt,
                 montantTaxe: montantTaxe,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -26054,19 +34190,27 @@ typedef $$IntrantsTableProcessedTableManager =
     >;
 typedef $$FournisseursTableCreateCompanionBuilder =
     FournisseursCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String nom,
       Value<String?> telephone,
       Value<String?> adresse,
       Value<String?> fournit,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$FournisseursTableUpdateCompanionBuilder =
     FournisseursCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> nom,
       Value<String?> telephone,
       Value<String?> adresse,
       Value<String?> fournit,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$FournisseursTableReferences
@@ -26084,7 +34228,7 @@ final class $$FournisseursTableReferences
     final manager = $$AchatsTableTableManager(
       $_db,
       $_db.achats,
-    ).filter((f) => f.fournisseurId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.fournisseurId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_achatsRefsTable($_db));
     return ProcessedTableManager(
@@ -26102,7 +34246,7 @@ class $$FournisseursTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -26124,6 +34268,21 @@ class $$FournisseursTableFilterComposer
 
   ColumnFilters<String> get fournit => $composableBuilder(
     column: $table.fournit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26162,7 +34321,7 @@ class $$FournisseursTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -26186,6 +34345,21 @@ class $$FournisseursTableOrderingComposer
     column: $table.fournit,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FournisseursTableAnnotationComposer
@@ -26197,7 +34371,7 @@ class $$FournisseursTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -26211,6 +34385,17 @@ class $$FournisseursTableAnnotationComposer
 
   GeneratedColumn<String> get fournit =>
       $composableBuilder(column: $table.fournit, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> achatsRefs<T extends Object>(
     Expression<T> Function($$AchatsTableAnnotationComposer a) f,
@@ -26266,31 +34451,47 @@ class $$FournisseursTableTableManager
               $$FournisseursTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<String?> telephone = const Value.absent(),
                 Value<String?> adresse = const Value.absent(),
                 Value<String?> fournit = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FournisseursCompanion(
                 id: id,
                 nom: nom,
                 telephone: telephone,
                 adresse: adresse,
                 fournit: fournit,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String nom,
                 Value<String?> telephone = const Value.absent(),
                 Value<String?> adresse = const Value.absent(),
                 Value<String?> fournit = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FournisseursCompanion.insert(
                 id: id,
                 nom: nom,
                 telephone: telephone,
                 adresse: adresse,
                 fournit: fournit,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -26352,26 +34553,36 @@ typedef $$FournisseursTableProcessedTableManager =
     >;
 typedef $$AchatsTableCreateCompanionBuilder =
     AchatsCompanion Function({
+      Value<String> id,
       required String ref,
-      required int fournisseurId,
+      required String fournisseurId,
       required DateTime dateAchat,
       required String statut,
       required double total,
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 typedef $$AchatsTableUpdateCompanionBuilder =
     AchatsCompanion Function({
+      Value<String> id,
       Value<String> ref,
-      Value<int> fournisseurId,
+      Value<String> fournisseurId,
       Value<DateTime> dateAchat,
       Value<String> statut,
       Value<double> total,
       Value<double> paye,
       Value<String?> mode,
       Value<DateTime?> echeance,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 
@@ -26383,7 +34594,7 @@ final class $$AchatsTableReferences
       db.fournisseurs.createAlias('achats__fournisseur_id__fournisseurs__id');
 
   $$FournisseursTableProcessedTableManager get fournisseurId {
-    final $_column = $_itemColumn<int>('fournisseur_id')!;
+    final $_column = $_itemColumn<String>('fournisseur_id')!;
 
     final manager = $$FournisseursTableTableManager(
       $_db,
@@ -26424,6 +34635,11 @@ class $$AchatsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnFilters(column),
@@ -26456,6 +34672,26 @@ class $$AchatsTableFilterComposer
 
   ColumnFilters<DateTime> get echeance => $composableBuilder(
     column: $table.echeance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26517,6 +34753,11 @@ class $$AchatsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ref => $composableBuilder(
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
@@ -26549,6 +34790,26 @@ class $$AchatsTableOrderingComposer
 
   ColumnOrderings<DateTime> get echeance => $composableBuilder(
     column: $table.echeance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -26585,6 +34846,9 @@ class $$AchatsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
 
@@ -26605,6 +34869,22 @@ class $$AchatsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get echeance =>
       $composableBuilder(column: $table.echeance, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$FournisseursTableAnnotationComposer get fournisseurId {
     final $$FournisseursTableAnnotationComposer composer = $composerBuilder(
@@ -26683,16 +34963,22 @@ class $$AchatsTableTableManager
               $$AchatsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
                 Value<String> ref = const Value.absent(),
-                Value<int> fournisseurId = const Value.absent(),
+                Value<String> fournisseurId = const Value.absent(),
                 Value<DateTime> dateAchat = const Value.absent(),
                 Value<String> statut = const Value.absent(),
                 Value<double> total = const Value.absent(),
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AchatsCompanion(
+                id: id,
                 ref: ref,
                 fournisseurId: fournisseurId,
                 dateAchat: dateAchat,
@@ -26701,20 +34987,30 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
+                Value<String> id = const Value.absent(),
                 required String ref,
-                required int fournisseurId,
+                required String fournisseurId,
                 required DateTime dateAchat,
                 required String statut,
                 required double total,
                 Value<double> paye = const Value.absent(),
                 Value<String?> mode = const Value.absent(),
                 Value<DateTime?> echeance = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AchatsCompanion.insert(
+                id: id,
                 ref: ref,
                 fournisseurId: fournisseurId,
                 dateAchat: dateAchat,
@@ -26723,6 +35019,10 @@ class $$AchatsTableTableManager
                 paye: paye,
                 mode: mode,
                 echeance: echeance,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -26817,21 +35117,23 @@ typedef $$AchatsTableProcessedTableManager =
     >;
 typedef $$LignesAchatTableCreateCompanionBuilder =
     LignesAchatCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String achatRef,
       required String intrantCode,
       required String nom,
       required double qte,
       required double puAchat,
+      Value<int> rowid,
     });
 typedef $$LignesAchatTableUpdateCompanionBuilder =
     LignesAchatCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> achatRef,
       Value<String> intrantCode,
       Value<String> nom,
       Value<double> qte,
       Value<double> puAchat,
+      Value<int> rowid,
     });
 
 final class $$LignesAchatTableReferences
@@ -26882,7 +35184,7 @@ class $$LignesAchatTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -26958,7 +35260,7 @@ class $$LignesAchatTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -27034,7 +35336,7 @@ class $$LignesAchatTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get nom =>
@@ -27121,12 +35423,13 @@ class $$LignesAchatTableTableManager
               $$LignesAchatTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> achatRef = const Value.absent(),
                 Value<String> intrantCode = const Value.absent(),
                 Value<String> nom = const Value.absent(),
                 Value<double> qte = const Value.absent(),
                 Value<double> puAchat = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => LignesAchatCompanion(
                 id: id,
                 achatRef: achatRef,
@@ -27134,15 +35437,17 @@ class $$LignesAchatTableTableManager
                 nom: nom,
                 qte: qte,
                 puAchat: puAchat,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String achatRef,
                 required String intrantCode,
                 required String nom,
                 required double qte,
                 required double puAchat,
+                Value<int> rowid = const Value.absent(),
               }) => LignesAchatCompanion.insert(
                 id: id,
                 achatRef: achatRef,
@@ -27150,6 +35455,7 @@ class $$LignesAchatTableTableManager
                 nom: nom,
                 qte: qte,
                 puAchat: puAchat,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -27233,7 +35539,7 @@ typedef $$LignesAchatTableProcessedTableManager =
     >;
 typedef $$MouvementsIntrantTableCreateCompanionBuilder =
     MouvementsIntrantCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required DateTime horodatage,
       required String intrantCode,
       required String article,
@@ -27241,10 +35547,15 @@ typedef $$MouvementsIntrantTableCreateCompanionBuilder =
       required String motif,
       required double quantite,
       Value<String?> reference,
+      Value<String?> origine,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
     });
 typedef $$MouvementsIntrantTableUpdateCompanionBuilder =
     MouvementsIntrantCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<DateTime> horodatage,
       Value<String> intrantCode,
       Value<String> article,
@@ -27252,6 +35563,11 @@ typedef $$MouvementsIntrantTableUpdateCompanionBuilder =
       Value<String> motif,
       Value<double> quantite,
       Value<String?> reference,
+      Value<String?> origine,
+      Value<String?> posteCible,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<int> rowid,
     });
 
 final class $$MouvementsIntrantTableReferences
@@ -27294,7 +35610,7 @@ class $$MouvementsIntrantTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -27326,6 +35642,26 @@ class $$MouvementsIntrantTableFilterComposer
 
   ColumnFilters<String> get reference => $composableBuilder(
     column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -27362,7 +35698,7 @@ class $$MouvementsIntrantTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -27394,6 +35730,26 @@ class $$MouvementsIntrantTableOrderingComposer
 
   ColumnOrderings<String> get reference => $composableBuilder(
     column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -27430,7 +35786,7 @@ class $$MouvementsIntrantTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get horodatage => $composableBuilder(
@@ -27452,6 +35808,22 @@ class $$MouvementsIntrantTableAnnotationComposer
 
   GeneratedColumn<String> get reference =>
       $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get posteCible => $composableBuilder(
+    column: $table.posteCible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
 
   $$IntrantsTableAnnotationComposer get intrantCode {
     final $$IntrantsTableAnnotationComposer composer = $composerBuilder(
@@ -27510,7 +35882,7 @@ class $$MouvementsIntrantTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<DateTime> horodatage = const Value.absent(),
                 Value<String> intrantCode = const Value.absent(),
                 Value<String> article = const Value.absent(),
@@ -27518,6 +35890,11 @@ class $$MouvementsIntrantTableTableManager
                 Value<String> motif = const Value.absent(),
                 Value<double> quantite = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MouvementsIntrantCompanion(
                 id: id,
                 horodatage: horodatage,
@@ -27527,10 +35904,15 @@ class $$MouvementsIntrantTableTableManager
                 motif: motif,
                 quantite: quantite,
                 reference: reference,
+                origine: origine,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required DateTime horodatage,
                 required String intrantCode,
                 required String article,
@@ -27538,6 +35920,11 @@ class $$MouvementsIntrantTableTableManager
                 required String motif,
                 required double quantite,
                 Value<String?> reference = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String?> posteCible = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MouvementsIntrantCompanion.insert(
                 id: id,
                 horodatage: horodatage,
@@ -27547,6 +35934,11 @@ class $$MouvementsIntrantTableTableManager
                 motif: motif,
                 quantite: quantite,
                 reference: reference,
+                origine: origine,
+                posteCible: posteCible,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -27619,7 +36011,7 @@ typedef $$MouvementsIntrantTableProcessedTableManager =
     >;
 typedef $$FicheJourneeTableCreateCompanionBuilder =
     FicheJourneeCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required DateTime date,
       Value<int> achat,
@@ -27648,10 +36040,17 @@ typedef $$FicheJourneeTableCreateCompanionBuilder =
       Value<String?> traitementObs,
       Value<bool> traitementValide,
       Value<bool> isRecorded,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<String?> baseMaj,
+      Value<String?> variantes,
+      Value<bool> resolution,
+      Value<int> rowid,
     });
 typedef $$FicheJourneeTableUpdateCompanionBuilder =
     FicheJourneeCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<DateTime> date,
       Value<int> achat,
@@ -27680,6 +36079,13 @@ typedef $$FicheJourneeTableUpdateCompanionBuilder =
       Value<String?> traitementObs,
       Value<bool> traitementValide,
       Value<bool> isRecorded,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<String?> baseMaj,
+      Value<String?> variantes,
+      Value<bool> resolution,
+      Value<int> rowid,
     });
 
 class $$FicheJourneeTableFilterComposer
@@ -27691,7 +36097,7 @@ class $$FicheJourneeTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -27835,6 +36241,36 @@ class $$FicheJourneeTableFilterComposer
     column: $table.isRecorded,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseMaj => $composableBuilder(
+    column: $table.baseMaj,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variantes => $composableBuilder(
+    column: $table.variantes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$FicheJourneeTableOrderingComposer
@@ -27846,7 +36282,7 @@ class $$FicheJourneeTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -27990,6 +36426,36 @@ class $$FicheJourneeTableOrderingComposer
     column: $table.isRecorded,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseMaj => $composableBuilder(
+    column: $table.baseMaj,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get variantes => $composableBuilder(
+    column: $table.variantes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FicheJourneeTableAnnotationComposer
@@ -28001,7 +36467,7 @@ class $$FicheJourneeTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -28111,6 +36577,28 @@ class $$FicheJourneeTableAnnotationComposer
     column: $table.isRecorded,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get baseMaj =>
+      $composableBuilder(column: $table.baseMaj, builder: (column) => column);
+
+  GeneratedColumn<String> get variantes =>
+      $composableBuilder(column: $table.variantes, builder: (column) => column);
+
+  GeneratedColumn<bool> get resolution => $composableBuilder(
+    column: $table.resolution,
+    builder: (column) => column,
+  );
 }
 
 class $$FicheJourneeTableTableManager
@@ -28144,7 +36632,7 @@ class $$FicheJourneeTableTableManager
               $$FicheJourneeTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> achat = const Value.absent(),
@@ -28173,6 +36661,13 @@ class $$FicheJourneeTableTableManager
                 Value<String?> traitementObs = const Value.absent(),
                 Value<bool> traitementValide = const Value.absent(),
                 Value<bool> isRecorded = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> baseMaj = const Value.absent(),
+                Value<String?> variantes = const Value.absent(),
+                Value<bool> resolution = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion(
                 id: id,
                 espece: espece,
@@ -28203,10 +36698,17 @@ class $$FicheJourneeTableTableManager
                 traitementObs: traitementObs,
                 traitementValide: traitementValide,
                 isRecorded: isRecorded,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                baseMaj: baseMaj,
+                variantes: variantes,
+                resolution: resolution,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required DateTime date,
                 Value<int> achat = const Value.absent(),
@@ -28235,6 +36737,13 @@ class $$FicheJourneeTableTableManager
                 Value<String?> traitementObs = const Value.absent(),
                 Value<bool> traitementValide = const Value.absent(),
                 Value<bool> isRecorded = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> baseMaj = const Value.absent(),
+                Value<String?> variantes = const Value.absent(),
+                Value<bool> resolution = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheJourneeCompanion.insert(
                 id: id,
                 espece: espece,
@@ -28265,6 +36774,13 @@ class $$FicheJourneeTableTableManager
                 traitementObs: traitementObs,
                 traitementValide: traitementValide,
                 isRecorded: isRecorded,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                baseMaj: baseMaj,
+                variantes: variantes,
+                resolution: resolution,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -28293,17 +36809,27 @@ typedef $$FicheJourneeTableProcessedTableManager =
     >;
 typedef $$FicheVentesJourTableCreateCompanionBuilder =
     FicheVentesJourCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required DateTime date,
       Value<int> qte,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$FicheVentesJourTableUpdateCompanionBuilder =
     FicheVentesJourCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<DateTime> date,
       Value<int> qte,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$FicheVentesJourTableFilterComposer
@@ -28315,7 +36841,7 @@ class $$FicheVentesJourTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28334,6 +36860,26 @@ class $$FicheVentesJourTableFilterComposer
     column: $table.qte,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$FicheVentesJourTableOrderingComposer
@@ -28345,7 +36891,7 @@ class $$FicheVentesJourTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -28364,6 +36910,26 @@ class $$FicheVentesJourTableOrderingComposer
     column: $table.qte,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FicheVentesJourTableAnnotationComposer
@@ -28375,7 +36941,7 @@ class $$FicheVentesJourTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -28386,6 +36952,20 @@ class $$FicheVentesJourTableAnnotationComposer
 
   GeneratedColumn<int> get qte =>
       $composableBuilder(column: $table.qte, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$FicheVentesJourTableTableManager
@@ -28425,27 +37005,47 @@ class $$FicheVentesJourTableTableManager
               $$FicheVentesJourTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> qte = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheVentesJourCompanion(
                 id: id,
                 espece: espece,
                 date: date,
                 qte: qte,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required DateTime date,
                 Value<int> qte = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => FicheVentesJourCompanion.insert(
                 id: id,
                 espece: espece,
                 date: date,
                 qte: qte,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -28474,19 +37074,27 @@ typedef $$FicheVentesJourTableProcessedTableManager =
     >;
 typedef $$MachinesIncubateurTableCreateCompanionBuilder =
     MachinesIncubateurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String code,
       required String libelle,
       Value<int?> capaciteOeufs,
       Value<bool> active,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$MachinesIncubateurTableUpdateCompanionBuilder =
     MachinesIncubateurCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> code,
       Value<String> libelle,
       Value<int?> capaciteOeufs,
       Value<bool> active,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$MachinesIncubateurTableReferences
@@ -28512,7 +37120,7 @@ final class $$MachinesIncubateurTableReferences
     final manager = $$CycleCouveuseTableTableManager(
       $_db,
       $_db.cycleCouveuse,
-    ).filter((f) => f.machineId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.machineId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_cycleCouveuseRefsTable($_db));
     return ProcessedTableManager(
@@ -28530,7 +37138,7 @@ class $$MachinesIncubateurTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28552,6 +37160,21 @@ class $$MachinesIncubateurTableFilterComposer
 
   ColumnFilters<bool> get active => $composableBuilder(
     column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28590,7 +37213,7 @@ class $$MachinesIncubateurTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -28614,6 +37237,21 @@ class $$MachinesIncubateurTableOrderingComposer
     column: $table.active,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MachinesIncubateurTableAnnotationComposer
@@ -28625,7 +37263,7 @@ class $$MachinesIncubateurTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get code =>
@@ -28641,6 +37279,17 @@ class $$MachinesIncubateurTableAnnotationComposer
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> cycleCouveuseRefs<T extends Object>(
     Expression<T> Function($$CycleCouveuseTableAnnotationComposer a) f,
@@ -28701,31 +37350,47 @@ class $$MachinesIncubateurTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> libelle = const Value.absent(),
                 Value<int?> capaciteOeufs = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MachinesIncubateurCompanion(
                 id: id,
                 code: code,
                 libelle: libelle,
                 capaciteOeufs: capaciteOeufs,
                 active: active,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String code,
                 required String libelle,
                 Value<int?> capaciteOeufs = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => MachinesIncubateurCompanion.insert(
                 id: id,
                 code: code,
                 libelle: libelle,
                 capaciteOeufs: capaciteOeufs,
                 active: active,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -28787,7 +37452,7 @@ typedef $$MachinesIncubateurTableProcessedTableManager =
     >;
 typedef $$CycleCouveuseTableCreateCompanionBuilder =
     CycleCouveuseCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String codeIncubation,
       Value<String> espece,
       Value<String?> bandeReproducteurs,
@@ -28796,14 +37461,18 @@ typedef $$CycleCouveuseTableCreateCompanionBuilder =
       Value<int?> poussinsNes,
       Value<int?> oeufsPerdus,
       required String statut,
-      Value<int?> machineId,
+      Value<String?> machineId,
       Value<int?> oeufsBlancsJ7,
       Value<int?> oeufsGatesJ14,
-      Value<int?> lotParentId,
+      Value<String?> lotParentId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$CycleCouveuseTableUpdateCompanionBuilder =
     CycleCouveuseCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> codeIncubation,
       Value<String> espece,
       Value<String?> bandeReproducteurs,
@@ -28812,10 +37481,14 @@ typedef $$CycleCouveuseTableUpdateCompanionBuilder =
       Value<int?> poussinsNes,
       Value<int?> oeufsPerdus,
       Value<String> statut,
-      Value<int?> machineId,
+      Value<String?> machineId,
       Value<int?> oeufsBlancsJ7,
       Value<int?> oeufsGatesJ14,
-      Value<int?> lotParentId,
+      Value<String?> lotParentId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$CycleCouveuseTableReferences
@@ -28832,7 +37505,7 @@ final class $$CycleCouveuseTableReferences
       .createAlias('cycle_couveuse__machine_id__machines_incubateur__id');
 
   $$MachinesIncubateurTableProcessedTableManager? get machineId {
-    final $_column = $_itemColumn<int>('machine_id');
+    final $_column = $_itemColumn<String>('machine_id');
     if ($_column == null) return null;
     final manager = $$MachinesIncubateurTableTableManager(
       $_db,
@@ -28855,7 +37528,7 @@ class $$CycleCouveuseTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -28910,8 +37583,23 @@ class $$CycleCouveuseTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get lotParentId => $composableBuilder(
+  ColumnFilters<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28948,7 +37636,7 @@ class $$CycleCouveuseTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -29003,8 +37691,23 @@ class $$CycleCouveuseTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get lotParentId => $composableBuilder(
+  ColumnOrderings<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -29041,7 +37744,7 @@ class $$CycleCouveuseTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get codeIncubation => $composableBuilder(
@@ -29090,10 +37793,21 @@ class $$CycleCouveuseTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get lotParentId => $composableBuilder(
+  GeneratedColumn<String> get lotParentId => $composableBuilder(
     column: $table.lotParentId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$MachinesIncubateurTableAnnotationComposer get machineId {
     final $$MachinesIncubateurTableAnnotationComposer composer =
@@ -29148,7 +37862,7 @@ class $$CycleCouveuseTableTableManager
               $$CycleCouveuseTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> codeIncubation = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<String?> bandeReproducteurs = const Value.absent(),
@@ -29157,10 +37871,14 @@ class $$CycleCouveuseTableTableManager
                 Value<int?> poussinsNes = const Value.absent(),
                 Value<int?> oeufsPerdus = const Value.absent(),
                 Value<String> statut = const Value.absent(),
-                Value<int?> machineId = const Value.absent(),
+                Value<String?> machineId = const Value.absent(),
                 Value<int?> oeufsBlancsJ7 = const Value.absent(),
                 Value<int?> oeufsGatesJ14 = const Value.absent(),
-                Value<int?> lotParentId = const Value.absent(),
+                Value<String?> lotParentId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CycleCouveuseCompanion(
                 id: id,
                 codeIncubation: codeIncubation,
@@ -29175,10 +37893,14 @@ class $$CycleCouveuseTableTableManager
                 oeufsBlancsJ7: oeufsBlancsJ7,
                 oeufsGatesJ14: oeufsGatesJ14,
                 lotParentId: lotParentId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String codeIncubation,
                 Value<String> espece = const Value.absent(),
                 Value<String?> bandeReproducteurs = const Value.absent(),
@@ -29187,10 +37909,14 @@ class $$CycleCouveuseTableTableManager
                 Value<int?> poussinsNes = const Value.absent(),
                 Value<int?> oeufsPerdus = const Value.absent(),
                 required String statut,
-                Value<int?> machineId = const Value.absent(),
+                Value<String?> machineId = const Value.absent(),
                 Value<int?> oeufsBlancsJ7 = const Value.absent(),
                 Value<int?> oeufsGatesJ14 = const Value.absent(),
-                Value<int?> lotParentId = const Value.absent(),
+                Value<String?> lotParentId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CycleCouveuseCompanion.insert(
                 id: id,
                 codeIncubation: codeIncubation,
@@ -29205,6 +37931,10 @@ class $$CycleCouveuseTableTableManager
                 oeufsBlancsJ7: oeufsBlancsJ7,
                 oeufsGatesJ14: oeufsGatesJ14,
                 lotParentId: lotParentId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -29275,7 +38005,7 @@ typedef $$CycleCouveuseTableProcessedTableManager =
     >;
 typedef $$SoinsCalendrierTableCreateCompanionBuilder =
     SoinsCalendrierCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required DateTime datePrevue,
       required String typeSoin,
@@ -29287,12 +38017,16 @@ typedef $$SoinsCalendrierTableCreateCompanionBuilder =
       Value<String?> veterinaire,
       Value<String?> symptomes,
       Value<int> coutFcfa,
-      Value<int?> bandeId,
-      Value<int?> echeanceProphylaxieId,
+      Value<String?> bandeId,
+      Value<String?> echeanceProphylaxieId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$SoinsCalendrierTableUpdateCompanionBuilder =
     SoinsCalendrierCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<DateTime> datePrevue,
       Value<String> typeSoin,
@@ -29304,8 +38038,12 @@ typedef $$SoinsCalendrierTableUpdateCompanionBuilder =
       Value<String?> veterinaire,
       Value<String?> symptomes,
       Value<int> coutFcfa,
-      Value<int?> bandeId,
-      Value<int?> echeanceProphylaxieId,
+      Value<String?> bandeId,
+      Value<String?> echeanceProphylaxieId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$SoinsCalendrierTableFilterComposer
@@ -29317,7 +38055,7 @@ class $$SoinsCalendrierTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -29377,13 +38115,28 @@ class $$SoinsCalendrierTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get bandeId => $composableBuilder(
+  ColumnFilters<String> get bandeId => $composableBuilder(
     column: $table.bandeId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get echeanceProphylaxieId => $composableBuilder(
+  ColumnFilters<String> get echeanceProphylaxieId => $composableBuilder(
     column: $table.echeanceProphylaxieId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -29397,7 +38150,7 @@ class $$SoinsCalendrierTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -29457,13 +38210,28 @@ class $$SoinsCalendrierTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get bandeId => $composableBuilder(
+  ColumnOrderings<String> get bandeId => $composableBuilder(
     column: $table.bandeId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get echeanceProphylaxieId => $composableBuilder(
+  ColumnOrderings<String> get echeanceProphylaxieId => $composableBuilder(
     column: $table.echeanceProphylaxieId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -29477,7 +38245,7 @@ class $$SoinsCalendrierTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -29521,13 +38289,24 @@ class $$SoinsCalendrierTableAnnotationComposer
   GeneratedColumn<int> get coutFcfa =>
       $composableBuilder(column: $table.coutFcfa, builder: (column) => column);
 
-  GeneratedColumn<int> get bandeId =>
+  GeneratedColumn<String> get bandeId =>
       $composableBuilder(column: $table.bandeId, builder: (column) => column);
 
-  GeneratedColumn<int> get echeanceProphylaxieId => $composableBuilder(
+  GeneratedColumn<String> get echeanceProphylaxieId => $composableBuilder(
     column: $table.echeanceProphylaxieId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$SoinsCalendrierTableTableManager
@@ -29567,7 +38346,7 @@ class $$SoinsCalendrierTableTableManager
               $$SoinsCalendrierTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<DateTime> datePrevue = const Value.absent(),
                 Value<String> typeSoin = const Value.absent(),
@@ -29579,8 +38358,12 @@ class $$SoinsCalendrierTableTableManager
                 Value<String?> veterinaire = const Value.absent(),
                 Value<String?> symptomes = const Value.absent(),
                 Value<int> coutFcfa = const Value.absent(),
-                Value<int?> bandeId = const Value.absent(),
-                Value<int?> echeanceProphylaxieId = const Value.absent(),
+                Value<String?> bandeId = const Value.absent(),
+                Value<String?> echeanceProphylaxieId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => SoinsCalendrierCompanion(
                 id: id,
                 espece: espece,
@@ -29596,10 +38379,14 @@ class $$SoinsCalendrierTableTableManager
                 coutFcfa: coutFcfa,
                 bandeId: bandeId,
                 echeanceProphylaxieId: echeanceProphylaxieId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required DateTime datePrevue,
                 required String typeSoin,
@@ -29611,8 +38398,12 @@ class $$SoinsCalendrierTableTableManager
                 Value<String?> veterinaire = const Value.absent(),
                 Value<String?> symptomes = const Value.absent(),
                 Value<int> coutFcfa = const Value.absent(),
-                Value<int?> bandeId = const Value.absent(),
-                Value<int?> echeanceProphylaxieId = const Value.absent(),
+                Value<String?> bandeId = const Value.absent(),
+                Value<String?> echeanceProphylaxieId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => SoinsCalendrierCompanion.insert(
                 id: id,
                 espece: espece,
@@ -29628,6 +38419,10 @@ class $$SoinsCalendrierTableTableManager
                 coutFcfa: coutFcfa,
                 bandeId: bandeId,
                 echeanceProphylaxieId: echeanceProphylaxieId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -29656,7 +38451,7 @@ typedef $$SoinsCalendrierTableProcessedTableManager =
     >;
 typedef $$InfirmerieTableCreateCompanionBuilder =
     InfirmerieCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required DateTime dateEntree,
       required String sujet,
       required String motif,
@@ -29665,10 +38460,14 @@ typedef $$InfirmerieTableCreateCompanionBuilder =
       Value<DateTime?> dateSortie,
       Value<String?> espece,
       Value<int?> categorieMortalite,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$InfirmerieTableUpdateCompanionBuilder =
     InfirmerieCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<DateTime> dateEntree,
       Value<String> sujet,
       Value<String> motif,
@@ -29677,6 +38476,10 @@ typedef $$InfirmerieTableUpdateCompanionBuilder =
       Value<DateTime?> dateSortie,
       Value<String?> espece,
       Value<int?> categorieMortalite,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$InfirmerieTableFilterComposer
@@ -29688,7 +38491,7 @@ class $$InfirmerieTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -29732,6 +38535,21 @@ class $$InfirmerieTableFilterComposer
     column: $table.categorieMortalite,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$InfirmerieTableOrderingComposer
@@ -29743,7 +38561,7 @@ class $$InfirmerieTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -29787,6 +38605,21 @@ class $$InfirmerieTableOrderingComposer
     column: $table.categorieMortalite,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InfirmerieTableAnnotationComposer
@@ -29798,7 +38631,7 @@ class $$InfirmerieTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get dateEntree => $composableBuilder(
@@ -29832,6 +38665,17 @@ class $$InfirmerieTableAnnotationComposer
     column: $table.categorieMortalite,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$InfirmerieTableTableManager
@@ -29865,7 +38709,7 @@ class $$InfirmerieTableTableManager
               $$InfirmerieTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<DateTime> dateEntree = const Value.absent(),
                 Value<String> sujet = const Value.absent(),
                 Value<String> motif = const Value.absent(),
@@ -29874,6 +38718,10 @@ class $$InfirmerieTableTableManager
                 Value<DateTime?> dateSortie = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
                 Value<int?> categorieMortalite = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => InfirmerieCompanion(
                 id: id,
                 dateEntree: dateEntree,
@@ -29884,10 +38732,14 @@ class $$InfirmerieTableTableManager
                 dateSortie: dateSortie,
                 espece: espece,
                 categorieMortalite: categorieMortalite,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required DateTime dateEntree,
                 required String sujet,
                 required String motif,
@@ -29896,6 +38748,10 @@ class $$InfirmerieTableTableManager
                 Value<DateTime?> dateSortie = const Value.absent(),
                 Value<String?> espece = const Value.absent(),
                 Value<int?> categorieMortalite = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => InfirmerieCompanion.insert(
                 id: id,
                 dateEntree: dateEntree,
@@ -29906,6 +38762,10 @@ class $$InfirmerieTableTableManager
                 dateSortie: dateSortie,
                 espece: espece,
                 categorieMortalite: categorieMortalite,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -29934,23 +38794,31 @@ typedef $$InfirmerieTableProcessedTableManager =
     >;
 typedef $$BandesTableCreateCompanionBuilder =
     BandesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required String code,
       required DateTime dateMiseEnBande,
       Value<int?> effectifInitial,
       Value<DateTime?> dateCloture,
       Value<String?> observations,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$BandesTableUpdateCompanionBuilder =
     BandesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<String> code,
       Value<DateTime> dateMiseEnBande,
       Value<int?> effectifInitial,
       Value<DateTime?> dateCloture,
       Value<String?> observations,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 class $$BandesTableFilterComposer
@@ -29962,7 +38830,7 @@ class $$BandesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -29996,6 +38864,21 @@ class $$BandesTableFilterComposer
     column: $table.observations,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$BandesTableOrderingComposer
@@ -30007,7 +38890,7 @@ class $$BandesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -30041,6 +38924,21 @@ class $$BandesTableOrderingComposer
     column: $table.observations,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BandesTableAnnotationComposer
@@ -30052,7 +38950,7 @@ class $$BandesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -30080,6 +38978,17 @@ class $$BandesTableAnnotationComposer
     column: $table.observations,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$BandesTableTableManager
@@ -30110,13 +39019,17 @@ class $$BandesTableTableManager
               $$BandesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<DateTime> dateMiseEnBande = const Value.absent(),
                 Value<int?> effectifInitial = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> observations = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BandesCompanion(
                 id: id,
                 espece: espece,
@@ -30125,16 +39038,24 @@ class $$BandesTableTableManager
                 effectifInitial: effectifInitial,
                 dateCloture: dateCloture,
                 observations: observations,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required String code,
                 required DateTime dateMiseEnBande,
                 Value<int?> effectifInitial = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> observations = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BandesCompanion.insert(
                 id: id,
                 espece: espece,
@@ -30143,6 +39064,10 @@ class $$BandesTableTableManager
                 effectifInitial: effectifInitial,
                 dateCloture: dateCloture,
                 observations: observations,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -30168,19 +39093,21 @@ typedef $$BandesTableProcessedTableManager =
     >;
 typedef $$BaremesRationTableCreateCompanionBuilder =
     BaremesRationCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required String stade,
       required int rationGrammesParJour,
       Value<bool> confirme,
+      Value<int> rowid,
     });
 typedef $$BaremesRationTableUpdateCompanionBuilder =
     BaremesRationCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<String> stade,
       Value<int> rationGrammesParJour,
       Value<bool> confirme,
+      Value<int> rowid,
     });
 
 class $$BaremesRationTableFilterComposer
@@ -30192,7 +39119,7 @@ class $$BaremesRationTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -30227,7 +39154,7 @@ class $$BaremesRationTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -30262,7 +39189,7 @@ class $$BaremesRationTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -30311,31 +39238,35 @@ class $$BaremesRationTableTableManager
               $$BaremesRationTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<String> stade = const Value.absent(),
                 Value<int> rationGrammesParJour = const Value.absent(),
                 Value<bool> confirme = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BaremesRationCompanion(
                 id: id,
                 espece: espece,
                 stade: stade,
                 rationGrammesParJour: rationGrammesParJour,
                 confirme: confirme,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required String stade,
                 required int rationGrammesParJour,
                 Value<bool> confirme = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => BaremesRationCompanion.insert(
                 id: id,
                 espece: espece,
                 stade: stade,
                 rationGrammesParJour: rationGrammesParJour,
                 confirme: confirme,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -30364,21 +39295,25 @@ typedef $$BaremesRationTableProcessedTableManager =
     >;
 typedef $$CalendrierProphylaxieTableCreateCompanionBuilder =
     CalendrierProphylaxieCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required String espece,
       required int jourCycle,
       required String traitement,
       required String produit,
       Value<int> remanenceJours,
+      Value<String?> dose,
+      Value<int> rowid,
     });
 typedef $$CalendrierProphylaxieTableUpdateCompanionBuilder =
     CalendrierProphylaxieCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> espece,
       Value<int> jourCycle,
       Value<String> traitement,
       Value<String> produit,
       Value<int> remanenceJours,
+      Value<String?> dose,
+      Value<int> rowid,
     });
 
 class $$CalendrierProphylaxieTableFilterComposer
@@ -30390,7 +39325,7 @@ class $$CalendrierProphylaxieTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -30419,6 +39354,11 @@ class $$CalendrierProphylaxieTableFilterComposer
     column: $table.remanenceJours,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get dose => $composableBuilder(
+    column: $table.dose,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$CalendrierProphylaxieTableOrderingComposer
@@ -30430,7 +39370,7 @@ class $$CalendrierProphylaxieTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -30459,6 +39399,11 @@ class $$CalendrierProphylaxieTableOrderingComposer
     column: $table.remanenceJours,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get dose => $composableBuilder(
+    column: $table.dose,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CalendrierProphylaxieTableAnnotationComposer
@@ -30470,7 +39415,7 @@ class $$CalendrierProphylaxieTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get espece =>
@@ -30491,6 +39436,9 @@ class $$CalendrierProphylaxieTableAnnotationComposer
     column: $table.remanenceJours,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get dose =>
+      $composableBuilder(column: $table.dose, builder: (column) => column);
 }
 
 class $$CalendrierProphylaxieTableTableManager
@@ -30539,12 +39487,14 @@ class $$CalendrierProphylaxieTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> espece = const Value.absent(),
                 Value<int> jourCycle = const Value.absent(),
                 Value<String> traitement = const Value.absent(),
                 Value<String> produit = const Value.absent(),
                 Value<int> remanenceJours = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CalendrierProphylaxieCompanion(
                 id: id,
                 espece: espece,
@@ -30552,15 +39502,19 @@ class $$CalendrierProphylaxieTableTableManager
                 traitement: traitement,
                 produit: produit,
                 remanenceJours: remanenceJours,
+                dose: dose,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required String espece,
                 required int jourCycle,
                 required String traitement,
                 required String produit,
                 Value<int> remanenceJours = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => CalendrierProphylaxieCompanion.insert(
                 id: id,
                 espece: espece,
@@ -30568,6 +39522,8 @@ class $$CalendrierProphylaxieTableTableManager
                 traitement: traitement,
                 produit: produit,
                 remanenceJours: remanenceJours,
+                dose: dose,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -30598,17 +39554,256 @@ typedef $$CalendrierProphylaxieTableProcessedTableManager =
       EcheanceProphylaxieRow,
       PrefetchHooks Function()
     >;
+typedef $$TauxRationPoidsTableCreateCompanionBuilder =
+    TauxRationPoidsCompanion Function({
+      Value<String> id,
+      required String espece,
+      required int poidsMinG,
+      Value<int?> poidsMaxG,
+      required double tauxPourcent,
+      Value<bool> confirme,
+      Value<int> rowid,
+    });
+typedef $$TauxRationPoidsTableUpdateCompanionBuilder =
+    TauxRationPoidsCompanion Function({
+      Value<String> id,
+      Value<String> espece,
+      Value<int> poidsMinG,
+      Value<int?> poidsMaxG,
+      Value<double> tauxPourcent,
+      Value<bool> confirme,
+      Value<int> rowid,
+    });
+
+class $$TauxRationPoidsTableFilterComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get espece => $composableBuilder(
+    column: $table.espece,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poidsMinG => $composableBuilder(
+    column: $table.poidsMinG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poidsMaxG => $composableBuilder(
+    column: $table.poidsMaxG,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get confirme => $composableBuilder(
+    column: $table.confirme,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TauxRationPoidsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get espece => $composableBuilder(
+    column: $table.espece,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poidsMinG => $composableBuilder(
+    column: $table.poidsMinG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poidsMaxG => $composableBuilder(
+    column: $table.poidsMaxG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get confirme => $composableBuilder(
+    column: $table.confirme,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TauxRationPoidsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TauxRationPoidsTable> {
+  $$TauxRationPoidsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get espece =>
+      $composableBuilder(column: $table.espece, builder: (column) => column);
+
+  GeneratedColumn<int> get poidsMinG =>
+      $composableBuilder(column: $table.poidsMinG, builder: (column) => column);
+
+  GeneratedColumn<int> get poidsMaxG =>
+      $composableBuilder(column: $table.poidsMaxG, builder: (column) => column);
+
+  GeneratedColumn<double> get tauxPourcent => $composableBuilder(
+    column: $table.tauxPourcent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get confirme =>
+      $composableBuilder(column: $table.confirme, builder: (column) => column);
+}
+
+class $$TauxRationPoidsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TauxRationPoidsTable,
+          TauxRationPoidsRow,
+          $$TauxRationPoidsTableFilterComposer,
+          $$TauxRationPoidsTableOrderingComposer,
+          $$TauxRationPoidsTableAnnotationComposer,
+          $$TauxRationPoidsTableCreateCompanionBuilder,
+          $$TauxRationPoidsTableUpdateCompanionBuilder,
+          (
+            TauxRationPoidsRow,
+            BaseReferences<
+              _$AppDatabase,
+              $TauxRationPoidsTable,
+              TauxRationPoidsRow
+            >,
+          ),
+          TauxRationPoidsRow,
+          PrefetchHooks Function()
+        > {
+  $$TauxRationPoidsTableTableManager(
+    _$AppDatabase db,
+    $TauxRationPoidsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TauxRationPoidsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TauxRationPoidsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TauxRationPoidsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> espece = const Value.absent(),
+                Value<int> poidsMinG = const Value.absent(),
+                Value<int?> poidsMaxG = const Value.absent(),
+                Value<double> tauxPourcent = const Value.absent(),
+                Value<bool> confirme = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TauxRationPoidsCompanion(
+                id: id,
+                espece: espece,
+                poidsMinG: poidsMinG,
+                poidsMaxG: poidsMaxG,
+                tauxPourcent: tauxPourcent,
+                confirme: confirme,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                required String espece,
+                required int poidsMinG,
+                Value<int?> poidsMaxG = const Value.absent(),
+                required double tauxPourcent,
+                Value<bool> confirme = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TauxRationPoidsCompanion.insert(
+                id: id,
+                espece: espece,
+                poidsMinG: poidsMinG,
+                poidsMaxG: poidsMaxG,
+                tauxPourcent: tauxPourcent,
+                confirme: confirme,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TauxRationPoidsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TauxRationPoidsTable,
+      TauxRationPoidsRow,
+      $$TauxRationPoidsTableFilterComposer,
+      $$TauxRationPoidsTableOrderingComposer,
+      $$TauxRationPoidsTableAnnotationComposer,
+      $$TauxRationPoidsTableCreateCompanionBuilder,
+      $$TauxRationPoidsTableUpdateCompanionBuilder,
+      (
+        TauxRationPoidsRow,
+        BaseReferences<
+          _$AppDatabase,
+          $TauxRationPoidsTable,
+          TauxRationPoidsRow
+        >,
+      ),
+      TauxRationPoidsRow,
+      PrefetchHooks Function()
+    >;
 typedef $$ExerciceComptableTableCreateCompanionBuilder =
     ExerciceComptableCompanion Function({
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String?> affectation,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
     });
 typedef $$ExerciceComptableTableUpdateCompanionBuilder =
     ExerciceComptableCompanion Function({
       Value<int> annee,
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
+      Value<String?> affectation,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
     });
 
 final class $$ExerciceComptableTableReferences
@@ -30688,6 +39883,26 @@ class $$ExerciceComptableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get affectation => $composableBuilder(
+    column: $table.affectation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> ecritureComptableRefs(
     Expression<bool> Function($$EcritureComptableTableFilterComposer f) f,
   ) {
@@ -30762,6 +39977,26 @@ class $$ExerciceComptableTableOrderingComposer
     column: $table.dateCloture,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get affectation => $composableBuilder(
+    column: $table.affectation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExerciceComptableTableAnnotationComposer
@@ -30783,6 +40018,22 @@ class $$ExerciceComptableTableAnnotationComposer
     column: $table.dateCloture,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get affectation => $composableBuilder(
+    column: $table.affectation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> ecritureComptableRefs<T extends Object>(
     Expression<T> Function($$EcritureComptableTableAnnotationComposer a) f,
@@ -30875,20 +40126,36 @@ class $$ExerciceComptableTableTableManager
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String?> affectation = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => ExerciceComptableCompanion(
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                affectation: affectation,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
                 Value<int> annee = const Value.absent(),
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
+                Value<String?> affectation = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => ExerciceComptableCompanion.insert(
                 annee: annee,
                 isCloture: isCloture,
                 dateCloture: dateCloture,
+                affectation: affectation,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -31280,7 +40547,8 @@ typedef $$PlanComptableTableProcessedTableManager =
     >;
 typedef $$EcritureComptableTableCreateCompanionBuilder =
     EcritureComptableCompanion Function({
-      Value<int> id,
+      Value<String> id,
+      Value<String> pieceId,
       required int exerciceAnnee,
       required String numeroCompte,
       required DateTime dateEcriture,
@@ -31293,10 +40561,17 @@ typedef $$EcritureComptableTableCreateCompanionBuilder =
       Value<String?> achatRef,
       Value<String?> axeAnalytique,
       Value<bool> isLocked,
+      Value<String?> contrepasseDe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$EcritureComptableTableUpdateCompanionBuilder =
     EcritureComptableCompanion Function({
-      Value<int> id,
+      Value<String> id,
+      Value<String> pieceId,
       Value<int> exerciceAnnee,
       Value<String> numeroCompte,
       Value<DateTime> dateEcriture,
@@ -31309,6 +40584,12 @@ typedef $$EcritureComptableTableUpdateCompanionBuilder =
       Value<String?> achatRef,
       Value<String?> axeAnalytique,
       Value<bool> isLocked,
+      Value<String?> contrepasseDe,
+      Value<String?> origine,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$EcritureComptableTableReferences
@@ -31368,8 +40649,13 @@ class $$EcritureComptableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31420,6 +40706,31 @@ class $$EcritureComptableTableFilterComposer
 
   ColumnFilters<bool> get isLocked => $composableBuilder(
     column: $table.isLocked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31479,8 +40790,13 @@ class $$EcritureComptableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -31531,6 +40847,31 @@ class $$EcritureComptableTableOrderingComposer
 
   ColumnOrderings<bool> get isLocked => $composableBuilder(
     column: $table.isLocked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -31590,8 +40931,11 @@ class $$EcritureComptableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceId =>
+      $composableBuilder(column: $table.pieceId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get dateEcriture => $composableBuilder(
     column: $table.dateEcriture,
@@ -31630,6 +40974,25 @@ class $$EcritureComptableTableAnnotationComposer
 
   GeneratedColumn<bool> get isLocked =>
       $composableBuilder(column: $table.isLocked, builder: (column) => column);
+
+  GeneratedColumn<String> get contrepasseDe => $composableBuilder(
+    column: $table.contrepasseDe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$ExerciceComptableTableAnnotationComposer get exerciceAnnee {
     final $$ExerciceComptableTableAnnotationComposer composer =
@@ -31712,7 +41075,8 @@ class $$EcritureComptableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> pieceId = const Value.absent(),
                 Value<int> exerciceAnnee = const Value.absent(),
                 Value<String> numeroCompte = const Value.absent(),
                 Value<DateTime> dateEcriture = const Value.absent(),
@@ -31725,8 +41089,15 @@ class $$EcritureComptableTableTableManager
                 Value<String?> achatRef = const Value.absent(),
                 Value<String?> axeAnalytique = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
+                Value<String?> contrepasseDe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => EcritureComptableCompanion(
                 id: id,
+                pieceId: pieceId,
                 exerciceAnnee: exerciceAnnee,
                 numeroCompte: numeroCompte,
                 dateEcriture: dateEcriture,
@@ -31739,10 +41110,17 @@ class $$EcritureComptableTableTableManager
                 achatRef: achatRef,
                 axeAnalytique: axeAnalytique,
                 isLocked: isLocked,
+                contrepasseDe: contrepasseDe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> pieceId = const Value.absent(),
                 required int exerciceAnnee,
                 required String numeroCompte,
                 required DateTime dateEcriture,
@@ -31755,8 +41133,15 @@ class $$EcritureComptableTableTableManager
                 Value<String?> achatRef = const Value.absent(),
                 Value<String?> axeAnalytique = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
+                Value<String?> contrepasseDe = const Value.absent(),
+                Value<String?> origine = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => EcritureComptableCompanion.insert(
                 id: id,
+                pieceId: pieceId,
                 exerciceAnnee: exerciceAnnee,
                 numeroCompte: numeroCompte,
                 dateEcriture: dateEcriture,
@@ -31769,6 +41154,12 @@ class $$EcritureComptableTableTableManager
                 achatRef: achatRef,
                 axeAnalytique: axeAnalytique,
                 isLocked: isLocked,
+                contrepasseDe: contrepasseDe,
+                origine: origine,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -31857,19 +41248,27 @@ typedef $$EcritureComptableTableProcessedTableManager =
     >;
 typedef $$NotesAnnexesTableCreateCompanionBuilder =
     NotesAnnexesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       required int exerciceAnnee,
       required int numeroNote,
       required String titre,
       required String contenu,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 typedef $$NotesAnnexesTableUpdateCompanionBuilder =
     NotesAnnexesCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<int> exerciceAnnee,
       Value<int> numeroNote,
       Value<String> titre,
       Value<String> contenu,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
+      Value<int> rowid,
     });
 
 final class $$NotesAnnexesTableReferences
@@ -31904,7 +41303,7 @@ class $$NotesAnnexesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -31921,6 +41320,21 @@ class $$NotesAnnexesTableFilterComposer
 
   ColumnFilters<String> get contenu => $composableBuilder(
     column: $table.contenu,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31957,7 +41371,7 @@ class $$NotesAnnexesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -31974,6 +41388,21 @@ class $$NotesAnnexesTableOrderingComposer
 
   ColumnOrderings<String> get contenu => $composableBuilder(
     column: $table.contenu,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -32010,7 +41439,7 @@ class $$NotesAnnexesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<int> get numeroNote => $composableBuilder(
@@ -32023,6 +41452,17 @@ class $$NotesAnnexesTableAnnotationComposer
 
   GeneratedColumn<String> get contenu =>
       $composableBuilder(column: $table.contenu, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$ExerciceComptableTableAnnotationComposer get exerciceAnnee {
     final $$ExerciceComptableTableAnnotationComposer composer =
@@ -32077,31 +41517,47 @@ class $$NotesAnnexesTableTableManager
               $$NotesAnnexesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<int> exerciceAnnee = const Value.absent(),
                 Value<int> numeroNote = const Value.absent(),
                 Value<String> titre = const Value.absent(),
                 Value<String> contenu = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => NotesAnnexesCompanion(
                 id: id,
                 exerciceAnnee: exerciceAnnee,
                 numeroNote: numeroNote,
                 titre: titre,
                 contenu: contenu,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 required int exerciceAnnee,
                 required int numeroNote,
                 required String titre,
                 required String contenu,
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => NotesAnnexesCompanion.insert(
                 id: id,
                 exerciceAnnee: exerciceAnnee,
                 numeroNote: numeroNote,
                 titre: titre,
                 contenu: contenu,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -32177,6 +41633,9 @@ typedef $$CloturesPeriodiquesTableCreateCompanionBuilder =
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
       Value<String?> declotureParUtilisateurId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 typedef $$CloturesPeriodiquesTableUpdateCompanionBuilder =
@@ -32186,6 +41645,9 @@ typedef $$CloturesPeriodiquesTableUpdateCompanionBuilder =
       Value<bool> isCloture,
       Value<DateTime?> dateCloture,
       Value<String?> declotureParUtilisateurId,
+      Value<String> syncStatus,
+      Value<String?> syncMotif,
+      Value<String> updatedAt,
       Value<int> rowid,
     });
 
@@ -32220,6 +41682,21 @@ class $$CloturesPeriodiquesTableFilterComposer
 
   ColumnFilters<String> get declotureParUtilisateurId => $composableBuilder(
     column: $table.declotureParUtilisateurId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -32257,6 +41734,21 @@ class $$CloturesPeriodiquesTableOrderingComposer
     column: $table.declotureParUtilisateurId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncMotif => $composableBuilder(
+    column: $table.syncMotif,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CloturesPeriodiquesTableAnnotationComposer
@@ -32286,6 +41778,17 @@ class $$CloturesPeriodiquesTableAnnotationComposer
     column: $table.declotureParUtilisateurId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncMotif =>
+      $composableBuilder(column: $table.syncMotif, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$CloturesPeriodiquesTableTableManager
@@ -32336,6 +41839,9 @@ class $$CloturesPeriodiquesTableTableManager
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> declotureParUtilisateurId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloturesPeriodiquesCompanion(
                 annee: annee,
@@ -32343,6 +41849,9 @@ class $$CloturesPeriodiquesTableTableManager
                 isCloture: isCloture,
                 dateCloture: dateCloture,
                 declotureParUtilisateurId: declotureParUtilisateurId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -32352,6 +41861,9 @@ class $$CloturesPeriodiquesTableTableManager
                 Value<bool> isCloture = const Value.absent(),
                 Value<DateTime?> dateCloture = const Value.absent(),
                 Value<String?> declotureParUtilisateurId = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String?> syncMotif = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CloturesPeriodiquesCompanion.insert(
                 annee: annee,
@@ -32359,6 +41871,9 @@ class $$CloturesPeriodiquesTableTableManager
                 isCloture: isCloture,
                 dateCloture: dateCloture,
                 declotureParUtilisateurId: declotureParUtilisateurId,
+                syncStatus: syncStatus,
+                syncMotif: syncMotif,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -32414,8 +41929,14 @@ class $AppDatabaseManager {
       $$PreferencesPosteTableTableManager(_db, _db.preferencesPoste);
   $$CorbeilleTableTableManager get corbeille =>
       $$CorbeilleTableTableManager(_db, _db.corbeille);
+  $$DemandesReferentielTableTableManager get demandesReferentiel =>
+      $$DemandesReferentielTableTableManager(_db, _db.demandesReferentiel);
+  $$EffetsAppliquesTableTableManager get effetsAppliques =>
+      $$EffetsAppliquesTableTableManager(_db, _db.effetsAppliques);
   $$ProduitsVendablesTableTableManager get produitsVendables =>
       $$ProduitsVendablesTableTableManager(_db, _db.produitsVendables);
+  $$MouvementsProduitTableTableManager get mouvementsProduit =>
+      $$MouvementsProduitTableTableManager(_db, _db.mouvementsProduit);
   $$ClientsTableTableManager get clients =>
       $$ClientsTableTableManager(_db, _db.clients);
   $$VentesTableTableManager get ventes =>
@@ -32458,6 +41979,8 @@ class $AppDatabaseManager {
       $$BaremesRationTableTableManager(_db, _db.baremesRation);
   $$CalendrierProphylaxieTableTableManager get calendrierProphylaxie =>
       $$CalendrierProphylaxieTableTableManager(_db, _db.calendrierProphylaxie);
+  $$TauxRationPoidsTableTableManager get tauxRationPoids =>
+      $$TauxRationPoidsTableTableManager(_db, _db.tauxRationPoids);
   $$ExerciceComptableTableTableManager get exerciceComptable =>
       $$ExerciceComptableTableTableManager(_db, _db.exerciceComptable);
   $$PlanComptableTableTableManager get planComptable =>

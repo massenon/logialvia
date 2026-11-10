@@ -15,13 +15,13 @@ abstract class SoinsRepository {
     String? veterinaire,
     String? symptomes,
     int coutFcfa = 0,
-    int? bandeId,
-    int? echeanceProphylaxieId,
+    String? bandeId,
+    String? echeanceProphylaxieId,
   });
 
   /// Passe un soin planifié en « Effectué » — « Confirmer Administration »
   /// du volet de détail.
-  Future<void> confirmerAdministration(int soinId);
+  Future<void> confirmerAdministration(String soinId);
 
   Future<List<EntreeInfirmerie>> chargerInfirmerie();
 
@@ -35,7 +35,7 @@ abstract class SoinsRepository {
 
   /// Clôture une entrée d'infirmerie (réintégration ou décès).
   Future<void> cloturerEntree({
-    required int entreeId,
+    required String entreeId,
     required String statut,
     required DateTime dateSortie,
   });
@@ -47,7 +47,7 @@ abstract class SoinsRepository {
   /// fiche n'a pas bougé ferait disparaître la perte du taux de mortalité sans
   /// que rien ne le signale.
   Future<void> marquerDecesReporte({
-    required int entreeId,
+    required String entreeId,
     required int categorieMortalite,
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../elevage/domain/services/reperes_zootechniques.dart';
 import '../../domain/entities/tableau_bord_principal.dart';
 import '../../domain/repositories/tableau_bord_repository.dart';
 
@@ -14,6 +15,10 @@ class DashboardElevageViewModel extends ChangeNotifier {
 
   List<RecensementFiliere> _filieres = const [];
   List<RecensementFiliere> get filieres => _filieres;
+
+  /// GMQ par filiere sur 4 semaines (`47e_`) ; une filiere sans deux pesees en est absente.
+  Map<String, ResultatGmq> _gmq = const {};
+  Map<String, ResultatGmq> get gmq => _gmq;
 
   RecensementCouveuse? _couveuse;
   RecensementCouveuse? get couveuse => _couveuse;
@@ -44,6 +49,8 @@ class DashboardElevageViewModel extends ChangeNotifier {
       for (final espece in especesActives)
         ?await _repository.recensementFiliere(espece),
     ];
+
+    _gmq = await _repository.gmqParFiliere(especesActives);
 
     final stats = await _repository.statistiquesCouveuse();
     _couveuse = RecensementCouveuse(

@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `PRODUITS_VENDABLES` — Doc D1 §2.
 ///
 /// Contexte Commercial. Ne pas confondre avec `INTRANTS` (contexte
@@ -8,7 +10,10 @@ import 'package:drift/drift.dart';
 /// structurelle.
 @DataClassName('ProduitVendableRow')
 class ProduitsVendables extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID genere au poste (DV-19, `46_`) : un produit cree sur deux postes ne
+  /// peut pas porter le meme entier. Les anciens produits recoivent le leur a la
+  /// migration v33.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// ⚠️ AJOUTEE — colonne « SKU », 1ʳᵉ du tableau de `catalogue-produits.html`
   /// (l.126) et absente de Doc D1. Genere sous la forme 'PRD-001' faute de
@@ -59,4 +64,7 @@ class ProduitsVendables extends Table {
 
   /// Renseigne si le produit est un animal vivant issu d'une filiere.
   TextColumn get espece => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

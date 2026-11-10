@@ -1,7 +1,14 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/comptabilite.dart';
+import '../../domain/services/report_a_nouveau.dart';
+import 'pieces_cloture_drift.dart';
 
 /// Une ligne à écrire (partie double).
 class LigneAEcrire {
@@ -31,6 +38,13 @@ abstract class ComptabiliteRepository {
   Future<Map<int, bool>> chargerCloturesPeriodiques(int annee);
   Future<List<NoteAnnexe>> chargerNotes(int exerciceAnnee);
 
+  /// Code attribué à ce poste par le serveur (`P2`), `null` s'il n'a jamais été
+  /// appairé : il préfixe les numéros de pièces (DV-21), `OD-P2-2026-0003`.
+  Future<String?> codePoste();
+
+  /// Motif du refus de la dernière clôture de l'exercice par le serveur, ou `null`.
+  Future<String?> motifRefusCloture(int annee);
+
   Future<void> creerCompte(CompteComptable compte);
 
   /// Le libellé et la classe sont modifiables ; **le numéro ne l'est pas** —
@@ -59,17 +73,24 @@ abstract class ComptabiliteRepository {
     String? achatRef,
   });
 
-  Future<void> supprimerEcriture(int id);
+  /// Supprime une ligne. Une ligne **déjà transmise** au serveur (ou venue d'un autre
+  /// poste) est un fait partagé : elle ne se supprime pas, on annule sa pièce.
+  Future<void> supprimerEcriture(String id);
 
   /// Supprime **toutes** les lignes d'une pièce. Une dépense ou une opération
   /// diverse est équilibrée sur 2 lignes : n'en supprimer qu'une casserait la
   /// partie double et déséquilibrerait la balance.
+  ///
+  /// Une pièce **déjà transmise** au serveur ne se supprime pas : elle est
+  /// **contrepassée** (écriture inverse sous le numéro `ANN-…`), le journal garde
+  /// les deux traces — un fait synchronisé est immuable (`46d_` §3).
   Future<void> supprimerPiece({
     required int exerciceAnnee,
     required String numeroPiece,
   });
 
-  /// Réécrit une pièce **sous son propre numéro**, en une seule transaction.
+  /// Réécrit une pièce **non encore transmise** sous son propre numéro, en une
+  /// seule transaction.
   ///
   /// Modifier une dépense, ce n'est pas modifier une ligne : c'est remplacer
   /// les deux lignes de sa pièce. Enchaîner une suppression puis une écriture
@@ -78,7 +99,8 @@ abstract class ComptabiliteRepository {
   ///
   /// Le numéro de pièce est **conservé** : il figure sur le reçu papier que la
   /// Gérante a classé. Le renuméroter à chaque correction rendrait le
-  /// rapprochement impossible.
+  /// rapprochement impossible. Une pièce déjà transmise est refusée : voir
+  /// [supprimerPiece].
   Future<void> remplacerPiece({
     required int exerciceAnnee,
     required String numeroPiece,
@@ -94,7 +116,22 @@ abstract class ComptabiliteRepository {
     required String utilisateurId,
   });
 
-  Future<void> cloturerExercice(int annee);
+  /// Clôture l'exercice [annee] : solde des classes 6/7/8 au compte 13, affectation du
+  /// résultat, verrouillage, puis à-nouveaux de l'exercice suivant (`ReportANouveau`).
+  /// **Idempotente** : un exercice déjà clôturé n'est pas retouché, rien n'est dupliqué.
+  Future<void> cloturerExercice(
+    int annee, {
+    AffectationResultat affectation = AffectationResultat.aucune,
+  });
+
+  /// Rouvre l'exercice [annee] : retire les écritures de clôture et les à-nouveaux de
+  /// l'exercice suivant, déverrouille. Refusée si la clôture est déjà acceptée par le
+  /// serveur (fait partagé) ou si l'exercice suivant est clôturé.
+  Future<void> rouvrirExercice(int annee, {required String utilisateurId});
+
+  /// Décision d'affectation prise à la clôture de [annee], `aucune` si elle n'a pas eu lieu.
+  Future<AffectationResultat> chargerAffectation(int annee);
+
   Future<void> enregistrerNote(int exerciceAnnee, NoteAnnexe note);
 }
 
@@ -103,12 +140,24 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
 
   final AppDatabase _db;
 
+  DepotDemandesReferentiel get _depot => DepotDemandesReferentiel(_db);
+
+  @override
+  Future<String?> codePoste() => PreferencesPosteRepository(_db).codeAttribue();
+
+  @override
+  Future<String?> motifRefusCloture(int annee) async {
+    final e = await (_db.select(
+      _db.exerciceComptable,
+    )..where((x) => x.annee.equals(annee))).getSingleOrNull();
+    return e?.syncStatus == 'conflict' ? e?.syncMotif : null;
+  }
+
   @override
   Future<List<CompteComptable>> chargerPlanComptable() async {
-    final lignes =
-        await (_db.select(_db.planComptable)
-              ..orderBy([(p) => OrderingTerm.asc(p.numeroCompte)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.planComptable,
+    )..orderBy([(p) => OrderingTerm.asc(p.numeroCompte)])).get();
     return [
       for (final c in lignes)
         CompteComptable(
@@ -123,7 +172,11 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
   @override
   Future<List<Ecriture>> chargerEcritures({int? exerciceAnnee}) async {
     final requete = _db.select(_db.ecritureComptable)
-      ..orderBy([(e) => OrderingTerm.desc(e.dateEcriture)]);
+      ..orderBy([
+        (e) => OrderingTerm.desc(e.dateEcriture),
+        (e) => OrderingTerm.asc(e.updatedAt),
+        (e) => OrderingTerm.asc(e.id),
+      ]);
     if (exerciceAnnee != null) {
       requete.where((e) => e.exerciceAnnee.equals(exerciceAnnee));
     }
@@ -132,6 +185,7 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       for (final e in await requete.get())
         Ecriture(
           id: e.id,
+          pieceId: e.pieceId,
           exerciceAnnee: e.exerciceAnnee,
           numeroCompte: e.numeroCompte,
           date: e.dateEcriture,
@@ -144,16 +198,19 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
           achatRef: e.achatRef,
           isLocked: e.isLocked,
           axeAnalytique: e.axeAnalytique,
+          origine: e.origine,
+          syncStatus: e.syncStatus,
+          syncMotif: e.syncMotif,
+          contrepasseDe: e.contrepasseDe,
         ),
     ];
   }
 
   @override
   Future<List<int>> chargerExercices() async {
-    final lignes =
-        await (_db.select(_db.exerciceComptable)
-              ..orderBy([(e) => OrderingTerm.desc(e.annee)]))
-            .get();
+    final lignes = await (_db.select(
+      _db.exerciceComptable,
+    )..orderBy([(e) => OrderingTerm.desc(e.annee)])).get();
     return lignes.map((e) => e.annee).toList();
   }
 
@@ -197,6 +254,8 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
             classe: compte.classe,
           ),
         );
+    // Le plan est un référentiel : le poste PROPOSE, le serveur décide.
+    await _depot.proposerCompte(compte.numero);
   }
 
   @override
@@ -208,11 +267,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
     await (_db.update(
       _db.planComptable,
     )..where((p) => p.numeroCompte.equals(numero))).write(
-      PlanComptableCompanion(
-        libelle: Value(libelle),
-        classe: Value(classe),
-      ),
+      PlanComptableCompanion(libelle: Value(libelle), classe: Value(classe)),
     );
+    await _depot.proposerCompte(numero);
   }
 
   @override
@@ -227,11 +284,10 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
 
   @override
   Future<void> archiverCompte(String numero, {required bool archive}) async {
-    await (_db.update(
-      _db.planComptable,
-    )..where((p) => p.numeroCompte.equals(numero))).write(
-      PlanComptableCompanion(archive: Value(archive)),
-    );
+    await (_db.update(_db.planComptable)
+          ..where((p) => p.numeroCompte.equals(numero)))
+        .write(PlanComptableCompanion(archive: Value(archive)));
+    await _depot.proposerCompte(numero);
   }
 
   /// ## Double verrouillage — Doc F6 §9
@@ -249,9 +305,7 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
     )..where((e) => e.annee.equals(date.year))).getSingleOrNull();
 
     if (exercice == null) {
-      throw StateError(
-        'Aucun exercice comptable ouvert pour ${date.year}.',
-      );
+      throw StateError('Aucun exercice comptable ouvert pour ${date.year}.');
     }
     if (exercice.isCloture) {
       throw StateError(
@@ -260,15 +314,43 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
       );
     }
 
-    final cloture = await (_db.select(_db.cloturesPeriodiques)..where(
-          (c) => c.annee.equals(date.year) & c.mois.equals(date.month),
-        ))
-        .getSingleOrNull();
+    final cloture =
+        await (_db.select(_db.cloturesPeriodiques)..where(
+              (c) => c.annee.equals(date.year) & c.mois.equals(date.month),
+            ))
+            .getSingleOrNull();
     if (cloture?.isCloture ?? false) {
       throw StateError(
         'Le mois ${date.month}/${date.year} est clôturé. Une administratrice '
         'peut le déclôturer pour correction (BR-CPT-006).',
       );
+    }
+  }
+
+  /// Un fait partagé ne se modifie pas ici : message unique pour toutes les
+  /// opérations qui tenteraient de le toucher.
+  static const String _motifFaitPartage =
+      'Cette écriture vient d\'un autre poste : elle ne peut être ni modifiée ni '
+      'supprimée ici.';
+
+  static const String _motifTransmise =
+      'Cette pièce a déjà été transmise au serveur : c\'est un fait partagé, '
+      'elle ne peut plus être modifiée. Annulez-la, puis saisissez-la de nouveau.';
+
+  static const String _motifJournalDeCloture =
+      'Les écritures de clôture (CL) et d\'à-nouveaux (AN) sont générées par la clôture '
+      'annuelle : elles ne se saisissent ni ne se modifient à la main. Rouvrez l\'exercice '
+      'pour les refaire.';
+
+  void _refuserSiDeCloture(List<EcritureRow> lignes) {
+    if (lignes.any((l) => JournauxDeCloture.estDeCloture(l.journalCode))) {
+      throw StateError(_motifJournalDeCloture);
+    }
+  }
+
+  Future<void> _refuserSiAutrePoste(List<EcritureRow> lignes) async {
+    if (lignes.any((l) => l.origine != null)) {
+      throw StateError(_motifFaitPartage);
     }
   }
 
@@ -281,39 +363,69 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
     String? venteRef,
     String? achatRef,
   }) async {
+    if (JournauxDeCloture.estDeCloture(journalCode)) {
+      throw StateError(_motifJournalDeCloture);
+    }
     await _db.transaction(() async {
       await _verifierVerrouillage(date);
-
-      for (final ligne in lignes) {
-        await _db
-            .into(_db.ecritureComptable)
-            .insert(
-              EcritureComptableCompanion.insert(
-                exerciceAnnee: date.year,
-                numeroCompte: ligne.numeroCompte,
-                dateEcriture: date,
-                debit: Value(ligne.debit),
-                credit: Value(ligne.credit),
-                libelle: ligne.libelle,
-                journalCode: Value(journalCode),
-                numeroPiece: Value(numeroPiece),
-                venteRef: Value(venteRef),
-                achatRef: Value(achatRef),
-                axeAnalytique: Value(ligne.axeAnalytique),
-              ),
-            );
-      }
+      await _inserer(
+        pieceId: nouvelUuid(),
+        date: date,
+        journalCode: journalCode,
+        numeroPiece: numeroPiece,
+        lignes: lignes,
+        venteRef: venteRef,
+        achatRef: achatRef,
+      );
     });
   }
 
+  /// Insère les lignes d'une pièce (toutes `pending`, saisies sur CE poste).
+  Future<void> _inserer({
+    required String pieceId,
+    required DateTime date,
+    required String journalCode,
+    required String? numeroPiece,
+    required List<LigneAEcrire> lignes,
+    String? venteRef,
+    String? achatRef,
+    String? contrepasseDe,
+  }) async {
+    final saisie = instantSaisie();
+    for (final ligne in lignes) {
+      await _db
+          .into(_db.ecritureComptable)
+          .insert(
+            EcritureComptableCompanion.insert(
+              pieceId: Value(pieceId),
+              exerciceAnnee: date.year,
+              numeroCompte: ligne.numeroCompte,
+              dateEcriture: date,
+              debit: Value(ligne.debit),
+              credit: Value(ligne.credit),
+              libelle: ligne.libelle,
+              journalCode: Value(journalCode),
+              numeroPiece: Value(numeroPiece),
+              venteRef: Value(venteRef),
+              achatRef: Value(achatRef),
+              axeAnalytique: Value(ligne.axeAnalytique),
+              contrepasseDe: Value(contrepasseDe),
+              updatedAt: Value(saisie),
+            ),
+          );
+    }
+  }
+
   @override
-  Future<void> supprimerEcriture(int id) async {
+  Future<void> supprimerEcriture(String id) async {
     await _db.transaction(() async {
       final ecriture = await (_db.select(
         _db.ecritureComptable,
       )..where((e) => e.id.equals(id))).getSingleOrNull();
       if (ecriture == null) return;
 
+      await _refuserSiAutrePoste([ecriture]);
+      _refuserSiDeCloture([ecriture]);
       await _verifierVerrouillage(ecriture.dateEcriture);
 
       if (ecriture.venteRef != null || ecriture.achatRef != null) {
@@ -322,6 +434,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
           '${ecriture.venteRef ?? ecriture.achatRef}. Annulez l\'opération '
           'd\'origine plutôt que l\'écriture.',
         );
+      }
+      if (ecriture.syncStatus == 'synced') {
+        throw StateError(_motifTransmise);
       }
 
       await (_db.delete(
@@ -345,7 +460,8 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
               .get();
       if (lignes.isEmpty) return;
 
-      await _verifierVerrouillage(lignes.first.dateEcriture);
+      await _refuserSiAutrePoste(lignes);
+      _refuserSiDeCloture(lignes);
 
       for (final ligne in lignes) {
         if (ligne.venteRef != null || ligne.achatRef != null) {
@@ -357,6 +473,13 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
         }
       }
 
+      if (lignes.any((l) => l.syncStatus == 'synced')) {
+        // Fait partagé : on ne l'efface pas, on l'annule par l'écriture inverse.
+        await _contrepasser(lignes, numeroPiece);
+        return;
+      }
+
+      await _verifierVerrouillage(lignes.first.dateEcriture);
       await (_db.delete(_db.ecritureComptable)..where(
             (e) =>
                 e.exerciceAnnee.equals(exerciceAnnee) &
@@ -364,6 +487,50 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
           ))
           .go();
     });
+  }
+
+  /// Contrepassation : une pièce inverse, à la date du jour, journal OD, numéro
+  /// `ANN-<numéro de la pièce annulée>`. Chaque ligne garde son compte et son centre
+  /// analytique ; le sens est inversé.
+  Future<void> _contrepasser(
+    List<EcritureRow> lignes,
+    String numeroPiece,
+  ) async {
+    final pieceAnnulee = lignes.first.pieceId;
+    if (lignes.any((l) => l.contrepasseDe != null)) {
+      throw StateError(
+        'Une écriture d\'annulation ne s\'annule pas : saisissez une nouvelle '
+        'écriture si l\'annulation était une erreur.',
+      );
+    }
+    final deja =
+        await (_db.select(_db.ecritureComptable)
+              ..where((e) => e.contrepasseDe.equals(pieceAnnulee))
+              ..limit(1))
+            .getSingleOrNull();
+    if (deja != null) {
+      throw StateError('La pièce $numeroPiece est déjà annulée.');
+    }
+
+    final aujourdhui = DateTime.now();
+    await _verifierVerrouillage(aujourdhui);
+    await _inserer(
+      pieceId: nouvelUuid(),
+      date: aujourdhui,
+      journalCode: 'OD',
+      numeroPiece: 'ANN-$numeroPiece',
+      contrepasseDe: pieceAnnulee,
+      lignes: [
+        for (final l in lignes)
+          LigneAEcrire(
+            numeroCompte: l.numeroCompte,
+            debit: l.credit,
+            credit: l.debit,
+            libelle: 'Annulation — ${l.libelle}',
+            axeAnalytique: l.axeAnalytique,
+          ),
+      ],
+    );
   }
 
   @override
@@ -387,6 +554,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
         throw StateError('La pièce $numeroPiece est introuvable.');
       }
 
+      await _refuserSiAutrePoste(anciennes);
+      _refuserSiDeCloture(anciennes);
+
       // Les deux dates comptent : l'ancienne parce qu'on retire une ecriture
       // de sa periode, la nouvelle parce qu'on en depose une. Si l'une des
       // deux est verrouillee, la modification est refusee.
@@ -402,6 +572,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
           );
         }
       }
+      if (anciennes.any((l) => l.syncStatus == 'synced')) {
+        throw StateError(_motifTransmise);
+      }
 
       await (_db.delete(_db.ecritureComptable)..where(
             (e) =>
@@ -410,23 +583,16 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
           ))
           .go();
 
-      for (final ligne in lignes) {
-        await _db
-            .into(_db.ecritureComptable)
-            .insert(
-              EcritureComptableCompanion.insert(
-                exerciceAnnee: date.year,
-                numeroCompte: ligne.numeroCompte,
-                dateEcriture: date,
-                debit: Value(ligne.debit),
-                credit: Value(ligne.credit),
-                libelle: ligne.libelle,
-                journalCode: Value(journalCode),
-                numeroPiece: Value(numeroPiece),
-                axeAnalytique: Value(ligne.axeAnalytique),
-              ),
-            );
-      }
+      // La pièce garde SON identité (elle n'a jamais été acceptée : le serveur ne
+      // la connaît pas) ; elle repart `pending`, motif de refus effacé.
+      await _inserer(
+        pieceId: anciennes.first.pieceId,
+        date: date,
+        journalCode: journalCode,
+        numeroPiece: numeroPiece,
+        lignes: lignes,
+        contrepasseDe: anciennes.first.contrepasseDe,
+      );
     });
   }
 
@@ -440,6 +606,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
             mois: mois,
             isCloture: const Value(true),
             dateCloture: Value(DateTime.now()),
+            syncStatus: const Value('pending'),
+            syncMotif: const Value(null),
+            updatedAt: Value(instantSaisie()),
           ),
         );
   }
@@ -459,6 +628,9 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
             isCloture: const Value(false),
             // BR-ADM-003 : tracabilite du deblocage exceptionnel.
             declotureParUtilisateurId: Value(utilisateurId),
+            syncStatus: const Value('pending'),
+            syncMotif: const Value(null),
+            updatedAt: Value(instantSaisie()),
           ),
         );
 
@@ -475,48 +647,206 @@ class ComptabiliteRepositoryDrift implements ComptabiliteRepository {
         );
   }
 
+  /// ## Clôture d'exercice : un fait LOURD (`46d_` §4)
+  ///
+  /// Sur un poste **déjà appairé**, on ne clôture pas tant qu'une écriture de
+  /// l'exercice n'est pas transmise (`pending`) ou a été refusée (`conflict`) : le
+  /// serveur verrouillerait alors un exercice dont il ignore une partie, et
+  /// refuserait ensuite ces écritures. Un poste jamais appairé n'a personne à
+  /// attendre : il clôture seul.
   @override
-  Future<void> cloturerExercice(int annee) async {
+  Future<void> cloturerExercice(
+    int annee, {
+    AffectationResultat affectation = AffectationResultat.aucune,
+  }) async {
     await _db.transaction(() async {
-      await (_db.update(_db.exerciceComptable)
-            ..where((e) => e.annee.equals(annee)))
-          .write(
-            ExerciceComptableCompanion(
-              isCloture: const Value(true),
-              dateCloture: Value(DateTime.now()),
-            ),
+      final exercice = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee))).getSingleOrNull();
+      if (exercice == null) {
+        throw StateError('Aucun exercice comptable $annee à clôturer.');
+      }
+      // Idempotence : un exercice déjà clôturé n'est pas retouché (ni pièce dupliquée,
+      // ni date de clôture écrasée).
+      if (exercice.isCloture) return;
+
+      if (await codePoste() != null) {
+        final enAttente =
+            await (_db.select(_db.ecritureComptable)..where(
+                  (e) =>
+                      e.exerciceAnnee.equals(annee) &
+                      e.syncStatus.isNotValue('synced') &
+                      e.origine.isNull(),
+                ))
+                .get();
+        if (enAttente.isNotEmpty) {
+          final refusees = enAttente
+              .where((e) => e.syncStatus == 'conflict')
+              .map((e) => e.pieceId)
+              .toSet()
+              .length;
+          final pieces = enAttente.map((e) => e.pieceId).toSet().length;
+          throw StateError(
+            'Synchronisez ce poste avant de clôturer : $pieces pièce(s) de '
+            '$annee n\'ont pas été acceptées par le serveur'
+            '${refusees > 0 ? ' (dont $refusees refusée(s))' : ''}. Une clôture '
+            'verrouille l\'exercice pour tous les postes.',
           );
+        }
+      }
 
-      // Verrouille toutes les ecritures de l'exercice.
-      await (_db.update(_db.ecritureComptable)
-            ..where((e) => e.exerciceAnnee.equals(annee)))
-          .write(const EcritureComptableCompanion(isLocked: Value(true)));
-
-      // Ouvre l'exercice suivant s'il n'existe pas.
+      // L'exercice suivant doit exister (clé étrangère des à-nouveaux) et ne pas être clos.
       final suivant = await (_db.select(
         _db.exerciceComptable,
       )..where((e) => e.annee.equals(annee + 1))).getSingleOrNull();
+      if (suivant != null && suivant.isCloture) {
+        throw StateError(
+          'L\'exercice ${annee + 1} est déjà clôturé : clôturez les exercices dans l\'ordre.',
+        );
+      }
+
+      // Calcul : résultat, affectation, à-nouveaux. Refusé s'il est incohérent.
+      final plan = await chargerPlanComptable();
+      final calcul = const ReportANouveau().calculer(
+        await chargerEcritures(),
+        annee,
+        affectation: affectation,
+        comptesConnus: {for (final c in plan) c.numero},
+      );
+      if (calcul.bloquee) {
+        throw StateError(calcul.anomalies.join(' '));
+      }
+
       if (suivant == null) {
         await _db
             .into(_db.exerciceComptable)
-            .insert(
-              ExerciceComptableCompanion.insert(annee: Value(annee + 1)),
-            );
+            .insert(ExerciceComptableCompanion.insert(annee: Value(annee + 1)));
       }
+
+      final pieces = PiecesClotureDrift(_db);
+      for (final piece in calcul.pieces) {
+        await pieces.inserer(piece, verrouillee: piece.exerciceAnnee == annee);
+      }
+
+      await (_db.update(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee))).write(
+        ExerciceComptableCompanion(
+          isCloture: const Value(true),
+          dateCloture: Value(DateTime.now()),
+          affectation: Value(
+            affectation.totalDistribue > 0
+                ? jsonEncode(affectation.toJson())
+                : null,
+          ),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
+        ),
+      );
+
+      // Verrouille toutes les ecritures de l'exercice (clôture comprise).
+      await (_db.update(_db.ecritureComptable)
+            ..where((e) => e.exerciceAnnee.equals(annee)))
+          .write(const EcritureComptableCompanion(isLocked: Value(true)));
     });
+  }
+
+  @override
+  Future<AffectationResultat> chargerAffectation(int annee) async {
+    final e = await (_db.select(
+      _db.exerciceComptable,
+    )..where((x) => x.annee.equals(annee))).getSingleOrNull();
+    final brut = e?.affectation;
+    if (brut == null) return AffectationResultat.aucune;
+    try {
+      return AffectationResultat.depuisJson(jsonDecode(brut));
+    } on FormatException {
+      return AffectationResultat.aucune;
+    }
+  }
+
+  @override
+  Future<void> rouvrirExercice(
+    int annee, {
+    required String utilisateurId,
+  }) async {
+    await _db.transaction(() async {
+      final exercice = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee))).getSingleOrNull();
+      if (exercice == null || !exercice.isCloture) {
+        throw StateError('L\'exercice $annee n\'est pas clôturé.');
+      }
+      final suivant = await (_db.select(
+        _db.exerciceComptable,
+      )..where((e) => e.annee.equals(annee + 1))).getSingleOrNull();
+      if (suivant != null && suivant.isCloture) {
+        throw StateError(
+          'L\'exercice ${annee + 1} est clôturé : rouvrez-le d\'abord.',
+        );
+      }
+      if (await codePoste() != null && exercice.syncStatus == 'synced') {
+        throw StateError(
+          'La clôture de $annee a été acceptée par le serveur : c\'est un fait '
+          'partagé. Elle se déclôture depuis le serveur (écran Clôture du web, '
+          'droit close-fiscal-year), puis ce poste se synchronise.',
+        );
+      }
+      await rouvrirLocalement(_db, annee);
+      await _db
+          .into(_db.auditLogs)
+          .insert(
+            AuditLogsCompanion.insert(
+              horodatage: DateTime.now(),
+              utilisateurId: utilisateurId,
+              action: 'reouverture_exercice',
+              entiteConcernee: 'ExerciceComptable',
+              entiteId: '$annee',
+            ),
+          );
+    });
+  }
+
+  /// Rouvre l'exercice ici, sans contrôle : retire la clôture et les à-nouveaux, déverrouille.
+  /// Appelée par la réouverture (après ses contrôles), par le refus d'une clôture et par la
+  /// réouverture venue du serveur.
+  static Future<void> rouvrirLocalement(AppDatabase db, int annee) async {
+    await PiecesClotureDrift(db).supprimerDeLExercice(annee);
+    await (db.update(
+      db.exerciceComptable,
+    )..where((e) => e.annee.equals(annee))).write(
+      ExerciceComptableCompanion(
+        isCloture: const Value(false),
+        dateCloture: const Value(null),
+        affectation: const Value(null),
+        syncStatus: const Value('synced'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
+      ),
+    );
+    await (db.update(
+      db.ecritureComptable,
+    )..where((e) => e.exerciceAnnee.equals(annee))).write(
+      const EcritureComptableCompanion(isLocked: Value(false)),
+    );
   }
 
   @override
   Future<void> enregistrerNote(int exerciceAnnee, NoteAnnexe note) async {
     final companion = NotesAnnexesCompanion.insert(
+      id: Value(uuidDeterministe('note:$exerciceAnnee-${note.numero}')),
       exerciceAnnee: exerciceAnnee,
       numeroNote: note.numero,
       titre: note.titre,
       contenu: note.contenu,
+      syncStatus: const Value('pending'),
+      syncMotif: const Value(null),
+      updatedAt: Value(instantSaisie()),
     );
 
     // `UNIQUE(exerciceAnnee, numeroNote)` — cible explicite, jamais la cle
-    // primaire auto-incrementee (Doc K3 §6-TER).
+    // primaire (Doc K3 §6-TER).
     await _db
         .into(_db.notesAnnexes)
         .insert(

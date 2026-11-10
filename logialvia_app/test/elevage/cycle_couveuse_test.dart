@@ -38,7 +38,7 @@ void main() {
       final chargement = DateTime(2026, 8, 1);
 
       final goliath = CycleIncubation(
-        id: 1,
+        id: 'lot-1',
         code: 'C-2026-001',
         espece: EspeceCouvable.goliath,
         dateChargement: chargement,
@@ -46,7 +46,7 @@ void main() {
         statut: StatutCycle.enIncubation,
       );
       final pintade = CycleIncubation(
-        id: 2,
+        id: 'lot-2',
         code: 'C-2026-002',
         espece: EspeceCouvable.pintade,
         dateChargement: chargement,

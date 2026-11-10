@@ -40,68 +40,37 @@ void main() {
         reponse.messageToast,
         'Veuillez renseigner tous les champs requis.',
       );
-      expect(vm.erreurIdentifiant, 'L\'adresse e-mail est obligatoire.');
+      expect(vm.erreurIdentifiant, 'L\'identifiant est obligatoire.');
       expect(vm.erreurMotDePasse, 'Le mot de passe est obligatoire.');
       expect(await db.select(db.securityLogs).get(), isEmpty);
     });
 
-    test('compte les tentatives et les affiche dans le message', () async {
+    test('compte les echecs sans les afficher ni bloquer', () async {
       final premiere = await echouer();
       expect(premiere.issue, IssueConnexion.identifiantsIncorrects);
-      expect(premiere.messageToast, endsWith('(1/5)'));
-
-      final deuxieme = await echouer();
-      expect(deuxieme.messageToast, endsWith('(2/5)'));
+      expect(premiere.messageToast, isNot(contains('/5')));
+      expect(vm.tentatives, 1);
     });
 
-    test('verrouille au 5e echec, sans toast (fidele a login.html)', () async {
-      for (var i = 0; i < 4; i++) {
-        await echouer();
+    test('ne verrouille JAMAIS, meme apres de nombreux echecs', () async {
+      for (var i = 0; i < 12; i++) {
+        final r = await echouer();
+        expect(r.issue, IssueConnexion.identifiantsIncorrects);
       }
       expect(vm.verrouille, isFalse);
-
-      final cinquieme = await echouer();
-
-      expect(cinquieme.issue, IssueConnexion.compteVerrouille);
-      expect(cinquieme.messageToast, isNull);
-      expect(vm.verrouille, isTrue);
-      expect(vm.libelleVerrouillage, '15min');
     });
 
-    test('refuse toute tentative pendant le verrouillage', () async {
-      for (var i = 0; i < 5; i++) {
+    test('le bon mot de passe fonctionne apres de nombreux echecs', () async {
+      for (var i = 0; i < 8; i++) {
         await echouer();
       }
-      final logsApresVerrouillage =
-          (await db.select(db.securityLogs).get()).length;
-
-      final pendantVerrou = await vm.seConnecter(
+      final reponse = await vm.seConnecter(
         identifiant: AdminSeeder.identifiantAdmin,
-        motDePasse: AdminSeeder.motDePasseInitialAdmin, // pourtant valide
+        motDePasse: AdminSeeder.motDePasseInitialAdmin,
       );
-
-      expect(pendantVerrou.issue, IssueConnexion.compteVerrouille);
-      expect(vm.estConnecte, isFalse);
-      // Aucune tentative supplementaire n'a atteint la base.
-      expect(
-        (await db.select(db.securityLogs).get()).length,
-        logsApresVerrouillage,
-      );
+      expect(reponse.issue, IssueConnexion.succes);
+      expect(vm.estConnecte, isTrue);
     });
-
-    test(
-      'quitter puis revenir sur l\'ecran ne remet pas le verrou a zero',
-      () async {
-        for (var i = 0; i < 5; i++) {
-          await echouer();
-        }
-
-        vm.reinitialiserErreursSaisie();
-
-        expect(vm.verrouille, isTrue);
-        expect(vm.tentatives, AuthViewModel.nombreTentativesMax);
-      },
-    );
 
     test('ouvre la session et remet le compteur a zero au succes', () async {
       await echouer();

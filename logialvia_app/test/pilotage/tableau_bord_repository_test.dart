@@ -8,6 +8,7 @@ import 'package:logialvia_app/approvisionnement/data/seed/intrants_seeder.dart';
 import 'package:logialvia_app/commercial/data/seed/catalogue_seeder.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
 import 'package:logialvia_app/core/database/seed/seed_initial.dart';
+import 'package:logialvia_app/core/router/navigation_model.dart';
 import 'package:logialvia_app/pilotage/data/repositories/tableau_bord_repository_drift.dart';
 
 void main() {
@@ -58,15 +59,17 @@ void main() {
       expect(mais.threshold, 25);
     });
 
-    test('seuls les 3 modules basculables existent, tous désactivés', () async {
+    test('seuls les 5 modules basculables existent, tous désactivés', () async {
       final modules = await db.select(db.modulesActifs).get();
 
-      expect(modules, hasLength(3));
+      expect(modules, hasLength(5));
       expect(modules.every((m) => m.isActif == false), isTrue);
       expect(modules.map((m) => m.moduleId).toSet(), {
         'pisciculture',
         'cuniculture',
         'aviculture_classique',
+        'heliciculture',
+        'bovins',
       });
       // Goliaths et Pintades n'ont volontairement aucune ligne (Doc I2 §2).
       expect(
@@ -81,7 +84,7 @@ void main() {
 
       expect(await db.select(db.produitsVendables).get(), hasLength(14));
       expect(await db.select(db.intrants).get(), hasLength(6));
-      expect(await db.select(db.modulesActifs).get(), hasLength(3));
+      expect(await db.select(db.modulesActifs).get(), hasLength(5));
     });
 
     test('un catalogue déjà modifié n\'est jamais réécrasé', () async {
@@ -305,6 +308,37 @@ void main() {
       },
     );
 
+    // Regression : `/elevage/poulets` etait construit a partir du code espece
+    // et levait « GoException: no routes for location » au clic.
+    test(
+      'chaque filière pointe vers une route réellement déclarée',
+      () async {
+        final routesDeclarees = {
+          for (final groupe in NavigationModel.groupes)
+            for (final entree in groupe.entrees) entree.route,
+        };
+        for (final espece in const [
+          'goliaths',
+          'pintades',
+          'lapins',
+          'poulets',
+          'pondeuses',
+          'poissons-chats',
+        ]) {
+          final recensement = await repository.recensementFiliere(espece);
+          expect(
+            routesDeclarees,
+            contains(recensement!.route),
+            reason: 'Filière $espece',
+          );
+        }
+        expect(
+          (await repository.recensementFiliere('poulets'))!.route,
+          '/elevage/poulets-pondeuses',
+        );
+      },
+    );
+
     test(
       'lit la dernière journée saisie et ignore les jours non saisis',
       () async {
@@ -477,6 +511,37 @@ void main() {
       final stats = await repository.statistiquesCouveuse();
       expect(stats.tauxEclosionMoyen, 84);
       expect(stats.cyclesEnCours, 0);
+    });
+  });
+
+  group('Soins en retard : le statut saisi ne suffit pas (`47e_`)', () {
+    Future<void> soin(String statut, DateTime date, String type) => db
+        .into(db.soinsCalendrier)
+        .insert(
+          SoinsCalendrierCompanion.insert(
+            espece: 'goliaths',
+            datePrevue: date,
+            typeSoin: type,
+            statut: statut,
+          ),
+        );
+
+    test('un soin Planifié dont la date est passée est en retard', () async {
+      final hier = DateTime.now().subtract(const Duration(days: 3));
+      final demain = DateTime.now().add(const Duration(days: 3));
+      await soin('Planifié', hier, 'Vaccin Newcastle');
+      await soin('Planifié', demain, 'Vermifuge');
+      await soin('En retard', demain, 'Vitamines');
+      await soin('Effectué', hier, 'Traitement curatif');
+
+      final prochains = await repository.prochainsSoins();
+      final parType = {for (final p in prochains) p.typeSoin: p.estEnRetard};
+      expect(parType, {
+        'Vaccin Newcastle': true,
+        'Vermifuge': false,
+        'Vitamines': true,
+      });
+      expect(await repository.nombreAlertesSanitaires(), 2);
     });
   });
 

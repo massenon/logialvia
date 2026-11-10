@@ -11,12 +11,17 @@ import '../../domain/repositories/bandes_repository.dart';
 import '../../domain/repositories/fiche_elevage_repository.dart';
 import '../../domain/repositories/soins_repository.dart';
 import '../../domain/services/calcul_fiche_journaliere.dart';
+import '../../domain/services/controle_vraisemblance.dart';
+import '../../domain/services/reperes_zootechniques.dart';
 import '../../domain/services/prophylaxie_de_la_bande.dart';
+import '../../domain/usecases/chaine_effectifs_usecases.dart';
 import '../../domain/usecases/enregistrer_journee_usecase.dart';
 
 export '../../domain/services/prophylaxie_de_la_bande.dart'
     show EcheanceProjetee;
 
+export '../../domain/usecases/chaine_effectifs_usecases.dart'
+    show JourIncoherent, RapportChaine;
 export '../../domain/usecases/enregistrer_journee_usecase.dart'
     show SaisieStockOeufs;
 
@@ -37,10 +42,12 @@ class FicheEspeceViewModel extends ChangeNotifier {
 
   final ConfigurationEspece configuration;
   final FicheElevageRepository _repository;
+
   /// Source des baremes de rationnement — Parametres Elevage (Doc F3).
   /// Public parce qu'il n'est pas re-passe a un usecase : le rendre prive
   /// declencherait `prefer_initializing_formals` sans rien apporter.
   final ParametresElevageRepository parametresRepository;
+
   /// Depot des bandes — la mise en place qui donne son J1 au cycle. Public
   /// pour la meme raison que [parametresRepository].
   final BandesRepository bandesRepository;
@@ -220,6 +227,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
         typeSoin: typeSoin,
         statut: StatutSoin.planifie,
         produit: projetee.echeance.produit,
+        dose: projetee.echeance.dose,
         remanenceJours: projetee.echeance.remanenceJours,
         symptomes: null,
         bandeId: bande.id,
@@ -231,6 +239,71 @@ class FicheEspeceViewModel extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) debugPrint('Echec planification echeance: $e');
       return const Echec('Impossible de planifier ce soin.');
+    }
+  }
+
+  // ------------------------------------------- Chaine, divergence, recodage (`47e_`)
+
+  List<JourIncoherent> _joursIncoherents = const [];
+
+  /// Jours dont l'effectif ne découle pas de la veille (fiches d'un autre poste arrivées
+  /// sans cascade). Vide quand la chaîne est cohérente.
+  List<JourIncoherent> get joursIncoherents => _joursIncoherents;
+
+  List<VersionJournee> _versions = const [];
+
+  /// Versions en présence quand la fiche du jour est « modifiée ailleurs ».
+  List<VersionJournee> get versionsEnDivergence => _versions;
+
+  /// Recalcule toute la chaîne d'effectifs de la filière, dans l'ordre chronologique.
+  Future<Resultat<RapportChaine>> recalculerChaine() async {
+    final resultat = await ChaineEffectifsUseCase(
+      _repository,
+      configuration,
+    ).recalculer();
+    await _rafraichir();
+    notifyListeners();
+    return resultat;
+  }
+
+  /// Garde [choisie] pour la fiche du jour (la machine ne tranche jamais).
+  Future<Resultat<void>> resoudreDivergence(VersionJournee choisie) async {
+    final resultat = await ResoudreDivergenceUseCase(
+      _repository,
+      configuration,
+    ).executer(date: _jourActif, choisie: choisie);
+    await _rafraichir();
+    notifyListeners();
+    return resultat;
+  }
+
+  /// Code de recodage proposé pour la bande en conflit (`B2` -> `B2-P2`).
+  Future<String?> codeRecodageBandePropose() async {
+    final b = _bande;
+    if (b == null) return null;
+    final toutes = await bandesRepository.chargerBandes(configuration.identifiant);
+    return Bande.proposerCodeRecodage(
+      b.code,
+      codePoste: await bandesRepository.codePoste(),
+      codesPris: toutes.map((x) => x.code).toSet(),
+    );
+  }
+
+  Future<Resultat<void>> recoderBande(String nouveauCode) async {
+    final b = _bande;
+    if (b == null) return const Echec('Aucune bande en cours.');
+    if (nouveauCode.trim().isEmpty) {
+      return const Echec('Le code de la bande est obligatoire.');
+    }
+    try {
+      await bandesRepository.recoderBande(id: b.id, nouveauCode: nouveauCode);
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } on StateError catch (e) {
+      return Echec(e.message);
+    } catch (_) {
+      return const Echec('Impossible de recoder la bande.');
     }
   }
 
@@ -265,6 +338,17 @@ class FicheEspeceViewModel extends ChangeNotifier {
       date: _jourActif,
     );
 
+    _joursIncoherents = await ChaineEffectifsUseCase(
+      _repository,
+      configuration,
+    ).verifier();
+    _versions = journeeActive.modifieeAilleurs
+        ? await _repository.versionsEnDivergence(
+            espece: configuration.identifiant,
+            date: _jourActif,
+          )
+        : const [];
+
     _bande = await bandesRepository.bandeCouvrant(
       espece: configuration.identifiant,
       date: _jourActif,
@@ -274,6 +358,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
     _soins = await soinsRepository.chargerSoins();
 
     final baremes = await parametresRepository.chargerBaremes();
+    final taux = await parametresRepository.chargerTauxPoids();
     _calcul = CalculFicheJournaliere(
       configuration,
       rationsConfigurees: {
@@ -281,6 +366,7 @@ class FicheEspeceViewModel extends ChangeNotifier {
           if (b.espece == configuration.identifiant)
             b.stade: b.rationGrammesParJour,
       },
+      tauxParClasse: taux,
     );
   }
 
@@ -298,8 +384,15 @@ class FicheEspeceViewModel extends ChangeNotifier {
     );
   }
 
-  int provendeTotaleGrammes(List<int> effectifs) =>
-      _calcul.provendeTotaleGrammes(effectifs);
+  int provendeTotaleGrammes(List<int> effectifs, {int? poidsTotalGrammes}) =>
+      _calcul.provendeTotaleGrammes(
+        effectifs,
+        poidsTotalGrammes: poidsTotalGrammes,
+      );
+
+  /// Provende du jour avec son mode de calcul (poids vif ou ration par tête).
+  ProvendeJour provendeDuJour(List<int> effectifs, {int? poidsTotalGrammes}) =>
+      _calcul.provendeDuJour(effectifs, poidsTotalGrammes: poidsTotalGrammes);
 
   /// Stock d'œufs de la veille — ouverture (SRH) du jour actif.
   /// **Stock Final de la veille, jamais son Total Stock** (Doc 05 §4).
@@ -312,6 +405,30 @@ class FicheEspeceViewModel extends ChangeNotifier {
       oeufsPondus: saisie.oeufsPondus,
       oeufsCasses: saisie.oeufsCasses,
       sortiesPlateaux: saisie.sortiesPlateaux,
+    );
+  }
+
+  /// Contrôle de vraisemblance en direct (`47e_`) : erreurs (la saisie sera refusée) et
+  /// avertissements (affichés, jamais bloquants), sans rien persister.
+  ResultatControle controlerEnDirect(
+    MouvementsJour mouvements, {
+    int? poidsTotalGrammes,
+    SaisieStockOeufs? stockOeufs,
+  }) {
+    final effectifs = calculerEnDirect(mouvements);
+    return ControleVraisemblance(configuration).controlerJournee(
+      effectifsVeille: effectifsVeille,
+      mouvements: mouvements,
+      effectifsDuJour: effectifs,
+      effectifTotalVeille: effectifTotalVeille,
+      poidsTotalGrammes: poidsTotalGrammes,
+      oeufsPondus: stockOeufs?.oeufsPondus,
+      oeufsCasses: stockOeufs?.oeufsCasses,
+      sortiesPlateaux: stockOeufs?.sortiesPlateaux,
+      stockOeufsDisponible:
+          srhOuverture +
+          ((stockOeufs?.oeufsPondus ?? 0) - (stockOeufs?.oeufsCasses ?? 0))
+              .clamp(0, 999999),
     );
   }
 
@@ -353,17 +470,21 @@ class FicheEspeceViewModel extends ChangeNotifier {
   int get effectifImmatures =>
       _derniereJourneeSaisie?.effectifsParCategorie.elementAtOrNull(1) ?? 0;
 
-  /// Taux de mortalité cumulé du mois = morts du mois ÷ effectif de départ.
-  double get tauxMortaliteCumul {
-    final saisies = _journeesSaisies;
-    if (saisies.isEmpty) return 0;
+  /// Taux de mortalité cumulé du mois = morts du mois ÷ (effectif de début de mois +
+  /// entrées du mois) : l'effectif **exposé** au risque (`47e_`). Ignorer les entrées du
+  /// mois surestimait le taux (et le faisait dépasser 100 % quand une bande arrivait en
+  /// cours de mois).
+  double get tauxMortaliteCumul =>
+      ReperesZootechniques.tauxMortaliteCumule(
+        morts: _journeesSaisies.fold<int>(0, (s, j) => s + j.totalMorts),
+        effectifDepart: effectifReportMois,
+        entrees: _journeesSaisies.fold<int>(0, (s, j) => s + j.achat + j.ne),
+      ) ??
+      0;
 
-    final morts = saisies.fold<int>(0, (s, j) => s + j.totalMorts);
-    final premiere = saisies.first;
-    final base = premiere.effectif + premiere.totalMorts;
-    if (base <= 0) return 0;
-    return morts / base * 100;
-  }
+  /// Niveau d'alerte du taux cumulé : 10 % avertissement, 20 % critique (DV-13).
+  NiveauAlerte get niveauMortaliteCumul =>
+      ReperesZootechniques.niveauMortaliteCumul(tauxMortaliteCumul);
 
   /// Effectif de report au **début du mois affiché**.
   ///

@@ -19,15 +19,11 @@ import 'widgets/communs_compta.dart';
 
 /// Plan Comptable — Doc F6, fidèle à `plan-comptable.html`.
 ///
-/// ## Écart constaté entre deux écrans du prototype, corrigé ici
+/// ## Plan SYSCOHADA révisé (`47p_`)
 ///
-/// `saisie-depenses.html` impute les dépenses sur les comptes **613, 616, 624
-/// et 628**, qui ne figurent dans aucune ligne du tableau `PLAN_COMPTABLE` de
-/// `plan-comptable.html`. Côté web les deux pages ont chacune leur tableau
-/// JavaScript, l'incohérence reste invisible. Ici les deux écrans lisent la
-/// même table : les 4 comptes sont ajoutés au socle
-/// (`PlanComptableSeeder.comptesDepensesAjoutes`), avec les libellés exacts de
-/// l'écran des dépenses.
+/// Le plan est celui de `PlanSyscohada.comptes` (numéros et libellés officiels). Les écrans de
+/// saisie des dépenses et du plan lisent la même table ; la Gérante peut y ajouter des
+/// sous-comptes (« Nouveau compte »).
 class PlanComptableScreen extends StatefulWidget {
   const PlanComptableScreen({super.key});
 
@@ -377,7 +373,7 @@ Future<void> _formulaireCompte(
             readOnly: existant != null,
             style: grasCompta.copyWith(fontFamily: 'monospace'),
             decoration: decorationCompta.copyWith(
-              hintText: 'Ex. 624',
+              hintText: 'Ex. 6241',
               fillColor: existant != null
                   ? AppColors.surfaceZebra
                   : AppColors.surfaceCard,

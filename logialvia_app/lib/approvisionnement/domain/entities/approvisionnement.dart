@@ -51,6 +51,9 @@ class MouvementIntrant {
     required this.motif,
     required this.quantite,
     this.reference,
+    this.origine,
+    this.posteCible,
+    this.appliqueIci = false,
   });
 
   final DateTime horodatage;
@@ -59,6 +62,42 @@ class MouvementIntrant {
   final String motif;
   final double quantite;
   final String? reference;
+
+  /// Poste de stock que le web a désigné pour cette réception / annulation (`47s_`),
+  /// s'il y en a un. Informatif : l'effet est tracé dans `effets_appliques`.
+  final String? posteCible;
+
+  /// `true` : ce mouvement, saisi au web, a été **appliqué au stock de CE poste**
+  /// (badge « Appliqué depuis le web »).
+  final bool appliqueIci;
+
+  /// `null` : saisi sur CE poste ; sinon l'identifiant du poste d'origine. Un
+  /// mouvement d'un autre poste est de l'historique : il n'a pas touché ce stock.
+  final String? origine;
+
+  bool get estDUnAutrePoste => origine != null;
+}
+
+/// Un effet de stock appliqué à CE poste sur ordre du web (`47s_`), tel que le journal
+/// `effets_appliques` le garde : ce qui a été fait, et l'avertissement éventuel.
+class EffetStockWeb {
+  const EffetStockWeb({
+    required this.libelle,
+    required this.etat,
+    required this.appliqueLe,
+    this.reference,
+    this.avertissement,
+  });
+
+  final String libelle;
+
+  /// `applique` · `avertissement` · `ignore`.
+  final String etat;
+  final DateTime appliqueLe;
+  final String? reference;
+  final String? avertissement;
+
+  bool get alerte => etat != 'applique';
 }
 
 /// Statuts d'une commande d'achat.
@@ -68,6 +107,14 @@ class StatutAchat {
   static const String commande = 'Commandé';
   static const String livre = 'Livré';
   static const String annule = 'Annulé';
+}
+
+/// Mode de règlement propre à une commande d'achat, en plus de ceux des ventes
+/// (`ModeReglement`) : la liste déroulante de la commande propose « Crédit ».
+class ModeAchat {
+  ModeAchat._();
+
+  static const String credit = 'Crédit';
 }
 
 class Fournisseur {
@@ -82,7 +129,7 @@ class Fournisseur {
     this.nombreCommandes = 0,
   });
 
-  final int id;
+  final String id;
   final String nom;
   final String? telephone;
   final String? adresse;
@@ -128,7 +175,7 @@ class Achat {
   });
 
   final String reference;
-  final int fournisseurId;
+  final String fournisseurId;
   final String fournisseurNom;
   final DateTime date;
   final String statut;

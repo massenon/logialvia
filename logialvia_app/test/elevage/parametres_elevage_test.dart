@@ -32,8 +32,15 @@ void main() {
   tearDown(() async => db.close());
 
   group('Socle — les valeurs viennent du prototype, pas d\'une invention', () {
-    test('les 12 barèmes de `RATIONS` sont présents', () async {
-      expect(vm.baremes, hasLength(12));
+    test('les 12 barèmes de `RATIONS` sont présents, plus 6 pour les filières '
+        'ajoutées (escargots, bovins)', () async {
+      expect(vm.baremes, hasLength(18));
+      expect(
+        vm.baremes.where(
+          (b) => b.espece != 'escargots' && b.espece != 'bovins',
+        ),
+        hasLength(12),
+      );
 
       final goliathau = vm.baremes.firstWhere(
         (b) => b.espece == 'goliaths' && b.stade == 'Goliathau',
@@ -44,7 +51,8 @@ void main() {
       final alevin = vm.baremes.firstWhere(
         (b) => b.espece == 'poissons-chats' && b.stade == 'Alevin',
       );
-      expect(alevin.rationGrammesParJour, 8);
+      // Repli par tete corrige par l'expert (`47e_`) : 1 g, pas 8 g, pour un alevin.
+      expect(alevin.rationGrammesParJour, 1);
     });
 
     test('seuls les 3 barèmes Lapins portent le badge « Confirmé » — c\'est le '
@@ -54,9 +62,14 @@ void main() {
       expect(confirmes.every((b) => b.espece == 'lapins'), isTrue);
     });
 
-    test('les 11 échéances de `PROPHYLAXIE_STORE` sont présentes', () async {
+    test('les 11 échéances de `PROPHYLAXIE_STORE` sont présentes, plus 21 '
+        '(escargots) et 9 (bovins)', () async {
       final toutes = await repository.chargerProphylaxie();
-      expect(toutes, hasLength(11));
+      expect(toutes, hasLength(41));
+      expect(
+        toutes.where((e) => e.espece != 'escargots' && e.espece != 'bovins'),
+        hasLength(11),
+      );
 
       vm.changerEspeceProphylaxie('pintades');
       expect(vm.echeancesFiltrees, hasLength(4));
@@ -88,7 +101,7 @@ void main() {
             .rationGrammesParJour,
         130,
       );
-      expect(vm.baremes, hasLength(12), reason: 'Aucun doublon inséré.');
+      expect(vm.baremes, hasLength(18), reason: 'Aucun doublon inséré.');
     });
   });
 
@@ -213,11 +226,11 @@ void main() {
         await vm.ajouterBareme(espece: 'lapins', stade: '', ration: '50'),
         isA<Echec<void>>(),
       );
-      expect(vm.baremes, hasLength(12));
+      expect(vm.baremes, hasLength(18));
     });
 
     test(
-      'le jour du cycle reste dans les bornes du formulaire (1 à 31)',
+      'le jour du cycle reste dans les bornes du formulaire (1 à 365)',
       () async {
         expect(
           await vm.enregistrerEcheance(
@@ -230,12 +243,22 @@ void main() {
         );
         expect(
           await vm.enregistrerEcheance(
-            jour: '32',
+            jour: '366',
             traitement: 'Test',
             produit: 'Test',
             remanence: '0',
           ),
           isA<Echec<void>>(),
+        );
+        // Un rappel annuel (bovins : J365) doit pouvoir etre saisi.
+        expect(
+          await vm.enregistrerEcheance(
+            jour: '365',
+            traitement: 'Rappel annuel',
+            produit: 'Vaccin',
+            remanence: '0',
+          ),
+          isA<Succes<void>>(),
         );
         expect(
           await vm.enregistrerEcheance(
@@ -248,7 +271,7 @@ void main() {
         );
 
         vm.changerEspeceProphylaxie('goliaths');
-        expect(vm.echeancesFiltrees, hasLength(4));
+        expect(vm.echeancesFiltrees, hasLength(5));
       },
     );
 
@@ -316,6 +339,30 @@ void main() {
       expect(vm.formats.apercuEnclos, 'E1, E2, E3');
     });
 
+    test('bacs des escargots et parcs des bovins : BAC et PARC par défaut', () {
+      expect(vm.formats.bac, 'BAC');
+      expect(vm.formats.parc, 'PARC');
+      expect(vm.formats.apercuBac, 'BAC1, BAC2, BAC3');
+      expect(vm.formats.apercuParc, 'PARC1, PARC2, PARC3');
+    });
+
+    test('les préfixes bac et parc se modifient, se persistent, et un préfixe '
+        'vide est refusé', () async {
+      vm.modifierBrouillon(bac: ' ');
+      expect(await vm.enregistrerNumerotation(), isA<Echec<void>>());
+      expect(vm.formats.bac, 'BAC');
+
+      vm.modifierBrouillon(bac: 'ESC', parc: 'BOV');
+      expect(vm.numerotationModifiee, isTrue);
+      expect(await vm.enregistrerNumerotation(), isA<Succes<void>>());
+
+      final relu = ParametresElevageViewModel(repository);
+      await relu.charger();
+      expect(relu.formats.bac, 'ESC');
+      expect(relu.formats.parc, 'BOV');
+      expect(relu.formats.bassin, 'B', reason: 'Les autres sont intacts.');
+    });
+
     test('l\'aperçu suit la frappe avant même l\'enregistrement', () {
       vm.modifierBrouillon(enclos: 'ENC');
       expect(vm.brouillon.apercuEnclos, 'ENC1, ENC2, ENC3');
@@ -374,7 +421,7 @@ void main() {
       expect(vm.baremesFiltres, hasLength(1));
 
       vm.reinitialiserFiltresRation();
-      expect(vm.baremesFiltres, hasLength(12));
+      expect(vm.baremesFiltres, hasLength(18));
     });
 
     test('la recherche porte aussi sur le libellé d\'espèce', () {

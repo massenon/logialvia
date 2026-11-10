@@ -6,6 +6,7 @@ import '../../../elevage/data/repositories/parametres_elevage_repository_drift.d
 import '../../../elevage/data/repositories/soins_repository_drift.dart';
 import '../../../elevage/domain/entities/cycle_incubation.dart';
 import '../../../elevage/domain/services/rappels_prophylaxie.dart';
+import '../../../elevage/domain/services/reperes_zootechniques.dart';
 import '../../domain/entities/tableau_bord_principal.dart';
 import '../../domain/repositories/tableau_bord_repository.dart';
 
@@ -25,6 +26,8 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
     'goliaths': 'Goliathaux',
     'pintades': 'Pintadaux',
     'lapins': 'Lapereaux',
+    'escargots': 'Naissains',
+    'bovins': 'Veaux',
     'poulets': 'Poulettes',
     'pondeuses': 'Poulettes',
     'poissons-chats': 'Juvéniles',
@@ -34,15 +37,43 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
     'goliaths': 'Goliaths',
     'pintades': 'Pintades',
     'lapins': 'Lapins',
+    'escargots': 'Escargots',
+    'bovins': 'Bovins',
     'poulets': 'Poulets',
     'pondeuses': 'Pondeuses',
     'poissons-chats': 'Poissons-Chats',
   };
 
+  /// Route de la fiche d'elevage de chaque filiere.
+  ///
+  /// ⚠️ Le chemin ne se deduit PAS du code espece : poulets et pondeuses
+  /// partagent un seul ecran a deux onglets (`/elevage/poulets-pondeuses`,
+  /// Doc H2). Construire `'/elevage/$espece'` produisait `/elevage/poulets`
+  /// et `/elevage/pondeuses`, qu'aucune route ne declare — d'ou
+  /// « GoException: no routes for location: /elevage/poulets » au clic sur
+  /// la carte de la filiere.
+  static const Map<String, String> _routeEspece = {
+    'goliaths': '/elevage/goliaths',
+    'pintades': '/elevage/pintades',
+    'lapins': '/elevage/lapins',
+    'escargots': '/elevage/escargots',
+    'bovins': '/elevage/bovins',
+    'poulets': '/elevage/poulets-pondeuses',
+    'pondeuses': '/elevage/poulets-pondeuses',
+    'poissons-chats': '/elevage/poissons-chats',
+  };
+
+  /// Repli sur le tableau de bord Elevage pour une espece inconnue, plutot
+  /// qu'une route inexistante.
+  static String _route(String espece) =>
+      _routeEspece[espece] ?? '/elevage/dashboard';
+
   static const Map<String, String> _iconeEspece = {
     'goliaths': 'pets',
     'pintades': 'pets',
     'lapins': 'cruelty_free',
+    'escargots': 'eco',
+    'bovins': 'agriculture',
     'poulets': 'egg_alt',
     'pondeuses': 'egg_alt',
     'poissons-chats': 'set_meal',
@@ -234,7 +265,7 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
         espece: espece,
         libelle: _libelleEspece[espece] ?? espece,
         icone: _iconeEspece[espece] ?? 'pets',
-        route: '/elevage/$espece',
+        route: _route(espece),
         effectif: 0,
         effectifMatures: 0,
         libelleJeunes: _libelleJeunesParEspece[espece] ?? 'Jeunes',
@@ -251,7 +282,7 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
       espece: espece,
       libelle: _libelleEspece[espece] ?? espece,
       icone: _iconeEspece[espece] ?? 'pets',
-      route: '/elevage/$espece',
+      route: _route(espece),
       effectif: derniere.effectif,
       effectifMatures: derniere.effCat3Day,
       libelleJeunes: _libelleJeunesParEspece[espece] ?? 'Jeunes',
@@ -438,18 +469,30 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
           espece: _libelleEspece[s.espece] ?? s.espece,
           typeSoin: s.typeSoin,
           datePrevue: s.datePrevue,
-          statut: s.statut,
+          // Planifie dont la date est passee = EN RETARD (`47e_`), sans attendre qu'on le dise.
+          statut: _statutEffectif(s.statut, s.datePrevue),
           observations: s.observations,
         ),
     ];
+  }
+
+  /// « Planifié » dont la date est passée est en retard ; les autres statuts ne changent pas.
+  static String _statutEffectif(String statut, DateTime datePrevue) {
+    final maintenant = DateTime.now();
+    final aujourdhui = DateTime(maintenant.year, maintenant.month, maintenant.day);
+    return statut == 'Planifié' && datePrevue.isBefore(aujourdhui)
+        ? 'En retard'
+        : statut;
   }
 
   @override
   Future<int> nombreAlertesSanitaires() async {
     final lignes = await (_db.select(
       _db.soinsCalendrier,
-    )..where((s) => s.statut.equals('En retard'))).get();
-    return lignes.length;
+    )..where((s) => s.statut.isIn(const ['En retard', 'Planifié']))).get();
+    return lignes
+        .where((s) => _statutEffectif(s.statut, s.datePrevue) == 'En retard')
+        .length;
   }
 
   // ---------------------------------------------------------------- internes
@@ -460,6 +503,37 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
           ..orderBy([(f) => OrderingTerm.desc(f.date)])
           ..limit(1))
         .getSingleOrNull();
+  }
+
+  @override
+  Future<Map<String, ResultatGmq>> gmqParFiliere(
+    Set<String> especes, {
+    int jours = 28,
+  }) async {
+    final maintenant = DateTime.now();
+    final debut = DateTime(
+      maintenant.year,
+      maintenant.month,
+      maintenant.day,
+    ).subtract(Duration(days: jours));
+    final resultat = <String, ResultatGmq>{};
+    for (final espece in especes) {
+      final lignes =
+          await (_db.select(_db.ficheJournee)..where(
+                (f) =>
+                    f.espece.equals(espece) &
+                    f.isRecorded.equals(true) &
+                    f.poidsGeneralG.isNotNull() &
+                    f.date.isBiggerOrEqualValue(debut),
+              ))
+              .get();
+      final gmq = ReperesZootechniques.gmqSurPesees([
+        for (final l in lignes)
+          (date: l.date, poidsTotalG: l.poidsGeneralG!, effectif: l.effectif),
+      ]);
+      if (gmq != null) resultat[espece] = gmq;
+    }
+    return resultat;
   }
 
   /// (mortalite du mois / effectif de debut de mois) x 100 — Doc F3 §1.
@@ -485,18 +559,31 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
       (s, j) => s + j.mortCat1 + j.mortCat2 + j.mortCat3 + (j.mortCat4 ?? 0),
     );
 
-    // Effectif de debut de mois = effectif du 1er jour saisi + les morts de ce
-    // jour-la, pour ne pas sous-estimer la base de calcul.
+    // Effectif EXPOSE au risque (`47e_`) = effectif de debut de mois (reconstitue depuis
+    // le 1er jour saisi : on lui rend ce qu'il a retire et on lui retire ce qu'il a
+    // ajoute) + toutes les entrees du mois. Ignorer les entrees faisait depasser 100 %
+    // quand une bande arrivait en cours de mois.
     final premier = jours.first;
-    final base =
-        premier.effectif +
+    final debutDeMois =
+        premier.effectif -
+        premier.achat -
+        premier.ne +
         premier.mortCat1 +
         premier.mortCat2 +
         premier.mortCat3 +
-        (premier.mortCat4 ?? 0);
-    if (base == 0) return 0;
-
-    return morts / base * 100;
+        (premier.mortCat4 ?? 0) +
+        premier.vente +
+        premier.donCat1 +
+        premier.donCat2 +
+        premier.donCat3 +
+        (premier.donCat4 ?? 0);
+    final entrees = jours.fold<int>(0, (s, j) => s + j.achat + j.ne);
+    return ReperesZootechniques.tauxMortaliteCumule(
+          morts: morts,
+          effectifDepart: debutDeMois,
+          entrees: entrees,
+        ) ??
+        0;
   }
 
   static DateTime _minuit(DateTime d) => DateTime(d.year, d.month, d.day);

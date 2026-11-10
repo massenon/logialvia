@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../sync/depot_demandes_referentiel.dart';
 import '../../domain/repositories/modules_actifs_repository.dart';
 
 class ModulesActifsRepositoryDrift implements ModulesActifsRepository {
@@ -44,5 +45,7 @@ class ModulesActifsRepositoryDrift implements ModulesActifsRepository {
     await (_db.update(_db.modulesActifs)
           ..where((m) => m.moduleId.equals(moduleId)))
         .write(ModulesActifsCompanion(isActif: Value(actif)));
+    // Un referentiel appartient au serveur : le poste le PROPOSE (`46_` §4.3).
+    await DepotDemandesReferentiel(_db).proposerModule(moduleId, actif: actif);
   }
 }

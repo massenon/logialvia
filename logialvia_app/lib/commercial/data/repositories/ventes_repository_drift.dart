@@ -2,13 +2,20 @@ import '../../../administration/domain/services/service_archivage.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../domain/services/numerotation_pieces.dart';
+import '../../../administration/data/sync/depot_demandes_referentiel.dart';
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../../core/sync/identifiant_poste.dart';
+import '../../../elevage/data/sync/identifiants_elevage.dart';
 import '../../../core/events/domain_event.dart';
 import '../../../comptabilite/data/repositories/comptabilite_repository_drift.dart';
 import '../../../comptabilite/domain/usecases/generer_ecritures_automatiques.dart';
 import '../../domain/entities/produit_vendable.dart';
 import '../../domain/entities/livraison.dart';
+import '../../domain/entities/client.dart';
 import '../../domain/entities/vente.dart';
 import '../../domain/repositories/ventes_repository.dart';
+import '../../../comptabilite/domain/plan_syscohada.dart';
 
 class VentesRepositoryDrift implements VentesRepository {
   VentesRepositoryDrift(this._db, this._bus)
@@ -34,30 +41,46 @@ class VentesRepositoryDrift implements VentesRepository {
   /// `comptabilite-analytique.html` l.146-149 ventile bien **Goliaths** et
   /// **Pintades** séparément. Le centre vient de `PRODUITS_VENDABLES.espece`
   /// pour un animal vivant, de la catégorie sinon.
-  Future<Map<(String, String?), double>> _ventilerVente(
+  Future<Map<CleVentilationVente, double>> _ventilerVente(
     List<LignePanier> panier,
   ) async {
-    final ventilation = <(String, String?), double>{};
+    final taux = await _tauxParGroupe();
+    final ventilation = <CleVentilationVente, double>{};
     for (final ligne in panier) {
       final produit = await (_db.select(
         _db.produitsVendables,
       )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
-      final cle = _cle(produit);
+      final cle = _cle(produit, taux);
       ventilation[cle] = (ventilation[cle] ?? 0) + ligne.total;
     }
     return ventilation;
   }
 
-  (String, String?) _cle(ProduitVendableRow? produit) {
+  /// Taux de TVA (en %) par groupe de taxe (`groupes_taxe`) : le prix d'une ligne de vente est
+  /// TTC, la TVA s'en extrait au taux du groupe du produit (A exonéré : 0, B : 18 %).
+  Future<Map<String, double>> _tauxParGroupe() async {
+    final groupes = await _db.select(_db.groupesTaxe).get();
+    return {for (final g in groupes) g.code: g.taux};
+  }
+
+  /// Taux des frais de livraison facturés : celui du panier s'il est unique, sinon 0 (exonéré).
+  static double _tauxLivraison(Map<CleVentilationVente, double> ventilation) {
+    final taux = {for (final cle in ventilation.keys) cle.$3};
+    return taux.length == 1 ? taux.first : 0;
+  }
+
+  CleVentilationVente _cle(ProduitVendableRow? produit, Map<String, double> taux) {
+    final tauxProduit = taux[produit?.groupeTaxe ?? 'A'] ?? 0.0;
     if (produit?.cat == 'Commerce Annexe') {
-      return (ComptesAutomatiques.ventesMarchandises, 'Commerce Annexe');
+      return (PlanSyscohada.ventesMarchandises, 'Commerce Annexe', tauxProduit);
     }
     return (
-      ComptesAutomatiques.ventesAvicoles,
+      PlanSyscohada.ventesProduitsFinis,
       // `espece` porte l'identifiant de la filiere ; a defaut le produit est
       // avicole sans filiere identifiee (oeufs vendus au detail, par exemple)
       // et reste non impute plutot que rattache arbitrairement.
       _centreDepuisEspece(produit?.espece),
+      tauxProduit,
     );
   }
 
@@ -65,6 +88,8 @@ class VentesRepositoryDrift implements VentesRepository {
     'goliaths' => 'Goliaths',
     'pintades' => 'Pintades',
     'lapins' => 'Lapins',
+    'escargots' => 'Escargots',
+    'bovins' => 'Bovins',
     'poissons-chats' => 'Poissons-Chats',
     'poulets' => 'Poulets',
     'pondeuses' => 'Pondeuses',
@@ -76,15 +101,16 @@ class VentesRepositoryDrift implements VentesRepository {
   /// L'écriture inverse doit porter **les mêmes centres** que l'écriture
   /// d'origine, sans quoi l'annulation d'une vente de goliaths retirerait du
   /// revenu à un autre centre.
-  Future<Map<(String, String?), double>> _ventilerLignesEnregistrees(
+  Future<Map<CleVentilationVente, double>> _ventilerLignesEnregistrees(
     List<LigneVenteRow> lignes,
   ) async {
-    final ventilation = <(String, String?), double>{};
+    final taux = await _tauxParGroupe();
+    final ventilation = <CleVentilationVente, double>{};
     for (final ligne in lignes) {
       final produit = await (_db.select(
         _db.produitsVendables,
       )..where((p) => p.id.equals(ligne.produitId))).getSingleOrNull();
-      final cle = _cle(produit);
+      final cle = _cle(produit, taux);
       ventilation[cle] = (ventilation[cle] ?? 0) + ligne.qte * ligne.pu;
     }
     return ventilation;
@@ -171,6 +197,7 @@ class VentesRepositoryDrift implements VentesRepository {
     required String statut,
     required double montantPaye,
     required List<LignePanier> panier,
+    String? clientId,
     Livraison? livraison,
     String? ligneMobileMoney,
     DateTime? echeance,
@@ -194,6 +221,7 @@ class VentesRepositoryDrift implements VentesRepository {
             VentesCompanion.insert(
               ref: reference,
               client: client,
+              clientId: Value(await _clientRetenu(client, clientId)),
               dateVente: maintenant,
               mode: mode,
               status: statut,
@@ -264,6 +292,7 @@ class VentesRepositoryDrift implements VentesRepository {
     // BR-CPT-003 — ecritures comptables, APRES la transaction de vente : une
     // vente reste valide meme si le mois comptable est cloture (l'ecriture est
     // alors refusee et signalee, pas la vente).
+    final ventilationVente = await _ventilerVente(panier);
     await _ecritures.pourVente(
       reference: vente.reference,
       date: vente.date,
@@ -271,7 +300,9 @@ class VentesRepositoryDrift implements VentesRepository {
       statut: statut,
       total: total,
       paye: montantPaye,
-      ventilation: await _ventilerVente(panier),
+      ventilation: ventilationVente,
+      fraisLivraison: livraison?.supplementFacture ?? 0,
+      tauxLivraison: _tauxLivraison(ventilationVente),
     );
 
     // Publie APRES la transaction : notifier des ecrans d'une ecriture qui
@@ -299,7 +330,7 @@ class VentesRepositoryDrift implements VentesRepository {
     required String motif,
   }) async {
     final lignesInfo = <LigneVenteInfo>[];
-    Map<(String, String?), double> ventilation = const {};
+    Map<CleVentilationVente, double> ventilation = const {};
     VenteRow? venteAnnulee;
 
     await _db.transaction(() async {
@@ -350,6 +381,10 @@ class VentesRepositoryDrift implements VentesRepository {
         VentesCompanion(
           status: const Value(StatutVente.annulee),
           motifAnnulation: Value(motif),
+          // Toute modification locale repasse la vente a envoyer.
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
         ),
       );
     });
@@ -365,6 +400,12 @@ class VentesRepositoryDrift implements VentesRepository {
         total: annulee.total,
         paye: annulee.paye,
         ventilation: ventilation,
+        // Les frais d'une livraison facturée font partie du total : l'écriture
+        // de vente les a crédités, la contrepassation les reprend.
+        fraisLivraison: annulee.livraisonMode == ModeLivraison.facturee.code
+            ? (annulee.livraisonFrais ?? 0)
+            : 0,
+        tauxLivraison: _tauxLivraison(ventilation),
       );
     }
 
@@ -377,6 +418,8 @@ class VentesRepositoryDrift implements VentesRepository {
     required double montant,
   }) async {
     String? modeVente;
+    // Ce qui est REELLEMENT encaisse : le versement borne au reste du.
+    var encaisse = 0.0;
 
     await _db.transaction(() async {
       final vente = await (_db.select(
@@ -391,6 +434,7 @@ class VentesRepositoryDrift implements VentesRepository {
 
       // Ne jamais encaisser plus que le total dû.
       final nouveauPaye = (vente.paye + montant).clamp(0.0, vente.total);
+      encaisse = nouveauPaye - vente.paye;
 
       await (_db.update(
         _db.ventes,
@@ -402,26 +446,44 @@ class VentesRepositoryDrift implements VentesRepository {
           status: Value(
             nouveauPaye >= vente.total ? StatutVente.payee : StatutVente.avance,
           ),
+          syncStatus: const Value('pending'),
+          syncMotif: const Value(null),
+          updatedAt: Value(instantSaisie()),
         ),
       );
     });
 
-    // Encaissement d'une creance : Tresorerie au debit, Clients au credit.
+    // Encaissement d'une creance : Tresorerie au debit, Clients au credit — du
+    // montant REELLEMENT encaisse. Comptabiliser le versement saisi (borne dans
+    // la vente mais pas dans l'ecriture) creditait 411 de plus que la creance.
     await _ecritures.pourReglement(
       reference: reference,
       date: DateTime.now(),
       mode: modeVente ?? 'Espèces',
-      montant: montant,
+      montant: encaisse,
       estEncaissement: true,
     );
   }
 
   @override
+  Future<List<ClientChoix>> chargerClientsChoix() async {
+    final lignes = await (_db.select(
+      _db.clients,
+    )..orderBy([(c) => OrderingTerm.asc(c.nom)])).get();
+    return [
+      for (final c in lignes)
+        ClientChoix(id: c.id, nom: c.nom, telephone: c.telephone),
+    ];
+  }
+
+  @override
   Future<ProduitVendable> creerProduit(ProduitVendable produit) async {
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.produitsVendables)
         .insert(
           ProduitsVendablesCompanion.insert(
+            id: Value(id),
             sku: Value(produit.sku),
             name: produit.nom,
             cat: produit.categorie,
@@ -435,6 +497,13 @@ class VentesRepositoryDrift implements VentesRepository {
             coutRevient: Value(produit.coutRevient),
           ),
         );
+    await DepotDemandesReferentiel(_db).proposerProduit(id);
+    await _journaliserCorrection(
+      produitId: id,
+      article: produit.nom,
+      variation: produit.stock,
+      motif: 'Stock initial (catalogue)',
+    );
     return ProduitVendable(
       id: id,
       sku: produit.sku,
@@ -452,7 +521,13 @@ class VentesRepositoryDrift implements VentesRepository {
   }
 
   @override
-  Future<void> mettreAJourProduit(ProduitVendable produit) async {
+  Future<void> mettreAJourProduit(
+    ProduitVendable produit, {
+    String? motifCorrection,
+  }) async {
+    final avant = await (_db.select(
+      _db.produitsVendables,
+    )..where((p) => p.id.equals(produit.id))).getSingleOrNull();
     await (_db.update(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produit.id))).write(
@@ -469,11 +544,45 @@ class VentesRepositoryDrift implements VentesRepository {
         coutRevient: Value(produit.coutRevient),
       ),
     );
+    // Le catalogue appartient au serveur : le poste PROPOSE (`46_` §4.3).
+    await DepotDemandesReferentiel(_db).proposerProduit(produit.id);
+    // Une correction de stock laisse une trace (journal partagé, jamais un stock).
+    if (avant != null) {
+      await _journaliserCorrection(
+        produitId: produit.id,
+        article: produit.nom,
+        variation: produit.stock - avant.stock,
+        motif: (motifCorrection?.trim().isNotEmpty ?? false)
+            ? motifCorrection!.trim()
+            : 'Correction de stock (catalogue)',
+      );
+    }
+  }
+
+  /// Trace d'une correction de stock de CE poste. Rien si le stock n'a pas bougé.
+  Future<void> _journaliserCorrection({
+    required String produitId,
+    required String article,
+    required int variation,
+    required String motif,
+  }) async {
+    if (variation == 0) return;
+    await _db
+        .into(_db.mouvementsProduit)
+        .insert(
+          MouvementsProduitCompanion.insert(
+            horodatage: DateTime.now(),
+            produitId: produitId,
+            article: article,
+            motif: motif,
+            quantite: variation.toDouble(),
+          ),
+        );
   }
 
   @override
   Future<void> supprimerProduit(
-    int produitId, {
+    String produitId, {
     String? utilisateurId,
     String? utilisateurNom,
   }) async {
@@ -481,33 +590,69 @@ class VentesRepositoryDrift implements VentesRepository {
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();
 
-    await ServiceArchivage(_db).archiver(
-      type: TypeArchivable.produits,
-      cle: produitId,
-      designation: ligne?.name ?? 'Produit #$produitId',
-      utilisateurId: utilisateurId,
-      utilisateurNom: utilisateurNom,
-    );
+    // Le journal des corrections référence le produit : il part avec lui (une
+    // même transaction, rien n'est effacé si l'archivage échoue).
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.mouvementsProduit,
+      )..where((m) => m.produitId.equals(produitId))).go();
+      await ServiceArchivage(_db).archiver(
+        type: TypeArchivable.produits,
+        cle: produitId,
+        designation: ligne?.name ?? 'Produit #$produitId',
+        utilisateurId: utilisateurId,
+        utilisateurNom: utilisateurNom,
+      );
+    });
+    // Les autres postes l'apprennent (pierre tombale, jamais d'effacement serveur).
+    if (ligne != null) {
+      await DepotDemandesReferentiel(_db).proposerArchivageProduit(ligne);
+    }
   }
 
   // ---------------------------------------------------------------- internes
 
-  /// Référence 'V-AAAA-NNN' — Doc D1.
+  /// Référence officielle : `V-P2-2026-001` pour un poste appairé (DV-21),
+  /// `V-2026-001` sinon. Séquence continue par poste et par année.
   Future<String> _prochaineReference(int annee) async {
-    final prefixe = 'V-$annee-';
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    final prefixe = NumerotationPieces.prefixeVente(annee, code);
     final existantes = await (_db.select(
       _db.ventes,
     )..where((v) => v.ref.like('$prefixe%'))).get();
 
     var maximum = 0;
     for (final vente in existantes) {
-      final numero = int.tryParse(vente.ref.substring(prefixe.length));
+      final numero = NumerotationPieces.sequence(vente.ref, prefixe);
       if (numero != null && numero > maximum) maximum = numero;
     }
-    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
+    return NumerotationPieces.composer(prefixe, maximum + 1);
   }
 
-  Future<void> _decrementerStock(int produitId, int quantite) async {
+  /// Le client CHOISI dans la liste s'il existe ; sinon celui que désigne le nom
+  /// (voir [_resoudreClient]).
+  Future<String?> _clientRetenu(String nom, String? clientId) async {
+    if (clientId != null) {
+      final existe = await (_db.select(
+        _db.clients,
+      )..where((c) => c.id.equals(clientId))).getSingleOrNull();
+      if (existe != null) return clientId;
+    }
+    return _resoudreClient(nom);
+  }
+
+  /// Le client que désigne ce nom, **s'il n'y en a qu'un** (casse et espaces
+  /// ignorés). Deux homonymes : `null`, on ne devine pas qui a acheté.
+  Future<String?> _resoudreClient(String nom) async {
+    final cherche = nom.trim().toLowerCase();
+    if (cherche.isEmpty) return null;
+    final trouves = (await _db.select(_db.clients).get()).where(
+      (c) => c.nom.trim().toLowerCase() == cherche,
+    );
+    return trouves.length == 1 ? trouves.first.id : null;
+  }
+
+  Future<void> _decrementerStock(String produitId, int quantite) async {
     final produit = await (_db.select(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();
@@ -522,7 +667,7 @@ class VentesRepositoryDrift implements VentesRepository {
     );
   }
 
-  Future<void> _incrementerStock(int produitId, int quantite) async {
+  Future<void> _incrementerStock(String produitId, int quantite) async {
     final produit = await (_db.select(
       _db.produitsVendables,
     )..where((p) => p.id.equals(produitId))).getSingleOrNull();
@@ -535,17 +680,25 @@ class VentesRepositoryDrift implements VentesRepository {
     );
   }
 
-  /// `FICHE_VENTES_JOUR` — `UNIQUE(espece, date)`, incrément cumulatif.
+  /// `FICHE_VENTES_JOUR` — compteur cumulatif **de CE poste** (`46a_`) : une ligne par
+  /// (espece, date) avec `origine` vide. Les compteurs des autres postes sont des
+  /// lignes a part (leur `origine`) que cette methode ne touche JAMAIS : la vente d'un
+  /// autre poste n'incremente pas mon compteur, elle arrive par sa propre ligne.
   Future<void> _ajusterFicheVentesJour({
     required String espece,
     required DateTime date,
     required int delta,
   }) async {
     final jour = DateTime(date.year, date.month, date.day);
+    final poste = await PreferencesPosteRepository(_db).identifiantPoste();
 
     final existant =
-        await (_db.select(_db.ficheVentesJour)
-              ..where((f) => f.espece.equals(espece) & f.date.equals(jour)))
+        await (_db.select(_db.ficheVentesJour)..where(
+              (f) =>
+                  f.espece.equals(espece) &
+                  f.date.equals(jour) &
+                  f.origine.isNull(),
+            ))
             .getSingleOrNull();
 
     if (existant == null) {
@@ -554,9 +707,13 @@ class VentesRepositoryDrift implements VentesRepository {
           .into(_db.ficheVentesJour)
           .insert(
             FicheVentesJourCompanion.insert(
+              // Deterministe : (espece, date, poste). Un compteur jamais duplique.
+              id: Value(identifiantVentesJour(espece, jour, poste)),
               espece: espece,
               date: jour,
               qte: Value(delta),
+              syncStatus: const Value('pending'),
+              updatedAt: Value(instantSaisie()),
             ),
           );
       return;
@@ -567,6 +724,9 @@ class VentesRepositoryDrift implements VentesRepository {
     )..where((f) => f.id.equals(existant.id))).write(
       FicheVentesJourCompanion(
         qte: Value((existant.qte + delta).clamp(0, 1 << 30)),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }

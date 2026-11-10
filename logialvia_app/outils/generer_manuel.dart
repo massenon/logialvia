@@ -45,7 +45,7 @@ Future<void> main(List<String> arguments) async {
       'ATTENTION — ${manquantes.length} capture(s) absente(s) sur '
       '${attendues.length} : ${manquantes.join(', ')}',
     );
-    stderr.writeln('Relancez : flutter test test/manuel/captures_test.dart');
+    stderr.writeln('Relancez : GENERER_MANUEL=1 flutter test test/manuel/captures_test.dart');
   }
 
   // Les rectangles des elements a annoter, releves pendant la capture.

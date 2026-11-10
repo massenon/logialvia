@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/carte_section.dart';
 import '../../../../core/widgets/icone_symbole.dart';
+import '../../../../elevage/domain/services/reperes_zootechniques.dart';
 import '../../../domain/entities/tableau_bord_principal.dart';
 
 const TextStyle _texteXs = TextStyle(
@@ -154,9 +155,15 @@ class CarteFiliere extends StatelessWidget {
               child: _Chiffre(
                 libelle: 'Mortalité',
                 valeur: Formats.pourcentage(filiere.tauxMortalite),
-                couleur: filiere.tauxMortalite >= 2
-                    ? AppColors.errorDeep
-                    : AppColors.successDeep,
+                // Taux CUMULE du mois : seuils DV-13 des cumuls (10 % / 20 %), pas ceux
+                // du jour (1 % / 2 %) - le seuil du jour rendait rouge un mois ordinaire.
+                couleur: switch (ReperesZootechniques.niveauMortaliteCumul(
+                  filiere.tauxMortalite,
+                )) {
+                  NiveauAlerte.critique => AppColors.errorDeep,
+                  NiveauAlerte.avertissement => AppColors.brandGold,
+                  NiveauAlerte.normal => AppColors.successDeep,
+                },
               ),
             ),
           ],

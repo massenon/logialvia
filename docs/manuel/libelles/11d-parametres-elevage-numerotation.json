@@ -14,11 +14,15 @@
   "colonnes": [
     "AVICULTURE (GOLIATHS & PINTADES)",
     "CUNICULTURE (LAPINS)",
+    "HÉLICICULTURE (ESCARGOTS)",
     "PISCICULTURE (POISSONS-CHATS)",
+    "PRÉFIXE BAC",
     "PRÉFIXE BANDE",
     "PRÉFIXE BASSIN",
     "PRÉFIXE CAGE",
-    "PRÉFIXE ENCLOS"
+    "PRÉFIXE ENCLOS",
+    "PRÉFIXE PARC",
+    "ÉLEVAGE BOVIN (BOVINS)"
   ],
   "infobulles": [],
   "textes": [

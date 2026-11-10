@@ -89,7 +89,7 @@
 | `K2_Checklist_Recette_Visuelle.md` | ✅ **Recette effectuée** — confrontation écran par écran contre `prototype_html` : relevé des modales, onglets, KPI et gestionnaires `onclick` de chaque page. 3 défauts corrigés (POS à montant négocié, modale Livraison, menu Accès Rapide), 4 modales recensées comme non implémentées, 7 éléments vérifiés comme volontairement écartés |
 | `K3_Setup_Installation.md` = `11_SETUP_INSTALLATION.md` | ✅ **Corrigé** — pattern SQLite Windows invalide retiré, suite à Doc K4 §1 Bug #2 |
 | `K4_Retour_Experience_Bugs_Reels.md` | ✅ **Nouveau** — 8 bugs réels + 1 constat architectural, issus de l'audit du projet jumeau AgriERP Flutter Desktop (même stack technique), adaptés à LogiALVIA |
-| `manuel/LogiALVIA-Manuel-Utilisation.pdf` | ✅ **Refondu** — manuel d'utilisation, 76 pages, éditeur Dr MASSENON Rhodes. Structure : couverture, « Comment lire ce manuel », sommaire, chapitre **Prise en main**, un chapitre par module (36 sections), **6 annexes** (droits, dépannage, glossaire, gestes interdits, comptes livrés, contact). Couvre les **30 onglets internes** et **10 fenêtres de saisie**, avec captures annotées de repères numérotés. **Chaîne entièrement rejouable** : `flutter test test/manuel/captures_test.dart` produit les 68 captures, les **relevés de libellés** (`docs/manuel/libelles/`) et les **coordonnées d'annotation** (`docs/manuel/reperes/`) en parcourant l'arbre des widgets — aucun libellé n'est écrit de mémoire ; `dart run outils/generer_manuel.dart` compose le PDF ; `python outils/controler_manuel.py` mesure la mise en page **produite** (blanc en bas de page, légendes orphelines, captures déformées). 20 contrôles dans `test/manuel/manuel_test.dart` |
+| `manuel/LogiALVIA-Manuel-Utilisation.pdf` | ✅ **Refondu** — manuel d'utilisation, 76 pages, éditeur Dr MASSENON Rhodes. Structure : couverture, « Comment lire ce manuel », sommaire, chapitre **Prise en main**, un chapitre par module (36 sections), **6 annexes** (droits, dépannage, glossaire, gestes interdits, comptes livrés, contact). Couvre les **30 onglets internes** et **10 fenêtres de saisie**, avec captures annotées de repères numérotés. **Chaîne entièrement rejouable** : `GENERER_MANUEL=1 flutter test test/manuel/captures_test.dart` produit les 68 captures, les **relevés de libellés** (`docs/manuel/libelles/`) et les **coordonnées d'annotation** (`docs/manuel/reperes/`) en parcourant l'arbre des widgets — aucun libellé n'est écrit de mémoire ; `dart run outils/generer_manuel.dart` compose le PDF ; `python outils/controler_manuel.py` mesure la mise en page **produite** (blanc en bas de page, légendes orphelines, captures déformées). 20 contrôles dans `test/manuel/manuel_test.dart` |
 
 ---
 
@@ -270,3 +270,15 @@
 ## Principe de Non-Généricité — tenu sur l'ensemble de la série
 
 Chaque document s'appuie sur le contenu réel des 31 fichiers HTML, sur les bugs réellement rencontrés et corrigés pendant ce projet (répartition en %, SRH/TS, ventes non persistées, id de seed erronés), et sur les vraies valeurs extraites des fichiers sources. Là où une information manquait réellement, ce document le signale explicitement plutôt que de la remplacer par une supposition plausible.
+
+---
+
+## L. Version Web (Laravel + Livewire) — `docs/logialvia/`
+
+Jeu de prompts et de spécifications pour construire le **web** de LogiALVIA avec Claude Code
+(architecture Laravel 12 + Livewire 3, design system identique au poste, PWA, e-MECeF, synchronisation).
+Point d'entrée : [`logialvia/README.md`](logialvia/README.md) ; guide de portage depuis AgriERP :
+[`logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md`](logialvia/GUIDE_PORTAGE_VERS_AUTRE_LOGICIEL.md).
+Filières ajoutées : **escargots** (DV-16) et **bovins** (DV-17), à créer au poste et au web ; le web est converti depuis le code Dart tant que `prototype_html` n'est pas fourni (DV-18).
+État du chantier web, appairage et synchronisation : [`logialvia/45_PLAN_APPAIRAGE_SYNCHRO_POSTE_WEB.md`](logialvia/45_PLAN_APPAIRAGE_SYNCHRO_POSTE_WEB.md). Contrat de synchronisation (brouillon) : [`logialvia/46_CONTRAT_SYNCHRONISATION.md`](logialvia/46_CONTRAT_SYNCHRONISATION.md).
+Source : dossier `docs/logialvia/` du monorepo `massenon/agrierp` (branche `claude/sleepy-dijkstra-uvt68t`, commit `3cdf9c7`).

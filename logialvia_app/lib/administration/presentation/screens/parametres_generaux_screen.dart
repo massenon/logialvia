@@ -19,6 +19,9 @@ import '../../domain/entities/parametres_entreprise.dart';
 import '../../domain/entities/utilisateur.dart';
 import '../../domain/repositories/parametres_repository.dart';
 import '../../../commercial/domain/services/transmission_mecef.dart';
+import '../../../core/sync/planificateur_synchronisation.dart';
+import '../../../core/sync/service_appairage.dart';
+import '../viewmodels/appairage_view_model.dart';
 import '../viewmodels/modules_actifs_view_model.dart';
 import '../viewmodels/parametres_generaux_view_model.dart';
 import '../../data/seed/seed_demonstration.dart';
@@ -28,6 +31,7 @@ import '../../domain/services/service_sauvegarde.dart';
 import '../viewmodels/corbeille_view_model.dart';
 import '../viewmodels/sauvegardes_view_model.dart';
 import 'widgets/modale_utilisateur.dart';
+import 'widgets/onglet_appairage.dart';
 import 'widgets/onglet_corbeille.dart';
 import 'widgets/onglet_donnees_test.dart';
 import 'widgets/onglet_sauvegardes.dart';
@@ -65,6 +69,13 @@ class PageParametresGeneraux extends StatelessWidget {
             ),
           )..charger(),
         ),
+        // Appairage : a son propre ViewModel (reseau + coffre du systeme).
+        ChangeNotifierProvider<AppairageViewModel>(
+          create: (context) => AppairageViewModel(
+            context.read<ServiceAppairage>(),
+            context.read<PlanificateurSynchronisation>(),
+          )..charger(),
+        ),
       ],
       child: const ParametresGenerauxScreen(),
     );
@@ -88,6 +99,7 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
     'Données de l\'Entreprise',
     'Gestion Utilisateurs',
     'Modes de Paiement',
+    'Appairage',
     'Sauvegardes',
     'Corbeille',
     'Données de Test',
@@ -137,8 +149,9 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
             1 => _OngletEntreprise(vm: vm),
             2 => _OngletUtilisateurs(vm: vm),
             3 => const _OngletModesPaiement(),
-            4 => const OngletSauvegardes(),
-            5 => const OngletCorbeille(),
+            4 => const OngletAppairage(),
+            5 => const OngletSauvegardes(),
+            6 => const OngletCorbeille(),
             _ => const OngletDonneesTest(),
           },
         ],
@@ -197,7 +210,7 @@ class _Onglet extends StatelessWidget {
 class _OngletModulesActifs extends StatelessWidget {
   const _OngletModulesActifs();
 
-  /// Les 5 lignes réelles, dans l'ordre du prototype.
+  /// Les 5 lignes du prototype, puis escargots et bovins (DV-16, DV-17).
   static const List<({String? moduleId, String libelle, String note})> _lignes =
       [
         (
@@ -224,6 +237,16 @@ class _OngletModulesActifs extends StatelessWidget {
           moduleId: 'cuniculture',
           libelle: 'Lapins (Cuniculture)',
           note: 'Copie fidèle — désactivée par défaut',
+        ),
+        (
+          moduleId: 'heliciculture',
+          libelle: 'Escargots (Héliciculture)',
+          note: 'Filière ajoutée — désactivée par défaut',
+        ),
+        (
+          moduleId: 'bovins',
+          libelle: 'Bovins',
+          note: 'Filière ajoutée — désactivée par défaut',
         ),
       ];
 

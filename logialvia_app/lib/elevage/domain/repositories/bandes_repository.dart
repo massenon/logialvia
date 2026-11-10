@@ -23,5 +23,13 @@ abstract class BandesRepository {
     String? observations,
   });
 
-  Future<void> cloturerBande({required int id, required DateTime dateCloture});
+  Future<void> cloturerBande({required String id, required DateTime dateCloture});
+
+  /// Recode une bande (code unique par filière) et trace le changement dans ses
+  /// observations. Refuse un code déjà pris. Déclenche un tirage complet au prochain
+  /// cycle : la bande de l'autre poste, refusée tant que ce code était pris, revient.
+  Future<void> recoderBande({required String id, required String nouveauCode});
+
+  /// Code attribué à ce poste (`P2`), `null` tant qu'il n'est pas appairé.
+  Future<String?> codePoste();
 }

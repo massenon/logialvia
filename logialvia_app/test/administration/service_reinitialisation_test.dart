@@ -21,9 +21,11 @@ void main() {
   /// Crée une activité complète : une vente, une écriture, une fiche, un lot.
   Future<void> creerActivite() async {
     await db.customStatement(
-      'INSERT INTO ventes (ref, client, date_vente, mode, status, total, paye) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, paye) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
+        'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+        '2026-01-01T00:00:00.000Z',
         'V-2026-001',
         'AGOSSOU Prudence',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,
@@ -34,11 +36,15 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO ecriture_comptable (exercice_annee, numero_compte, '
-      'date_ecriture, debit, credit, libelle) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ecriture_comptable (id, piece_id, updated_at, exercice_annee, '
+      'numero_compte, date_ecriture, debit, credit, libelle) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
+        'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+        'ffffffff-ffff-4fff-8fff-ffffffffffff',
+        '2026-08-01T00:00:00.000Z',
         2026,
-        '531',
+        '571',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,
         12000.0,
         0.0,
@@ -46,9 +52,11 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO cycle_couveuse (code_incubation, espece, date_incubation, '
-      'oeufs_couves, statut) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO cycle_couveuse (id, updated_at, code_incubation, espece, '
+      'date_incubation, oeufs_couves, statut) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
+        'a1b2c3d4-0000-4000-8000-000000000001',
+        '2026-08-01T00:00:00.000000Z',
         'C-2026-001',
         'goliath',
         DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,
@@ -57,8 +65,13 @@ void main() {
       ],
     );
     await db.customStatement(
-      'INSERT INTO clients (nom, telephone) VALUES (?, ?)',
-      ['AGOSSOU Prudence', '97000000'],
+      'INSERT INTO clients (id, nom, telephone, updated_at) VALUES (?, ?, ?, ?)',
+      [
+        '44444444-4444-4444-8444-444444444444',
+        'AGOSSOU Prudence',
+        '97000000',
+        '2026-11-09T09:00:00.000Z',
+      ],
     );
   }
 
@@ -116,7 +129,7 @@ void main() {
           (await db
                   .customSelect('SELECT id FROM produits_vendables LIMIT 1')
                   .getSingle())
-              .read<int>('id');
+              .read<String>('id');
       await ServiceArchivage(
         db,
       ).archiver(type: TypeArchivable.produits, cle: id, designation: 'X');
@@ -269,9 +282,11 @@ void main() {
       await service.executer();
 
       await db.customStatement(
-        'INSERT INTO ventes (ref, client, date_vente, mode, status, total, '
-        'paye) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, '
+        'paye) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
+          'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          '2026-01-01T00:00:00.000Z',
           'V-2026-001',
           'Client Comptant',
           DateTime(2026, 9, 1).millisecondsSinceEpoch ~/ 1000,

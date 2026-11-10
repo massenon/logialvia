@@ -100,7 +100,7 @@ class CatalogueViewModel extends ChangeNotifier {
   }
 
   Future<Resultat<ProduitVendable>> enregistrer({
-    int? id,
+    String? id,
     required String nom,
     required String? categorie,
     required double? prix,
@@ -111,6 +111,7 @@ class CatalogueViewModel extends ChangeNotifier {
     String? espece,
     String? icone,
     double? coutRevient,
+    String? motifCorrection,
   }) async {
     if (nom.trim().isEmpty) {
       return const Echec('La désignation est obligatoire.');
@@ -144,7 +145,8 @@ class CatalogueViewModel extends ChangeNotifier {
     }
 
     final produit = ProduitVendable(
-      id: id ?? 0,
+      // Vide = nouveau produit : le depot lui donne son UUID a la creation.
+      id: id ?? '',
       sku: id == null ? _prochainSku() : null,
       nom: nom.trim(),
       categorie: categorie,
@@ -164,6 +166,11 @@ class CatalogueViewModel extends ChangeNotifier {
       } else {
         // Le SKU d'un produit existant n'est jamais reecrit.
         final existant = _produits.firstWhere((p) => p.id == id);
+        // Un changement de stock se justifie : il entre au journal partagé.
+        if (produit.stock != existant.stock &&
+            (motifCorrection?.trim().isEmpty ?? true)) {
+          return const Echec('Indiquez le motif de la correction de stock.');
+        }
         await _repository.mettreAJourProduit(
           ProduitVendable(
             id: id,
@@ -179,6 +186,7 @@ class CatalogueViewModel extends ChangeNotifier {
             espece: produit.espece,
             coutRevient: produit.coutRevient,
           ),
+          motifCorrection: motifCorrection,
         );
       }
       await charger();

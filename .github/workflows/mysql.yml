@@ -1,0 +1,136 @@
+name: MySQL
+
+# Le serveur de production sera MySQL/MariaDB (hébergement mutualisé) ; tout le reste de la CI tourne
+# sur SQLite. Ce job rejoue sur de VRAIS moteurs (docs/logialvia/47r_MYSQL_ET_RESEAU_REEL.md) :
+#  1. toute la suite PHP ;
+#  2. l'essai réel poste <-> serveur (55 essais, le poste Flutter synchronise contre le serveur
+#     Laravel branché sur MySQL).
+# Jamais sur la base d'exploitation : la base du service est jetable.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'logialvia_laravel/**'
+      - 'logialvia_app/lib/core/sync/**'
+      - 'logialvia_app/test/integration/**'
+      - 'logialvia_app/outils/**'
+      - '.github/workflows/mysql.yml'
+  pull_request:
+    paths:
+      - 'logialvia_laravel/**'
+      - 'logialvia_app/lib/core/sync/**'
+      - 'logialvia_app/test/integration/**'
+      - 'logialvia_app/outils/**'
+      - '.github/workflows/mysql.yml'
+  workflow_dispatch:
+
+jobs:
+  suite-php:
+    name: Suite PHP sur ${{ matrix.base.nom }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        base:
+          - { nom: 'MySQL 8', image: 'mysql:8', pilote: 'mysql' }
+          - { nom: 'MariaDB 10.11', image: 'mariadb:10.11', pilote: 'mariadb' }
+    services:
+      bdd:
+        image: ${{ matrix.base.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: racine
+          MARIADB_ROOT_PASSWORD: racine
+          MYSQL_DATABASE: lv_test
+          MARIADB_DATABASE: lv_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized || mysqladmin ping -h 127.0.0.1 -uroot -pracine"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    defaults:
+      run:
+        working-directory: logialvia_laravel
+    env:
+      DB_CONNECTION: ${{ matrix.base.pilote }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: lv_test
+      DB_USERNAME: root
+      DB_PASSWORD: racine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, mbstring, zip, gd
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Dépendances PHP et front
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+          npm run build
+
+      # Sans .env ni APP_KEY, chaque test de vue échoue (MissingAppKeyException). Les variables
+      # DB_* de ce job l'emportent sur celles de .env.example.
+      - name: Clef d'application
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Mode SQL de la session (ONLY_FULL_GROUP_BY, strict)
+        run: |
+          mysql -h 127.0.0.1 -uroot -pracine -e "SELECT VERSION(), @@GLOBAL.sql_mode, @@GLOBAL.time_zone"
+
+      # phpunit.xml fixe sqlite avec `<env>` sans `force` : les variables d'environnement
+      # ci-dessus l'emportent, la suite tourne donc sur MySQL/MariaDB.
+      - name: Suite PHP
+        run: php artisan test
+
+  essai-reel:
+    name: Essai réel poste <-> serveur sur MySQL 8
+    runs-on: ubuntu-latest
+    services:
+      bdd:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: racine
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pracine"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, mbstring, zip, gd
+          coverage: none
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dépendances
+        run: |
+          composer install --no-interaction --prefer-dist --working-dir=logialvia_laravel
+          cd logialvia_app && flutter pub get
+
+      # Recrée la base `lv_essai`, comptes admin1..150, serveur, 55 essais.
+      - name: Essai réel sur MySQL
+        run: >-
+          LV_BASE=mysql LV_MYSQL_USER=root LV_MYSQL_PASSWORD=racine
+          bash logialvia_app/outils/essai_vrai_serveur.sh
+
+      # Réseau réel : le même serveur MySQL derrière le mandataire (TLS, 413, coupures…).
+      - name: Réseau réel sur MySQL
+        run: >-
+          ESSAI_RESEAU=1 LV_BASE=mysql LV_MYSQL_USER=root LV_MYSQL_PASSWORD=racine
+          bash logialvia_app/outils/essai_vrai_serveur.sh 8800

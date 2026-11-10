@@ -260,8 +260,9 @@ class DocumentsElevage {
               alignement: AlignementPdf.centre,
               largeur: 2,
             ),
-            ColonnePdf('Traitement', largeur: 5),
-            ColonnePdf('Produit', largeur: 4),
+            ColonnePdf('Traitement', largeur: 4),
+            ColonnePdf('Produit', largeur: 3),
+            ColonnePdf('Dose', largeur: 4),
             ColonnePdf(
               'Rémanence',
               alignement: AlignementPdf.centre,
@@ -274,6 +275,7 @@ class DocumentsElevage {
                 CellulePdf(e.libelleJour, gras: true),
                 CellulePdf(e.traitement),
                 CellulePdf(e.produit),
+                CellulePdf(e.dose ?? '—'),
                 CellulePdf(
                   e.remanenceJours > 0 ? '${e.remanenceJours} j' : '—',
                   teinte: e.remanenceJours > 0
@@ -383,6 +385,18 @@ class DocumentsElevage {
               const CellulePdf('Bassin'),
               CellulePdf(formats.bassin, gras: true),
               CellulePdf(formats.apercuBassin),
+            ],
+            [
+              const CellulePdf('Héliciculture (Escargots)'),
+              const CellulePdf('Bac'),
+              CellulePdf(formats.bac, gras: true),
+              CellulePdf(formats.apercuBac),
+            ],
+            [
+              const CellulePdf('Élevage bovin (Bovins)'),
+              const CellulePdf('Parc'),
+              CellulePdf(formats.parc, gras: true),
+              CellulePdf(formats.apercuParc),
             ],
           ],
         ),

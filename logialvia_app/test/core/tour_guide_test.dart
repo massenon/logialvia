@@ -64,23 +64,24 @@ void main() {
   });
 
   group('Scénarios repris du prototype', () {
-    test('les 33 routes scénarisées sont déclarées', () {
-      expect(ScenariosTour.parRoute, hasLength(33));
+    test('les 35 routes scénarisées sont déclarées', () {
+      expect(ScenariosTour.parRoute, hasLength(35));
     });
 
-    test('59 étapes au total', () {
+    test('65 étapes au total', () {
       final total = ScenariosTour.parRoute.values.fold<int>(
         0,
         (s, e) => s + e.length,
       );
       expect(
         total,
-        59,
+        65,
         reason:
             '42 etapes reprises du prototype — 45 moins les 3 « Administrer '
             'une Dose », dont le selecteur #administrer-dose-form n\'existe '
             'dans aucun fichier — plus 17 redigees pour les 12 ecrans que le '
-            'prototype laissait sans visite.',
+            'prototype laissait sans visite, plus 6 pour les fiches Escargots '
+            'et Bovins ajoutees apres lui.',
       );
     });
 
@@ -113,6 +114,18 @@ void main() {
         '/contact',
       ]) {
         expect(ScenariosTour.pour(route), isNotEmpty, reason: route);
+      }
+    });
+
+    test('les deux filières ajoutées ont leur visite, sur les cibles de la fiche',
+        () {
+      for (final route in const ['/elevage/escargots', '/elevage/bovins']) {
+        final cibles = ScenariosTour.pour(route).map((e) => e.cible).toList();
+        expect(cibles, [
+          'saisie-journaliere',
+          'prophylaxie-du-jour',
+          'bascule-hebdomadaire',
+        ], reason: route);
       }
     });
 

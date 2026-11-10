@@ -90,15 +90,19 @@ class MessageEditeur {
     required this.message,
     required this.etapes,
     required this.statut,
+    this.auteurNom,
   });
 
-  final int id;
+  final String id;
   final DateTime horodatage;
   final String type;
   final String sujet;
   final String message;
   final String? etapes;
   final String statut;
+
+  /// « Nom (identifiant) — Rôle » de la rédactrice (`null` avant la v45).
+  final String? auteurNom;
 
   bool get estBug => type == 'bug';
 

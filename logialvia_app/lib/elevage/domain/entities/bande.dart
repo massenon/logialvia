@@ -12,9 +12,10 @@ class Bande {
     this.effectifInitial,
     this.dateCloture,
     this.observations,
+    this.motifConflit,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final String code;
 
@@ -27,6 +28,28 @@ class Bande {
 
   final DateTime? dateCloture;
   final String? observations;
+
+  /// Motif de refus du serveur (« Ce code de bande est déjà utilisé… ») tant que la bande
+  /// attend d'être recodée ; `null` sinon (`47e_`).
+  final String? motifConflit;
+
+  bool get enConflit => motifConflit != null;
+
+  /// Code de recodage proposé quand deux postes ont déclaré le même code hors ligne :
+  /// `B2` devient `B2-P2` (code du poste), puis `B2-P2-2`… tant qu'il est pris.
+  static String proposerCodeRecodage(
+    String code, {
+    required String? codePoste,
+    required Set<String> codesPris,
+  }) {
+    final racine = '${code.trim()}-${codePoste ?? 'X'}';
+    if (!codesPris.contains(racine)) return racine;
+    var n = 2;
+    while (codesPris.contains('$racine-$n')) {
+      n++;
+    }
+    return '$racine-$n';
+  }
 
   bool get estEnCours => dateCloture == null;
 

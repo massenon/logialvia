@@ -1,0 +1,1095 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../../administration/data/repositories/preferences_poste_repository.dart';
+import '../../administration/data/sync/depot_demandes_referentiel.dart';
+import 'depot_jeton_sync.dart';
+import 'droits_poste.dart';
+import 'identifiant_poste.dart';
+import 'service_appairage.dart';
+import 'table_poste.dart';
+import 'transport_http.dart';
+import '../resultat/resultat.dart';
+
+enum IssueSynchronisation {
+  /// Pull puis push se sont terminés.
+  terminee,
+
+  /// Pas de réseau : **pas une erreur** (blueprint §3), tout reste à envoyer.
+  horsLigne,
+
+  nonAppairee,
+
+  /// 401 : jeton révoqué ou expiré, le poste redemande une connexion.
+  revoque,
+
+  /// Le serveur a refusé (409, 403, 5xx…) ; voir le message.
+  refusee,
+}
+
+class RapportSynchronisation {
+  const RapportSynchronisation(
+    this.issue,
+    this.message, {
+    this.recues = 0,
+    this.refuseesALaReception = 0,
+    this.conserveesLocalement = 0,
+    this.supplantees = 0,
+    this.referentielsMisAJour = 0,
+    this.demandesAcceptees = 0,
+    this.demandesRefusees = 0,
+    this.envoyees = 0,
+    this.acceptees = 0,
+    this.refusees = 0,
+    this.ignorees = 0,
+    this.saisiesPerdues = 0,
+    this.remiseAZero = false,
+    this.enAttenteDeDroit = 0,
+    this.refuseesPourDroit = 0,
+    this.refuseesHorloge = 0,
+    this.decalageHorloge,
+    this.envoiSuspendu = false,
+  });
+
+  final IssueSynchronisation issue;
+  final String message;
+
+  /// Lignes absorbées au tirage.
+  final int recues;
+
+  /// Lignes du serveur refusées par l'absorbeur strict.
+  final int refuseesALaReception;
+
+  /// Lignes du serveur non appliquées car le poste a une saisie non envoyée.
+  final int conserveesLocalement;
+
+  /// Saisies locales non envoyées remplacées par une version plus récente.
+  final int supplantees;
+
+  /// Lignes de référentiels (modules, paramètres) modifiées d'après le serveur.
+  final int referentielsMisAJour;
+
+  /// Demandes de modification de référentiel acceptées / refusées par le serveur.
+  final int demandesAcceptees;
+  final int demandesRefusees;
+
+  final int envoyees;
+  final int acceptees;
+
+  /// Lignes refusées par le serveur : elles deviennent `conflict`.
+  final int refusees;
+  final int ignorees;
+
+  /// Saisies non envoyées perdues par une remise à zéro du serveur.
+  final int saisiesPerdues;
+  final bool remiseAZero;
+
+  /// Saisies et demandes que le compte appairé n'a pas le droit d'envoyer (`47g_`) : elles
+  /// restent EN ATTENTE (jamais `conflict`) et partent dès qu'une session avec le droit
+  /// synchronise (changement de compte, droit accordé au serveur, reconnexion).
+  final int enAttenteDeDroit;
+
+  /// Refus `droit_insuffisant` rendus par le serveur à cette synchronisation (droits du poste
+  /// périmés) : la ligne reste en attente, elle n'est PAS marquée en conflit.
+  final int refuseesPourDroit;
+
+  /// Refus `horloge_en_avance` rendus par le serveur : la ligne reste en attente.
+  final int refuseesHorloge;
+
+  /// Écart mesuré de l'horloge (poste − serveur ; positif : en avance), `null` : non mesuré.
+  final Duration? decalageHorloge;
+
+  /// L'envoi des saisies a été suspendu : l'horloge du poste avance de plus de la tolérance.
+  final bool envoiSuspendu;
+
+  AnalyseHorloge? get horloge =>
+      decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
+
+  /// Un avertissement d'horloge à montrer (avance > 2 min, retard > tolérance).
+  bool get horlogeAAvertir => horloge?.aAvertir ?? false;
+
+  bool get reussie => issue == IssueSynchronisation.terminee;
+
+  RapportSynchronisation avec({
+    IssueSynchronisation? issue,
+    String? message,
+    int? recues,
+    int? refuseesALaReception,
+    int? conserveesLocalement,
+    int? supplantees,
+    int? referentielsMisAJour,
+    int? demandesAcceptees,
+    int? demandesRefusees,
+    int? envoyees,
+    int? acceptees,
+    int? refusees,
+    int? ignorees,
+    int? saisiesPerdues,
+    bool? remiseAZero,
+    int? enAttenteDeDroit,
+    int? refuseesPourDroit,
+    int? refuseesHorloge,
+    Duration? decalageHorloge,
+    bool? envoiSuspendu,
+  }) => RapportSynchronisation(
+    issue ?? this.issue,
+    message ?? this.message,
+    recues: recues ?? this.recues,
+    refuseesALaReception: refuseesALaReception ?? this.refuseesALaReception,
+    conserveesLocalement: conserveesLocalement ?? this.conserveesLocalement,
+    supplantees: supplantees ?? this.supplantees,
+    referentielsMisAJour: referentielsMisAJour ?? this.referentielsMisAJour,
+    demandesAcceptees: demandesAcceptees ?? this.demandesAcceptees,
+    demandesRefusees: demandesRefusees ?? this.demandesRefusees,
+    envoyees: envoyees ?? this.envoyees,
+    acceptees: acceptees ?? this.acceptees,
+    refusees: refusees ?? this.refusees,
+    ignorees: ignorees ?? this.ignorees,
+    saisiesPerdues: saisiesPerdues ?? this.saisiesPerdues,
+    remiseAZero: remiseAZero ?? this.remiseAZero,
+    enAttenteDeDroit: enAttenteDeDroit ?? this.enAttenteDeDroit,
+    refuseesPourDroit: refuseesPourDroit ?? this.refuseesPourDroit,
+    refuseesHorloge: refuseesHorloge ?? this.refuseesHorloge,
+    decalageHorloge: decalageHorloge ?? this.decalageHorloge,
+    envoiSuspendu: envoiSuspendu ?? this.envoiSuspendu,
+  );
+}
+
+/// Ce que le poste sait de ses droits (`47g_`), pour l'onglet « Appairage ».
+class EtatDroitsPoste {
+  const EtatDroitsPoste({
+    this.droits,
+    this.enAttenteDeDroit = 0,
+    this.decalageHorloge,
+  });
+
+  /// Droits du compte appairé, `null` : inconnus.
+  final DroitsPoste? droits;
+
+  /// Saisies et demandes qui attendent un droit que le compte n'a pas.
+  final int enAttenteDeDroit;
+
+  /// Dernier écart mesuré de l'horloge, `null` : jamais mesuré.
+  final Duration? decalageHorloge;
+
+  AnalyseHorloge? get horloge =>
+      decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
+}
+
+/// Le moteur de synchronisation du poste (`46_` §4, blueprint §3).
+///
+/// Ordre **toujours** : tirage (pull) d'abord, envoi (push) ensuite — sinon le
+/// serveur travaillerait sur des données que le poste n'a pas encore reçues.
+///
+/// Le poste écrit des **faits** ; le serveur décide. Rien n'est calculé ici :
+/// pas de règle métier recopiée dans le client (`46_` §5).
+class MoteurSynchronisationPoste {
+  MoteurSynchronisationPoste({
+    required this.preferences,
+    required this.depot,
+    required this.appairage,
+    required this.tables,
+    this.demandes,
+    this.client,
+    this.delai = const Duration(seconds: 30),
+    this.tailleLot = 100,
+    this.octetsMaxEnvoi = 256 * 1024,
+    this.delaisRepetition = const [
+      Duration(milliseconds: 500),
+      Duration(seconds: 2),
+    ],
+    this.pause,
+    this.socleDuPlan = const {},
+  });
+
+  /// Comptes semés à l'identique sur tous les postes (plan comptable, P8) : ce que le
+  /// poste ajoute ou renomme au-delà est proposé une fois au serveur.
+  final Map<String, ({String libelle, String classe})> socleDuPlan;
+
+  final PreferencesPosteRepository preferences;
+  final DepotJetonSync depot;
+  final ServiceAppairage appairage;
+
+  /// Dans l'ordre des dépendances (clients avant ventes…).
+  final List<TablePoste> tables;
+
+  /// File des demandes de modification de référentiel (`null` : aucune).
+  final DepotDemandesReferentiel? demandes;
+  final http.Client? client;
+  final Duration delai;
+
+  /// Lignes par requête d'envoi : un envoi plus gros que la limite du
+  /// mandataire (413) est un piège déjà payé (blueprint §10).
+  final int tailleLot;
+
+  /// Poids maximal (octets JSON) d'un envoi : un hébergeur plafonne le corps
+  /// (`LimitRequestBody`, `post_max_size`, pare-feu applicatif) et répond 413.
+  /// Le plafond COURANT baisse de moitié à chaque 413 (dichotomie) et ne remonte pas :
+  /// la limite de l'hébergeur est permanente (`47r_`).
+  final int octetsMaxEnvoi;
+
+  /// Pause avant chaque rejeu d'une requête coupée / 502 / 503 / 504 / 429.
+  final List<Duration> delaisRepetition;
+  final Future<void> Function(Duration)? pause;
+
+  late final TransportHttp _transport = TransportHttp(
+    client: client,
+    delai: delai,
+    delaisRepetition: delaisRepetition,
+    pause: pause,
+  );
+
+  int? _lignesMaxCourant;
+  int? _octetsMaxCourant;
+
+  bool _enCours = false;
+
+  /// [complet] : repart d'un tirage COMPLET (« Renvoyer vers ce poste » du web).
+  Future<RapportSynchronisation> synchroniser({bool complet = false}) async {
+    // Une seule synchronisation à la fois : deux tirages entrelacés se
+    // disputeraient le curseur.
+    if (_enCours) {
+      return const RapportSynchronisation(
+        IssueSynchronisation.refusee,
+        'Une synchronisation est déjà en cours.',
+      );
+    }
+    _enCours = true;
+    try {
+      return await _synchroniser(complet: complet);
+    } finally {
+      _enCours = false;
+    }
+  }
+
+  Future<RapportSynchronisation> _synchroniser({required bool complet}) async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const RapportSynchronisation(
+        IssueSynchronisation.nonAppairee,
+        'Ce poste n\'est pas appairé : rien à synchroniser.',
+      );
+    }
+
+    var session = _Session(
+      adresse,
+      jeton,
+      await preferences.identifiantPoste(),
+    );
+    // Une seule fois : le catalogue local est propose au serveur.
+    await demandes?.adopterCatalogueSiBesoin(preferences);
+    await demandes?.adopterIntrantsSiBesoin(preferences);
+    await demandes?.adopterParametresElevageSiBesoin(preferences);
+    await demandes?.adopterPlanSiBesoin(preferences, socle: socleDuPlan);
+
+    var rapport = const RapportSynchronisation(
+      IssueSynchronisation.terminee,
+      '',
+    );
+
+    // Un tirage complet ne se décide pas à moitié : le curseur est effacé AVANT,
+    // et ne reprend qu'à la dernière page.
+    if (complet) await preferences.definirCurseurTirage(null);
+
+    final tirage = await _tirer(session, rapport);
+    rapport = tirage.rapport;
+    if (tirage.arret != null) return tirage.arret!;
+
+    // `47g_` : le tirage vient d'apprendre les droits du compte et l'écart d'horloge. Seule la
+    // mesure de CETTE synchronisation compte (une mesure ancienne ne bloquerait pas à tort).
+    session = session.avec(
+      droits: await preferences.droitsSync(),
+      decalage: rapport.decalageHorloge,
+    );
+    final analyse = rapport.horloge;
+    if (analyse != null && analyse.suspendEnvoi) {
+      rapport = rapport.avec(
+        envoiSuspendu: true,
+        enAttenteDeDroit: await compterEnAttenteDeDroit(session.droits),
+      );
+      return rapport.avec(message: _resume(rapport));
+    }
+
+    // Les DEMANDES partent avant les faits : un produit créé au poste doit être connu
+    // du serveur avant que les ventes qui le portent n'arrivent (sinon : « produit
+    // inconnu »).
+    final proposition = await _envoyerDemandes(session, rapport);
+    rapport = proposition.rapport;
+    if (proposition.arret != null) return proposition.arret!;
+
+    final envoi = await _envoyer(session, rapport);
+    rapport = envoi.rapport;
+    if (envoi.arret != null) return envoi.arret!;
+
+    // Ce qui attend un droit, une fois le cycle fait (refus du serveur compris).
+    rapport = rapport.avec(
+      enAttenteDeDroit:
+          await compterEnAttenteDeDroit(session.droits) +
+          rapport.refuseesPourDroit,
+    );
+    return rapport.avec(message: _resume(rapport));
+  }
+
+  // ------------------------------------------------- Demandes du serveur
+
+  /// Le serveur ne joint jamais un poste (éteint, derrière un NAT) : il dépose un
+  /// drapeau que le poste lit (`GET /api/sync/demande`, blueprint §5).
+  Future<ReponseDemande> interrogerDemande() async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const ReponseDemande(IssueSynchronisation.nonAppairee);
+    }
+    final resultat = await _appeler(
+      adresse,
+      (c, base) =>
+          c.get(Uri.parse('$base/api/sync/demande'), headers: _entetes(jeton)),
+    );
+    final arret = await _verifier(resultat);
+    if (arret != null) return ReponseDemande(arret.issue);
+
+    final json = _json(resultat.reponse!.body);
+    return ReponseDemande(
+      IssueSynchronisation.terminee,
+      synchroniser: json?['synchroniser'] == true,
+      resynchronisationComplete: json?['resynchronisation_complete'] == true,
+    );
+  }
+
+  /// Le tirage complet demandé est fait : le serveur peut baisser son drapeau.
+  Future<bool> acquitterResynchronisation() async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) return false;
+    final reponse = (await _appeler(
+      adresse,
+      (c, base) => c.post(
+        Uri.parse('$base/api/sync/resynchronisation/acquittement'),
+        headers: _entetes(jeton),
+      ),
+    )).reponse;
+    return reponse != null &&
+        reponse.statusCode >= 200 &&
+        reponse.statusCode < 300;
+  }
+
+  /// Réserve auprès du serveur la TRANSMISSION d'une facture émise au web (`47a2_`).
+  ///
+  /// Le web n'a ni jeton ni accès à e-MECeF : une facture web se transmet depuis un
+  /// poste appairé. Pour qu'elle ne soit pas normalisée deux fois (deux postes qui
+  /// transmettent en même temps), le serveur n'accorde la réservation qu'à UN poste à
+  /// la fois (15 minutes) ; seul le détenteur peut ensuite envoyer sa normalisation.
+  /// Sans réseau ni appairage, pas de réservation : le poste ne transmet pas.
+  Future<Resultat<void>> reserverTransmission(String factureId) async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const Echec(
+        'Une facture émise au web se transmet depuis un poste appairé : '
+        'appairez ce poste au serveur.',
+      );
+    }
+    final idPoste = await preferences.identifiantPoste();
+    final resultat = await _appeler(
+      adresse,
+      (c, base) async => c.post(
+        Uri.parse('$base/api/sync/factures/reserver'),
+        headers: _entetes(jeton),
+        body: jsonEncode({'device_id': idPoste, 'facture_id': factureId}),
+      ),
+    );
+    final reponse = resultat.reponse;
+    if (reponse == null) {
+      final e = resultat.erreur!;
+      return Echec(
+        e.genre == GenreErreurReseau.horsLigne
+            ? 'Serveur injoignable : une facture émise au web ne se transmet pas '
+                  'hors ligne (le serveur doit réserver sa transmission).'
+            : e.message,
+      );
+    }
+    final inattendu = messageReponseInattendue(reponse);
+    if (inattendu != null) return Echec(inattendu);
+    if (reponse.statusCode == 401 && _estRefusDeJeton(reponse)) {
+      await appairage.oublierLocalement();
+      return const Echec(
+        'Ce poste n\'est plus appairé : reconnectez-vous (Paramètres > Appairage).',
+      );
+    }
+    if (reponse.statusCode >= 200 && reponse.statusCode < 300) {
+      return const Succes(null);
+    }
+    final m = _json(reponse.body)?['message'];
+    return Echec(
+      m is String && m.isNotEmpty
+          ? m
+          : 'Le serveur a refusé la réservation (HTTP ${reponse.statusCode}).',
+    );
+  }
+
+  /// Une saisie attend-elle d'être envoyée ? (garde « rien à envoyer »)
+  ///
+  /// Seul ce que le compte a le droit d'envoyer compte (`47g_`) : une saisie qui attend un
+  /// droit ne relancerait sinon une synchronisation, refusée ou sans objet, à chaque geste.
+  ///
+  /// Une horloge en avance au-delà de la tolérance (dernière mesure) suspend l'envoi : rien à
+  /// envoyer tant qu'elle n'est pas corrigée (la synchronisation de routine remesure).
+  Future<bool> aDesSaisiesAEnvoyer() async {
+    final decalage = await preferences.decalageHorloge();
+    if (decalage != null && analyserHorloge(decalage).suspendEnvoi) {
+      return false;
+    }
+    final droits = await preferences.droitsSync();
+    for (final t in tables) {
+      if (!_peutEnvoyer(droits, t)) continue;
+      if ((await t.aEnvoyer()).isNotEmpty) return true;
+    }
+    if (demandes == null) return false;
+    for (final d in await demandes!.aEnvoyer()) {
+      if (droits == null || droits.peutProposer(d.type)) return true;
+    }
+    return false;
+  }
+
+  bool _peutEnvoyer(DroitsPoste? droits, TablePoste t) =>
+      t.referentiel || droits == null || droits.peutEcrireTable(t.nom);
+
+  /// Saisies (faits) et demandes en attente d'un droit que le compte appairé n'a pas : ce
+  /// n'est ni un conflit ni une erreur, c'est un état (`47g_`). 0 si les droits sont inconnus.
+  Future<int> compterEnAttenteDeDroit([DroitsPoste? droits]) async {
+    droits ??= await preferences.droitsSync();
+    if (droits == null) return 0;
+    var n = 0;
+    for (final t in tables) {
+      if (t.referentiel || droits.peutEcrireTable(t.nom)) continue;
+      n += (await t.aEnvoyer()).length;
+    }
+    if (demandes != null) {
+      for (final d in await demandes!.aEnvoyer()) {
+        if (!droits.peutProposer(d.type)) n++;
+      }
+    }
+    return n;
+  }
+
+  /// L'état de droits du poste, pour l'onglet « Appairage » (aucun accès réseau).
+  Future<EtatDroitsPoste> etatDroits() async {
+    final droits = await preferences.droitsSync();
+    return EtatDroitsPoste(
+      droits: droits,
+      enAttenteDeDroit: await compterEnAttenteDeDroit(droits),
+      decalageHorloge: await preferences.decalageHorloge(),
+    );
+  }
+
+  /// Émet à chaque modification locale d'une table synchronisée.
+  Stream<void> get modifications => StreamGroup.merge([
+    ...tables.map((t) => t.modifications),
+    ?demandes?.modifications,
+  ]);
+
+  // ------------------------------------------------------------------ Tirage
+
+  Future<_Etape> _tirer(_Session s, RapportSynchronisation rapport) async {
+    var since = await preferences.curseurTirage();
+    var page = 1;
+    String? borne; // `until` : fige les pages d'un même tirage
+    var marqueVerifiee = false;
+    var droitsLus = false;
+
+    while (true) {
+      final avant = horlogePoste();
+      final resultat = await _appelerSession(
+        s,
+        (c, base) => c.get(
+          Uri.parse('$base/api/sync/pull').replace(
+            queryParameters: {
+              'since': ?since,
+              'until': ?borne,
+              'page': '$page',
+            },
+          ),
+          headers: _entetes(s.jeton),
+        ),
+      );
+      final apres = horlogePoste();
+      final arret = await _verifier(resultat);
+      if (arret != null) return _Etape(rapport, arret);
+
+      final json = _json(resultat.reponse!.body);
+      if (json == null || json['tables'] is! Map) {
+        return _Etape(
+          rapport,
+          _refus('Réponse du serveur inattendue au tirage.'),
+        );
+      }
+
+      // `47g_` : les droits du compte (rafraîchis à chaque cycle : droit accordé au serveur,
+      // changement de compte) et l'écart de l'horloge de ce poste avec celle du serveur.
+      if (!droitsLus) {
+        droitsLus = true;
+        final droits = DroitsPoste.depuisJson(json['droits']);
+        if (droits != null) await preferences.definirDroitsSync(droits);
+        final serveur = json['server_now'] is String
+            ? DateTime.tryParse(json['server_now'] as String)
+            : null;
+        if (serveur != null) {
+          final ecart = mesurerDecalage(
+            avant: avant,
+            apres: apres,
+            serveur: serveur,
+          );
+          await preferences.definirDecalageHorloge(ecart);
+          rapport = rapport.avec(decalageHorloge: ecart);
+        }
+      }
+
+      final marque = json['reset_mark'];
+      if (!marqueVerifiee && marque is String) {
+        marqueVerifiee = true;
+        final connue = await preferences.marqueRemiseAZero();
+        if (connue != null && connue != marque) {
+          // Remise à zéro du serveur : le poste purge ses tables d'activité,
+          // compte ce qu'il perd, puis repart d'un tirage COMPLET.
+          var perdues = 0;
+          // Dans l'ordre INVERSE des dependances : les achats avant leur
+          // fournisseur, sinon la cle etrangere refuse la suppression.
+          for (final t in tables.reversed) {
+            perdues += await t.purger();
+          }
+          await preferences.definirCurseurTirage(null);
+          await preferences.definirMarqueRemiseAZero(marque);
+          rapport = rapport.avec(
+            remiseAZero: true,
+            saisiesPerdues: rapport.saisiesPerdues + perdues,
+          );
+          since = null;
+          borne = null;
+          page = 1;
+          continue;
+        }
+        if (connue == null) await preferences.definirMarqueRemiseAZero(marque);
+      }
+
+      borne ??= json['server_time'] as String?;
+      final lignesParTable = (json['tables'] as Map).cast<String, dynamic>();
+      for (final t in tables) {
+        final lignes = lignesParTable[t.nom];
+        if (lignes is! List) continue;
+        final r = await t.absorber(
+          lignes.whereType<Map<String, dynamic>>().toList(),
+        );
+        rapport = rapport.avec(
+          recues: rapport.recues + (t.referentiel ? 0 : r.absorbees),
+          referentielsMisAJour:
+              rapport.referentielsMisAJour + (t.referentiel ? r.absorbees : 0),
+          refuseesALaReception: rapport.refuseesALaReception + r.refusees,
+          conserveesLocalement: rapport.conserveesLocalement + r.conservees,
+          supplantees: rapport.supplantees + r.supplantees,
+        );
+      }
+
+      final derniere = (json['last_page'] as num?)?.toInt() ?? 1;
+      if (page >= derniere) {
+        // Le curseur n'avance qu'après la DERNIÈRE page.
+        final fin = json['server_time'];
+        if (fin is String) await preferences.definirCurseurTirage(fin);
+        return _Etape(rapport, null);
+      }
+      page++;
+    }
+  }
+
+  // ------------------------------------------------------------------- Envoi
+
+  Future<_Etape> _envoyer(_Session s, RapportSynchronisation rapport) async {
+    final marque = await preferences.marqueRemiseAZero() ?? 'initiale';
+
+    for (final t in tables) {
+      // `47g_` : une table que le compte n'a pas le droit d'écrire n'est pas proposée ; ses
+      // saisies restent en attente de droit (jamais `conflict`).
+      if (!_peutEnvoyer(s.droits, t)) continue;
+      final aEnvoyer = await t.aEnvoyer();
+      var i = 0;
+      while (i < aEnvoyer.length) {
+        final lot = _prochainLot(aEnvoyer, i);
+        final resultat = await _appelerSession(
+          s,
+          (c, base) => c.post(
+            Uri.parse('$base/api/sync/push'),
+            headers: _entetes(s.jeton),
+            body: jsonEncode({
+              'device_id': s.idPoste,
+              'reset_mark': marque,
+              'tables': {
+                t.nom: [for (final l in lot) _borner(s, l.corps)],
+              },
+            }),
+          ),
+        );
+
+        // 413 : le corps dépasse la limite de l'hébergeur (`LimitRequestBody`,
+        // `post_max_size`…). Rien n'a été traité : on coupe le lot en deux et on
+        // recommence, sans perte ni doublon (l'envoi est idempotent de toute façon).
+        if (resultat.reponse?.statusCode == 413) {
+          if (lot.length > 1) {
+            _lignesMaxCourant = (lot.length / 2).ceil();
+            _octetsMaxCourant = ((await _octets(lot)) / 2).ceil();
+            continue;
+          }
+          // Une seule ligne déjà trop grosse : inutile de la renvoyer indéfiniment.
+          await t.marquerConflit(
+            lot.first.id,
+            'Cette saisie est trop volumineuse pour le serveur (limite d\'envoi '
+            'de l\'hébergeur, HTTP 413). Réduisez-la ou faites relever la limite.',
+          );
+          rapport = rapport.avec(
+            envoyees: rapport.envoyees + 1,
+            refusees: rapport.refusees + 1,
+          );
+          i += 1;
+          continue;
+        }
+
+        final arret = await _verifier(resultat);
+        if (arret != null) return _Etape(rapport, arret);
+
+        final json = _json(resultat.reponse!.body);
+        final bilan = json?[t.nom];
+        if (bilan is! Map) {
+          return _Etape(
+            rapport,
+            _refus('Réponse du serveur inattendue à l\'envoi.'),
+          );
+        }
+
+        final instants = {for (final l in lot) l.id: l.instantSaisie};
+        var acceptees = 0;
+        for (final id in (bilan['accepted'] as List? ?? const [])) {
+          if (id is String && instants.containsKey(id)) {
+            await t.marquerSynchronise(id, instants[id]!);
+            acceptees++;
+          }
+        }
+        var refusees = 0;
+        var pourDroit = 0;
+        var pourHorloge = 0;
+        for (final r in (bilan['rejected'] as List? ?? const [])) {
+          if (r is Map && r['id'] is String) {
+            // Code STABLE du serveur : jamais le texte. Un refus pour droit ou pour horloge n'est
+            // pas définitif : la ligne reste en attente et repartira (`47g_`).
+            final code = r['code'];
+            if (code == codeDroitInsuffisant) {
+              pourDroit++;
+              continue;
+            }
+            if (code == codeHorlogeEnAvance) {
+              pourHorloge++;
+              continue;
+            }
+            await t.marquerConflit(
+              r['id'] as String,
+              (r['motif'] as String?) ?? 'Refusé par le serveur.',
+            );
+            refusees++;
+          }
+        }
+        final ignorees = (bilan['ignored'] as List? ?? const []).length;
+
+        rapport = rapport.avec(
+          envoyees: rapport.envoyees + lot.length,
+          acceptees: rapport.acceptees + acceptees,
+          refusees: rapport.refusees + refusees,
+          ignorees: rapport.ignorees + ignorees,
+          refuseesPourDroit: rapport.refuseesPourDroit + pourDroit,
+          refuseesHorloge: rapport.refuseesHorloge + pourHorloge,
+        );
+        i += lot.length;
+      }
+    }
+    return _Etape(rapport, null);
+  }
+
+  /// Le prochain envoi : au plus [tailleLot] lignes (ou le plafond appris après un
+  /// 413) et au plus [octetsMaxEnvoi] octets (au moins une ligne, toujours).
+  List<LigneAEnvoyer> _prochainLot(List<LigneAEnvoyer> toutes, int debut) {
+    final maxLignes = _lignesMaxCourant ?? tailleLot;
+    final maxOctets = _octetsMaxCourant ?? octetsMaxEnvoi;
+    final lot = <LigneAEnvoyer>[];
+    var poids = 0;
+    for (var k = debut; k < toutes.length && lot.length < maxLignes; k++) {
+      final p = utf8.encode(jsonEncode(toutes[k].corps)).length;
+      if (lot.isNotEmpty && poids + p > maxOctets) break;
+      lot.add(toutes[k]);
+      poids += p;
+    }
+    return lot;
+  }
+
+  Future<int> _octets(List<LigneAEnvoyer> lot) async => lot.fold<int>(
+    0,
+    (somme, l) => somme + utf8.encode(jsonEncode(l.corps)).length,
+  );
+
+  // ------------------------------------------------------------ Demandes
+
+  /// Le poste PROPOSE ses modifications de référentiel ; le serveur décide
+  /// (`POST /api/sync/demandes`). Le résultat redescend au tirage suivant.
+  Future<_Etape> _envoyerDemandes(
+    _Session s,
+    RapportSynchronisation rapport,
+  ) async {
+    final file = demandes;
+    if (file == null) return _Etape(rapport, null);
+    // `47g_` : seuls les types que le compte a le droit de proposer partent ; les autres
+    // restent en attente de droit.
+    final aEnvoyer = [
+      for (final d in await file.aEnvoyer())
+        if (s.droits == null || s.droits!.peutProposer(d.type)) d,
+    ];
+    if (aEnvoyer.isEmpty) return _Etape(rapport, null);
+
+    final resultat = await _appelerSession(
+      s,
+      (c, base) => c.post(
+        Uri.parse('$base/api/sync/demandes'),
+        headers: _entetes(s.jeton),
+        body: jsonEncode({
+          'device_id': s.idPoste,
+          'demandes': [
+            for (final d in aEnvoyer)
+              {
+                'id': d.id,
+                'type': d.type,
+                'saisi_le': _bornerInstant(s, d.saisiLe),
+                'donnees': jsonDecode(d.donnees),
+              },
+          ],
+        }),
+      ),
+    );
+    final arret = await _verifier(resultat);
+    if (arret != null) return _Etape(rapport, arret);
+
+    final json = _json(resultat.reponse!.body);
+    if (json == null) {
+      return _Etape(
+        rapport,
+        _refus('Réponse du serveur inattendue aux demandes.'),
+      );
+    }
+    final saisies = {for (final d in aEnvoyer) d.id: d.saisiLe};
+    var acceptees = 0;
+    var refusees = 0;
+    var pourDroit = 0;
+    var pourHorloge = 0;
+    for (final id in (json['accepted'] as List? ?? const [])) {
+      if (id is String && saisies.containsKey(id)) {
+        await file.marquerSynchronisee(id, saisies[id]!);
+        acceptees++;
+      }
+    }
+    for (final r in (json['rejected'] as List? ?? const [])) {
+      if (r is Map && r['id'] is String && saisies.containsKey(r['id'])) {
+        // Refus provisoire (code stable) : la demande reste EN ATTENTE, elle repartira
+        // quand le droit sera accordé ou l'horloge corrigée (`47g_`).
+        if (r['code'] == codeDroitInsuffisant) {
+          pourDroit++;
+          continue;
+        }
+        if (r['code'] == codeHorlogeEnAvance) {
+          pourHorloge++;
+          continue;
+        }
+        await file.marquerRefusee(
+          r['id'] as String,
+          (r['motif'] as String?) ?? 'Refusée par le serveur.',
+        );
+        refusees++;
+      }
+    }
+    return _Etape(
+      rapport.avec(
+        demandesAcceptees: rapport.demandesAcceptees + acceptees,
+        demandesRefusees: rapport.demandesRefusees + refusees,
+        refuseesPourDroit: rapport.refuseesPourDroit + pourDroit,
+        refuseesHorloge: rapport.refuseesHorloge + pourHorloge,
+      ),
+      null,
+    );
+  }
+
+  // ------------------------------------------------------------------ Outils
+
+  /// Instant de saisie envoyé au serveur : jamais postérieur à l'heure du SERVEUR (estimée par
+  /// l'écart mesuré à ce cycle). Une saisie datée du futur par une horloge en avance, restée en
+  /// attente pendant la suspension, partirait sinon refusée pour toujours après la correction de
+  /// l'horloge. L'instant local de la ligne ne change pas : l'accusé (`marquerSynchronise`)
+  /// compare toujours l'instant d'origine, et le tirage suivant rapporte la version du serveur.
+  String _bornerInstant(_Session s, String instant) {
+    final decalage = s.decalage;
+    final t = DateTime.tryParse(instant);
+    if (decalage == null || t == null) return instant;
+    final maintenantServeur = horlogePoste().subtract(decalage).toUtc();
+    return t.isAfter(maintenantServeur)
+        ? maintenantServeur.toIso8601String()
+        : instant;
+  }
+
+  /// Une ligne à envoyer, avec ses instants de saisie bornés ([_bornerInstant]).
+  Map<String, dynamic> _borner(_Session s, Map<String, dynamic> corps) {
+    if (s.decalage == null) return corps;
+    final copie = {...corps};
+    for (final cle in clesInstantSaisie) {
+      final v = copie[cle];
+      if (v is String) copie[cle] = _bornerInstant(s, v);
+    }
+    return copie;
+  }
+
+  Map<String, String> _entetes(String jeton) => {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $jeton',
+    // Apache en CGI/FastCGI retire parfois `Authorization` : le serveur relit ce double
+    // (`47r_`, RestaurerEnTeteAutorisation). Même secret, même requête.
+    'X-Authorization': 'Bearer $jeton',
+  };
+
+  /// Appel HTTP : jamais d'exception, l'adresse corrigée (http → https) est mémorisée.
+  Future<ResultatHttp> _appeler(
+    String adresse,
+    Future<http.Response> Function(http.Client c, String base) requete,
+  ) async {
+    final r = await _transport.appeler(requete, adresse: adresse);
+    if (r.adresseCorrigee != null) {
+      await preferences.definirAdresseServeur(r.adresseCorrigee!);
+    }
+    return r;
+  }
+
+  Future<ResultatHttp> _appelerSession(
+    _Session s,
+    Future<http.Response> Function(http.Client c, String base) requete,
+  ) async {
+    final r = await _appeler(s.adresse, requete);
+    if (r.adresseCorrigee != null) s.adresse = r.adresseCorrigee!;
+    return r;
+  }
+
+  /// Un 401 JSON de l'application = jeton révoqué ou expiré. Un 401 qui n'est PAS celui
+  /// du serveur (page de l'hébergeur, protection par mot de passe du dossier) ou qui dit
+  /// que l'en-tête `Authorization` n'est jamais arrivé (Apache/CGI le retire) ne doit PAS
+  /// faire oublier un jeton valide.
+  bool _estRefusDeJeton(http.Response reponse) {
+    if (reponseEstHtml(reponse)) return false;
+    return _json(reponse.body)?['code'] != 'jeton_absent';
+  }
+
+  /// `null` si la réponse est exploitable, sinon le rapport qui arrête tout.
+  Future<RapportSynchronisation?> _verifier(ResultatHttp resultat) async {
+    final erreur = resultat.erreur;
+    if (erreur != null) {
+      final neutre =
+          erreur.genre == GenreErreurReseau.horsLigne ||
+          erreur.genre == GenreErreurReseau.delai ||
+          erreur.genre == GenreErreurReseau.interrompue;
+      return RapportSynchronisation(
+        neutre ? IssueSynchronisation.horsLigne : IssueSynchronisation.refusee,
+        erreur.message,
+      );
+    }
+    final reponse = resultat.reponse!;
+    if (reponse.statusCode == 401 && _estRefusDeJeton(reponse)) {
+      await appairage.oublierLocalement();
+      return const RapportSynchronisation(
+        IssueSynchronisation.revoque,
+        'Ce poste n\'est plus appairé : le jeton a été révoqué ou a expiré. '
+        'Reconnectez-vous (Paramètres > Appairage). Vos saisies sont conservées.',
+      );
+    }
+    if (reponse.statusCode == 401) {
+      return _refus(
+        reponseEstHtml(reponse)
+            ? 'Le serveur a refusé l\'accès avant l\'application (page '
+                  'd\'identification ou protection de l\'hébergeur, HTTP 401). '
+                  'Le poste reste appairé.'
+            : (_json(reponse.body)?['message'] as String? ??
+                  'Le serveur ne reçoit pas le jeton du poste (en-tête '
+                      'Authorization retiré par l\'hébergeur). Le poste reste appairé.'),
+      );
+    }
+    if (reponse.statusCode == 409) {
+      return _refus(
+        _json(reponse.body)?['message'] as String? ??
+            'Le serveur a été remis à zéro : tirez d\'abord ses données.',
+      );
+    }
+    final inattendu = messageReponseInattendue(reponse);
+    if (inattendu != null) {
+      final transitoire = [429, 502, 503, 504].contains(reponse.statusCode);
+      return RapportSynchronisation(
+        transitoire
+            ? IssueSynchronisation.horsLigne
+            : IssueSynchronisation.refusee,
+        inattendu,
+      );
+    }
+    if (reponse.statusCode < 200 || reponse.statusCode >= 300) {
+      final m = _json(reponse.body)?['message'];
+      return _refus(
+        m is String && m.isNotEmpty
+            ? m
+            : 'Le serveur a refusé la demande (HTTP ${reponse.statusCode}).',
+      );
+    }
+    return null;
+  }
+
+  RapportSynchronisation _refus(String message) =>
+      RapportSynchronisation(IssueSynchronisation.refusee, message);
+
+  Map<String, dynamic>? _json(String corps) {
+    try {
+      final v = jsonDecode(corps);
+      return v is Map<String, dynamic> ? v : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String _resume(RapportSynchronisation r) {
+    final morceaux = <String>[
+      '${r.recues} reçue(s)',
+      '${r.acceptees} envoyée(s)',
+    ];
+    if (r.demandesAcceptees > 0) {
+      morceaux.add('${r.demandesAcceptees} réglage(s) proposé(s) au serveur');
+    }
+    if (r.demandesRefusees > 0) {
+      morceaux.add(
+        '${r.demandesRefusees} demande(s) de réglage refusée(s) par le serveur',
+      );
+    }
+    if (r.referentielsMisAJour > 0) {
+      morceaux.add(
+        '${r.referentielsMisAJour} réglage(s) mis à jour depuis le serveur',
+      );
+    }
+    if (r.refusees > 0) morceaux.add('${r.refusees} refusée(s) par le serveur');
+    if (r.conserveesLocalement > 0) {
+      morceaux.add(
+        '${r.conserveesLocalement} conservée(s) (saisie locale non envoyée)',
+      );
+    }
+    if (r.supplantees > 0) {
+      morceaux.add(
+        '${r.supplantees} saisie(s) locale(s) remplacée(s) par une version plus récente',
+      );
+    }
+    if (r.refuseesALaReception > 0) {
+      morceaux.add(
+        '${r.refuseesALaReception} ligne(s) du serveur incohérente(s) refusée(s)',
+      );
+    }
+    if (r.enAttenteDeDroit > 0) {
+      morceaux.add(
+        '${r.enAttenteDeDroit} en attente de droit (le compte appairé ne peut '
+        'pas les envoyer)',
+      );
+    }
+    if (r.refuseesHorloge > 0) {
+      morceaux.add(
+        '${r.refuseesHorloge} refusée(s) pour horloge en avance (conservées)',
+      );
+    }
+    final alerteHorloge = r.horloge?.message;
+    if (r.envoiSuspendu) {
+      return 'Synchronisation partielle : ${r.recues} reçue(s), envoi '
+          'suspendu. ${alerteHorloge ?? ''}'
+          '${r.enAttenteDeDroit > 0 ? ' ${r.enAttenteDeDroit} en attente de droit.' : ''}';
+    }
+    var texte = 'Synchronisation terminée : ${morceaux.join(', ')}.';
+    if (alerteHorloge != null) texte += ' $alerteHorloge';
+    if (r.remiseAZero) {
+      texte +=
+          ' Le serveur a été remis à zéro : ce poste a été vidé de ses données '
+          'synchronisées (${r.saisiesPerdues} saisie(s) non envoyée(s) perdue(s)).';
+    }
+    return texte;
+  }
+}
+
+/// Réponse à `GET /api/sync/demande`.
+class ReponseDemande {
+  const ReponseDemande(
+    this.issue, {
+    this.synchroniser = false,
+    this.resynchronisationComplete = false,
+  });
+
+  /// `terminee` = le serveur a répondu ; sinon voir [IssueSynchronisation].
+  final IssueSynchronisation issue;
+  final bool synchroniser;
+  final bool resynchronisationComplete;
+}
+
+/// Fusion minimale de flux (évite une dépendance pour une fonction).
+class StreamGroup {
+  static Stream<void> merge(Iterable<Stream<void>> flux) {
+    final controleur = StreamController<void>.broadcast();
+    final abonnements = <StreamSubscription<void>>[];
+    controleur.onListen = () {
+      for (final f in flux) {
+        abonnements.add(f.listen((_) => controleur.add(null)));
+      }
+    };
+    controleur.onCancel = () async {
+      for (final a in abonnements) {
+        await a.cancel();
+      }
+      abonnements.clear();
+    };
+    return controleur.stream;
+  }
+}
+
+class _Session {
+  _Session(
+    this.adresse,
+    this.jeton,
+    this.idPoste, {
+    this.droits,
+    this.decalage,
+  });
+
+  /// Change si le serveur impose HTTPS (redirection `http` → `https`).
+  String adresse;
+  final String jeton;
+  final String idPoste;
+
+  /// Droits du compte appairé (`null` : inconnus, le poste propose tout).
+  final DroitsPoste? droits;
+
+  /// Écart d'horloge mesuré à ce cycle (poste − serveur), `null` : non mesuré.
+  final Duration? decalage;
+
+  _Session avec({DroitsPoste? droits, Duration? decalage}) => _Session(
+    adresse,
+    jeton,
+    idPoste,
+    droits: droits ?? this.droits,
+    decalage: decalage ?? this.decalage,
+  );
+}
+
+class _Etape {
+  const _Etape(this.rapport, this.arret);
+  final RapportSynchronisation rapport;
+
+  /// Non nul : la synchronisation s'arrête ici avec ce rapport.
+  final RapportSynchronisation? arret;
+}

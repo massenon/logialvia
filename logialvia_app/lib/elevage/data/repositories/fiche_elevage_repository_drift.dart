@@ -1,9 +1,13 @@
+
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/configuration_espece.dart';
 import '../../domain/entities/journee_elevage.dart';
 import '../../domain/repositories/fiche_elevage_repository.dart';
+import '../sync/identifiants_elevage.dart';
+import '../sync/table_fiches_journee_poste.dart';
 
 /// Implementation Drift du depot des fiches d'elevage.
 ///
@@ -111,6 +115,9 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
     // (Doc D1), et chaque reenregistrement d'un meme jour creait une violation
     // au lieu d'une mise a jour. Le `target` doit etre explicite.
     final companion = FicheJourneeCompanion.insert(
+      // UUID deterministe de (espece, date) : deux postes qui saisissent le meme
+      // jour convergent sur la meme ligne (`46a_`).
+      id: Value(identifiantFicheJournee(journee.espece, journee.date)),
       espece: journee.espece,
       date: _minuit(journee.date),
       achat: Value(journee.achat),
@@ -139,6 +146,11 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
       traitementObs: Value(journee.traitementObs),
       traitementValide: Value(journee.traitementValide),
       isRecorded: Value(journee.isRecorded),
+      // Toute ecriture locale (saisie, cascade) remet la ligne a envoyer, avec son
+      // instant de SAISIE : c'est lui qui departage deux postes (`46_` §1).
+      syncStatus: const Value('pending'),
+      syncMotif: const Value(null),
+      updatedAt: Value(instantSaisie()),
     );
 
     await _db
@@ -153,16 +165,135 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
   }
 
   @override
-  Future<int> venteDuJour({
+  Future<List<JourneeElevage>> chargerJoursSaisis(String espece) async {
+    final lignes =
+        await (_db.select(_db.ficheJournee)
+              ..where((f) => f.espece.equals(espece) & f.isRecorded.equals(true))
+              ..orderBy([(f) => OrderingTerm.asc(f.date)]))
+            .get();
+    return lignes.map(_versDomaine).toList();
+  }
+
+  @override
+  Future<List<VersionJournee>> versionsEnDivergence({
     required String espece,
     required DateTime date,
   }) async {
     final ligne =
-        await (_db.select(_db.ficheVentesJour)..where(
+        await (_db.select(_db.ficheJournee)..where(
               (f) => f.espece.equals(espece) & f.date.equals(_minuit(date)),
             ))
             .getSingleOrNull();
-    return ligne?.qte ?? 0;
+    if (ligne == null || ligne.variantes == null) return const [];
+    final autres = TableFichesJourneePoste.lireVariantes(ligne.variantes);
+    return [
+      VersionJournee(
+        origine: 'Cette fiche',
+        instant:
+            DateTime.tryParse(ligne.updatedAt) ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+        journee: _versDomaine(ligne),
+        estCourante: true,
+      ),
+      for (final v in autres)
+        VersionJournee(
+          origine: v['origine'] as String,
+          instant:
+              DateTime.tryParse(v['updated_at'] as String) ??
+              DateTime.fromMillisecondsSinceEpoch(0),
+          journee: _depuisContenu(
+            espece,
+            _minuit(date),
+            Map<String, dynamic>.from(v['contenu'] as Map),
+          ),
+        ),
+    ];
+  }
+
+  @override
+  Future<void> marquerDivergenceResolue({
+    required String espece,
+    required DateTime date,
+  }) async {
+    final ligne =
+        await (_db.select(_db.ficheJournee)..where(
+              (f) => f.espece.equals(espece) & f.date.equals(_minuit(date)),
+            ))
+            .getSingleOrNull();
+    if (ligne == null) return;
+    // L'ecriture resolvante doit etre STRICTEMENT plus recente que la version courante
+    // du serveur, meme si l'horloge de ce poste retarde (`47e_`).
+    final base = DateTime.tryParse(ligne.baseMaj ?? '');
+    var instant = DateTime.now().toUtc();
+    if (base != null && !instant.isAfter(base)) {
+      instant = base.add(const Duration(microseconds: 1));
+    }
+    await (_db.update(_db.ficheJournee)..where((f) => f.id.equals(ligne.id)))
+        .write(
+          FicheJourneeCompanion(
+            variantes: const Value(null),
+            resolution: const Value(true),
+            syncStatus: const Value('pending'),
+            syncMotif: const Value(null),
+            updatedAt: Value(instant.toIso8601String()),
+          ),
+        );
+  }
+
+  JourneeElevage _depuisContenu(
+    String espece,
+    DateTime date,
+    Map<String, dynamic> c,
+  ) {
+    List<int> liste(String a, String b, String d, String e) => [
+      c[a] as int,
+      c[b] as int,
+      c[d] as int,
+      if (_nombreCategories > 3) (c[e] as int?) ?? 0,
+    ];
+    return JourneeElevage(
+      espece: espece,
+      date: date,
+      achat: c['achat'] as int,
+      ne: c['ne'] as int,
+      vente: c['vente'] as int,
+      mortsParCategorie: liste('mort_cat1', 'mort_cat2', 'mort_cat3', 'mort_cat4'),
+      donsParCategorie: liste('don_cat1', 'don_cat2', 'don_cat3', 'don_cat4'),
+      effectif: c['effectif'] as int,
+      effectifsParCategorie: liste(
+        'eff_cat1_day',
+        'eff_cat2_day',
+        'eff_cat3_day',
+        'eff_cat4_day',
+      ),
+      isRecorded: c['is_recorded'] as bool,
+      poidsGeneralG: c['poids_general_g'] as int?,
+      traitementObs: c['traitement_obs'] as String?,
+      traitementValide: c['traitement_valide'] as bool,
+      srh: c['srh'] as int?,
+      totalStock: c['ts'] as int?,
+      stockFinalOeufs: c['stock_final_oeufs'] as int?,
+      oeufsPondus: c['oeufs_pondus'] as int?,
+      oeufsCasses: c['oeufs_casses'] as int?,
+      sortiesPlateaux: c['sorties_plateaux'] as int?,
+    );
+  }
+
+  /// Ventes du jour : la **somme** des compteurs de tous les postes (le mien et
+  /// ceux des autres, `46a_`). Chaque poste ne tient que son propre compteur ; rien
+  /// n'est compte deux fois puisque la vente d'un autre poste n'incremente jamais
+  /// le mien.
+  @override
+  Future<int> venteDuJour({
+    required String espece,
+    required DateTime date,
+  }) async {
+    final lignes =
+        await (_db.select(_db.ficheVentesJour)..where(
+              (f) => f.espece.equals(espece) & f.date.equals(_minuit(date)),
+            ))
+            .get();
+    return lignes.fold<int>(0, (somme, l) => somme + l.qte);
   }
 
   // ---------------------------------------------------------------- internes
@@ -210,6 +341,7 @@ class FicheElevageRepositoryDrift implements FicheElevageRepository {
       oeufsPondus: ligne.oeufsPondus,
       oeufsCasses: ligne.oeufsCasses,
       sortiesPlateaux: ligne.sortiesPlateaux,
+      modifieeAilleurs: ligne.variantes != null,
     );
   }
 

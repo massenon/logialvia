@@ -10,7 +10,8 @@ class Client {
     this.soldeActuel = 0,
   });
 
-  final int id;
+  /// UUID (DV-19).
+  final String id;
   final String nom;
   final String? telephone;
   final DateTime? dateNaissance;
@@ -88,4 +89,14 @@ class EvenementCrm {
   final DateTime? dernierContact;
 
   static const String anniversaire = 'Anniversaire';
+}
+
+/// Un client proposé à la saisie d'une vente. Le **téléphone** est ce qui distingue
+/// deux homonymes dans la liste.
+class ClientChoix {
+  const ClientChoix({required this.id, required this.nom, this.telephone});
+
+  final String id;
+  final String nom;
+  final String? telephone;
 }

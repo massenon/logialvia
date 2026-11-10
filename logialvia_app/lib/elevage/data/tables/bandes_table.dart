@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 /// Table `BANDES` — **absente de Doc D1 et du prototype**, ajoutée en v25.
 ///
 /// ## La donnée qui manquait
@@ -26,7 +28,7 @@ import 'package:drift/drift.dart';
 /// il n'alimente aucun calcul d'effectif.
 @DataClassName('BandeRow')
 class Bandes extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   /// Identifiant de filière — même valeur que `FICHE_JOURNEE.espece`.
   TextColumn get espece => text()();
@@ -47,6 +49,21 @@ class Bandes extends Table {
   DateTimeColumn get dateCloture => dateTime().nullable()();
 
   TextColumn get observations => text().nullable()();
+
+  // ------------------------------------------------------- Synchronisation
+  //
+  // Schema v38 (DV-19, `46a_`). `effectifInitial` voyage comme **declaration**
+  // (indicative) ; l'effectif REEL n'est jamais stocke ni synchronise : il se
+  // recalcule des fiches journalieres.
+
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+
+  TextColumn get syncMotif => text().nullable()();
+
+  TextColumn get updatedAt => text().clientDefault(instantSaisie)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 
   @override
   List<Set<Column>> get uniqueKeys => [

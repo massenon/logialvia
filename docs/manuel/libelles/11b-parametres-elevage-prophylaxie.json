@@ -9,6 +9,8 @@
     "Intrants de Provende",
     "Numérotation Bandes & Sujets",
     "Rationnement",
+    "🐄 Bovins",
+    "🐌 Escargots",
     "🐔 Goliaths",
     "🐟 Poissons-Chats",
     "🐰 Lapins",
@@ -19,6 +21,7 @@
   ],
   "colonnes": [
     "ACTIONS",
+    "DOSE",
     "J15",
     "JOUR DU CYCLE",
     "PRODUIT",
@@ -26,6 +29,7 @@
     "TRAITEMENT"
   ],
   "infobulles": [
+    "Dose non renseignée",
     "Supprimer",
     "Éditer"
   ],
@@ -53,6 +57,8 @@
     "Vaccin HB1",
     "Vaccin Newcastle (Rappel)",
     "—",
+    "🐄 Bovins",
+    "🐌 Escargots",
     "🐔 Goliaths",
     "🐟 Poissons-Chats",
     "🐰 Lapins",

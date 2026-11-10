@@ -4,7 +4,7 @@ import '../../../core/database/app_database.dart';
 
 /// Peuplement initial de `MODULES_ACTIFS` — Doc I2 §2 et §5.
 ///
-/// **Seuls les 3 modules reellement basculables ont une ligne**, et ils sont
+/// **Seuls les 5 modules reellement basculables ont une ligne**, et ils sont
 /// **desactives par defaut**. Goliaths et Pintades n'en ont volontairement
 /// aucune : ils ne sont jamais desactivables (`checked disabled` dans
 /// `parametres-generaux.html`), donc leur donner une ligne modifiable
@@ -20,13 +20,38 @@ class ModulesActifsSeeder {
   static const String pisciculture = 'pisciculture';
   static const String cuniculture = 'cuniculture';
   static const String avicultureClassique = 'aviculture_classique';
+  static const String heliciculture = 'heliciculture';
+  static const String bovins = 'bovins';
 
   /// Correspondance module basculable -> espece de la fiche associee.
   static const Map<String, String> especeParModule = {
     pisciculture: 'poissons-chats',
     cuniculture: 'lapins',
     avicultureClassique: 'poulets',
+    heliciculture: 'escargots',
+    bovins: 'bovins',
   };
+
+  /// Migration v27 : ajoute les modules manquants (heliciculture, bovins) a
+  /// une base en service, **desactives** comme les autres. Un module deja
+  /// present est laisse tel quel : son etat est un choix de la Gerante.
+  static Future<void> ajouterModulesManquants(AppDatabase db) async {
+    final presents = (await db.select(db.modulesActifs).get())
+        .map((m) => m.moduleId)
+        .toSet();
+    for (final entree in especeParModule.entries) {
+      if (presents.contains(entree.key)) continue;
+      await db
+          .into(db.modulesActifs)
+          .insert(
+            ModulesActifsCompanion.insert(
+              moduleId: entree.key,
+              isActif: const Value(false),
+              espece: Value(entree.value),
+            ),
+          );
+    }
+  }
 
   Future<bool> executer() async {
     if (await _contientDejaDesLignes()) return false;

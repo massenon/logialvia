@@ -5,6 +5,8 @@ import '../../data/repositories/comptabilite_repository_drift.dart';
 import '../../domain/entities/comptabilite.dart';
 import '../../domain/services/bilan_entreprise.dart';
 import '../../domain/services/moteur_comptable.dart';
+import '../../domain/services/report_a_nouveau.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// État partagé du module Comptabilité — Doc F6.
 ///
@@ -38,13 +40,37 @@ class ComptabiliteViewModel extends ChangeNotifier {
   Map<int, bool> get cloturesMois => _cloturesMois;
   List<NoteAnnexe> get notes => _notes;
 
-  /// Écritures de l'exercice sélectionné.
-  List<Ecriture> get ecritures =>
+  static const ReportANouveau _ran = ReportANouveau();
+
+  /// Écritures **courantes** de l'exercice sélectionné : tout sauf les à-nouveaux (ils sont
+  /// l'ouverture) et les écritures de clôture (les états de l'exercice se lisent « avant
+  /// affectation »). C'est la base des états, de l'analytique et des dépenses.
+  List<Ecriture> get ecritures => _ran.mouvementsCourants(_toutesEcritures, _exercice);
+
+  /// Toutes les lignes de l'exercice, à-nouveaux et clôture compris : le **journal**.
+  List<Ecriture> get ecrituresDuJournal =>
       _toutesEcritures.where((e) => e.exerciceAnnee == _exercice).toList();
 
-  /// Écritures antérieures à l'exercice — soldes d'ouverture.
-  List<Ecriture> get _ecrituresAnterieures =>
-      _toutesEcritures.where((e) => e.exerciceAnnee < _exercice).toList();
+  /// Lignes du **livre** (grand livre, balance) : tout sauf les à-nouveaux, qui sont
+  /// l'ouverture ; les écritures de clôture y figurent.
+  List<Ecriture> get _ecrituresDuLivre =>
+      _ran.mouvementsDuLivre(_toutesEcritures, _exercice);
+
+  /// Soldes nets au 1ᵉʳ janvier de l'exercice : les à-nouveaux (classes 1 à 5), ou la
+  /// clôture virtuelle de l'exercice précédent tant qu'il n'est pas clôturé.
+  Map<String, double> get soldesOuverture =>
+      _ran.soldesOuverture(_toutesEcritures, _exercice);
+
+  /// L'ouverture vient-elle d'écritures d'à-nouveaux (vraie clôture) ?
+  bool get ouvertureParANouveaux => _toutesEcritures.any(
+    (e) =>
+        e.exerciceAnnee == _exercice &&
+        e.journalCode == JournauxDeCloture.reportANouveau,
+  );
+
+  /// Décision d'affectation prise à la clôture de l'exercice sélectionné.
+  AffectationResultat _affectation = AffectationResultat.aucune;
+  AffectationResultat get affectation => _affectation;
 
   // ------------------------------------------------------------- chargement
 
@@ -66,7 +92,29 @@ class ComptabiliteViewModel extends ChangeNotifier {
     _cloturesMois = await _repository.chargerCloturesPeriodiques(_exercice);
     _notes = await _repository.chargerNotes(_exercice);
     _exerciceCloture = await _repository.exerciceEstCloture(_exercice);
+    _affectation = await _repository.chargerAffectation(_exercice);
+    _codePoste = await _repository.codePoste();
+    _motifRefusCloture = await _repository.motifRefusCloture(_exercice);
   }
+
+  /// Code du poste (`P2`) ou `null` : préfixe des numéros de pièces (DV-21).
+  String? _codePoste;
+
+  /// Motif du refus de la clôture de l'exercice par le serveur (l'exercice a été
+  /// rouvert ici), `null` s'il n'y en a pas.
+  String? _motifRefusCloture;
+  String? get motifRefusCloture => _motifRefusCloture;
+
+  /// Pièces de l'exercice que le serveur a refusées : elles restent visibles ici,
+  /// avec leur motif, jusqu'à correction.
+  List<Ecriture> get ecrituresRefusees =>
+      ecritures.where((e) => e.syncStatus == 'conflict').toList();
+
+  /// La pièce est-elle déjà un fait partagé (acceptée par le serveur) ? Elle
+  /// s'annule alors par contrepassation au lieu d'être supprimée ou modifiée.
+  bool pieceEstTransmise(String numeroPiece) => ecritures.any(
+    (e) => e.numeroPiece == numeroPiece && e.syncStatus == 'synced',
+  );
 
   Future<void> changerExercice(int annee) async {
     _exercice = annee;
@@ -93,7 +141,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   List<Ecriture> get journalFiltre {
     final terme = _rechercheJournal.trim().toLowerCase();
-    return ecritures.where((e) {
+    return ecrituresDuJournal.where((e) {
       if (_filtreJournalCode != null && e.journalCode != _filtreJournalCode) {
         return false;
       }
@@ -169,10 +217,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
     final compte = compteCourant;
     if (compte == null) return 0;
     final net =
-        _ecrituresAnterieures
-            .where((e) => e.numeroCompte == compte.numero)
-            .fold<double>(0, (s, e) => s + e.debit - e.credit) +
-        ecritures
+        (soldesOuverture[compte.numero] ?? 0) +
+        _ecrituresDuLivre
             .where((e) => e.numeroCompte == compte.numero && _avantPeriode(e))
             .fold<double>(0, (s, e) => s + e.debit - e.credit);
     return compte.estDebiteurParNature ? net : -net;
@@ -190,7 +236,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
     return const GrandLivreCalculator().calculer(
       compte: compte,
       soldeOuverture: soldeOuvertureCompte,
-      ecritures: ecritures
+      ecritures: _ecrituresDuLivre
           .where((e) => e.numeroCompte == compte.numero && _dansPeriode(e))
           .toList(),
     );
@@ -273,24 +319,27 @@ class ComptabiliteViewModel extends ChangeNotifier {
   ];
 
   List<LigneBalance> get balance {
+    final livre = _ecrituresDuLivre;
     if (!_balanceMoisCourant) {
-      return const BalanceCalculator().calculer(
+      return const BalanceCalculator().calculerDepuis(
         comptes: _plan,
-        ecrituresAnterieures: _ecrituresAnterieures,
-        ecrituresPeriode: ecritures,
+        ouvertureNet: soldesOuverture,
+        ecrituresPeriode: livre,
       );
     }
 
+    // « Mois en cours » : tout ce qui précède le 1ᵉʳ du mois — à-nouveaux compris —
+    // bascule dans l'ouverture.
     final borne = _debutMoisBalance;
-    return const BalanceCalculator().calculer(
+    final ouverture = Map<String, double>.of(soldesOuverture);
+    for (final e in livre.where((e) => e.date.isBefore(borne))) {
+      ouverture[e.numeroCompte] =
+          (ouverture[e.numeroCompte] ?? 0) + e.debit - e.credit;
+    }
+    return const BalanceCalculator().calculerDepuis(
       comptes: _plan,
-      ecrituresAnterieures: [
-        ..._ecrituresAnterieures,
-        ...ecritures.where((e) => e.date.isBefore(borne)),
-      ],
-      ecrituresPeriode: ecritures
-          .where((e) => !e.date.isBefore(borne))
-          .toList(),
+      ouvertureNet: ouverture,
+      ecrituresPeriode: livre.where((e) => !e.date.isBefore(borne)).toList(),
     );
   }
 
@@ -302,9 +351,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   // ----------------------------------------------------- États financiers
 
-  SoldesComptes get _soldes => SoldesComptes.depuis(ecritures);
+  /// Soldes de FIN d'exercice : l'ouverture (à-nouveaux) **cumulée** aux mouvements de
+  /// l'exercice, écritures de clôture exclues. Le bilan, le résultat et le TAFIRE de
+  /// N+1 partent donc de ce qui a été reporté, pas de zéro.
+  SoldesComptes get _soldes => _ran.soldesDeFin(_toutesEcritures, _exercice);
   SoldesComptes get _soldesOuverture =>
-      SoldesComptes.depuis(_ecrituresAnterieures);
+      _ran.soldesDOuverture(_toutesEcritures, _exercice);
 
   /// **Source unique du Résultat Net — BR-CPT-005.**
   double get resultatNet => CalculerResultatNet.calculer(_soldes);
@@ -329,8 +381,21 @@ class ComptabiliteViewModel extends ChangeNotifier {
     soldesOuverture: _soldesOuverture,
   );
 
-  /// Trésorerie disponible — alimente le KPI du tableau de bord (Doc F2).
+  /// Trésorerie disponible — alimente le KPI du tableau de bord (Doc F2). Ouverture comprise.
   double get tresorerie => _soldes.debiteursParClasse('5');
+
+  /// Trésorerie nette (classe 5, découverts déduits) : ce que le TAFIRE doit retrouver.
+  double get tresorerieNette => _soldes.parClasse('5');
+
+  /// Aperçu de la clôture de l'exercice sélectionné (sans rien écrire) : résultat,
+  /// pièces de clôture, à-nouveaux, anomalies bloquantes.
+  ClotureCalculee apercuCloture([AffectationResultat? affectation]) =>
+      _ran.calculer(
+        _toutesEcritures,
+        _exercice,
+        affectation: affectation ?? AffectationResultat.aucune,
+        comptesConnus: {for (final c in _plan) c.numero},
+      );
 
   // --------------------------------------------------------------- actions
 
@@ -382,7 +447,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// deux pièces ne peuvent pas porter le même numéro, et la numérotation
   /// repart proprement à 1 sur un nouvel exercice.
   String prochainNumeroPiece(String prefixe) {
-    final debut = '$prefixe-$_exercice-';
+    // DV-21 : le code du poste fait l'unicité entre postes sans passer par le
+    // serveur (`OD-P2-2026-0003`) ; un poste jamais appairé garde `OD-2026-0003`.
+    final code = _codePoste;
+    final debut = code == null || code.isEmpty
+        ? '$prefixe-$_exercice-'
+        : '$prefixe-$code-$_exercice-';
     var maximum = 0;
     for (final ecriture in ecritures) {
       final numero = ecriture.numeroPiece;
@@ -630,7 +700,18 @@ class ComptabiliteViewModel extends ChangeNotifier {
     }
   }
 
-  Future<Resultat<void>> cloturerExercice() async {
+  /// Clôture annuelle : un fait **lourd** (`46d_` §4). Réservée à l'administratrice
+  /// (DV-15, droit `close-fiscal-year` au serveur) ; sur un poste appairé, toutes
+  /// les pièces doivent d'abord être acceptées par le serveur.
+  Future<Resultat<void>> cloturerExercice({
+    required String roleId,
+    AffectationResultat affectation = AffectationResultat.aucune,
+  }) async {
+    if (roleId != 'admin') {
+      return const Echec(
+        'Seule une administratrice peut clôturer un exercice (DV-15).',
+      );
+    }
     if (!balanceEstEquilibree) {
       return Echec(
         'Balance déséquilibrée de ${balanceEcart.abs().toStringAsFixed(0)} FCFA. '
@@ -641,15 +722,46 @@ class ComptabiliteViewModel extends ChangeNotifier {
     if (_exerciceCloture) {
       return const Echec('Cet exercice est déjà clôturé.');
     }
+    final apercu = apercuCloture(affectation);
+    if (apercu.bloquee) return Echec(apercu.anomalies.join(' '));
 
     try {
-      await _repository.cloturerExercice(_exercice);
+      await _repository.cloturerExercice(_exercice, affectation: affectation);
       await _rafraichir();
       notifyListeners();
       return const Succes(null);
+    } on StateError catch (e) {
+      return Echec(e.message);
     } catch (e) {
       if (kDebugMode) debugPrint('Echec cloture exercice: $e');
       return const Echec('La clôture annuelle a échoué.');
+    }
+  }
+
+  /// Rouvre l'exercice sélectionné : retire les écritures de clôture et les à-nouveaux.
+  /// Réservé à l'administratrice (droit `close-fiscal-year` au serveur).
+  Future<Resultat<void>> rouvrirExercice({
+    required String roleId,
+    required String utilisateurId,
+  }) async {
+    if (roleId != 'admin') {
+      return const Echec(
+        'Seule une administratrice peut rouvrir un exercice (DV-15).',
+      );
+    }
+    if (!_exerciceCloture) {
+      return const Echec('Cet exercice n\'est pas clôturé.');
+    }
+    try {
+      await _repository.rouvrirExercice(_exercice, utilisateurId: utilisateurId);
+      await _rafraichir();
+      notifyListeners();
+      return const Succes(null);
+    } on StateError catch (e) {
+      return Echec(e.message);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Echec reouverture exercice: $e');
+      return const Echec('La réouverture de l\'exercice a échoué.');
     }
   }
 
@@ -677,15 +789,22 @@ class ComptabiliteViewModel extends ChangeNotifier {
 
   /// Une dépense au sens de `saisie-depenses.html` : une charge d'exploitation
   /// saisie à la main, **hors achats d'intrants** (déjà couverts par Achats &
-  /// Commandes, qui génèrent leurs écritures sur 601/602/622 avec un
+  /// Commandes, qui génèrent leurs écritures sur 602/601/604 avec un
   /// `achatRef`).
   ///
   /// Le critère est donc structurel, pas une convention de libellé : ligne au
   /// débit d'un compte de classe 6, sans `achatRef`.
   List<Depense> get depenses {
     final chargesParPiece = <String, List<Ecriture>>{};
+    // Une dépense déjà transmise s'annule par contrepassation : l'originale ne
+    // compte plus (l'écriture inverse figure au Journal).
+    final annulees = {
+      for (final e in ecritures)
+        if (e.contrepasseDe != null) e.contrepasseDe!,
+    };
     for (final e in ecritures) {
       if (e.achatRef != null || e.venteRef != null) continue;
+      if (e.contrepasseDe != null || annulees.contains(e.pieceId)) continue;
       final piece = e.numeroPiece;
       if (piece == null) continue;
       final compte = _compte(e.numeroCompte);
@@ -791,8 +910,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       .where(
         (c) =>
             c.classe == '6' &&
-            !c.numero.startsWith('601') &&
-            !c.numero.startsWith('602'),
+            !c.numero.startsWith(PlanSyscohada.achatsMarchandises) &&
+            !c.numero.startsWith(PlanSyscohada.achatsMatieres),
       )
       .toList();
 
@@ -812,8 +931,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// précise, et un sac de maïs nourrit plusieurs espèces à la fois.
   ///
   /// Ce qui est **réellement** dérivable du grand livre : la ventilation par
-  /// activité que les comptes distinguent déjà — Avicole (701 / 601 / 622) et
-  /// Commerce Annexe (707 / 602). C'est la même que celle du KPI « Chiffre
+  /// activité que les comptes distinguent déjà — Avicole (702 / 602 / 604) et
+  /// Commerce Annexe (701 / 601). C'est la même que celle du KPI « Chiffre
   /// d'Affaires » du tableau de bord, donc cohérente avec le reste de
   /// l'application. L'écran l'affiche et énonce la limite plutôt que d'inventer
   /// trois filières.
@@ -841,7 +960,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// 1. `ECRITURE_COMPTABLE.axeAnalytique` quand il est renseigné — imputation
   ///    **explicite**, elle prime toujours ;
   /// 2. à défaut, l'heuristique du numéro de compte, tout ce dont on disposait
-  ///    avant la v19 : 701/601/622 pour l'avicole, 707/602 pour le commerce.
+  ///    avant la v19 : 702/602/604 pour l'avicole, 701/601 pour le commerce (SYSCOHADA, `47p_`).
   ///
   /// Une ligne comptée par l'axe n'est **jamais recomptée** par l'heuristique,
   /// sans quoi une charge d'aliment imputée aux Pintades pèserait deux fois.
@@ -856,10 +975,12 @@ class ComptabiliteViewModel extends ChangeNotifier {
     final parAxe = _montantsParAxe;
 
     // Ce que le numero de compte laisse deviner, hors lignes deja imputees.
-    final avicoleRevenus = -_soldeNonImpute('701');
-    final avicoleCouts = _soldeNonImpute('601') + _soldeNonImpute('622');
-    final commerceRevenus = -_soldeNonImpute('707');
-    final commerceCouts = _soldeNonImpute('602');
+    final avicoleRevenus = -_soldeNonImpute(PlanSyscohada.ventesProduitsFinis);
+    final avicoleCouts =
+        _soldeNonImpute(PlanSyscohada.achatsMatieres) +
+        _soldeNonImpute(PlanSyscohada.fraisVeterinaires);
+    final commerceRevenus = -_soldeNonImpute(PlanSyscohada.ventesMarchandises);
+    final commerceCouts = _soldeNonImpute(PlanSyscohada.achatsMarchandises);
 
     final centres = <CentreAnalytique>[];
 
@@ -870,7 +991,7 @@ class ComptabiliteViewModel extends ChangeNotifier {
         CentreAnalytique(
           nom: nom,
           detail: estCommerce && (commerceRevenus.abs() + commerceCouts.abs()) >= 0.01
-              ? 'Imputation analytique + comptes 707 et 602'
+              ? 'Imputation analytique + comptes ${PlanSyscohada.ventesMarchandises} et ${PlanSyscohada.achatsMarchandises}'
               : 'Imputation analytique',
           revenus: part.revenus + (estCommerce ? commerceRevenus : 0),
           couts: part.couts + (estCommerce ? commerceCouts : 0),
@@ -884,7 +1005,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       centres.add(
         CentreAnalytique(
           nom: 'Commerce Annexe',
-          detail: 'Comptes 707 et 602',
+          detail:
+              'Comptes ${PlanSyscohada.ventesMarchandises} et ${PlanSyscohada.achatsMarchandises}',
           revenus: commerceRevenus,
           couts: commerceCouts,
         ),
@@ -899,7 +1021,8 @@ class ComptabiliteViewModel extends ChangeNotifier {
       centres.add(
         CentreAnalytique(
           nom: 'Avicole — filière non précisée',
-          detail: 'Comptes 701, 601 et 622 sans imputation analytique',
+          detail:
+              'Comptes ${PlanSyscohada.ventesProduitsFinis}, ${PlanSyscohada.achatsMatieres} et ${PlanSyscohada.fraisVeterinaires} sans imputation analytique',
           revenus: avicoleRevenus,
           couts: avicoleCouts,
         ),
@@ -958,9 +1081,9 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// fausses avec l'air d'être exactes.
   double get chargesNonAffectees =>
       _classeNonImputee('6') -
-      _soldeNonImpute('601') -
-      _soldeNonImpute('602') -
-      _soldeNonImpute('622');
+      _soldeNonImpute(PlanSyscohada.achatsMatieres) -
+      _soldeNonImpute(PlanSyscohada.achatsMarchandises) -
+      _soldeNonImpute(PlanSyscohada.fraisVeterinaires);
 
   /// Produits qu'aucun axe ni aucun compte ne rattache — subventions (75),
   /// produits financiers (77), produits HAO (78).
@@ -968,16 +1091,18 @@ class ComptabiliteViewModel extends ChangeNotifier {
   /// Sans eux, l'invariant « Σ marges − charges non affectées = résultat net »
   /// serait faux dès la première subvention encaissée.
   double get produitsNonAffectes =>
-      -(_classeNonImputee('7') - _soldeNonImpute('701') - _soldeNonImpute('707'));
+      -(_classeNonImputee('7') -
+          _soldeNonImpute(PlanSyscohada.ventesProduitsFinis) -
+          _soldeNonImpute(PlanSyscohada.ventesMarchandises));
 }
 
 /// Numéros de comptes de charges à comportement particulier.
 class ComptesDepenses {
   ComptesDepenses._();
 
-  /// `saisie-depenses.html` : 613 (Locations) et 616 (Assurances) alimentent le
-  /// KPI « Charges Fixes », tout le reste les « Charges Variables ».
-  static const Set<String> fixes = {'613', '616'};
+  /// 622 (Locations) et 625 (Assurances) alimentent le KPI « Charges Fixes », tout le reste
+  /// les « Charges Variables » (`saisie-depenses.html`, renumérotés en SYSCOHADA, `47p_`).
+  static const Set<String> fixes = PlanSyscohada.comptesChargesFixes;
 }
 
 /// Une dépense reconstruite depuis ses écritures — Doc F6 Écran « Saisie des

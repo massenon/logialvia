@@ -147,16 +147,16 @@ class _Filtres extends StatelessWidget {
           ],
           onChanged: vm.definirFiltreEspece,
         ),
-        DropdownButton<int?>(
+        DropdownButton<String?>(
           value: vm.filtreMachine,
           hint: const Text('Tous incubateurs', style: _champ),
           underline: const SizedBox.shrink(),
           items: [
-            const DropdownMenuItem<int?>(
+            const DropdownMenuItem<String?>(
               child: Text('Tous incubateurs', style: _champ),
             ),
             for (final machine in vm.machines)
-              DropdownMenuItem<int?>(
+              DropdownMenuItem<String?>(
                 value: machine.id,
                 child: Text(machine.code, style: _champ),
               ),

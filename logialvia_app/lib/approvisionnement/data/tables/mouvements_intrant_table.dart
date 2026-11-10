@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/sync/identifiant_poste.dart';
+
 import 'intrants_table.dart';
 
 /// Table `MOUVEMENTS_INTRANT`.
@@ -13,7 +15,8 @@ import 'intrants_table.dart';
 /// « Mouvements (7j) ». Sans elle, ni l'un ni l'autre n'existent.
 @DataClassName('MouvementIntrantRow')
 class MouvementsIntrant extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// UUID (DV-19) : un mouvement est un fait synchronise, jamais renumerote.
+  TextColumn get id => text().clientDefault(nouvelUuid)();
 
   DateTimeColumn get horodatage => dateTime()();
 
@@ -34,4 +37,26 @@ class MouvementsIntrant extends Table {
 
   /// Référence de l'opération d'origine (achat, ajustement), si elle existe.
   TextColumn get reference => text().nullable()();
+
+  /// D'ou vient ce mouvement : `null` = CE poste ; sinon l'identifiant du poste qui
+  /// l'a saisi. Un mouvement d'un autre poste est une ligne d'HISTORIQUE : il
+  /// n'entre dans aucun calcul de stock ni d'inventaire de ce poste (decision du
+  /// client : « stock propre a chaque poste + journal partage »).
+  TextColumn get origine => text().nullable()();
+
+
+  /// Poste de stock désigné par une opération saisie au web (`47s_`) : l'identifiant du
+  /// poste dont le stock (et le PMP) subit l'effet. `null` = aucun.
+  /// **Informatif** pour un mouvement d'intrant : l'effet de stock d'une réception web
+  /// est porté par l'ACHAT, jamais par ces lignes (sinon il serait appliqué deux fois). Posé à la création, **immuable** ensuite (le fait est lié à ce poste).
+  TextColumn get posteCible => text().nullable()();
+
+  // --- Synchronisation (`46_` §1) ---
+
+  /// `pending` · `synced` · `conflict`. Un mouvement est IMMUABLE : pas d'`updated_at`.
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
+  TextColumn get syncMotif => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

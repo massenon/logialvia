@@ -111,6 +111,16 @@ class ParametresEntreprise extends Table {
   TextColumn get prefixeBassin =>
       text().withDefault(const Constant('B')).withLength(max: 4)();
 
+  /// Prefixe des bacs — Heliciculture (Escargots), DV-16. Apercu « BAC1, BAC2 ».
+  /// Ajoute en v29 : la filiere n'existait pas dans le prototype.
+  TextColumn get prefixeBac =>
+      text().withDefault(const Constant('BAC')).withLength(max: 4)();
+
+  /// Prefixe des parcs — Elevage bovin (Bovins), DV-17. Apercu « PARC1, PARC2 ».
+  /// Ajoute en v29.
+  TextColumn get prefixeParc =>
+      text().withDefault(const Constant('PARC')).withLength(max: 4)();
+
   @override
   Set<Column> get primaryKey => {id};
 }

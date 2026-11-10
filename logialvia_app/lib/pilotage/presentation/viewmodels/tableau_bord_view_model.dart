@@ -146,7 +146,7 @@ class TableauBordViewModel extends ChangeNotifier {
         libelle: 'Trésorerie',
         valeur: '—',
         unite: '',
-        // Le solde de caisse se lit sur le compte 531 du plan comptable
+        // Le solde de caisse se lit sur le compte 571 du plan comptable (SYSCOHADA)
         // (Doc F2, Doc F6) — aucune ecriture comptable ne peut exister tant que
         // ce module n'est pas implemente.
         detail: _sourceIndisponible,

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyse-et-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: logialvia_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Analyse statique
+        run: flutter analyze
+
+      # `captures_test.dart` n'ecrit pas dans le depot sans GENERER_MANUEL=1.
+      - name: Tests
+        run: flutter test --reporter expanded
+
+      - name: Les tests ne modifient pas docs/manuel
+        run: git diff --exit-code -- ../docs
+
+  laravel:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: logialvia_laravel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+
+      # Comprend ConformiteDartTest : Tailwind doit rester egal au code Dart.
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php artisan test

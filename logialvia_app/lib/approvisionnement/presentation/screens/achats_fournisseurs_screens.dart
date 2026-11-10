@@ -388,7 +388,7 @@ class _PanierAchat extends StatelessWidget {
           const Divider(height: AppSpacing.lg),
           const Text('FOURNISSEUR *', style: AppTypography.label),
           const SizedBox(height: AppSpacing.xs),
-          DropdownButtonFormField<int>(
+          DropdownButtonFormField<String>(
             initialValue: vm.fournisseurSelectionne,
             isExpanded: true,
             decoration: decorationAppro,

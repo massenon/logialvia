@@ -69,6 +69,63 @@ class _OngletDevisState extends State<OngletDevis> {
   final _montant = TextEditingController();
   final _validite = TextEditingController(text: '15');
 
+  /// UUID du devis en cours de modification (`null` : création, `47a2_`).
+  String? _enEdition;
+
+  void _remettreAZero() {
+    _enEdition = null;
+    _client.clear();
+    _objet.clear();
+    _montant.clear();
+    _validite.text = '15';
+  }
+
+  void _charger(DevisEmis d, {required bool edition}) {
+    setState(() {
+      _enEdition = edition ? d.id : null;
+      _client.text = d.client;
+      _objet.text = d.objet;
+      _montant.text = d.montant.toStringAsFixed(0);
+      _validite.text = '${d.validiteJours}';
+    });
+  }
+
+  Future<void> _confirmerSuppression(
+    BuildContext context,
+    VentesViewModel vm,
+    DevisEmis d,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Supprimer le devis ${d.reference} ?'),
+        content: const Text(
+          'Le devis disparaît de tous les postes. Son numéro ne sera pas réutilisé.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final resultat = await vm.supprimerDevis(d.id);
+    if (!context.mounted) return;
+    switch (resultat) {
+      case Succes<void>():
+        if (_enEdition == d.id) setState(_remettreAZero);
+        showAppToast(context, 'Devis ${d.reference} supprimé.');
+      case Echec<void>(message: final message):
+        showAppToast(context, message, type: ToastType.error);
+    }
+  }
+
   @override
   void dispose() {
     _client.dispose();
@@ -86,7 +143,7 @@ class _OngletDevisState extends State<OngletDevis> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CarteSection(
-          titre: 'Générer un Devis',
+          titre: _enEdition == null ? 'Générer un Devis' : 'Modifier le Devis',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -123,29 +180,55 @@ class _OngletDevisState extends State<OngletDevis> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: 'Générer le Devis',
-                icon: Symbols.description,
-                onPressed: () async {
-                  final resultat = await vm.genererDevis(
-                    client: _client.text,
-                    objet: _objet.text,
-                    montant: double.tryParse(_montant.text),
-                    validiteJours: int.tryParse(_validite.text),
-                  );
-                  if (!context.mounted) return;
-                  switch (resultat) {
-                    case Succes<DevisEmis>(valeur: final devis):
-                      // Doc E6 §5 : le formulaire se reinitialise apres succes.
-                      _client.clear();
-                      _objet.clear();
-                      _montant.clear();
-                      _validite.text = '15';
-                      showAppToast(context, 'Devis ${devis.reference} généré.');
-                    case Echec<DevisEmis>(message: final message):
-                      showAppToast(context, message, type: ToastType.error);
-                  }
-                },
+              Row(
+                children: [
+                  AppButton(
+                    label: _enEdition == null
+                        ? 'Générer le Devis'
+                        : 'Enregistrer les modifications',
+                    icon: Symbols.description,
+                    onPressed: () async {
+                      final modification = _enEdition;
+                      final montant = double.tryParse(_montant.text);
+                      final validite = int.tryParse(_validite.text);
+                      final resultat = modification == null
+                          ? await vm.genererDevis(
+                              client: _client.text,
+                              objet: _objet.text,
+                              montant: montant,
+                              validiteJours: validite,
+                            )
+                          : await vm.modifierDevis(
+                              id: modification,
+                              client: _client.text,
+                              objet: _objet.text,
+                              montant: montant,
+                              validiteJours: validite,
+                            );
+                      if (!context.mounted) return;
+                      switch (resultat) {
+                        case Succes<DevisEmis>(valeur: final devis):
+                          // Doc E6 §5 : le formulaire se reinitialise apres succes.
+                          setState(_remettreAZero);
+                          showAppToast(
+                            context,
+                            modification == null
+                                ? 'Devis ${devis.reference} généré.'
+                                : 'Devis ${devis.reference} modifié.',
+                          );
+                        case Echec<DevisEmis>(message: final message):
+                          showAppToast(context, message, type: ToastType.error);
+                      }
+                    },
+                  ),
+                  if (_enEdition != null) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    TextButton(
+                      onPressed: () => setState(_remettreAZero),
+                      child: const Text('Annuler'),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -170,6 +253,8 @@ class _OngletDevisState extends State<OngletDevis> {
                           _entete('Objet', flex: 3),
                           _entete('Montant', alignement: TextAlign.right),
                           _entete('Expire le', alignement: TextAlign.right),
+                          _entete('Statut', alignement: TextAlign.right),
+                          const SizedBox(width: 160),
                         ],
                       ),
                     ),
@@ -216,6 +301,103 @@ class _OngletDevisState extends State<OngletDevis> {
                                 Formats.date(vm.devis[i].dateExpiration),
                                 textAlign: TextAlign.right,
                                 style: _texte,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                vm.devis[i].libelleStatut(),
+                                textAlign: TextAlign.right,
+                                style: _texte.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 160,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Modifier',
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Symbols.edit, size: 18),
+                                    onPressed: vm.devis[i].modifiable
+                                        ? () => _charger(
+                                            vm.devis[i],
+                                            edition: true,
+                                          )
+                                        : null,
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Dupliquer',
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(
+                                      Symbols.content_copy,
+                                      size: 18,
+                                    ),
+                                    onPressed: () async {
+                                      final r = await vm.dupliquerDevis(
+                                        vm.devis[i].id,
+                                      );
+                                      if (!context.mounted) return;
+                                      switch (r) {
+                                        case Succes<DevisEmis>(
+                                          valeur: final nouveau,
+                                        ):
+                                          showAppToast(
+                                            context,
+                                            'Devis ${nouveau.reference} généré.',
+                                          );
+                                        case Echec<DevisEmis>(message: final m):
+                                          showAppToast(
+                                            context,
+                                            m,
+                                            type: ToastType.error,
+                                          );
+                                      }
+                                    },
+                                  ),
+                                  PopupMenuButton<StatutDevis>(
+                                    tooltip: 'Changer le statut',
+                                    icon: const Icon(
+                                      Symbols.sync_alt,
+                                      size: 18,
+                                    ),
+                                    onSelected: (statut) async {
+                                      final r = await vm.changerStatutDevis(
+                                        vm.devis[i].id,
+                                        statut,
+                                      );
+                                      if (!context.mounted) return;
+                                      if (r is Echec<DevisEmis>) {
+                                        showAppToast(
+                                          context,
+                                          r.message,
+                                          type: ToastType.error,
+                                        );
+                                      }
+                                    },
+                                    itemBuilder: (_) => [
+                                      for (final st in StatutDevis.values)
+                                        PopupMenuItem(
+                                          value: st,
+                                          child: Text(st.libelle),
+                                        ),
+                                    ],
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Supprimer',
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Symbols.delete, size: 18),
+                                    onPressed: vm.devis[i].supprimable
+                                        ? () => _confirmerSuppression(
+                                            context,
+                                            vm,
+                                            vm.devis[i],
+                                          )
+                                        : null,
+                                  ),
+                                ],
                               ),
                             ),
                           ],

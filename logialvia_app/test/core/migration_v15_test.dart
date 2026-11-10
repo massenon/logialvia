@@ -30,9 +30,10 @@ void main() {
     double total = 12000,
     double paye = 5000,
   }) => db.customStatement(
-    'INSERT INTO ventes (ref, client, date_vente, mode, status, total, paye) '
-    'VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO ventes (id, updated_at, ref, client, date_vente, mode, status, total, paye) '
+    'VALUES (hex(randomblob(16)), ?, ?, ?, ?, ?, ?, ?, ?)',
     [
+      '2026-01-01T00:00:00.000Z',
       ref,
       'AGOSSOU Prudence',
       DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,

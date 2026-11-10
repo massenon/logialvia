@@ -20,6 +20,7 @@ class JourneeElevage {
     this.oeufsPondus,
     this.oeufsCasses,
     this.sortiesPlateaux,
+    this.modifieeAilleurs = false,
   });
 
   /// Journée vierge, non saisie — utilisée pour compléter les jours d'un mois
@@ -70,6 +71,11 @@ class JourneeElevage {
   final int? oeufsCasses;
   final int? sortiesPlateaux;
 
+  /// Vrai quand un AUTRE poste (ou le web) a saisi la même fiche sans que celle-ci
+  /// l'ait vu : la divergence reste visible tant que l'utilisatrice n'a pas choisi la
+  /// version à garder (`47e_`).
+  final bool modifieeAilleurs;
+
   int get totalMorts => mortsParCategorie.fold(0, (s, v) => s + v);
   int get totalDons => donsParCategorie.fold(0, (s, v) => s + v);
 
@@ -113,6 +119,25 @@ class JourneeElevage {
       oeufsPondus: oeufsPondus ?? this.oeufsPondus,
       oeufsCasses: oeufsCasses ?? this.oeufsCasses,
       sortiesPlateaux: sortiesPlateaux ?? this.sortiesPlateaux,
+      modifieeAilleurs: modifieeAilleurs,
     );
   }
+}
+
+/// Une version d'une fiche en divergence : la version courante, ou celle d'un autre poste.
+class VersionJournee {
+  const VersionJournee({
+    required this.origine,
+    required this.instant,
+    required this.journee,
+    this.estCourante = false,
+  });
+
+  /// « Cette fiche » (courante) ou le nom du poste / « Web » / « Serveur ».
+  final String origine;
+
+  /// Instant de saisie de cette version.
+  final DateTime instant;
+  final JourneeElevage journee;
+  final bool estCourante;
 }

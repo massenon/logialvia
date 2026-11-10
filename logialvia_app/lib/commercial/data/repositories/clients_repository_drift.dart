@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/vente.dart';
 
@@ -13,7 +14,7 @@ abstract class ClientsRepository {
     String? telephone,
     DateTime? dateNaissance,
   });
-  Future<void> enregistrerContact(int clientId);
+  Future<void> enregistrerContact(String clientId);
 }
 
 class ClientsRepositoryDrift implements ClientsRepository {
@@ -77,10 +78,12 @@ class ClientsRepositoryDrift implements ClientsRepository {
     String? telephone,
     DateTime? dateNaissance,
   }) async {
-    final id = await _db
+    final id = nouvelUuid();
+    await _db
         .into(_db.clients)
         .insert(
           ClientsCompanion.insert(
+            id: Value(id),
             nom: nom,
             telephone: Value(telephone),
             dateNaissance: Value(dateNaissance),
@@ -95,9 +98,16 @@ class ClientsRepositoryDrift implements ClientsRepository {
   }
 
   @override
-  Future<void> enregistrerContact(int clientId) async {
+  Future<void> enregistrerContact(String clientId) async {
+    // Toute modification locale repasse la ligne a envoyer, avec un nouvel
+    // instant de saisie : sans cela, le serveur ne la recevrait jamais.
     await (_db.update(_db.clients)..where((c) => c.id.equals(clientId))).write(
-      ClientsCompanion(dernierContact: Value(DateTime.now())),
+      ClientsCompanion(
+        dernierContact: Value(DateTime.now()),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
+      ),
     );
   }
 }

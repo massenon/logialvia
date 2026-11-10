@@ -18,9 +18,11 @@ import '../../../core/pdf/bouton_export_pdf.dart';
 import '../../data/repositories/comptabilite_repository_drift.dart';
 import '../../domain/entities/comptabilite.dart';
 import '../../domain/services/moteur_comptable.dart';
+import '../../domain/services/report_a_nouveau.dart';
 import '../viewmodels/comptabilite_view_model.dart';
 import 'widgets/communs_compta.dart';
 import '../../../core/saisie/formats_saisie.dart';
+import '../../domain/plan_syscohada.dart';
 
 /// Journal Comptable — Doc F6 §1, fidèle à `journal-comptable.html`.
 ///
@@ -32,8 +34,8 @@ import '../../../core/saisie/formats_saisie.dart';
 /// deux lignes.
 ///
 /// Or les écritures automatiques du système en comptent trois ou quatre : une
-/// vente partiellement réglée génère 531 (débit) + 411 (débit) / 701 (crédit) +
-/// 707 (crédit). La colonne « Débit » du prototype devrait alors contenir deux
+/// vente partiellement réglée génère 571 (débit) + 411 (débit) / 702 (crédit) +
+/// 701 (crédit). La colonne « Débit » du prototype devrait alors contenir deux
 /// comptes et la colonne « Montant » deux montants — c'est impossible.
 ///
 /// Le tableau adopte donc la disposition d'un journal comptable professionnel
@@ -243,11 +245,14 @@ class _FiltresJournal extends StatelessWidget {
               const DropdownMenuItem<String?>(
                 child: Text('Journal : Tous', style: texteCompta),
               ),
-              for (final code in CodeJournal.tous)
+              for (final code in [
+                ...CodeJournal.tous,
+                ...JournauxDeCloture.libelles.keys,
+              ])
                 DropdownMenuItem<String?>(
                   value: code,
                   child: Text(
-                    '$code — ${CodeJournal.libelles[code]}',
+                    '$code — ${CodeJournal.libelles[code] ?? JournauxDeCloture.libelles[code]}',
                     style: texteCompta,
                   ),
                 ),
@@ -400,6 +405,32 @@ class _LigneJournal extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (premiereDeLaPiece && ecriture.syncStatus == 'conflict') ...[
+                  // Refusée par le serveur : elle reste dans les livres de ce poste,
+                  // marquée, jusqu'à correction (elle n'a jamais été acceptée).
+                  const SizedBox(width: AppSpacing.xs),
+                  Tooltip(
+                    message:
+                        'Refusée par le serveur : '
+                        '${ecriture.syncMotif ?? 'motif inconnu'}',
+                    child: const Icon(
+                      Symbols.error,
+                      size: 14,
+                      color: AppColors.errorDeep,
+                    ),
+                  ),
+                ],
+                if (premiereDeLaPiece && ecriture.vientDUnAutrePoste) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Tooltip(
+                    message: 'Saisie sur un autre poste (${ecriture.origine})',
+                    child: const Icon(
+                      Symbols.devices,
+                      size: 14,
+                      color: AppColors.outline,
+                    ),
+                  ),
+                ],
               ],
             ),
             2,
@@ -439,9 +470,12 @@ class _LigneJournal extends StatelessWidget {
                 if (ecriture.estAutomatique) ...[
                   const SizedBox(width: AppSpacing.xs),
                   Tooltip(
-                    message:
-                        'Écriture générée automatiquement par '
-                        '${ecriture.venteRef ?? ecriture.achatRef}',
+                    message: ecriture.estDeCloture
+                        ? 'Écriture de clôture générée par la clôture annuelle '
+                              '(journal ${ecriture.journalCode}) : rouvrez l\'exercice '
+                              'pour la refaire.'
+                        : 'Écriture générée automatiquement par '
+                              '${ecriture.venteRef ?? ecriture.achatRef}',
                     child: const Icon(
                       Symbols.bolt,
                       size: 14,
@@ -470,7 +504,11 @@ class _LigneJournal extends StatelessWidget {
             2,
           ),
           (
-            premiereDeLaPiece && !ecriture.estAutomatique && !ecriture.isLocked
+            premiereDeLaPiece &&
+                    !ecriture.estAutomatique &&
+                    !ecriture.isLocked &&
+                    !ecriture.vientDUnAutrePoste &&
+                    ecriture.contrepasseDe == null
                 ? Align(
                     alignment: Alignment.centerRight,
                     child: IconButton(
@@ -501,13 +539,18 @@ Future<void> _confirmerSuppression(
   final piece = ecriture.numeroPiece;
   if (piece == null) return;
 
+  final transmise = vm.pieceEstTransmise(piece);
   final confirme = await AppModal.show<bool>(
     context,
-    title: 'Supprimer la pièce $piece ?',
+    title: transmise ? 'Annuler la pièce $piece ?' : 'Supprimer la pièce $piece ?',
     child: Text(
-      'Toutes les lignes de cette pièce seront supprimées, pas seulement '
-      'celle-ci : une pièce ne peut pas rester à moitié saisie sans '
-      'déséquilibrer la balance.\n\nCette action est irréversible.',
+      transmise
+          ? 'Cette pièce a déjà été transmise au serveur : c\'est un fait '
+                'partagé, elle ne peut plus être effacée. Une pièce inverse '
+                '(ANN-$piece) sera passée au Journal, à la date du jour.'
+          : 'Toutes les lignes de cette pièce seront supprimées, pas seulement '
+                'celle-ci : une pièce ne peut pas rester à moitié saisie sans '
+                'déséquilibrer la balance.\n\nCette action est irréversible.',
       style: texteCompta.copyWith(height: 1.5),
     ),
     actions: [
@@ -520,7 +563,7 @@ Future<void> _confirmerSuppression(
       ),
       Builder(
         builder: (ctx) => AppButton(
-          label: 'Supprimer',
+          label: transmise ? 'Annuler la pièce' : 'Supprimer',
           variant: AppButtonVariant.danger,
           onPressed: () => Navigator.of(ctx).pop(true),
         ),
@@ -535,7 +578,12 @@ Future<void> _confirmerSuppression(
 
   switch (resultat) {
     case Succes():
-      showAppToast(context, 'Pièce $piece supprimée.');
+      showAppToast(
+        context,
+        transmise
+            ? 'Pièce $piece annulée (écriture inverse passée).'
+            : 'Pièce $piece supprimée.',
+      );
     case Echec(:final message):
       showAppToast(context, message, type: ToastType.error);
   }
@@ -562,10 +610,10 @@ Future<void> _ouvrirModaleEcriture(
   }
 
   var compteDebit = comptes
-      .firstWhere((c) => c.numero == '531', orElse: () => comptes.first)
+      .firstWhere((c) => c.numero == PlanSyscohada.caisse, orElse: () => comptes.first)
       .numero;
   var compteCredit = comptes
-      .firstWhere((c) => c.numero == '701', orElse: () => comptes.last)
+      .firstWhere((c) => c.numero == PlanSyscohada.ventesProduitsFinis, orElse: () => comptes.last)
       .numero;
   var date = DateTime.now();
 

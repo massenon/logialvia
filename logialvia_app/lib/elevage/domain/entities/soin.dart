@@ -47,7 +47,7 @@ class Soin {
     this.echeanceProphylaxieId,
   });
 
-  final int id;
+  final String id;
   final String espece;
   final DateTime datePrevue;
   final String typeSoin;
@@ -62,13 +62,13 @@ class Soin {
 
   /// Bande dont ce soin decoule, quand il a ete planifie depuis le calendrier
   /// de prophylaxie d'une fiche. `null` pour un soin saisi a la main.
-  final int? bandeId;
+  final String? bandeId;
 
   /// Echeance du calendrier dont ce soin decoule.
   ///
   /// Avec [bandeId], c'est ce qui permet a la fiche d'afficher « deja
   /// planifie » au lieu de proposer une seconde fois le meme rappel.
-  final int? echeanceProphylaxieId;
+  final String? echeanceProphylaxieId;
 
   bool get vientDuCalendrier =>
       bandeId != null && echeanceProphylaxieId != null;
@@ -129,7 +129,7 @@ class EntreeInfirmerie {
     this.categorieMortalite,
   });
 
-  final int id;
+  final String id;
   final DateTime dateEntree;
   final String sujet;
   final String motif;

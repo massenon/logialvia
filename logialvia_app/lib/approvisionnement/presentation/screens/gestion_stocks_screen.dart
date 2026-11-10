@@ -106,6 +106,10 @@ class GestionStocksScreen extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: AppSpacing.lg),
+          if (vm.effetsWeb.isNotEmpty) ...[
+            _PanneauEffetsWeb(effets: vm.effetsWeb),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           CarteSection(
             titre: 'Journal des Mouvements',
             icone: Symbols.receipt_long,
@@ -153,7 +157,32 @@ class GestionStocksScreen extends StatelessWidget {
                               ),
                               (Text(m.article, style: grasAppro), 2),
                               (Text(m.type, style: texteAppro), 1),
-                              (Text(m.motif, style: texteAppro), 3),
+                              (
+                                Text(
+                                  m.appliqueIci
+                                      // `47s_` : ce poste a été désigné par le web : son
+                                      // stock a bien subi cette ligne.
+                                      ? '${m.motif} — appliqué depuis le web à ce poste'
+                                      : m.estDUnAutrePoste
+                                      ? '${m.motif} — autre poste (historique, stock inchangé ici)'
+                                      : m.motif,
+                                  key: m.appliqueIci
+                                      ? const ValueKey('badge-applique-web')
+                                      : null,
+                                  style: m.appliqueIci
+                                      ? texteAppro.copyWith(
+                                          color: AppColors.successDeep,
+                                          fontWeight: FontWeight.w700,
+                                        )
+                                      : m.estDUnAutrePoste
+                                      ? texteAppro.copyWith(
+                                          color: AppColors.outline,
+                                          fontStyle: FontStyle.italic,
+                                        )
+                                      : texteAppro,
+                                ),
+                                3,
+                              ),
                               (
                                 Text(
                                   m.quantite > 0
@@ -174,6 +203,64 @@ class GestionStocksScreen extends StatelessWidget {
                     ],
                   ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// `47s_` : ce que le web a fait à CE stock (réception, annulation, vente, correction). Les
+/// avertissements (« Stock insuffisant au poste P2 : … ») sont mis en évidence : le stock a
+/// été ramené à 0 et le magasin doit vérifier.
+class _PanneauEffetsWeb extends StatelessWidget {
+  const _PanneauEffetsWeb({required this.effets});
+
+  final List<EffetStockWeb> effets;
+
+  @override
+  Widget build(BuildContext context) {
+    final alertes = effets.where((e) => e.alerte).length;
+    return CarteSection(
+      titre: 'Opérations du web appliquées à ce poste',
+      icone: Symbols.cloud_sync,
+      child: Column(
+        key: const ValueKey('effets-web'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Le web vous a désigné « poste de stock » pour ces opérations : votre '
+            'stock et votre PMP ont été mis à jour, une seule fois chacune. '
+            '${alertes == 0 ? '' : '$alertes avertissement(s) à vérifier.'}',
+            style: texteAppro.copyWith(color: AppColors.outline),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final e in effets)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    e.alerte ? Symbols.warning : Symbols.check_circle,
+                    size: 16,
+                    color: e.alerte
+                        ? AppColors.errorDeep
+                        : AppColors.successDeep,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '${Formats.date(e.appliqueLe)} ${Formats.heure(e.appliqueLe)}'
+                      ' — ${e.libelle}'
+                      '${e.avertissement != null && e.etat == 'avertissement' ? '\n⚠ ${e.avertissement}' : ''}',
+                      style: texteAppro.copyWith(
+                        color: e.alerte ? AppColors.errorDeep : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -520,7 +607,9 @@ class _FormulaireIntrantState extends State<_FormulaireIntrant> {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Expanded(child: ChampAppro(libelle: 'Unité', controleur: _unite)),
+            Expanded(
+              child: ChampAppro(libelle: 'Unité', controleur: _unite),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -688,9 +777,7 @@ class _FormulaireAjustementState extends State<_FormulaireAjustement> {
           ),
           child: Row(
             children: [
-              const Expanded(
-                child: Text('Écart constaté', style: texteAppro),
-              ),
+              const Expanded(child: Text('Écart constaté', style: texteAppro)),
               Text(
                 _ecart > 0 ? '+$_ecart' : '$_ecart',
                 style: grasAppro.copyWith(
@@ -757,9 +844,8 @@ Future<void> ouvrirModaleFabrication(
   final controleurs = {
     for (final i in intrants)
       i.code: TextEditingController(
-        text:
-            (FabricationProvende.compositionParDefaut[i.code] ?? 0)
-                .toStringAsFixed(0),
+        text: (FabricationProvende.compositionParDefaut[i.code] ?? 0)
+            .toStringAsFixed(0),
       ),
   };
 
@@ -801,9 +887,7 @@ Future<void> ouvrirModaleFabrication(
                     Expanded(
                       child: Text(
                         '${intrant.nom} (${intrant.unite})',
-                        style: texteAppro.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: texteAppro.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     Text(

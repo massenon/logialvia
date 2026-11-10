@@ -1,0 +1,116 @@
+/* Roboto variable, servie par le site : aucune requete externe au chargement. */
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/Roboto-Italic-Variable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-surface-bg font-sans text-body text-on-surface;
+    }
+}
+
+/* Vues imprimables (doc 47u §6) : « Imprimer / PDF » ouvre la boite d'impression du navigateur.
+   Menu, barre du haut, boutons et filtres (`no-print`) disparaissent ; le contenu prend la page. */
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    .no-print,
+    aside[aria-label='Navigation'],
+    body > div > div > header {
+        display: none !important;
+    }
+
+    body {
+        background: #fff !important;
+    }
+
+    main {
+        padding: 0 !important;
+    }
+
+    /* Un tableau tient dans la largeur de la page, sans defilement cache. */
+    .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr,
+    article {
+        break-inside: avoid;
+    }
+
+    /* Le tableau (>= 640 px) est imprime ; les cartes de petit ecran non. */
+    [data-vue='cartes'] {
+        display: none !important;
+    }
+
+    .hidden.sm\:block {
+        display: block !important;
+    }
+
+    a {
+        color: inherit !important;
+        text-decoration: none !important;
+    }
+
+}
+
+/* Vue imprimable (`47e_`) : fidele a l'etat imprime du poste. Navigation, boutons et formulaires
+   disparaissent ; les tableaux gardent leurs bordures et ne se coupent pas au milieu d'une ligne. */
+@media print {
+    body {
+        background: #fff;
+        color: #000;
+    }
+    main {
+        padding: 0 !important;
+    }
+    button,
+    [role='dialog'] {
+        display: none !important;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+    }
+    thead {
+        display: table-header-group;
+    }
+    section,
+    .rounded-lg {
+        break-inside: avoid;
+    }
+}
+
+/* Listes deroulantes (47n_) : `px-sm` ecrase le `padding-right` du plugin forms, et la fleche venait se poser
+   sur le texte (« Tous les statuts▾ »). On reserve la place de la fleche, quel que soit le padding de l'ecran. */
+select:not([multiple]) {
+    padding-right: 2.25rem !important;
+}

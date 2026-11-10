@@ -24,11 +24,11 @@ void main() {
     return ligne.read<int>('n');
   }
 
-  Future<int> premierProduitId() async {
+  Future<String> premierProduitId() async {
     final ligne = await db
         .customSelect('SELECT id FROM produits_vendables LIMIT 1')
         .getSingle();
-    return ligne.read<int>('id');
+    return ligne.read<String>('id');
   }
 
   group('Archiver ne détruit rien', () {
@@ -101,7 +101,7 @@ void main() {
       final avant = await db
           .customSelect(
             'SELECT * FROM produits_vendables WHERE id = ?',
-            variables: [Variable.withInt(id)],
+            variables: [Variable.withString(id)],
           )
           .getSingle();
 
@@ -116,7 +116,7 @@ void main() {
       final apres = await db
           .customSelect(
             'SELECT * FROM produits_vendables WHERE id = ?',
-            variables: [Variable.withInt(id)],
+            variables: [Variable.withString(id)],
           )
           .getSingle();
 
@@ -130,9 +130,11 @@ void main() {
 
     test('la date est restituée telle quelle, pas décalée', () async {
       await db.customStatement(
-        'INSERT INTO cycle_couveuse (code_incubation, espece, date_incubation, '
-        'oeufs_couves, statut) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO cycle_couveuse (id, updated_at, code_incubation, espece, '
+        'date_incubation, oeufs_couves, statut) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
+          'a1b2c3d4-0000-4000-8000-000000000777',
+          '2026-08-01T00:00:00.000000Z',
           'C-2026-777',
           'goliath',
           DateTime(2026, 8, 1).millisecondsSinceEpoch ~/ 1000,
@@ -147,7 +149,7 @@ void main() {
                     variables: [Variable.withString('C-2026-777')],
                   )
                   .getSingle())
-              .read<int>('id');
+              .read<String>('id');
 
       await service.archiver(
         type: TypeArchivable.lots,
@@ -162,7 +164,7 @@ void main() {
       final relu = await db
           .customSelect(
             'SELECT date_incubation FROM cycle_couveuse WHERE id = ?',
-            variables: [Variable.withInt(id)],
+            variables: [Variable.withString(id)],
           )
           .getSingle();
       expect(
@@ -304,14 +306,15 @@ void main() {
   });
 
   group('Liste blanche des tables', () {
-    test('les 8 types couvrent les suppressions ouvertes à l\'utilisateur', () {
-      expect(TypeArchivable.tous, hasLength(8));
+    test('les 9 types couvrent les suppressions ouvertes à l\'utilisateur', () {
+      expect(TypeArchivable.tous, hasLength(9));
       expect(TypeArchivable.tous.map((t) => t.nomTable).toSet(), {
         'utilisateurs',
         'ecriture_comptable',
         'produits_vendables',
         'intrants',
         'baremes_ration',
+        'taux_ration_poids',
         'calendrier_prophylaxie',
         'cycle_couveuse',
         'messages_editeur',

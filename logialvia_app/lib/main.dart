@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'administration/domain/services/service_restauration.dart';
 import 'core/database/reprise_dossier_precedent.dart';
 import 'administration/domain/services/service_sauvegarde.dart';
 import 'administration/data/repositories/preferences_poste_repository.dart';
+import 'administration/data/sync/depot_demandes_referentiel.dart';
 import 'administration/data/repositories/modules_actifs_repository_drift.dart';
 import 'administration/domain/repositories/auth_repository.dart';
 import 'administration/domain/usecases/connecter_utilisateur_usecase.dart';
@@ -26,6 +28,39 @@ import 'pilotage/presentation/viewmodels/alertes_view_model.dart';
 import 'pilotage/presentation/viewmodels/dashboard_elevage_view_model.dart';
 import 'pilotage/presentation/viewmodels/tableau_bord_view_model.dart';
 import 'administration/presentation/viewmodels/splash_view_model.dart';
+import 'administration/data/sync/table_modules_actifs_poste.dart';
+import 'administration/data/sync/table_parametres_entreprise_poste.dart';
+import 'approvisionnement/data/sync/table_achats_poste.dart';
+import 'approvisionnement/data/sync/table_fournisseurs_poste.dart';
+import 'approvisionnement/data/sync/table_intrants_poste.dart';
+import 'approvisionnement/data/sync/table_mouvements_intrant_poste.dart';
+import 'commercial/data/sync/table_mouvements_produit_poste.dart';
+import 'elevage/data/sync/table_infirmerie_poste.dart';
+import 'elevage/data/sync/table_parametres_elevage_poste.dart';
+import 'elevage/data/sync/table_soins_poste.dart';
+import 'commercial/data/sync/table_clients_poste.dart';
+import 'commercial/data/sync/table_produits_poste.dart';
+import 'commercial/data/sync/table_factures_poste.dart';
+import 'commercial/data/sync/table_devis_poste.dart';
+import 'commercial/data/sync/table_groupes_taxe_poste.dart';
+import 'commercial/data/sync/table_ventes_poste.dart';
+import 'elevage/data/sync/table_bandes_poste.dart';
+import 'elevage/data/sync/table_fiches_journee_poste.dart';
+import 'elevage/data/sync/table_ventes_jour_poste.dart';
+import 'elevage/data/sync/table_cycles_couveuse_poste.dart';
+import 'elevage/data/sync/table_machines_incubateur_poste.dart';
+import 'comptabilite/data/seed/plan_comptable_seeder.dart';
+import 'comptabilite/data/sync/table_clotures_poste.dart';
+import 'administration/data/sync/table_messages_editeur_poste.dart';
+import 'comptabilite/data/sync/table_ecritures_poste.dart';
+import 'comptabilite/data/sync/table_exercices_poste.dart';
+import 'comptabilite/data/sync/table_notes_annexes_poste.dart';
+import 'comptabilite/data/sync/table_plan_comptable_poste.dart';
+import 'core/sync/table_effets_stock_poste.dart';
+import 'core/sync/depot_jeton_sync.dart';
+import 'core/sync/moteur_synchronisation.dart';
+import 'core/sync/planificateur_synchronisation.dart';
+import 'core/sync/service_appairage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +74,13 @@ Future<void> main() async {
     title: 'LogiALVIA — ALLMANY ET COMPAGNIE',
   );
   await windowManager.waitUntilReadyToShow(optionsFenetre, () async {
+    // Fenetre MAXIMISEE (et non plein ecran) : elle occupe tout le bureau mais laisse
+    // la barre des taches visible. Les trois boutons (reduire, agrandir/restaurer,
+    // fermer) sont ceux du cadre Windows natif ; on les rend explicitement actifs.
+    await windowManager.setMinimizable(true);
+    await windowManager.setMaximizable(true);
+    await windowManager.setClosable(true);
+    await windowManager.maximize();
     await windowManager.show();
     await windowManager.focus();
   });
@@ -128,7 +170,7 @@ class LogiALVIAApp extends StatefulWidget {
   State<LogiALVIAApp> createState() => _LogiALVIAAppState();
 }
 
-class _LogiALVIAAppState extends State<LogiALVIAApp> {
+class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
   late final AuthRepository _authRepository = AuthRepositoryDrift(
     widget.database,
   );
@@ -143,6 +185,87 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
   late final ModulesActifsViewModel _modulesActifsViewModel =
       ModulesActifsViewModel(ModulesActifsRepositoryDrift(widget.database));
 
+  // --- Appairage et synchronisation (un seul moteur pour toute l'application :
+  // deux tirages entrelaces se disputeraient le curseur) ---
+  late final PreferencesPosteRepository _preferencesPoste =
+      PreferencesPosteRepository(widget.database);
+  late final ServiceAppairage _appairage = ServiceAppairage(
+    preferences: _preferencesPoste,
+    depot: const DepotJetonSyncSecurise(),
+  );
+  late final MoteurSynchronisationPoste
+  _moteurSynchro = MoteurSynchronisationPoste(
+    preferences: _preferencesPoste,
+    depot: const DepotJetonSyncSecurise(),
+    appairage: _appairage,
+    // Les modifications de referentiel faites ici sont PROPOSEES au serveur.
+    demandes: DepotDemandesReferentiel(widget.database),
+    // Referentiels d'abord (le serveur gagne), puis les faits saisis au poste.
+    // Paliers 1 a 5 de la migration UUID (DV-19) : modules, parametres, produits,
+    // intrants, clients, fournisseurs, ventes, achats, journal des mouvements. Devis,
+    // factures, ecritures… suivront.
+    tables: [
+      TableModulesActifsPoste(widget.database),
+      TableParametresEntreprisePoste(widget.database),
+      TableProduitsPoste(widget.database),
+      TableIntrantsPoste(widget.database),
+      // Parametres d'elevage (P7c) : referentiels, le serveur gagne.
+      TableBaremesRationPoste(widget.database),
+      TableTauxRationPoidsPoste(widget.database),
+      TableCalendrierProphylaxiePoste(widget.database),
+      TableClientsPoste(widget.database),
+      TableFournisseursPoste(widget.database),
+      TableVentesPoste(widget.database),
+      TableGroupesTaxePoste(widget.database),
+      TableFacturesPoste(widget.database),
+      // `47a2_` : devis de prestations (faits, dernier écrivain gagne).
+      TableDevisPoste(widget.database),
+      TableAchatsPoste(widget.database),
+      TableMouvementsIntrantPoste(widget.database),
+      TableMouvementsProduitPoste(widget.database),
+      // `47s_` : trace des effets de stock appliqués ici sur ordre du web (APRÈS les faits).
+      TableEffetsStockPoste(widget.database),
+      // Palier 7a : fiches journalieres, compteurs de ventes du jour (une ligne par
+      // poste) et bandes (`46a_`).
+      TableFichesJourneePoste(widget.database),
+      TableVentesJourPoste(widget.database),
+      TableBandesPoste(widget.database),
+      // Palier 7b : incubateurs AVANT les lots qui les occupent.
+      TableMachinesIncubateurPoste(widget.database),
+      TableCyclesCouveusePoste(widget.database),
+      // Soins et infirmerie (P7c) : faits saisis au poste.
+      TableSoinsPoste(widget.database),
+      TableInfirmeriePoste(widget.database),
+      // P8 — comptabilite : plan et exercices D'ABORD (references des ecritures),
+      // puis les pieces, les notes, les clotures mensuelles ; la cloture ANNUELLE
+      // (fait lourd) en DERNIER : le serveur doit connaitre toutes les pieces avant de
+      // verrouiller l'exercice.
+      TablePlanComptablePoste(widget.database),
+      TableExercicesPoste(widget.database),
+      TableEcrituresPoste(widget.database),
+      TableNotesAnnexesPoste(widget.database),
+      TableCloturesPeriodiquesPoste(widget.database),
+      TableCloturesExercicePoste(widget.database),
+      // Messages à l'éditeur (doc 47u §4) : un fait ouvert à tout compte.
+      TableMessagesEditeurPoste(widget.database),
+    ],
+    socleDuPlan: {
+      for (final c in PlanComptableSeeder.tous)
+        c.numero: (libelle: c.libelle, classe: c.classe),
+    },
+  );
+  late final PlanificateurSynchronisation
+  _planificateur = PlanificateurSynchronisation(
+    moteur: _moteurSynchro,
+    // La navigation depend des modules actifs : si le serveur les a changes,
+    // la barre laterale doit suivre sans redemarrage.
+    apresSynchronisation: (rapport) {
+      if (rapport.referentielsMisAJour > 0) {
+        _modulesActifsViewModel.charger();
+      }
+    },
+  );
+
   /// Bus d'evenements de domaine (Doc C1 §4) — instance unique pour toute
   /// l'application.
   final EventBus _bus = EventBus();
@@ -153,7 +276,31 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    // Sans effet (aucun minuteur) tant que le poste n'est pas appaire.
+    _planificateur.demarrer();
+    // La fermeture passe par nous : une derniere synchronisation, bornee a 4 s.
+    windowManager.addListener(this);
+    unawaited(windowManager.setPreventClose(true));
+  }
+
+  @override
+  Future<void> onWindowClose() async {
+    try {
+      await _planificateur.synchroniserALaFermeture();
+    } finally {
+      // Quoi qu'il arrive, la fenetre se ferme : un echec de synchronisation ne
+      // doit jamais empecher de quitter l'application.
+      await windowManager.destroy();
+    }
+  }
+
+  @override
   void dispose() {
+    windowManager.removeListener(this);
+    // Avant la fermeture de la base : un geste tardif ne doit pas l'ecrire.
+    _planificateur.dispose();
     _authViewModel.dispose();
     _modulesActifsViewModel.dispose();
     _bus.dispose();
@@ -176,6 +323,10 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> {
         // Gerante n'aurait aucun moyen de savoir si elle a reussi.
         Provider<RapportRestauration?>.value(value: widget.rapportRestauration),
         Provider<EventBus>.value(value: _bus),
+        Provider<ServiceAppairage>.value(value: _appairage),
+        ChangeNotifierProvider<PlanificateurSynchronisation>.value(
+          value: _planificateur,
+        ),
         ChangeNotifierProvider<AuthViewModel>.value(value: _authViewModel),
         ChangeNotifierProvider<ModulesActifsViewModel>.value(
           value: _modulesActifsViewModel,

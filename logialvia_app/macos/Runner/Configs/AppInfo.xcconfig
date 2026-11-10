@@ -8,7 +8,7 @@
 PRODUCT_NAME = logialvia_app
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.logialviaApp
+PRODUCT_BUNDLE_IDENTIFIER = com.allmany.logialvia
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 ALLMANY ET COMPAGNIE. All rights reserved.

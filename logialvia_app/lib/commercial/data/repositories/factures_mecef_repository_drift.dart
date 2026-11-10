@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
+import '../../../administration/data/repositories/preferences_poste_repository.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
 import '../../domain/entities/facture_mecef.dart';
 
 /// Accès aux factures normalisées MeCeF.
@@ -209,6 +211,22 @@ class FacturesMecefRepositoryDrift {
     }
 
     final aReprendre = lignes.isEmpty ? origine.lignes : lignes;
+
+    // Un avoir ne dépasse jamais la facture qu'il corrige : avec les avoirs déjà
+    // émis sur elle, le cumul reste dans son total TTC (tolérance d'arrondi 0,01).
+    final nouveauTtc = aReprendre.fold<double>(0, (s, l) => s + l.montantTtc);
+    final dejaCredite = (await toutes())
+        .where(
+          (f) => f.type == TypeFacture.avoir && f.origineRef == factureOrigine,
+        )
+        .fold<double>(0, (s, f) => s + f.totalTtc);
+    if (dejaCredite + nouveauTtc > origine.totalTtc + 0.01) {
+      throw StateError(
+        'Les avoirs sur $factureOrigine dépasseraient la facture : '
+        '${dejaCredite.round()} FCFA déjà crédités, ${nouveauTtc.round()} demandés, '
+        'facture de ${origine.totalTtc.round()} FCFA.',
+      );
+    }
     return _inserer(
       type: TypeFacture.avoir,
       date: date ?? DateTime.now(),
@@ -235,6 +253,23 @@ class FacturesMecefRepositoryDrift {
         'Une facture ne devient normalisée qu\'avec un code et un NIM réels.',
       );
     }
+    final actuelle = await (_db.select(
+      _db.factures,
+    )..where((f) => f.ref.equals(reference))).getSingleOrNull();
+    if (actuelle == null) {
+      throw StateError('Facture $reference introuvable.');
+    }
+    // Une facture normalisée est IMMUABLE (règle fiscale) : un second code ne
+    // remplace jamais le premier, et un statut ne régresse jamais.
+    if (StatutFacture.depuis(actuelle.statut) == StatutFacture.normalisee) {
+      throw StateError(
+        'La facture $reference est déjà normalisée : elle ne peut plus être '
+        'modifiée. Pour la corriger, émettez un avoir.',
+      );
+    }
+    if (_estDUnAutrePoste(actuelle.origine)) {
+      throw StateError(_refusAutrePoste(reference));
+    }
     await (_db.update(
       _db.factures,
     )..where((f) => f.ref.equals(reference))).write(
@@ -246,6 +281,10 @@ class FacturesMecefRepositoryDrift {
         lienVerification: Value(lienVerification),
         dateNormalisation: Value(dateNormalisation ?? DateTime.now()),
         erreurTransmission: const Value(null),
+        // À envoyer : le serveur ne connaît pas encore cette normalisation.
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }
@@ -255,15 +294,39 @@ class FacturesMecefRepositoryDrift {
     required String reference,
     required String erreur,
   }) async {
+    final actuelle = await (_db.select(
+      _db.factures,
+    )..where((f) => f.ref.equals(reference))).getSingleOrNull();
+    if (actuelle == null) return;
+    // Jamais de régression : une facture normalisée reste normalisée, même si
+    // une transmission tardive échoue.
+    if (StatutFacture.depuis(actuelle.statut) == StatutFacture.normalisee) {
+      return;
+    }
+    if (_estDUnAutrePoste(actuelle.origine)) {
+      throw StateError(_refusAutrePoste(reference));
+    }
     await (_db.update(
       _db.factures,
     )..where((f) => f.ref.equals(reference))).write(
       FacturesCompanion(
         statut: Value(StatutFacture.rejetee.code),
         erreurTransmission: Value(erreur),
+        syncStatus: const Value('pending'),
+        syncMotif: const Value(null),
+        updatedAt: Value(instantSaisie()),
       ),
     );
   }
+
+  /// Une facture du web (poste émetteur « web ») n'est pas celle d'un autre poste.
+  static bool _estDUnAutrePoste(String? origine) =>
+      origine != null && origine != identifiantPosteWeb;
+
+  static String _refusAutrePoste(String reference) =>
+      'La facture $reference a été émise sur un autre poste : elle se '
+      'transmet à la DGI depuis ce poste, pour qu\'elle ne soit pas '
+      'normalisée deux fois.';
 
   // ------------------------------------------------------------- interne
 
@@ -329,25 +392,27 @@ class FacturesMecefRepositoryDrift {
     return (await parReference(reference))!;
   }
 
+  /// `FV-P2-2026-001` pour un poste appairé (DV-21), `FV-2026-001` sinon. La
+  /// séquence est continue **par poste, par type et par année** ; on prend le
+  /// maximum NUMÉRIQUE (le tri du texte placerait `…-1000` avant `…-999`).
   Future<String> _referenceSuivante(TypeFacture type, DateTime date) async {
-    final prefixe = '${type.code}-${date.year}-';
-    final derniere =
-        await (_db.select(_db.factures)
-              ..where((f) => f.ref.like('$prefixe%'))
-              ..orderBy([
-                (f) => OrderingTerm(expression: f.ref, mode: OrderingMode.desc),
-              ])
-              ..limit(1))
-            .getSingleOrNull();
-    return NumerotationFacture.suivante(
-      type: type,
-      date: date,
-      derniere: derniere?.ref,
-    );
+    final code = await PreferencesPosteRepository(_db).codeAttribue();
+    final prefixe = NumerotationFacture.prefixeDe(type, date.year, code);
+    final existantes = await (_db.select(
+      _db.factures,
+    )..where((f) => f.ref.like('$prefixe%'))).get();
+
+    var maximum = 0;
+    for (final f in existantes) {
+      final numero = int.tryParse(f.ref.substring(prefixe.length));
+      if (numero != null && numero > maximum) maximum = numero;
+    }
+    return '$prefixe${(maximum + 1).toString().padLeft(3, '0')}';
   }
 
   FactureMecef _versEntite(FactureRow e, List<LigneFactureRow> lignes) {
     return FactureMecef(
+      id: e.id,
       reference: e.ref,
       type: TypeFacture.depuis(e.type),
       date: e.dateFacture,
@@ -364,6 +429,7 @@ class FacturesMecefRepositoryDrift {
       lienVerification: e.lienVerification,
       dateNormalisation: e.dateNormalisation,
       erreurTransmission: e.erreurTransmission,
+      origine: e.origine,
       lignes: [
         for (final l in lignes)
           LigneFacture(

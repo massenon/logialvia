@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/sync/identifiant_poste.dart';
+import '../../data/sync/depot_demandes_referentiel.dart';
 
 /// Un élément archivé, tel que l'onglet Corbeille l'affiche.
 class ElementArchive {
@@ -87,6 +89,13 @@ class TypeArchivable {
     libelle: 'Barème de rationnement',
     reserveALAdmin: false,
   );
+  static const tauxPoids = TypeArchivable(
+    nomTable: 'taux_ration_poids',
+    clePrimaire: 'id',
+    module: 'Élevage',
+    libelle: 'Taux de ration par classe de poids',
+    reserveALAdmin: false,
+  );
   static const prophylaxie = TypeArchivable(
     nomTable: 'calendrier_prophylaxie',
     clePrimaire: 'id',
@@ -115,6 +124,7 @@ class TypeArchivable {
     produits,
     intrants,
     baremes,
+    tauxPoids,
     prophylaxie,
     lots,
     messages,
@@ -253,6 +263,15 @@ class ServiceArchivage {
       }
 
       final donnees = (jsonDecode(archive.donneesJson) as Map<String, Object?>);
+      if (type.nomTable == TypeArchivable.lots.nomTable ||
+          type.nomTable == TypeArchivable.messages.nomTable) {
+        // Un lot (ou un message, doc 47u §4) restauré lève la pierre tombale envoyée au
+        // serveur : il repart, daté de maintenant (`46b_`). Un instantané ancien n'a pas
+        // ces colonnes.
+        donnees['sync_status'] = 'pending';
+        donnees['sync_motif'] = null;
+        donnees['updated_at'] = instantSaisie();
+      }
       final colonnes = donnees.keys.toList();
 
       final existe = await _db
@@ -280,6 +299,27 @@ class ServiceArchivage {
       await (_db.delete(
         _db.corbeille,
       )..where((c) => c.id.equals(idArchive))).go();
+
+      // Un produit restauré lève la pierre tombale posée au serveur à sa suppression.
+      if (type.nomTable == TypeArchivable.produits.nomTable) {
+        await DepotDemandesReferentiel(
+          _db,
+        ).proposerProduit('${donnees[type.clePrimaire]}');
+      }
+
+      // Barème, taux ou échéance restaurés : la demande lève la pierre tombale posée
+      // au serveur à leur suppression (P7c).
+      final idRestaure = '${donnees[type.clePrimaire]}';
+      if (type.nomTable == TypeArchivable.baremes.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerBareme(idRestaure);
+      } else if (type.nomTable == TypeArchivable.tauxPoids.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerTauxPoids(idRestaure);
+      } else if (type.nomTable == TypeArchivable.prophylaxie.nomTable) {
+        await DepotDemandesReferentiel(_db).proposerEcheance(idRestaure);
+      } else if (type.nomTable == TypeArchivable.intrants.nomTable) {
+        // Intrant restauré : lève la pierre tombale posée au serveur (47h D4).
+        await DepotDemandesReferentiel(_db).proposerIntrant(idRestaure);
+      }
     });
   }
 

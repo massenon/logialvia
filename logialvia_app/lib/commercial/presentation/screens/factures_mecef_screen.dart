@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/sync/planificateur_synchronisation.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -40,9 +41,20 @@ class PageFacturesMecef extends StatelessWidget {
       create: (ctx) => FacturesMecefViewModel(
         FacturesMecefRepositoryDrift(ctx.read<AppDatabase>()),
         ctx.read<AppDatabase>(),
+        // Une facture émise au web se transmet après réservation au serveur (`47a2_`).
+        reserverTransmission: _reservation(ctx),
       )..charger(),
       child: const _Ecran(),
     );
+  }
+}
+
+/// La réservation du moteur de synchronisation, s'il existe (absent des tests d'écran).
+Future<Resultat<void>> Function(String)? _reservation(BuildContext ctx) {
+  try {
+    return ctx.read<PlanificateurSynchronisation>().moteur.reserverTransmission;
+  } on ProviderNotFoundException {
+    return null;
   }
 }
 
@@ -425,13 +437,25 @@ class _LigneFacture extends StatelessWidget {
                 BoutonExportPdf(
                   construire: () => DocumentsMecef.facture(facture),
                 ),
-                if (!facture.estNormalisee)
+                if (facture.estDUnAutrePoste && !facture.estNormalisee)
+                  const Tooltip(
+                    message: FacturesMecefViewModel.messageAutrePoste,
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      child: Icon(
+                        Symbols.devices,
+                        size: 18,
+                        color: AppColors.outline,
+                      ),
+                    ),
+                  ),
+                if (!facture.estNormalisee && !facture.estDUnAutrePoste)
                   _ActionIcone(
                     tooltip: 'Transmettre à e-MECeF',
                     icone: Symbols.cloud_upload,
                     onPressed: () => _transmettre(context, vm, facture),
                   ),
-                if (!facture.estNormalisee)
+                if (!facture.estNormalisee && !facture.estDUnAutrePoste)
                   _ActionIcone(
                     tooltip: 'Saisir le code de normalisation',
                     icone: Symbols.edit_note,

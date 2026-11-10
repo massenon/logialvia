@@ -96,13 +96,13 @@ void main() {
       numeroPiece: piece,
       lignes: const [
         LigneAEcrire(
-          numeroCompte: '624',
+          numeroCompte: '618',
           debit: 12000,
           credit: 0,
           libelle: 'Transport livraison',
         ),
         LigneAEcrire(
-          numeroCompte: '531',
+          numeroCompte: '571',
           debit: 0,
           credit: 12000,
           libelle: 'Transport livraison',

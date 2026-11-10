@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../elevage/domain/entities/configuration_espece.dart';
+import '../../../elevage/domain/entities/cycle_incubation.dart';
 import '../../domain/entities/inventaire.dart';
 
 /// Construit l'inventaire à une date, depuis les mouvements réellement tracés.
@@ -53,7 +54,11 @@ class InventaireRepositoryDrift {
     final articles = await (_db.select(
       _db.intrants,
     )..orderBy([(i) => OrderingTerm.asc(i.name)])).get();
-    final mouvements = await _db.select(_db.mouvementsIntrant).get();
+    // Seuls les mouvements de CE poste : le stock de ce poste n'a pas bouge pour un
+    // mouvement saisi ailleurs (journal partage, stock propre a chaque poste).
+    final mouvements = await (_db.select(
+      _db.mouvementsIntrant,
+    )..where((m) => m.origine.isNull())).get();
 
     final lignes = <LigneInventaireIntrant>[];
     for (final a in articles) {
@@ -110,7 +115,7 @@ class InventaireRepositoryDrift {
       innerJoin(_db.ventes, _db.ventes.ref.equalsExp(_db.lignesVente.venteRef)),
     ])..where(_db.ventes.status.equals('Annulée').not())).get();
 
-    double vendu(int produitId, bool Function(DateTime) filtre) => jointure
+    double vendu(String produitId, bool Function(DateTime) filtre) => jointure
         .where(
           (l) =>
               l.readTable(_db.lignesVente).produitId == produitId &&
@@ -179,7 +184,8 @@ class InventaireRepositoryDrift {
     return lots
         .where(
           (l) =>
-              l.dateIncubation.isBefore(jusqua) && l.statut == 'En incubation',
+              l.dateIncubation.isBefore(jusqua) &&
+              l.statut == StatutCycle.enIncubation,
         )
         .fold<int>(
           0,
