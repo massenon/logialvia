@@ -46,3 +46,6 @@ app.*.map.json
 
 # Builds livres : a publier via GitHub Releases, pas dans le depot
 /dist/
+
+# Installateur
+installer/Output/
