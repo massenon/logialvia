@@ -100,13 +100,66 @@ Trésorerie, créances, dettes, élevage, stocks, inventaire : chaque rapport s'
 
 ## Où ça tourne
 
-- **Poste Windows** : l'application principale, installée sur l'ordinateur de la ferme. Elle travaille **sans réseau**.
-- **Version web** : en construction, identique à l'application Windows.
-- **Synchronisation** : plusieurs postes peuvent travailler en parallèle ; leurs données se rejoignent sur le serveur, sans que deux caisses se marchent dessus (chaque poste a son propre numéro de pièce, par exemple `V-P2-2026-001`).
+- **Poste Windows** (`logialvia_app/`) : l'application principale, installée sur l'ordinateur de la ferme. Elle travaille **sans réseau**.
+- **Version web** (`logialvia_laravel/`) : même logique métier que le poste, mêmes écrans, mêmes droits ; elle sert de **serveur** de synchronisation.
+- **Synchronisation** : plusieurs postes travaillent en parallèle ; leurs données se rejoignent sur le serveur, sans que deux caisses se marchent dessus (chaque poste a ses propres numéros de pièce, par exemple `V-P2-2026-001`). Le stock reste propre à chaque poste ; le journal des mouvements est partagé.
+- **e-MECeF** : la transmission à la DGI et les secrets restent au poste ; le web n'en stocke aucun.
+
+## Le dépôt
+
+| Dossier | Contenu |
+|---|---|
+| [`logialvia_app/`](logialvia_app/) | Application Flutter (Windows), *offline-first* (Drift / SQLite) : **la référence** |
+| [`logialvia_laravel/`](logialvia_laravel/) | Application web Laravel 12 + Livewire 3 (PHP 8.3, MySQL 8) : serveur et écrans web, conformes au Dart |
+| [`docs/`](docs/) | Documentation (analyse, règles métier, contrats de synchronisation, décisions à valider) : point d'entrée [`docs/INDEX_MAITRE.md`](docs/INDEX_MAITRE.md) |
+| [`docs/manuel/`](docs/manuel/) | Manuel d'utilisation (PDF, captures générées par les tests) |
+| [`logo/`](logo/) | Logos sources |
+
+[`CLAUDE.md`](CLAUDE.md) décrit l'architecture, les conventions et les pièges : à lire avant de modifier le code.
+
+## Démarrage rapide
+
+### Poste Windows — `logialvia_app/`
+
+```bash
+cd logialvia_app
+flutter pub get
+dart run build_runner build          # régénère le code de la base après un changement de schéma
+flutter analyze                      # doit rester à « No issues found! »
+flutter test
+flutter run -d windows
+build_windows.bat                    # build release + installateur LogiALVIA-Setup-<version>.exe (Inno Setup 6)
+```
+
+Première connexion : identifiant `admin`, mot de passe initial `ALLMANY2026` (à changer dans *Mon profil*).
+
+### Application web — `logialvia_laravel/`
+
+```bash
+cd logialvia_laravel
+composer install
+npm ci
+cp .env.example .env                 # renseigner DB_*, DB_TIMEZONE=+00:00, ADMIN_INITIAL_PASSWORD
+php artisan key:generate
+php artisan migrate --force
+php artisan db:seed --force
+npm run build
+php artisan serve
+php artisan test
+```
+
+## État et limites
+
+Le poste et le web sont livrés et testés (suites Flutter et PHPUnit, essais contre un vrai serveur, parcours navigateur). Restent à faire ou à confirmer : la **transmission e-MECeF réelle** (jamais essayée contre la DGI ni un vrai boîtier ; adresses de l'API non confirmées), les **décisions métier à valider avec le client** (`docs/logialvia/46f_DECISIONS_A_VALIDER_P7_P9.md`), la **relecture du plan comptable** par un expert-comptable, et un premier essai de déploiement sur cPanel mutualisé.
 
 ## Documentation
 
-Le **manuel d'utilisation** (PDF, illustré) décrit chaque écran : [`docs/manuel/LogiALVIA-Manuel-Utilisation.pdf`](docs/manuel/LogiALVIA-Manuel-Utilisation.pdf).
+- **Manuel d'utilisation** (PDF, illustré) : [`docs/manuel/LogiALVIA-Manuel-Utilisation.pdf`](docs/manuel/LogiALVIA-Manuel-Utilisation.pdf).
+- **Synchronisation poste ↔ web** : [`docs/logialvia/46_CONTRAT_SYNCHRONISATION.md`](docs/logialvia/46_CONTRAT_SYNCHRONISATION.md).
+- **Facturation normalisée e-MECeF** : [`docs/logialvia/41_MECEF_EMECEF.md`](docs/logialvia/41_MECEF_EMECEF.md) et [`47v_`](docs/logialvia/47v_MECEF_ETAT_DOCUMENTATION.md).
+- **Plan comptable SYSCOHADA** : [`docs/logialvia/47p_PLAN_COMPTABLE_SYSCOHADA.md`](docs/logialvia/47p_PLAN_COMPTABLE_SYSCOHADA.md).
+- **Installateur Windows** : [`docs/logialvia/47w_INSTALLATEUR_WINDOWS.md`](docs/logialvia/47w_INSTALLATEUR_WINDOWS.md).
+- **Hébergement (Laragon, cPanel), MySQL, réseau** : [`docs/logialvia/47r_MYSQL_ET_RESEAU_REEL.md`](docs/logialvia/47r_MYSQL_ET_RESEAU_REEL.md).
 
 ---
 
