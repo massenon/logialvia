@@ -18,3 +18,8 @@ Contrôles bloquants : version `x.y.z+n` lue dans `pubspec.yaml` (les versions `
 
 ## À vérifier au premier essai
 Chemin exact du dossier de données (`getApplicationSupportDirectory`), présence de `French.isl`, droits administrateur (`PrivilegesRequired=admin`), runtime VC++ sur un poste neuf, installation par-dessus une version précédente.
+
+## Durées constatées (poste du client, 2026-11-10)
+Premier `build_runner` : ~6 min (812 fichiers générés) ; ensuite 10 à 90 s. `flutter analyze` : 3 à 4 min. Les tests s'y ajoutent.
+Pour un essai rapide hors production : `.\build_windows.bat --env recette --rapide` (saute analyze et tests ; **refusé en production**).
+Gagner du temps : exclure `C:\Projects`, le dossier Flutter et `%LOCALAPPDATA%\Pub\Cache` de l'analyse Windows Defender ; build sur SSD.

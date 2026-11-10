@@ -3,7 +3,8 @@ setlocal EnableDelayedExpansion
 chcp 65001 >nul
 rem ============================================================================
 rem  LogiALVIA - construction de l'installateur Windows (Flutter + Inno Setup 6)
-rem  Usage :  build_windows.bat [--env dev|recette|production] [--sans-tests] [--sans-installateur]
+rem  Usage :  build_windows.bat [--env dev|recette|production] [--rapide] [--sans-tests] [--sans-installateur]
+rem  --rapide = saute analyze ET tests (build de verification, a ne pas livrer en production)
 rem  Sortie : installer\Output\LogiALVIA-Setup-<version>[-<env>].exe
 rem  Prerequis : Flutter dans le PATH, Visual Studio 2022 (Developpement Desktop en C++), Inno Setup 6.
 rem ============================================================================
@@ -11,11 +12,13 @@ cd /d "%~dp0"
 
 set "ENV=production"
 set "SANS_TESTS=0"
+set "RAPIDE=0"
 set "SANS_INSTALLATEUR=0"
 
 :args
 if "%~1"=="" goto args_fin
 if /i "%~1"=="--env" ( set "ENV=%~2" & shift & shift & goto args )
+if /i "%~1"=="--rapide" ( set "RAPIDE=1" & set "SANS_TESTS=1" & shift & goto args )
 if /i "%~1"=="--sans-tests" ( set "SANS_TESTS=1" & shift & goto args )
 if /i "%~1"=="--sans-installateur" ( set "SANS_INSTALLATEUR=1" & shift & goto args )
 echo [ERREUR] Option inconnue : %~1
@@ -24,6 +27,11 @@ exit /b 2
 
 if /i not "%ENV%"=="dev" if /i not "%ENV%"=="recette" if /i not "%ENV%"=="production" (
   echo [ERREUR] Environnement invalide : "%ENV%" ^(dev, recette ou production^).
+  exit /b 2
+)
+
+if "%RAPIDE%"=="1" if /i "%ENV%"=="production" (
+  echo [ERREUR] --rapide est interdit en production : analyse et tests obligatoires avant livraison.
   exit /b 2
 )
 
@@ -56,14 +64,19 @@ call flutter pub get || goto echec
 
 echo.
 echo [2/6] dart run build_runner build
-call dart run build_runner build --delete-conflicting-outputs || goto echec
+call dart run build_runner build || goto echec
 
 echo.
+if "%RAPIDE%"=="1" (
+  echo [3/6] flutter analyze ignore ^(--rapide^)
+  goto apres_analyze
+)
 echo [3/6] flutter analyze
 call flutter analyze > "%TEMP%\logialvia_analyze.txt" 2>&1
 type "%TEMP%\logialvia_analyze.txt"
 findstr /c:"No issues found!" "%TEMP%\logialvia_analyze.txt" >nul
 if errorlevel 1 ( echo [ERREUR] flutter analyze doit finir par "No issues found!". & goto echec )
+:apres_analyze
 
 echo.
 if "%SANS_TESTS%"=="1" (
