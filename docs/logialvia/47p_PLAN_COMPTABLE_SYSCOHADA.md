@@ -227,7 +227,7 @@ poste, avec la garde active).
 
 | # | Décision | Alternative |
 |---|---|---|
-| V1 | **Relire les 60 numéros/libellés contre le Journal officiel OHADA** (non téléchargé, §1). | — |
+| V1 | **Relire les 60 numéros/libellés** (vérifiés contre le PDF fourni, §1 ; reste le Journal officiel, et 611 à confirmer). | — |
 | V2 | **Mobile Money en 552** (monnaie électronique) plutôt qu'en 521. | 521 « Banques locales » |
 | V3 | **Produits des filières en 702** (produits finis). | 703/704 selon la nature (fumier, plumes = résiduels 704) ; 706 pour des prestations |
 | V4 | **Fournitures et soins vétérinaires en 604** (achats stockés consommables). Les honoraires du vétérinaire, eux, relèvent de 632. | 6041/6044 plus fin ; 632 pour les visites |
