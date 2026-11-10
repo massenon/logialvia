@@ -42,12 +42,6 @@ class AuthViewModel extends ChangeNotifier {
   final AuthRepository _repository;
   final PreferencesPosteRepository _preferences;
 
-  /// Nombre d'echecs consecutifs avant verrouillage (login.html l.189).
-  static const int nombreTentativesMax = 5;
-
-  /// Duree du verrouillage, en secondes (login.html l.161 : `lockSeconds = 900`).
-  static const int dureeVerrouillageSecondes = 900;
-
   SessionUtilisateur? _session;
   SessionUtilisateur? get session => _session;
   bool get estConnecte => _session != null;
@@ -70,21 +64,16 @@ class AuthViewModel extends ChangeNotifier {
   int _tentatives = 0;
   int get tentatives => _tentatives;
 
-  bool _verrouille = false;
-  bool get verrouille => _verrouille;
+  /// Toujours faux : plus aucun verrouillage depuis la decision du client (2026-11-10).
+  bool get verrouille => false;
 
-  /// Libelle du compteur de la banniere. Vaut "15min" avant le premier tic,
-  /// puis "Mmin Ss" — exactement comme le prototype (login.html l.79 et l.205).
-  String _libelleVerrouillage = '15min';
-  String get libelleVerrouillage => _libelleVerrouillage;
+  /// Libelle de la banniere de verrouillage (jamais affichee).
+  String get libelleVerrouillage => '15min';
 
   /// Message a afficher a l'arrivee sur l'ecran de connexion, consomme une seule
   /// fois. Equivalent de `sessionStorage.logialvia_show_logout_toast`
   /// (login.html l.217).
   String? _messageDifferePourLogin;
-
-  Timer? _minuteurVerrouillage;
-  int _secondesRestantes = dureeVerrouillageSecondes;
 
   void basculerVisibiliteMotDePasse() {
     _motDePasseMasque = !_motDePasseMasque;
@@ -124,10 +113,6 @@ class AuthViewModel extends ChangeNotifier {
     required String identifiant,
     required String motDePasse,
   }) async {
-    if (_verrouille) {
-      return const ReponseConnexion(IssueConnexion.compteVerrouille);
-    }
-
     // Validation locale d'abord (Doc E6 §2) : les 2 champs sont requis, non vides.
     // Les libelles sont ceux du prototype (login.html l.89 et l.98).
     _erreurIdentifiant = identifiant.trim().isEmpty
@@ -213,11 +198,5 @@ class AuthViewModel extends ChangeNotifier {
     _erreurIdentifiant = null;
     _erreurMotDePasse = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _minuteurVerrouillage?.cancel();
-    super.dispose();
   }
 }
