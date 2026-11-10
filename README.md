@@ -9,7 +9,7 @@ de l'œuf mis en couveuse jusqu'au bilan de fin d'exercice.
 
 `Hors ligne` · `8 filières d'élevage` · `Ventes & caisse` · `Stocks & achats` · `Comptabilité SYSCOHADA` · `e-MECeF` · `Windows & web`
 
-<img src="docs/readme/apercu-social.png" alt="Aperçu de LogiALVIA" width="820">
+<img src="docs/readme/social-preview.png" alt="Aperçu de LogiALVIA" width="820">
 
 *Chaque œuf, chaque sac, chaque franc comptés.*
 
@@ -21,145 +21,210 @@ de l'œuf mis en couveuse jusqu'au bilan de fin d'exercice.
 
 LogiALVIA est un logiciel de gestion **tout-en-un** conçu pour une exploitation d'élevage qui vend aussi du commerce annexe. Il remplace le cahier, le tableur et la calculette par **un seul outil**, entièrement **en français**, qui fonctionne **sans connexion Internet** : la ferme n'a pas besoin du réseau pour travailler.
 
-Il couvre toute la chaîne : ce qui naît et grandit dans les enclos, ce qui est acheté et stocké, ce qui est vendu en caisse, et ce que cela donne en comptabilité.
+Il couvre toute la chaîne : ce qui naît et grandit dans les enclos, ce qui est acheté et stocké, ce qui est vendu en caisse, et ce que cela donne en comptabilité. Une version web, identique à l'application Windows, permet de retrouver et de saisir les mêmes informations depuis un navigateur ; plusieurs postes peuvent travailler en parallèle et leurs données se rejoignent sur un serveur.
 
 > Projet privé et personnel, tous droits réservés.
 
-## Un seul outil, six métiers
+## Fonctionnalités
 
 | | |
 |---|---|
 | 🐓 **Élevage** | Huit filières suivies jour après jour, la couveuse, les soins et la prophylaxie |
-| 🛒 **Ventes** | Caisse, devis, historique, retours et avoirs, clients et créances |
+| 🛒 **Ventes** | Caisse, devis, historique, retours et avoirs, clients et créances, facturation normalisée e-MECeF |
 | 📦 **Stocks & achats** | Intrants, provende, commandes, fournisseurs, valorisation du stock |
 | 📒 **Comptabilité** | Écritures automatiques, états financiers, clôture, conformité SYSCOHADA |
-| 📊 **Pilotage** | Tableaux de bord, alertes, rapports et exports PDF |
+| 📊 **Pilotage** | Tableaux de bord, alertes, rapports et exports |
 | 🔐 **Administration** | Rôles et droits, sauvegardes, corbeille, modules à la carte |
+| 🔄 **Synchronisation** | Plusieurs postes et une version web, sans que deux caisses se marchent dessus |
 
 ---
 
-## Tableau de bord
+## Aperçu de l'application
+### Connexion
 
-Dès l'ouverture, l'essentiel de la ferme tient sur un écran : chiffre d'affaires, trésorerie, dépenses, résultat net, soldes restant dus, stocks critiques, effectif du cheptel et cycles de couveuse en cours. Les alertes remontent d'elles-mêmes (stock sous le seuil, éclosion imminente, rappel de soin).
+Écran d'accueil sécurisé : identifiant et mot de passe, avec rappel de l'identifiant au besoin.
+
+<img src="docs/manuel/captures/00-connexion.png" alt="Connexion" width="900">
+
+
+### Tableau de bord
+
+L'essentiel de la ferme sur un écran : chiffre d'affaires, trésorerie, dépenses, résultat net, soldes restant dus, stocks critiques, effectif du cheptel et cycles de couveuse en cours. Les alertes remontent d'elles-mêmes.
 
 <img src="docs/manuel/captures/01-tableau-de-bord.png" alt="Tableau de bord" width="900">
 
-## Élevage
 
-Huit filières, chacune avec sa fiche journalière, ses repères et ses règles propres :
+### Élevage — vue d'ensemble
 
-**Goliaths** · **Pintades** · **Lapins** · **Poissons-chats** · **Poulets** · **Pondeuses** · **Escargots** · **Bovins**
+Le cheptel de chaque filière, ses effectifs et ses indicateurs du jour.
 
-- **Saisie du jour** : achats, naissances, morts par catégorie, dons, ventes reprises automatiquement depuis la caisse.
-- **Bandes** : mise en place, jour de cycle, effectif réel recalculé jour après jour, clôture.
-- **Couveuse** : cycles, mirages, taux d'éclosion et de perte.
-- **Soins & prophylaxie** : calendrier des vaccins et vitamines, doses, infirmerie, rappels vétérinaires.
-- **Rations** : barèmes et fabrication de provende.
-- Les filières se **activent à la demande** : on ne voit que ce que la ferme pratique.
+<img src="docs/manuel/captures/02-dashboard-elevage.png" alt="Tableau de bord élevage" width="900">
 
-<img src="docs/manuel/captures/05-fiche-goliaths.png" alt="Fiche d'une filière" width="900">
 
-## Ventes et caisse
+### Couveuse
 
-Une caisse pensée pour aller vite : on touche un produit, il entre au panier, le prix se négocie dans sa fourchette, le règlement se choisit (espèces, avance, crédit).
+Cycles d'incubation, mirages, taux d'éclosion et de perte, éclosions attendues.
 
-- Catalogue de produits vivants et de commerce annexe, avec **stock visible** sur chaque carte.
-- **Devis de prestations**, historique des ventes, **retours et avoirs**.
-- **Clients et créances** : qui doit quoi, depuis quand.
-- **Facturation normalisée e-MECeF** : factures de vente et d'avoir conformes à l'exigence fiscale.
+<img src="docs/manuel/captures/03-cycle-couveuse.png" alt="Cycles de couveuse" width="900">
 
-<img src="docs/manuel/captures/12-ventes.png" alt="Caisse et ventes" width="900">
+<img src="docs/manuel/captures/04-statistiques-mirages.png" alt="Statistiques des mirages" width="900">
 
-## Stocks et achats
 
-Les intrants (maïs, soja, poudre de poisson, produits vétérinaires…) sont suivis avec leur **seuil d'alerte**, leur **prix moyen pondéré** et leur **valeur**. Chaque mouvement laisse une trace dans le journal. Les **achats** et les **fournisseurs** alimentent le stock et les dettes ; la **fabrication de provende** transforme les intrants en aliment.
+### Fiches des filières
+
+Huit filières, chacune avec sa fiche journalière, ses repères et ses règles : Goliaths, pintades, lapins, poissons-chats, poulets, pondeuses, escargots, bovins. La saisie du jour reprend automatiquement les ventes de la caisse et recalcule l'effectif réel.
+
+<img src="docs/manuel/captures/05-fiche-goliaths.png" alt="Fiche Goliaths" width="900">
+
+<img src="docs/manuel/captures/06-fiche-pintades.png" alt="Fiche pintades" width="900">
+
+<img src="docs/manuel/captures/07-fiche-lapins.png" alt="Fiche lapins" width="900">
+
+<img src="docs/manuel/captures/07b-fiche-escargots.png" alt="Fiche escargots" width="900">
+
+<img src="docs/manuel/captures/07c-fiche-bovins.png" alt="Fiche bovins" width="900">
+
+<img src="docs/manuel/captures/08-fiche-poissons-chats.png" alt="Fiche poissons-chats" width="900">
+
+<img src="docs/manuel/captures/09-fiche-poulets-pondeuses.png" alt="Fiche poulets et pondeuses" width="900">
+
+
+### Soins et prophylaxie
+
+Calendrier des vaccins et vitamines, doses, infirmerie, rappels vétérinaires.
+
+<img src="docs/manuel/captures/10-soins-calendrier.png" alt="Calendrier de soins" width="900">
+
+<img src="docs/manuel/captures/10c-soins-infirmerie.png" alt="Infirmerie" width="900">
+
+
+### Paramètres d'élevage
+
+Prophylaxie, rations et provende, numérotation des bandes : chaque exploitation règle ses propres barèmes.
+
+<img src="docs/manuel/captures/11-parametres-elevage.png" alt="Paramètres d'élevage" width="900">
+
+<img src="docs/manuel/captures/11c-parametres-elevage-provende.png" alt="Rations et provende" width="900">
+
+
+### Caisse et ventes
+
+Une caisse pensée pour aller vite : on touche un produit, il entre au panier, le prix se négocie dans sa fourchette, le règlement se choisit (espèces, avance, crédit). Le stock est visible sur chaque carte produit.
+
+<img src="docs/manuel/captures/12-ventes.png" alt="Caisse" width="900">
+
+<img src="docs/manuel/captures/12b-ventes-devis.png" alt="Devis de prestations" width="900">
+
+<img src="docs/manuel/captures/12c-ventes-historique.png" alt="Historique des ventes" width="900">
+
+<img src="docs/manuel/captures/12d-ventes-retours.png" alt="Retours et avoirs" width="900">
+
+
+### Clients et créances
+
+Qui doit quoi, depuis quand : suivi des clients, des soldes et des règlements.
+
+<img src="docs/manuel/captures/13-clients.png" alt="Clients" width="900">
+
+
+### Facturation normalisée e-MECeF
+
+Factures de vente et d'avoir préparées pour la certification fiscale, avec leur état de transmission.
+
+<img src="docs/manuel/captures/14b-factures-mecef.png" alt="Factures e-MECeF" width="900">
+
+
+### Achats, fournisseurs et stocks
+
+Les achats et les fournisseurs alimentent le stock et les dettes. Les intrants sont suivis avec leur seuil d'alerte, leur prix moyen pondéré et leur valeur ; la fabrication de provende transforme les intrants en aliment.
+
+<img src="docs/manuel/captures/15-achats.png" alt="Achats" width="900">
+
+<img src="docs/manuel/captures/16-fournisseurs.png" alt="Fournisseurs" width="900">
 
 <img src="docs/manuel/captures/17-gestion-stocks.png" alt="Gestion des stocks" width="900">
 
-## Comptabilité SYSCOHADA
+<img src="docs/manuel/captures/18-catalogue.png" alt="Catalogue de produits" width="900">
 
-Les opérations de la ferme deviennent **automatiquement des écritures comptables** : ventes, achats, règlements, dépenses.
 
-Journal · Grand livre · Balance générale · Plan comptable · Saisie des dépenses · Comptabilité analytique · **États financiers** (bilan, compte de résultat, flux de trésorerie, notes annexes) · **Clôture d'exercice**.
+### Inventaire
+
+Vue d'ensemble de tout ce que la ferme possède : animaux, produits, intrants.
+
+<img src="docs/manuel/captures/14-inventaire.png" alt="Inventaire" width="900">
+
+
+### Comptabilité SYSCOHADA
+
+Les opérations de la ferme deviennent automatiquement des écritures comptables : ventes, achats, règlements, dépenses. Journal, grand livre, balance générale, plan comptable, comptabilité analytique.
+
+<img src="docs/manuel/captures/19-comptabilite-hub.png" alt="Comptabilité" width="900">
+
+<img src="docs/manuel/captures/20-journal-comptable.png" alt="Journal comptable" width="900">
+
+<img src="docs/manuel/captures/21-grand-livre.png" alt="Grand livre" width="900">
+
+<img src="docs/manuel/captures/22-balance-generale.png" alt="Balance générale" width="900">
+
+<img src="docs/manuel/captures/24-saisie-depenses.png" alt="Saisie des dépenses" width="900">
+
+
+### États financiers et clôture
+
+Bilan, compte de résultat, flux de trésorerie et notes annexes, puis clôture d'exercice avec report à nouveau.
 
 <img src="docs/manuel/captures/26-etats-financiers.png" alt="États financiers" width="900">
 
-## Rapports et exports
+<img src="docs/manuel/captures/26b-etats-financiers-resultat.png" alt="Compte de résultat" width="900">
 
-Trésorerie, créances, dettes, élevage, stocks, inventaire : chaque rapport s'ouvre à l'écran et s'exporte en **PDF** avec la même mise en page partout.
+<img src="docs/manuel/captures/26c-etats-financiers-tresorerie.png" alt="Flux de trésorerie" width="900">
 
-## Administration
+<img src="docs/manuel/captures/28-cloture-exercice.png" alt="Clôture d'exercice" width="900">
 
-- **Rôles et droits par module** : chacun ne voit et ne modifie que ce qui relève de son travail.
-- **Modules à la carte** : on n'active que ce dont l'exploitation a besoin.
-- **Sauvegardes** et **restauration**, **corbeille** pour récupérer ce qui a été supprimé par erreur.
-- **Journal d'audit** de ce qui est fait, et par qui.
-- **Données de démonstration** et visites guidées pour prendre l'outil en main.
+
+### Rapports et exports
+
+Trésorerie, créances, dettes, élevage, stocks : chaque rapport s'ouvre à l'écran et s'exporte avec la même mise en page partout.
+
+<img src="docs/manuel/captures/29-rapports-exports.png" alt="Rapports" width="900">
+
+<img src="docs/manuel/captures/29b-rapports-tresorerie.png" alt="Rapport de trésorerie" width="900">
+
+<img src="docs/manuel/captures/29e-rapports-elevage.png" alt="Rapport d'élevage" width="900">
+
+
+### Administration
+
+Paramètres de l'entreprise, comptes utilisateurs avec rôles et droits par module, modes de paiement, sauvegardes et restauration, corbeille pour récupérer ce qui a été supprimé par erreur, données de démonstration.
+
+<img src="docs/manuel/captures/30-parametres-generaux.png" alt="Paramètres généraux" width="900">
+
+<img src="docs/manuel/captures/30c-parametres-general-utilisateurs.png" alt="Utilisateurs et droits" width="900">
+
+<img src="docs/manuel/captures/30e-parametres-general-sauvegardes.png" alt="Sauvegardes" width="900">
+
+<img src="docs/manuel/captures/30f-parametres-general-corbeille.png" alt="Corbeille" width="900">
+
+
+### Profil et aide
+
+Chaque utilisateur gère son profil et son mot de passe ; l'aide et les visites guidées permettent de prendre l'outil en main.
+
+<img src="docs/manuel/captures/31-mon-profil.png" alt="Mon profil" width="900">
+
+<img src="docs/manuel/captures/32-aide-a-propos.png" alt="Aide et à propos" width="900">
 
 ---
 
 ## Où ça tourne
 
-- **Poste Windows** (`logialvia_app/`) : l'application principale, installée sur l'ordinateur de la ferme. Elle travaille **sans réseau**.
-- **Version web** (`logialvia_laravel/`) : même logique métier que le poste, mêmes écrans, mêmes droits ; elle sert de **serveur** de synchronisation.
-- **Synchronisation** : plusieurs postes travaillent en parallèle ; leurs données se rejoignent sur le serveur, sans que deux caisses se marchent dessus (chaque poste a ses propres numéros de pièce, par exemple `V-P2-2026-001`). Le stock reste propre à chaque poste ; le journal des mouvements est partagé.
-- **e-MECeF** : la transmission à la DGI et les secrets restent au poste ; le web n'en stocke aucun.
+- **Poste Windows** : l'application principale, installée sur l'ordinateur de la ferme. Elle travaille **sans réseau**.
+- **Version web** : mêmes écrans, mêmes droits, depuis un navigateur ; elle sert aussi de serveur de synchronisation.
+- **Synchronisation** : chaque poste a ses propres numéros de pièce (par exemple `V-P2-2026-001`) et son propre stock ; le journal des mouvements est partagé.
 
-## Le dépôt
+## Manuel d'utilisation
 
-| Dossier | Contenu |
-|---|---|
-| [`logialvia_app/`](logialvia_app/) | Application Flutter (Windows), *offline-first* (Drift / SQLite) : **la référence** |
-| [`logialvia_laravel/`](logialvia_laravel/) | Application web Laravel 12 + Livewire 3 (PHP 8.3, MySQL 8) : serveur et écrans web, conformes au Dart |
-| [`docs/`](docs/) | Documentation (analyse, règles métier, contrats de synchronisation, décisions à valider) : point d'entrée [`docs/INDEX_MAITRE.md`](docs/INDEX_MAITRE.md) |
-| [`docs/manuel/`](docs/manuel/) | Manuel d'utilisation (PDF, captures générées par les tests) |
-| [`logo/`](logo/) | Logos sources |
-
-[`CLAUDE.md`](CLAUDE.md) décrit l'architecture, les conventions et les pièges : à lire avant de modifier le code.
-
-## Démarrage rapide
-
-### Poste Windows — `logialvia_app/`
-
-```bash
-cd logialvia_app
-flutter pub get
-dart run build_runner build          # régénère le code de la base après un changement de schéma
-flutter analyze                      # doit rester à « No issues found! »
-flutter test
-flutter run -d windows
-build_windows.bat                    # build release + installateur LogiALVIA-Setup-<version>.exe (Inno Setup 6)
-```
-
-Première connexion : identifiant `admin`, mot de passe initial `ALLMANY2026` (à changer dans *Mon profil*).
-
-### Application web — `logialvia_laravel/`
-
-```bash
-cd logialvia_laravel
-composer install
-npm ci
-cp .env.example .env                 # renseigner DB_*, DB_TIMEZONE=+00:00, ADMIN_INITIAL_PASSWORD
-php artisan key:generate
-php artisan migrate --force
-php artisan db:seed --force
-npm run build
-php artisan serve
-php artisan test
-```
-
-## État et limites
-
-Le poste et le web sont livrés et testés (suites Flutter et PHPUnit, essais contre un vrai serveur, parcours navigateur). Restent à faire ou à confirmer : la **transmission e-MECeF réelle** (jamais essayée contre la DGI ni un vrai boîtier ; adresses de l'API non confirmées), les **décisions métier à valider avec le client** (`docs/logialvia/46f_DECISIONS_A_VALIDER_P7_P9.md`), la **relecture du plan comptable** par un expert-comptable, et un premier essai de déploiement sur cPanel mutualisé.
-
-## Documentation
-
-- **Manuel d'utilisation** (PDF, illustré) : [`docs/manuel/LogiALVIA-Manuel-Utilisation.pdf`](docs/manuel/LogiALVIA-Manuel-Utilisation.pdf).
-- **Synchronisation poste ↔ web** : [`docs/logialvia/46_CONTRAT_SYNCHRONISATION.md`](docs/logialvia/46_CONTRAT_SYNCHRONISATION.md).
-- **Facturation normalisée e-MECeF** : [`docs/logialvia/41_MECEF_EMECEF.md`](docs/logialvia/41_MECEF_EMECEF.md) et [`47v_`](docs/logialvia/47v_MECEF_ETAT_DOCUMENTATION.md).
-- **Plan comptable SYSCOHADA** : [`docs/logialvia/47p_PLAN_COMPTABLE_SYSCOHADA.md`](docs/logialvia/47p_PLAN_COMPTABLE_SYSCOHADA.md).
-- **Installateur Windows** : [`docs/logialvia/47w_INSTALLATEUR_WINDOWS.md`](docs/logialvia/47w_INSTALLATEUR_WINDOWS.md).
-- **Hébergement (Laragon, cPanel), MySQL, réseau** : [`docs/logialvia/47r_MYSQL_ET_RESEAU_REEL.md`](docs/logialvia/47r_MYSQL_ET_RESEAU_REEL.md).
+Le manuel illustré (PDF) décrit chaque écran : [`docs/manuel/LogiALVIA-Manuel-Utilisation.pdf`](docs/manuel/LogiALVIA-Manuel-Utilisation.pdf).
 
 ---
 
