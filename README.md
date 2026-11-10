@@ -27,13 +27,13 @@ Il couvre toute la chaîne : ce qui naît et grandit dans les enclos, ce qui est
 
 | | |
 |---|---|
-| 🐓 **Élevage** | Huit filières suivies jour après jour, la couveuse, les soins et la prophylaxie |
-| 🛒 **Ventes** | Caisse, devis, historique, retours et avoirs, clients et créances, facturation normalisée e-MECeF |
-| 📦 **Stocks & achats** | Intrants, provende, commandes, fournisseurs, valorisation du stock |
-| 📒 **Comptabilité** | Écritures automatiques, états financiers, clôture, conformité SYSCOHADA |
-| 📊 **Pilotage** | Tableaux de bord, alertes, rapports et exports |
-| 🔐 **Administration** | Rôles et droits, sauvegardes, corbeille, modules à la carte |
-| 🔄 **Synchronisation** | Plusieurs postes et une version web, sans que deux caisses se marchent dessus |
+|  **Élevage** | Huit filières suivies jour après jour, la couveuse, les soins et la prophylaxie |
+|  **Ventes** | Caisse, devis, historique, retours et avoirs, clients et créances, facturation normalisée e-MECeF |
+|  **Stocks & achats** | Intrants, provende, commandes, fournisseurs, valorisation du stock |
+|  **Comptabilité** | Écritures automatiques, états financiers, clôture, conformité SYSCOHADA |
+|  **Pilotage** | Tableaux de bord, alertes, rapports et exports |
+|  **Administration** | Rôles et droits, sauvegardes, corbeille, modules à la carte |
+|  **Synchronisation** | Plusieurs postes et une version web, sans que deux caisses se marchent dessus |
 
 ---
 
