@@ -273,3 +273,12 @@ display_errors = Off        ; jamais de page d'erreur PHP en clair
 | `logialvia_app/test/core/sync/reseau_defaillant_test.dart` | 33 essais, faux serveur |
 | `logialvia_app/test/integration/reseau_reel_test.dart` | 20 essais, vrai serveur + mandataire |
 | `.github/workflows/mysql.yml` | CI MySQL 8 / MariaDB 10.11 |
+
+## Environnements du client (déclarés le 2026-11-10)
+
+| Environnement | Déclaré | Vérifié par nous |
+|---|---|---|
+| Test : Laragon Full 6.0 | PHP 8.3.30, Apache 2.4.54, MySQL 8.0.30 | Versions compatibles avec nos essais (PHP 8.3.6, MySQL 8.0.46) ; **pas essayé sous Windows** |
+| Production : cPanel mutualisé | « compatible » (déclaré par le client) ; versions PHP et MySQL/MariaDB **non communiquées** | **Non vérifié** : PHP ≥ 8.2 requis ; MySQL 5.7 et MariaDB 10.3/10.4 non testés |
+
+À contrôler au premier déploiement : en-tête `Authorization` transmis (`.htaccess`), `utf8mb4`, `DB_TIMEZONE=+00:00`, `post_max_size` ≥ 8M, HTTPS, dossier racine pointant sur `public/`.
