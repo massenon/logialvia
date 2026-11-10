@@ -42,6 +42,11 @@ else
 fi
 
 cd "$RACINE/logialvia_laravel" || exit 1
+# Poste neuf ou CI : ni .env ni APP_KEY -> clef jetable, sinon MissingAppKeyException.
+if [ -z "${APP_KEY:-}" ] && [ ! -f .env ]; then
+  APP_KEY="$(php artisan key:generate --show)" || exit 1
+  export APP_KEY
+fi
 php artisan migrate:fresh --seed --force > "$LV_DOSSIER/migrate.log" 2>&1 \
   || { cat "$LV_DOSSIER/migrate.log"; exit 1; }
 

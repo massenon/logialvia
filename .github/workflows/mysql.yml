@@ -67,8 +67,20 @@ jobs:
           extensions: pdo_mysql, pdo_sqlite, mbstring, zip, gd
           coverage: none
 
-      - name: Dépendances PHP
-        run: composer install --no-interaction --prefer-dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Dépendances PHP et front
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+          npm run build
+
+      # Sans .env ni APP_KEY, chaque test de vue échoue (MissingAppKeyException). Les variables
+      # DB_* de ce job l'emportent sur celles de .env.example.
+      - name: Clef d'application
+        run: cp .env.example .env && php artisan key:generate
 
       - name: Mode SQL de la session (ONLY_FULL_GROUP_BY, strict)
         run: |
@@ -108,7 +120,7 @@ jobs:
 
       - name: Dépendances
         run: |
-          composer install --no-interaction --prefer-dist --working-directory=logialvia_laravel
+          composer install --no-interaction --prefer-dist --working-dir=logialvia_laravel
           cd logialvia_app && flutter pub get
 
       # Recrée la base `lv_essai`, comptes admin1..150, serveur, 55 essais.
