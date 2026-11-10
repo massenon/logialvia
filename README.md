@@ -4,7 +4,7 @@
 
 # LogiALVIA
 
-**Gestion intégrée d'ALLMANY ET COMPAGNIE**
+**Gestion et Suivi Avicole Intégré**
 de l'œuf mis en couveuse jusqu'au bilan de fin d'exercice.
 
 `Hors ligne` · `8 filières d'élevage` · `Ventes & caisse` · `Stocks & achats` · `Comptabilité SYSCOHADA` · `e-MECeF` · `Windows & web`
