@@ -11,7 +11,7 @@
 <div>
     <div class="mb-md flex flex-wrap items-center gap-sm">
         <div>
-            <h1 class="text-page-title font-bold text-brand-navy">Inventaire</h1>
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="inventory_2" class="text-page-title" />Inventaire</h1>
             <p class="text-caption text-outline" data-libelle-periode>{{ $libellePeriode }}</p>
         </div>
     </div>

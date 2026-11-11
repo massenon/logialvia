@@ -1,6 +1,6 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Cycle Couveuse</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="egg" class="text-[24px]" />Cycle Couveuse</h1><p class="mt-xs text-xs text-outline">Lots d'incubation, mirages à J+7 et J+14, éclosions et parc d'incubateurs.</p></div>
         <div class="flex flex-wrap items-center gap-sm">
             <label class="text-xs text-outline" for="reference-couveuse">Situation au</label>
             <input id="reference-couveuse" type="date" wire:model.live="reference"
@@ -12,7 +12,7 @@
             @endunless
             @if ($peutGerer)
                 <button type="button" wire:click="nouveauLot"
-                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                        class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                     Déclarer un Nouveau Cycle
                 </button>
             @endif
@@ -25,31 +25,31 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Cycles en Cours</p>
-            <p class="text-page-title font-bold" data-kpi="en-cours">{{ $cyclesEnCours }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Cycles en Cours</span><x-icone nom="event_repeat" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="en-cours">{{ $cyclesEnCours }}</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Poussins Attendus</p>
-            <p class="text-page-title font-bold" data-kpi="attendus">{{ $tauxBrut === null ? '—' : $poussinsAttendus }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Poussins Attendus</span><x-icone nom="child_care" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="attendus">{{ $tauxBrut === null ? '—' : $poussinsAttendus }}</p>
             @if ($tauxBrut === null)
                 <p class="text-caption text-outline">Nécessite au moins une éclosion enregistrée</p>
             @endif
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Œufs en Incubation</p>
-            <p class="text-page-title font-bold" data-kpi="oeufs">{{ $oeufsEnIncubation }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Œufs en Incubation</span><x-icone nom="egg" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="oeufs">{{ $oeufsEnIncubation }}</p>
             @if ($machines->isNotEmpty())
                 <p class="text-caption text-outline">{{ $machines->count() }} incubateur(s)</p>
             @endif
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Taux d'Éclosion Réel</p>
-            <p class="text-page-title font-bold" data-kpi="reel">{{ \App\Support\SuiviIncubation::pourcentage($tauxReel) }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Taux d'Éclosion Réel</span><x-icone nom="percent" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="reel">{{ \App\Support\SuiviIncubation::pourcentage($tauxReel) }}</p>
             <p class="text-caption text-outline">Après retrait des œufs clairs et gâtés</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Taux Brut Moyen</p>
-            <p class="text-page-title font-bold" data-kpi="brut">{{ \App\Support\SuiviIncubation::pourcentage($tauxBrut) }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Taux Brut Moyen</span><x-icone nom="trending_up" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="brut">{{ \App\Support\SuiviIncubation::pourcentage($tauxBrut) }}</p>
             <p class="text-caption text-outline">Rapporté aux œufs chargés</p>
         </div>
     </div>
@@ -94,7 +94,7 @@
     @endif
 
     <div class="mb-sm flex flex-wrap items-center justify-between gap-sm">
-        <h2 class="text-section-title font-bold">Parc d'Incubateurs</h2>
+        <h2 class="flex items-center gap-xs text-section-title font-bold text-brand-navy"><x-icone nom="thermostat" class="text-[20px]" />Parc d'Incubateurs</h2>
         @if ($peutGerer)
             <button type="button" wire:click="nouvelIncubateur"
                     class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
@@ -134,7 +134,7 @@
     @endif
 
     <div class="mb-sm flex flex-wrap items-center justify-between gap-sm">
-        <h2 class="text-section-title font-bold">Lots d'Incubation</h2>
+        <h2 class="flex items-center gap-xs text-section-title font-bold text-brand-navy"><x-icone nom="egg" class="text-[20px]" />Lots d'Incubation</h2>
         <div class="flex flex-wrap gap-sm">
             <select wire:model.live="filtreStatut" aria-label="Filtrer par statut" class="rounded-lg border border-outline-variant bg-surface-card px-sm py-sm text-xs">
                 <option value="">Tous les statuts</option>

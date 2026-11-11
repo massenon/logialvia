@@ -139,6 +139,7 @@ scenario('clients : ajouter, modifier, supprimer + recouvrement d\'une creance',
     // Recouvrement : la creance du Restaurant Le Palmier (65 000 - 20 000 = 45 000).
     await page.fill('input[type=search]', '');
     await aller(page, '/clients');
+    await page.click('[data-onglet-client=dettes]');
     const ligne = page.locator('tr[data-creance]').first();
     await ligne.waitFor();
     const ref = await ligne.getAttribute('data-creance');

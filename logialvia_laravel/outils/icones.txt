@@ -117,3 +117,10 @@ list_alt
 toggle_on
 block
 check_circle
+celebration
+task_alt
+add_business
+chat
+thermostat
+fact_check
+send

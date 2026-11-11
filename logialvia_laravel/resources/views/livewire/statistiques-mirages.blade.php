@@ -1,6 +1,6 @@
 <div>
     <div class="mb-xs flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Statistiques des Mirages</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="fact_check" class="text-[24px]" />Statistiques des Mirages</h1><p class="mt-xs text-xs text-outline">Œufs clairs, gâtés et retenus, taux d'éclosion réel et pertes par lot et par filière.</p></div>
         <div class="flex flex-wrap gap-sm">
             <select wire:model.live="filtreEspece" aria-label="Filtrer par filière" class="rounded-lg border border-outline-variant bg-surface-card px-sm py-sm text-xs">
                 <option value="">Toutes filières</option>
@@ -20,33 +20,33 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" data-bloc="kpi">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Œufs Chargés</p>
-            <p class="text-page-title font-bold" data-kpi="charges">{{ $agregat['charges'] }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Œufs Chargés</span><x-icone nom="egg" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="charges">{{ $agregat['charges'] }}</p>
             <p class="text-caption text-outline">{{ $agregat['lots'] }} lot(s)</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Clairs (J+7)</p>
-            <p class="text-page-title font-bold" data-kpi="clairs">{{ $agregat['clairs'] }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Clairs (J+7)</span><x-icone nom="visibility" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="clairs">{{ $agregat['clairs'] }}</p>
             <p class="text-caption text-outline">Infertilité {{ \App\Support\SuiviIncubation::pourcentage($agregat['infertilite']) }} — reproducteurs</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Gâtés (J+14)</p>
-            <p class="text-page-title font-bold" data-kpi="gates">{{ $agregat['gates'] }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Gâtés (J+14)</span><x-icone nom="warning" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="gates">{{ $agregat['gates'] }}</p>
             <p class="text-caption text-outline">Mortalité embryonnaire {{ \App\Support\SuiviIncubation::pourcentage($agregat['mortalite']) }} — conduite</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Œufs Retenus</p>
-            <p class="text-page-title font-bold" data-kpi="retenus">{{ $agregat['retenus'] }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Œufs Retenus</span><x-icone nom="verified" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="retenus">{{ $agregat['retenus'] }}</p>
             <p class="text-caption text-outline">Après les deux mirages</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Taux d'Éclosion Réel</p>
-            <p class="text-page-title font-bold" data-kpi="ter">{{ \App\Support\SuiviIncubation::pourcentage($agregat['ter']) }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Taux d'Éclosion Réel</span><x-icone nom="percent" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="ter">{{ \App\Support\SuiviIncubation::pourcentage($agregat['ter']) }}</p>
             <p class="text-caption text-outline">Éclos ÷ œufs retenus</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Perte Totale</p>
-            <p class="text-page-title font-bold" data-kpi="perte">{{ \App\Support\SuiviIncubation::pourcentage($agregat['perte']) }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Perte Totale</span><x-icone nom="trending_down" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="perte">{{ \App\Support\SuiviIncubation::pourcentage($agregat['perte']) }}</p>
             <p class="text-caption text-outline">Sur les lots clôturés seulement</p>
         </div>
     </div>
@@ -58,7 +58,7 @@
         </p>
     @endif
 
-    <h2 class="mb-sm text-section-title font-bold">Détail par lot</h2>
+    <h2 class="mb-sm flex items-center gap-xs text-section-title font-bold text-brand-navy"><x-icone nom="receipt_long" class="text-[20px]" />Détail par lot</h2>
     @if ($lots->isEmpty())
         <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucun lot d'incubation ne correspond à ces filtres.</p>
     @else

@@ -236,7 +236,11 @@ class Clients extends Component
             ->filter(fn (array $e) => $e['date']->lessThanOrEqualTo($maintenant->startOfDay()->addDays(self::HORIZON_CRM_JOURS)))
             ->sortBy(fn (array $e) => $e['date'])->values();
 
+        $totauxAchats = Vente::query()->where('status', '!=', 'Annulée')->whereNotNull('client_id')
+            ->selectRaw('client_id, sum(total) as t')->groupBy('client_id')->pluck('t', 'client_id');
+
         return view('livewire.clients', [
+            'totauxAchats' => $totauxAchats,
             'clients' => $clients,
             'nombre' => $tous->count(),
             'soldeTotal' => $tous->sum('solde_creance'),

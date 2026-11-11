@@ -45,7 +45,7 @@ scenario('impressions : toutes les vues imprimables (200, pas d\'erreur, menus a
 
 const EXPORTS = [
   ['/ventes', async (p) => { await p.click('[data-onglet=historique]'); await p.waitForSelector('[data-action=exporter-historique]'); }, '[data-action=exporter-historique]', 'ventes'],
-  ['/clients', null, 'button[wire\\:click=exporterCreances]', 'creances'],
+  ['/clients', async (p) => { await p.click('[data-onglet-client=dettes]'); }, 'button[wire\\:click=exporterCreances]', 'creances'],
   ['/ventes/devis', null, 'button[wire\\:click=exporter]', 'devis'],
   ['/factures-mecef', null, 'button[wire\\:click=exporter]', 'factures'],
   ['/achats', null, 'button[wire\\:click=exporter]', 'achats'],
