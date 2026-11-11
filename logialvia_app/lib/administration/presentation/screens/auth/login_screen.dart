@@ -5,11 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
-import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
-import '../../../../core/widgets/fond_degrade_marque.dart';
 import '../../../../core/widgets/marque_logialvia.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'widgets/banniere_verrouillage.dart';
@@ -25,19 +23,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  /// Largeur a partir de laquelle le visuel de marque apparait (`lg` = 1024 px, comme le web).
+  static const double _largeurDeuxVolets = 1024;
+
+  static const String _visuelConnexion = 'assets/images/login_visuel.webp';
+
   final _identifiantController = TextEditingController();
   final _motDePasseController = TextEditingController();
-
-  /// Bandeau d'icones `grid-cols-7` — login.html l.62-70, ordre exact.
-  static const List<IconData> _iconesModules = [
-    Symbols.egg,
-    Symbols.inventory_2,
-    Symbols.point_of_sale,
-    Symbols.receipt,
-    Symbols.vaccines,
-    Symbols.campaign,
-    Symbols.account_balance,
-  ];
 
   @override
   void initState() {
@@ -119,24 +111,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final vm = context.watch<AuthViewModel>();
 
     return Scaffold(
-      body: FondDegradeMarque(
-        angleDegres: 165,
-        // `background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px,
-        //  transparent 1px); background-size: 26px 26px; opacity: .5;`
-        espacementPoints: 26,
-        couleurPoints: Colors.white.withValues(alpha: 0.06 * 0.5),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Container(
-                padding: const EdgeInsets.all(32), // `lg:p-8`
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: AppRadius.loginCardRadius, // `rounded-2xl`
-                  boxShadow: AppShadows.xxl, // `shadow-2xl`
-                ),
+      backgroundColor: AppColors.surfaceCard,
+      // Connexion en deux volets (maquette `login`, web et poste) : visuel de marque a gauche sur grand ecran,
+      // formulaire a droite ; le bandeau d'icones de modules a ete retire.
+      body: LayoutBuilder(
+        builder: (context, contraintes) {
+          final large = contraintes.maxWidth >= _largeurDeuxVolets;
+          final formulaire = Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(large ? 48 : 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,9 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const _BarreLangueVersion(),
                     const SizedBox(height: 16), // `mb-4`
                     const _EnTeteMarque(),
-                    const SizedBox(height: 20), // `space-y-5`
-                    const _BandeauModules(icones: _iconesModules),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32), // `space-y-8`
                     const _Accroche(),
                     if (vm.verrouille) ...[
                       const SizedBox(height: 20),
@@ -154,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         libelleCompteARebours: vm.libelleVerrouillage,
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
                     _formulaire(vm),
                     const SizedBox(height: 24), // `mt-6`
                     const Divider(height: 1),
@@ -164,8 +147,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-          ),
-        ),
+          );
+          if (!large) return formulaire;
+
+          return Row(
+            children: [
+              Expanded(
+                child: Image.asset(
+                  _visuelConnexion,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.centerLeft,
+                  excludeFromSemantics: true,
+                  errorBuilder: (_, _, _) =>
+                      const ColoredBox(color: AppColors.brandNavyDark),
+                ),
+              ),
+              Expanded(child: formulaire),
+            ],
+          );
+        },
       ),
     );
   }
@@ -394,35 +394,6 @@ class _EnTeteMarque extends StatelessWidget {
   }
 }
 
-class _BandeauModules extends StatelessWidget {
-  const _BandeauModules({required this.icones});
-
-  final List<IconData> icones;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12), // `py-3`
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.outlineVariant),
-          bottom: BorderSide(color: AppColors.outlineVariant),
-        ),
-      ),
-      child: Row(
-        children: [
-          for (final icone in icones)
-            Expanded(
-              child: Center(
-                child: Icon(icone, size: 16, color: AppColors.outline),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Accroche extends StatelessWidget {
   const _Accroche();
 
@@ -460,8 +431,8 @@ class _PiedDePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      '© 2026 LogiALVIA — Projet d\'Appui à l\'Entrepreneuriat au Bénin (PAEB) '
-      '— FAGUEZ SARL',
+      '© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL '
+      '— Conçu par Dr MASSENON Rhodes',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontFamily: AppTypography.fontFamily,

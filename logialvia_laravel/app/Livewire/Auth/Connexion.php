@@ -12,7 +12,7 @@ use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 /** Connexion web : memes regles et memes messages que l'appairage d'un poste. */
-#[Layout('components.layouts.invite', ['sansMarque' => true])]
+#[Layout('components.layouts.connexion')]
 class Connexion extends Component
 {
     #[Validate('required', message: "L'identifiant est obligatoire.")]
