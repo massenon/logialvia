@@ -129,6 +129,15 @@
                     <p class="mt-xs text-[12px] text-outline">{{ $stockCritique['nombre'] === 0 ? 'Aucun intrant sous le seuil d\'alerte' : ($stockCritique['premier'] ?? '').' sous le seuil d\'alerte' }}</p>
                 </div>
             @endif
+            @if ($stockCritique === null && $voirStocks)
+                {{-- Le stock d'intrants est propre à chaque poste : jamais un chiffre inventé ici. --}}
+                <div class="rounded-lg border border-l-4 border-outline-variant border-l-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Stock Critique">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase">Stock Critique</span><x-icone nom="warning" class="text-[18px]" /></div>
+                    <span class="mt-xs block text-lg font-extrabold md:text-2xl">—</span>
+                    <p class="mt-xs text-[12px] font-semibold">Disponible sur le poste</p>
+                    <p class="text-[12px]">Le stock est propre à chaque poste.</p>
+                </div>
+            @endif
             @if ($cheptel !== null)
                 <div class="{{ $carte }} border-l-4 border-l-brand-navy" data-carte="cheptel">
                     <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Effectif Cheptel</span><x-icone nom="pets" class="text-[18px] text-brand-navy" /></div>

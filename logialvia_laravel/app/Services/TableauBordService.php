@@ -207,7 +207,8 @@ class TableauBordService
     // ------------------------------------------------------------------ Transactions
 
     /**
-     * Les 3 dernieres ventes (Dart : `ventesRecentes`) : montant = encaisse si « Avance », sinon total.
+     * Les 3 dernieres ventes (Dart : `ventesRecentes`, dont le libelle est « ref · client » : la ref est ici une cle
+     * a part) : montant = encaisse si « Avance », sinon total.
      *
      * @return list<array{ref: string, libelle: string, montant: float, statut: string|null}>
      */
@@ -216,7 +217,7 @@ class TableauBordService
         return Vente::query()->orderByDesc('date_vente')->limit(3)->get()
             ->map(fn (Vente $v) => [
                 'ref' => (string) $v->reference,
-                'libelle' => $v->reference.' · '.$v->client,
+                'libelle' => (string) $v->client,
                 'montant' => (float) ($v->status === 'Avance' ? $v->paye : $v->total),
                 'statut' => $v->status,
             ])->all();
@@ -235,7 +236,7 @@ class TableauBordService
             ->get(['achats.reference', 'achats.total', 'achats.statut', 'fournisseurs.nom as fournisseur'])
             ->map(fn ($a) => [
                 'ref' => (string) $a->reference,
-                'libelle' => $a->reference.($a->fournisseur !== null ? ' · '.$a->fournisseur : ''),
+                'libelle' => (string) ($a->fournisseur ?? ''),
                 'montant' => (float) $a->total,
                 'statut' => $a->statut,
             ])->all();
@@ -259,7 +260,7 @@ class TableauBordService
         return collect(MoteurComptable::depenses($recentes, $plan))->take(3)
             ->map(fn (array $d) => [
                 'ref' => $d['numero_piece'],
-                'libelle' => $d['numero_piece'].' · '.$d['libelle'],
+                'libelle' => $d['libelle'],
                 'montant' => (float) $d['montant'],
                 'statut' => $d['payee'] ? 'Payée' : 'En attente',
             ])->values()->all();
@@ -544,6 +545,38 @@ class TableauBordService
         }
 
         return $alertes;
+    }
+
+    /**
+     * Alertes de la cloche de la barre du haut, pour un compte : mêmes sources et mêmes droits que le tableau de bord,
+     * avec la route de l'écran concerné. Mises en cache 30 s par compte (la barre est sur chaque page).
+     *
+     * @return list<array{niveau: string, icone: string, texte: string, route: string}>
+     */
+    public function alertesPourCompte(\App\Models\User $utilisateur, ?CarbonImmutable $maintenant = null): array
+    {
+        $maintenant ??= CarbonImmutable::now(config('logialvia.fuseau'));
+
+        return \Illuminate\Support\Facades\Cache::remember('alertes-barre-'.$utilisateur->getKey(), 30, function () use ($utilisateur, $maintenant) {
+            $voirVentes = $utilisateur->can('view-ventes');
+            $voirElevage = $utilisateur->can('view-elevage');
+            if (! $voirVentes && ! $voirElevage) {
+                return [];
+            }
+
+            $couveuse = ['eclosionProchaine' => null];
+            if ($voirElevage) {
+                $couveuse = $this->couveuse($this->lotsCouveuse(), $maintenant);
+            }
+            $soldes = $voirVentes ? \App\Models\Vente::query()->where('status', 'Avance')->count() : 0;
+
+            $routes = ['eclosion' => '/elevage/couveuse', 'solde' => '/clients', 'soin' => '/elevage/soins', 'anniversaire' => '/clients', 'stock' => '/stocks'];
+
+            return array_map(
+                fn (array $a) => $a + ['route' => $routes[$a['icone']] ?? '/dashboard'],
+                $this->alertes($voirVentes, $voirElevage, $couveuse, $soldes, $maintenant),
+            );
+        });
     }
 
     // ------------------------------------------------------------------ Activites

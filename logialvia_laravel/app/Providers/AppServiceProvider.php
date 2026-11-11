@@ -26,6 +26,14 @@ class AppServiceProvider extends ServiceProvider
         // repasse par la verification du compte (`CompteActifWeb`, doc 47u).
         \Livewire\Livewire::addPersistentMiddleware([\App\Http\Middleware\CompteActifWeb::class]);
 
+        // Cloche de la barre du haut : les alertes du compte (mêmes sources et mêmes droits que le tableau de bord).
+        \Illuminate\Support\Facades\View::composer('components.layouts.app', function ($vue) {
+            $utilisateur = \Illuminate\Support\Facades\Auth::user();
+            if ($utilisateur !== null) {
+                $vue->with('alertesBarre', app(\App\Services\TableauBordService::class)->alertesPourCompte($utilisateur));
+            }
+        });
+
         // Connexion d'un poste : 5 tentatives par minute, par identifiant ET adresse.
         RateLimiter::for('connexion-api', function (Request $request) {
             return Limit::perMinute(5)->by(
