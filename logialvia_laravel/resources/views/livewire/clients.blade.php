@@ -32,7 +32,16 @@
         </div>
     </div>
 
-    <h2 class="mb-sm text-section-title font-bold">Clients</h2>
+    <div x-data="{ o: 'liste' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['liste' => ['Liste des Clients', null], 'dettes' => ['Suivi des Soldes', null], 'crm' => ['Gestion des Relances CRM', 'celebration']] as $cle => [$lib, $ico])
+            <button type="button" role="tab" data-onglet-client="{{ $cle }}" x-on:click="o = '{{ $cle }}'" x-bind:aria-selected="o === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="o === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="flex items-center gap-1 whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">@if ($ico)<x-icone :nom="$ico" class="text-[16px]" />@endif{{ $lib }}</button>
+        @endforeach
+    </div>
+    <div x-show="o === 'liste'" data-panneau-client="liste">
+    <h2 class="sr-only">Clients</h2>
     <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Nom ou téléphone…" aria-label="Rechercher un client"
            class="mb-sm w-full rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs sm:max-w-sm">
 
@@ -43,6 +52,7 @@
                     <th class="px-md py-sm">Nom</th>
                     <th class="px-md py-sm">Téléphone</th>
                     <th class="px-md py-sm">Date de Naissance</th>
+                    <th class="px-md py-sm text-right">Total Achats</th>
                     <th class="px-md py-sm text-right">Solde Actuel</th>
                     @if ($peutGerer)<th class="px-md py-sm text-right">Actions</th>@endif
                 </tr>
@@ -53,7 +63,8 @@
                         <td class="px-md py-sm font-bold">{{ $c->nom }}</td>
                         <td class="px-md py-sm">{{ $c->telephone ?: '—' }}</td>
                         <td class="px-md py-sm">{{ $c->date_naissance?->format('d/m/Y') ?? '—' }}</td>
-                        <td class="px-md py-sm text-right {{ $c->solde_creance > 0 ? 'font-bold text-error-deep' : '' }}">
+                        <td class="px-md py-sm text-right">{{ number_format($totauxAchats[$c->id] ?? 0, 0, ',', ' ') }}</td>
+                        <td class="px-md py-sm text-right {{ $c->solde_creance > 0 ? 'font-bold text-error-deep' : 'font-bold text-success-deep' }}">
                             {{ number_format($c->solde_creance, 0, ',', ' ') }} F</td>
                         @if ($peutGerer)
                             <td class="px-md py-sm text-right">
@@ -63,7 +74,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-md py-lg text-center text-outline">Aucun client ne correspond.</td></tr>
+                    <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucun client ne correspond.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -86,7 +97,9 @@
         @endforelse
     </div>
 
-    <h2 class="mb-xs text-section-title font-bold">Créances Ouvertes</h2>
+    </div>
+    <div x-show="o === 'dettes'" x-cloak data-panneau-client="dettes">
+    <h2 class="sr-only">Créances Ouvertes</h2>
     <div class="mb-sm flex flex-wrap items-center gap-sm">
         <p class="text-xs text-outline">Le recouvrement (total ou partiel) passe l'écriture Trésorerie / Clients et recalcule le solde du client.</p>
         @if ($peutExporter)
@@ -101,6 +114,7 @@
                     <th class="px-md py-sm">Client</th>
                     <th class="px-md py-sm">Référence Vente</th>
                     <th class="px-md py-sm text-right">Montant Total</th>
+                    <th class="px-md py-sm text-right">Déjà Réglé</th>
                     <th class="px-md py-sm text-right">Solde Restant Dû</th>
                     <th class="px-md py-sm text-center">Ancienneté</th>
                     <th class="px-md py-sm text-right">Actions</th>
@@ -113,6 +127,7 @@
                         <td class="px-md py-sm font-bold">{{ $v->client }}</td>
                         <td class="px-md py-sm font-mono">{{ $v->reference }}</td>
                         <td class="px-md py-sm text-right">{{ number_format($v->total, 0, ',', ' ') }} F</td>
+                        <td class="px-md py-sm text-right">{{ number_format($v->paye, 0, ',', ' ') }} F</td>
                         <td class="px-md py-sm text-right font-bold text-error-deep">{{ number_format($v->total - $v->paye, 0, ',', ' ') }} F</td>
                         <td class="px-md py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $jours > 10 ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline' }}">{{ $jours }} j</span>
@@ -125,13 +140,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucune créance ouverte.</td></tr>
+                    <tr><td colspan="7" class="px-md py-lg text-center text-outline">Aucune créance ouverte.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <h2 class="mb-sm text-section-title font-bold">Événements CRM à Venir</h2>
+    </div>
+    <div x-show="o === 'crm'" x-cloak data-panneau-client="crm">
+    <h2 class="sr-only">Événements CRM à Venir</h2>
     <div class="overflow-x-auto rounded-lg border border-outline-variant bg-surface-card">
         <table class="w-full text-left text-xs" data-table="crm">
             <thead class="bg-surface-zebra text-caption uppercase text-outline">
@@ -139,22 +156,38 @@
                     <th class="px-md py-sm">Client</th>
                     <th class="px-md py-sm">Type d'Événement</th>
                     <th class="px-md py-sm">Date</th>
+                    <th class="px-md py-sm text-center">Jours Restants</th>
                     <th class="px-md py-sm">Dernier Contact</th>
+                    <th class="px-md py-sm text-right">Action</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($evenements as $e)
                     <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}">
                         <td class="px-md py-sm font-bold">{{ $e['client']->nom }}</td>
-                        <td class="px-md py-sm">Anniversaire</td>
+                        <td class="px-md py-sm"><span class="inline-flex items-center gap-xs rounded-full bg-brand-gold/20 px-sm py-0.5 text-caption font-bold text-brand-navy"><x-icone nom="cake" class="text-[13px]" />Anniversaire</span></td>
                         <td class="px-md py-sm">{{ $e['date']->format('d/m/Y') }}</td>
-                        <td class="px-md py-sm">{{ $e['client']->dernier_contact?->timezone(config('logialvia.fuseau'))->format('d/m/Y') ?? '—' }}</td>
+                        @php($restants = (int) $maintenant->startOfDay()->diffInDays($e['date'], true))
+                        <td class="px-md py-sm text-center font-bold {{ $restants <= 1 ? 'text-error-deep' : 'text-brand-navy' }}">{{ $restants }} jour{{ $restants > 1 ? 's' : '' }}</td>
+                        <td class="px-md py-sm">{{ $e['client']->dernier_contact?->timezone(config('logialvia.fuseau'))->format('d/m/Y') ?? 'Jamais contacté' }}</td>
+                        @php($chiffres = preg_replace('/\D+/', '', (string) $e['client']->telephone))
+                        <td class="px-md py-sm text-right">
+                            @if ($chiffres !== '')
+                                <a href="https://wa.me/{{ $chiffres }}?text={{ rawurlencode('Joyeux anniversaire '.$e['client']->nom.' !') }}" target="_blank" rel="noopener" data-lien="voeux"
+                                   class="inline-flex items-center gap-xs rounded-full bg-success-deep px-sm py-1.5 text-caption font-bold text-white"><x-icone nom="chat" class="text-[15px]" />Envoyer les Vœux</a>
+                            @else
+                                <span class="text-outline">Sans téléphone</span>
+                            @endif
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-md py-lg text-center text-outline">Aucun événement dans les 7 prochains jours.</td></tr>
+                    <tr><td colspan="6" class="px-md py-lg text-center text-outline">Aucun événement dans les 7 prochains jours.</td></tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    </div>
     </div>
 
     @if ($formulaire)

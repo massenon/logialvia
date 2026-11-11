@@ -47,6 +47,7 @@
         <table class="w-full text-left text-xs">
             <thead class="bg-surface-zebra text-caption uppercase text-outline">
                 <tr>
+                    <th class="px-md py-sm">SKU</th>
                     <th class="px-md py-sm">Désignation</th>
                     <th class="px-md py-sm">Catégorie</th>
                     <th class="px-md py-sm">Unité</th>
@@ -59,7 +60,8 @@
             <tbody>
                 @forelse ($produits as $p)
                     <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-produit="{{ $p->sku }}">
-                        <td class="px-md py-sm"><span class="font-bold">{{ $p->name }}</span><br><span class="text-caption text-outline">{{ $p->sku }}</span></td>
+                        <td class="px-md py-sm font-mono">{{ $p->sku }}</td>
+                        <td class="px-md py-sm font-semibold">{{ $p->name }}</td>
                         <td class="px-md py-sm">{{ $p->cat }}</td>
                         <td class="px-md py-sm">{{ $p->unit }}</td>
                         <td class="px-md py-sm text-right font-bold text-brand-navy">
@@ -76,7 +78,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-md py-lg text-center text-outline">Aucun produit ne correspond.</td></tr>
+                    <tr><td colspan="8" class="px-md py-lg text-center text-outline">Aucun produit ne correspond.</td></tr>
                 @endforelse
             </tbody>
         </table>

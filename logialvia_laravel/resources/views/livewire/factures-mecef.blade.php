@@ -1,7 +1,7 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
         <div>
-            <h1 class="text-page-title font-bold">Facturation MeCeF</h1>
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="receipt_long" class="text-[24px]" />Facturation MeCeF</h1>
             <p class="text-xs text-outline">Factures de vente et factures d'avoir, conformité fiscale.</p>
         </div>
         <div class="flex flex-wrap gap-sm">
@@ -9,7 +9,7 @@
                     class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
             @if ($peutGerer)
                 <button type="button" wire:click="ouvrirEmission" data-action="emettre"
-                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Émettre une Facture</button>
+                        class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">Émettre une Facture</button>
             @endif
         </div>
     </div>
@@ -27,23 +27,23 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Facturé Net</p>
-            <p class="text-page-title font-bold" data-kpi="net">{{ number_format($factureNet, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Facturé Net</span><x-icone nom="payments" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="net">{{ number_format($factureNet, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
             <p class="text-caption text-outline">Factures de vente moins avoirs</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">À Transmettre</p>
-            <p class="text-page-title font-bold" data-kpi="a-transmettre">{{ $aTransmettre }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">À Transmettre</span><x-icone nom="send" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="a-transmettre">{{ $aTransmettre }}</p>
             <p class="text-caption text-outline">Non encore normalisées</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Normalisées</p>
-            <p class="text-page-title font-bold" data-kpi="normalisees">{{ $normalisees }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Normalisées</span><x-icone nom="verified" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="normalisees">{{ $normalisees }}</p>
             <p class="text-caption text-outline">Code MeCeF reçu de la DGI</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Rejetées</p>
-            <p class="text-page-title font-bold" data-kpi="rejetees">{{ $rejetees }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Rejetées</span><x-icone nom="block" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="rejetees">{{ $rejetees }}</p>
             <p class="text-caption text-outline">Transmission refusée</p>
         </div>
     </div>
@@ -69,7 +69,7 @@
     @endphp
 
     <section class="rounded-lg border border-outline-variant bg-surface-card" aria-labelledby="titre-liste">
-        <h2 id="titre-liste" class="border-b border-outline-variant px-md py-sm text-section-title font-bold">Factures et avoirs</h2>
+        <h2 id="titre-liste" class="flex items-center gap-xs border-b border-outline-variant px-md py-sm text-section-title font-bold text-brand-navy"><x-icone nom="description" class="text-[20px]" />Factures et avoirs</h2>
 
         @if ($factures->isEmpty())
             <p class="p-lg text-center text-xs text-outline" data-vide>

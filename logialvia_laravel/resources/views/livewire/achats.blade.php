@@ -75,10 +75,10 @@
                     <th class="px-sm py-sm">Référence</th>
                     <th class="px-sm py-sm">Date</th>
                     <th class="px-sm py-sm">Fournisseur</th>
+                    <th class="px-sm py-sm text-right">Montant</th>
                     <th class="px-sm py-sm">Mode</th>
                     <th class="px-sm py-sm text-center">Statut</th>
                     <th class="px-sm py-sm">Poste de stock</th>
-                    <th class="px-sm py-sm text-right">Montant</th>
                     <th class="px-sm py-sm text-right">Payé</th>
                     <th class="px-sm py-sm text-right">Solde Dû</th>
                     <th class="px-sm py-sm text-center">Ancienneté</th>
@@ -95,6 +95,7 @@
                         <td class="px-sm py-sm font-bold font-mono text-brand-navy">{{ $a->reference }}</td>
                         <td class="px-sm py-sm">{{ $a->date_achat->timezone($fuseau)->format('d/m/Y') }}</td>
                         <td class="px-sm py-sm">{{ $noms[$a->fournisseur_id] ?? '—' }}</td>
+                        <td class="px-sm py-sm text-right font-bold">{{ $nombre($a->total) }}</td>
                         <td class="px-sm py-sm">{{ $a->mode ?: '—' }}</td>
                         <td class="px-sm py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $a->statut === 'Livré' ? 'bg-success-container text-success-deep' : ($a->statut === 'Annulé' ? 'bg-error-container text-error-deep' : 'bg-brand-gold/20 text-brand-navy') }}" data-statut>{{ $a->statut }}</span>
@@ -104,7 +105,6 @@
                             <span class="rounded-full px-sm py-xs font-semibold {{ in_array($sv['etat'], ['applique'], true) ? 'bg-success-container text-success-deep' : (in_array($sv['etat'], ['avertissement', 'ignore', 'revoque'], true) ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline') }}">{{ $sv['libelle'] }}</span>
                             @if ($sv['avertissement'])<br><span class="text-caption text-error-deep" data-avertissement-stock>{{ $sv['avertissement'] }}</span>@endif
                         </td>
-                        <td class="px-sm py-sm text-right">{{ $nombre($a->total) }}</td>
                         <td class="px-sm py-sm text-right">{{ $nombre($a->paye) }}</td>
                         <td class="px-sm py-sm text-right {{ $solde > 0 ? 'font-bold text-error-deep' : 'text-outline' }}" data-solde>
                             {{ $solde > 0 ? $nombre($solde).' F' : 'Soldée' }}</td>

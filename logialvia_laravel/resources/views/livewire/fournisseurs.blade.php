@@ -38,7 +38,16 @@
         </div>
     </div>
 
-    <h2 class="mb-sm text-section-title font-bold">Fournisseurs</h2>
+    <div x-data="{ o: 'fiches' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['fiches' => 'Fiches Fournisseurs', 'dettes' => 'Dettes Fournisseurs'] as $cle => $lib)
+            <button type="button" role="tab" data-onglet-fournisseur="{{ $cle }}" x-on:click="o = '{{ $cle }}'" x-bind:aria-selected="o === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="o === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">{{ $lib }}</button>
+        @endforeach
+    </div>
+    <div x-show="o === 'fiches'" data-panneau-fournisseur="fiches">
+    <h2 class="sr-only">Fournisseurs</h2>
     <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Nom, téléphone ou produits fournis…" aria-label="Rechercher un fournisseur"
            class="mb-sm w-full rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs sm:max-w-sm">
 
@@ -103,7 +112,9 @@
         @endforelse
     </div>
 
-    <h2 class="mb-xs text-section-title font-bold">Dettes Fournisseurs</h2>
+    </div>
+    <div x-show="o === 'dettes'" x-cloak data-panneau-fournisseur="dettes">
+    <h2 class="sr-only">Dettes Fournisseurs</h2>
     @if ($peutGerer)
         <p class="mb-sm text-xs text-outline">« Régler » enregistre un versement (borné au reste dû) et passe l'écriture 401 / trésorerie.</p>
     @endif
@@ -169,6 +180,9 @@
     @endif
 
     @include('livewire.achats._reglement')
+
+    </div>
+    </div>
 
     @if ($formulaire)
         <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-fournisseur">
