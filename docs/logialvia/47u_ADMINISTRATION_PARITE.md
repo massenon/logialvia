@@ -46,7 +46,7 @@ Au serveur, « supprimé » est une **pierre tombale** : `supprime_le` (clients,
 
 - **Sauvegardes** : le web télécharge une sauvegarde **logique** (JSON, toutes les tables métier, jamais `password`, `remember_token`, jetons, sessions, cache, files). Ce n'est pas une copie de la base et **le web ne la restaure pas** ; la copie / restauration / vérification de base reste au poste ; la sauvegarde de la base du serveur relève de l'hébergement.
 - **Données de Test** : **poste seulement** (remise à zéro et jeu d'essai sous verrou). Le mode « Données de Test » est affiché, non modifiable au web.
-- **Logo / favicon** : le Dart ne permet pas non plus le dépôt (chemins propres à la machine, écart délibéré Doc F8). Le web ne l'offre donc pas ; la section le dit.
+- **Logo / favicon** : le **poste** les reçoit (Paramètres Généraux > Logo / Favicon : champ de saisie du chemin, `ServiceImagesEntreprise` : type réel vérifié par signature, 2 Mo / 512 Ko, copie dans le dossier du poste sous un nom régénéré, Doc I3 §2) ; ce sont des fichiers propres à la machine, **non synchronisés**. Le web ne les offre donc pas ; la section le dit. Utilisation par les documents imprimés : avec Doc E9.
 - **Rôles** : le web attribue les **quatre** rôles (admin, comptable, agent de vente, agent d'élevage), comme le demande le client (DV-07). Le Dart, lui, n'attribue que agent de vente et agent d'élevage depuis son écran et réserve `admin` au compte initial (voir D1).
 - Jeton e-MECeF et mot de passe SMTP : toujours jamais affichés ni saisis au web.
 

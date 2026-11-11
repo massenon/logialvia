@@ -189,8 +189,8 @@
                 <section class="rounded-lg border border-outline-variant bg-surface-card p-md">
                     <h2 class="mb-sm text-section-title font-bold">Logo / Favicon</h2>
                     <p class="text-xs text-outline">
-                        Le poste ne permet pas non plus de déposer le logo ni le favicon (le dépôt viendra avec le module d'impression, Doc E9) :
-                    le web ne l'offre donc pas non plus, et le fichier choisi sur un poste est un chemin propre à cette machine.
+                        Le logo et le favicon se renseignent au poste (Paramètres Généraux &gt; Logo / Favicon) : le fichier est copié dans le dossier
+                        du poste et reste propre à cette machine. Le web ne les offre donc pas : ils ne sont pas synchronisés avec le serveur.
                     </p>
                 </section>
             </fieldset>

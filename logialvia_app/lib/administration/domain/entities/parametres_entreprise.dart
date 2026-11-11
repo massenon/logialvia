@@ -16,6 +16,8 @@ class ParametresEntrepriseModele {
     this.smtpSecurite,
     this.delaiPaiementJours,
     this.modeDonneesTest = false,
+    this.cheminLogo,
+    this.cheminFavicon,
   });
 
   final String raisonSociale;
@@ -49,6 +51,11 @@ class ParametresEntrepriseModele {
   /// Autorise l'onglet « Données de Test ». Faux par défaut — voir la table.
   final bool modeDonneesTest;
 
+  /// Logo et favicon : des chemins de fichiers **de ce poste** (copies faites par
+  /// `ServiceImagesEntreprise`), jamais synchronisés.
+  final String? cheminLogo;
+  final String? cheminFavicon;
+
   /// **BR-ADM-004** : le module MeCeF (Machine Électronique Certifiée
   /// Fiscalement, dispositif réglementaire béninois) n'est activable que si
   /// l'IFU **et** le RCCM sont renseignés — Doc F8 Onglet 2, Doc B6.
@@ -74,6 +81,8 @@ class ParametresEntrepriseModele {
     String? smtpSecurite,
     int? delaiPaiementJours,
     bool? modeDonneesTest,
+    Object? cheminLogo = _inchange,
+    Object? cheminFavicon = _inchange,
   }) {
     return ParametresEntrepriseModele(
       raisonSociale: raisonSociale ?? this.raisonSociale,
@@ -91,6 +100,15 @@ class ParametresEntrepriseModele {
       smtpSecurite: smtpSecurite ?? this.smtpSecurite,
       delaiPaiementJours: delaiPaiementJours ?? this.delaiPaiementJours,
       modeDonneesTest: modeDonneesTest ?? this.modeDonneesTest,
+      // `null` explicite = retirer l'image ; absent = inchangé.
+      cheminLogo: identical(cheminLogo, _inchange)
+          ? this.cheminLogo
+          : cheminLogo as String?,
+      cheminFavicon: identical(cheminFavicon, _inchange)
+          ? this.cheminFavicon
+          : cheminFavicon as String?,
     );
   }
 }
+
+const Object _inchange = Object();
