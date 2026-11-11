@@ -37,7 +37,7 @@
     <div class="mb-lg flex flex-col gap-md">
         <div class="flex flex-wrap items-center justify-between gap-sm">
             <div>
-                <h2 class="text-xl font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h2>
+                <h1 class="text-xl font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h1>
                 <p class="text-xs text-outline">Rapport généré le {{ $maintenant->format('d/m/Y') }} à {{ $maintenant->format('H:i') }} · ALLMANY ET COMPAGNIE</p>
             </div>
             <div class="flex w-full flex-col items-stretch gap-xs sm:w-auto sm:flex-row sm:items-center">

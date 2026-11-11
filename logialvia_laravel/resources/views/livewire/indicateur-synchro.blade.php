@@ -9,7 +9,7 @@
         <x-icone :nom="$icone" class="text-[22px]" />
     </button>
 
-    <div x-show="ouvert" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="ouvert = false" role="dialog" aria-modal="true" aria-labelledby="titre-synchro">
+    <div x-show="ouvert" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="ouvert = false" x-bind:role="ouvert ? 'dialog' : false" x-bind:aria-modal="ouvert ? 'true' : false" aria-labelledby="titre-synchro">
         <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
             <div class="mb-4 flex items-center justify-between">
                 <h3 id="titre-synchro" class="flex items-center gap-xs text-lg font-bold text-brand-navy"><x-icone nom="cloud_sync" class="text-[22px]" />Synchronisation des postes</h3>

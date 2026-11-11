@@ -214,7 +214,7 @@
             </button>
             <div x-show="acces" x-cloak @click="acces = false" class="fixed inset-0 z-[65] bg-black/40 print:hidden"></div>
             <div x-show="acces" x-cloak x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-                 class="fixed right-0 top-0 z-[70] flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl print:hidden" role="dialog" aria-label="Accès rapide">
+                 class="fixed right-0 top-0 z-[70] flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl print:hidden" x-bind:role="acces ? 'dialog' : false" x-bind:aria-modal="acces ? 'true' : false" aria-label="Accès rapide">
                 <div class="flex items-center justify-between border-b border-outline-variant bg-brand-navy px-md py-md">
                     <span class="flex items-center gap-xs text-sm font-bold text-white"><x-icone nom="apps" class="text-[20px] text-brand-gold" />Accès Rapide</span>
                     <button type="button" @click="acces = false" aria-label="Fermer" class="text-white/80 hover:text-white"><x-icone nom="close" /></button>

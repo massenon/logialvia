@@ -85,7 +85,7 @@
     </div>
 
     {{-- Modale « Mot de passe oublié » : meme texte que le poste (aucun envoi d'e-mail n'existe). --}}
-    <div x-show="oubli" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="oubli = false" role="dialog" aria-modal="true" aria-labelledby="titre-oubli">
+    <div x-show="oubli" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="oubli = false" x-bind:role="oubli ? 'dialog' : false" x-bind:aria-modal="oubli ? 'true' : false" aria-labelledby="titre-oubli">
         <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
             <div class="mb-4 flex items-center justify-between">
                 <h3 id="titre-oubli" class="text-lg font-bold text-brand-navy">Mot de passe oublié</h3>
