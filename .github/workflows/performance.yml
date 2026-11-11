@@ -40,11 +40,13 @@ jobs:
       - run: npm ci
       - run: npm ci
         working-directory: logialvia_laravel/e2e/performance
-      - name: Chromium (Playwright)
-        working-directory: logialvia_laravel/e2e/performance
+      # Chrome est déjà installé sur le runner : pas de téléchargement ni d'`apt` (le réseau du runner refuse parfois les miroirs Ubuntu).
+      - name: Chrome du runner
         run: |
-          npx playwright install --with-deps chromium
-          echo "CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME" || { echo "Aucun Chrome sur le runner"; exit 1; }
+          "$CHROME" --version
+          echo "CHROME_PATH=$CHROME" >> "$GITHUB_ENV"
 
       - run: cp .env.example .env && php artisan key:generate
       - name: Mesure (base jetable, serveur local, comptes d'essai)
