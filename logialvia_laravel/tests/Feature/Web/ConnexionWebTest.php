@@ -9,7 +9,6 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -25,7 +24,6 @@ class ConnexionWebTest extends TestCase
         parent::setUp();
         $this->withoutVite();
         $this->seed(RolesAndPermissionsSeeder::class);
-        RateLimiter::clear('');
     }
 
     private function compte(array $attributs = []): User
@@ -134,20 +132,18 @@ class ConnexionWebTest extends TestCase
             ->assertSee('Le mot de passe est obligatoire.');
     }
 
-    public function test_la_connexion_web_est_limitee_a_cinq_par_minute(): void
+    public function test_la_connexion_web_n_est_jamais_bloquee_apres_des_echecs(): void
     {
         $this->compte();
         $page = Livewire::test(Connexion::class)->set('identifiant', 'marie');
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 12; $i++) {
             $page->set('password', 'faux-'.$i)->call('connecter');
+            $this->assertSame('Identifiant ou mot de passe incorrect.', $page->get('erreur'));
         }
 
-        $page->set('password', self::MOT_DE_PASSE)->call('connecter');
-
-        $this->assertStringContainsString('Trop de tentatives', $page->get('erreur'));
-        // Meme avec le BON mot de passe : la limite protege la devinette.
-        $this->assertGuest();
+        $page->set('password', self::MOT_DE_PASSE)->call('connecter')->assertRedirect('/');
+        $this->assertAuthenticated();
     }
 
     public function test_un_connecte_n_est_plus_renvoye_vers_la_connexion(): void

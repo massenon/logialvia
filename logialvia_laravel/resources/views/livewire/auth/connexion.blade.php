@@ -35,7 +35,7 @@
 
         @if ($erreur)
             <div role="alert" class="flex items-center gap-2 rounded-lg border border-error-deep/30 bg-error-container px-4 py-2 text-xs text-error-deep">
-                <span class="icone text-[18px]">{!! str_starts_with($erreur, 'Trop de tentatives') ? '&#xef57;' : '&#xe899;' !!}</span>
+                <span class="icone text-[18px]">&#xe899;</span>
                 <span>{{ $erreur }}</span>
             </div>
         @endif
@@ -45,7 +45,7 @@
                 <label for="identifiant" class="mb-1 block text-[12px] font-bold tracking-wider text-brand-navy">NOM D'UTILISATEUR OU EMAIL</label>
                 <div class="relative">
                     <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xf0d3;</span>
-                    <input id="identifiant" type="text" wire:model="identifiant" autocomplete="username" autofocus placeholder="admin"
+                    <input id="identifiant" type="text" wire:model="identifiant" autocomplete="username" autofocus placeholder="Entrez votre nom d'utilisateur"
                            class="h-11 w-full rounded-lg border border-outline-variant py-2.5 pl-11 pr-4 text-xs outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('identifiant') border-error-deep bg-error-container @enderror">
                 </div>
                 @error('identifiant') <p class="mt-0.5 text-invalid text-error-deep">{{ $message }}</p> @enderror
@@ -55,7 +55,7 @@
                 <label for="password" class="mb-1 block text-[12px] font-bold tracking-wider text-brand-navy">MOT DE PASSE</label>
                 <div class="relative">
                     <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xe899;</span>
-                    <input id="password" wire:model="password" autocomplete="current-password" x-bind:type="voir ? 'text' : 'password'" type="password"
+                    <input id="password" wire:model="password" autocomplete="current-password" placeholder="Entrez votre mot de passe" x-bind:type="voir ? 'text' : 'password'" type="password"
                            class="h-11 w-full rounded-lg border border-outline-variant py-2.5 pl-11 pr-11 text-xs outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('password') border-error-deep bg-error-container @enderror">
                     <button type="button" @click="voir = !voir" x-bind:aria-label="voir ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-brand-navy">

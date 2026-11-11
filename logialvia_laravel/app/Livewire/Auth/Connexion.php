@@ -7,7 +7,6 @@ use App\Support\Audit;
 use App\Livewire\Aide;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -44,25 +43,17 @@ class Connexion extends Component
         $this->validate();
         $this->erreur = null;
 
-        // 5 tentatives par minute, par identifiant ET adresse (comme l'API).
-        $cle = 'connexion-web|'.mb_strtolower($this->identifiant).'|'.request()->ip();
-        if (RateLimiter::tooManyAttempts($cle, 5)) {
-            $this->erreur = 'Trop de tentatives. Réessayez dans '.RateLimiter::availableIn($cle).' secondes.';
-
-            return;
-        }
-
+        // DECISION CLIENT (2026-11-11) : aucune limite d'essais sur la connexion web (comme au poste).
+        // Les echecs restent journalises par AuthentificationService.
         $resultat = $authentification->verifier($this->identifiant, $this->password, request()->ip());
 
         if ($resultat['utilisateur'] === null) {
-            RateLimiter::hit($cle, 60);
             $this->erreur = $resultat['erreur'];
             $this->password = '';
 
             return;
         }
 
-        RateLimiter::clear($cle);
         // Retenu seulement apres une connexion REUSSIE : memoriser un identifiant refuse le reproposerait en boucle.
         $this->souvenir
             ? Cookie::queue('lv_identifiant', $resultat['utilisateur']->username, 60 * 24 * 365)
