@@ -373,7 +373,7 @@ class ConfigurationsEspeces {
   static const ConfigurationEspece bovins = ConfigurationEspece(
     identifiant: 'bovins',
     libelle: 'Bovins',
-    icone: 'agriculture',
+    icone: 'grass',
     route: '/elevage/bovins',
     categories: [
       CategorieEspece(

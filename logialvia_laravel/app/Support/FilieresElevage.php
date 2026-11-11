@@ -89,7 +89,7 @@ final class FilieresElevage
                 'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés (Éclosions)',
             ],
             'bovins' => [
-                'libelle' => 'Bovins', 'icone' => 'agriculture', 'route' => '/elevage/bovins',
+                'libelle' => 'Bovins', 'icone' => 'grass', 'route' => '/elevage/bovins',
                 'categories' => [
                     ['Veau', 1500, true, false],
                     ['Embouche', 7000, false, true],

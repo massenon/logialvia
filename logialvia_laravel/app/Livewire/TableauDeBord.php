@@ -5,7 +5,10 @@ namespace App\Livewire;
 use App\Models\Achat;
 use App\Models\Client;
 use App\Models\LigneVente;
+use App\Models\ModuleActif;
 use App\Models\Vente;
+use App\Services\Comptabilite\LivreComptable;
+use App\Services\TableauBordService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -16,10 +19,11 @@ use Livewire\Component;
  * `tableau_bord_repository_drift.dart`) — LECTURE SEULE.
  *
  * Le web n'affiche que ce que le serveur calcule depuis ses tables synchronisees (ventes, lignes,
- * produits, clients, achats). Tresorerie, depenses, resultat net, cheptel, couveuse, stock critique,
- * alertes et rappels veterinaires n'existent pas ici : leurs cartes restent grisees
- * « Disponible sur le poste » — jamais un chiffre invente. Chaque carte n'est montree que si le
- * compte a le droit de la donnee (le Dart, mono-poste, n'a pas ce filtre).
+ * produits, clients, achats, ecritures comptables, fiches d'elevage, couveuse, soins, journal d'audit).
+ * Les calculs d'elevage, de comptabilite et d'alertes vivent dans `TableauBordService`. Chaque cle
+ * vaut `null` quand le compte n'a pas le droit de la donnee (le Dart, mono-poste, n'a pas ce filtre)
+ * ou quand la donnee n'existe pas sur le serveur : `stockCritique` (le STOCK des intrants est propre
+ * a chaque poste, jamais synchronise) — jamais un chiffre invente.
  */
 #[Layout('components.layouts.app')]
 class TableauDeBord extends Component
@@ -141,19 +145,32 @@ class TableauDeBord extends Component
             'voirElevage' => $this->peut('view-elevage'),
         ];
 
-        if ($donnees['voirVentes']) {
-            // Periode invalide : on retombe sur le mois en cours (et on le dit) plutot que d'inventer un zero.
-            $d = $periodeValide ? $debut->startOfDay() : $maintenant->startOfMonth();
-            $f = $periodeValide ? $fin->endOfDay() : $maintenant->endOfDay();
+        // Periode invalide : on retombe sur le mois en cours (et on le dit) plutot que d'inventer un zero.
+        $d = $periodeValide ? $debut->startOfDay() : $maintenant->startOfMonth();
+        $f = $periodeValide ? $fin->endOfDay() : $maintenant->endOfDay();
 
+        $service = app(TableauBordService::class);
+
+        // Cles ajoutees : `null` tant que le droit manque (ou que la donnee n'existe pas sur le serveur).
+        $donnees += [
+            'tresorerie' => null, 'depenses' => null, 'resultatNet' => null, 'stockCritique' => null,
+            'cheptel' => null, 'couveuse' => null, 'filieres' => null, 'alertes' => null,
+            'jours' => null, 'moisDepenses' => null, 'activites' => null, 'transactions' => null,
+        ];
+
+        $caPeriode = null;
+        $encoursNombre = 0;
+
+        if ($donnees['voirVentes']) {
             $donnees['ca'] = $this->chiffreAffaires($d, $f);
+            $caPeriode = $donnees['ca']['total'];
             $donnees['meilleures'] = $this->meilleuresVentes($d, $f);
             $donnees['clients'] = Client::query()->whereNull('supprime_le')->count();
 
             // Soldes restant dus : TOUTES les ventes `Avance` (sans filtre de date), total - paye.
             $avances = Vente::query()->where('status', 'Avance')->get(['total', 'paye']);
             $donnees['encours'] = $avances->sum(fn (Vente $v) => $v->total - $v->paye);
-            $donnees['encoursNombre'] = $avances->count();
+            $donnees['encoursNombre'] = $encoursNombre = $avances->count();
 
             // Revenu de la semaine : 7 jours glissants jusqu'a maintenant.
             $donnees['semaine'] = $this->chiffreAffaires($maintenant->subDays(7), $maintenant)['total'];
@@ -179,6 +196,56 @@ class TableauDeBord extends Component
                 ->filter(fn (Achat $a) => $a->total - $a->paye > 0);
             $donnees['dettes'] = $achats->sum(fn (Achat $a) => $a->total - $a->paye);
             $donnees['dettesNombre'] = $achats->count();
+        }
+
+        // Comptabilite : UN SEUL chargement du livre (toutes les pieces des postes), relu en memoire.
+        $courantes = null;
+        if ($donnees['voirComptabilite']) {
+            $livre = LivreComptable::toutes();
+            $courantes = $service->ecrituresCourantes($livre);
+
+            $donnees['tresorerie'] = $service->tresorerie($livre, $maintenant);
+            $donnees['depenses'] = $service->depenses($courantes, $d, $f);
+            $donnees['resultatNet'] = $service->resultatNet($courantes, $d, $f, $caPeriode);
+            $donnees['moisDepenses'] = $service->depensesParMois(
+                $courantes,
+                array_map(fn (int $i) => $maintenant->startOfMonth()->subMonthsNoOverflow($i)->format('Y-m'), range(5, 0)),
+            );
+        }
+
+        if ($donnees['voirVentes']) {
+            $donnees['jours'] = $service->jours($maintenant, $courantes);
+        }
+
+        if ($donnees['voirElevage']) {
+            $modules = ModuleActif::query()->pluck('is_actif', 'module_id')->map(fn ($v) => (bool) $v)->all();
+            $elevage = $service->cheptelEtFilieres($service->especesActives($modules), $maintenant);
+            $donnees['cheptel'] = $elevage['cheptel'];
+            $donnees['filieres'] = $elevage['filieres'];
+
+            $lots = $service->lotsCouveuse();
+            $donnees['couveuse'] = $service->couveuse($lots, $maintenant);
+        }
+
+        // Alertes : chaque source n'est lue que si le compte a le droit de sa donnee.
+        if ($donnees['voirVentes'] || $donnees['voirElevage']) {
+            $donnees['alertes'] = $service->alertes(
+                $donnees['voirVentes'], $donnees['voirElevage'],
+                $donnees['couveuse'] ?? ['eclosionProchaine' => null], $encoursNombre, $maintenant,
+            );
+        }
+
+        // Fil d'activite = journal d'audit du serveur : meme droit que son ecran (`manage-users`).
+        if ($this->peut('manage-users')) {
+            $donnees['activites'] = $service->activites($maintenant);
+        }
+
+        if ($donnees['voirVentes'] || $donnees['voirAchats'] || $donnees['voirComptabilite']) {
+            $donnees['transactions'] = [
+                'ventes' => $donnees['voirVentes'] ? $service->ventesRecentes() : [],
+                'achats' => $donnees['voirAchats'] ? $service->achatsRecents() : [],
+                'depenses' => $courantes !== null ? $service->depensesRecentes($courantes, (int) $maintenant->year) : [],
+            ];
         }
 
         return view('livewire.tableau-de-bord', $donnees)->title('Tableau de Bord');

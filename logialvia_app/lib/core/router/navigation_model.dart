@@ -108,7 +108,7 @@ class NavigationModel {
         ),
         EntreeNavigation(
           libelle: 'Fiche Bovins',
-          icone: Symbols.agriculture,
+          icone: Symbols.grass,
           route: '/elevage/bovins',
           moduleId: 'bovins',
         ),

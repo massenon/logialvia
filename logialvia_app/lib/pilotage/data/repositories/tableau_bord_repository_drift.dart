@@ -73,7 +73,7 @@ class TableauBordRepositoryDrift implements TableauBordRepository {
     'pintades': 'pets',
     'lapins': 'cruelty_free',
     'escargots': 'eco',
-    'bovins': 'agriculture',
+    'bovins': 'grass',
     'poulets': 'egg_alt',
     'pondeuses': 'egg_alt',
     'poissons-chats': 'set_meal',

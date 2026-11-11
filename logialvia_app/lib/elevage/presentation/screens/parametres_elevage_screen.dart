@@ -2129,7 +2129,7 @@ class _OngletNumerotation extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 _GroupeNumerotation(
                   titre: 'Élevage bovin (Bovins)',
-                  icone: Symbols.agriculture,
+                  icone: Symbols.grass,
                   champs: [
                     _ChampPrefixe(
                       libelle: 'Préfixe Parc',

@@ -4,7 +4,7 @@
 account_balance
 account_balance_wallet
 account_circle
-agriculture
+grass
 apps
 bar_chart
 balance
