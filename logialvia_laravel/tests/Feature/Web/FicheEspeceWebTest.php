@@ -143,13 +143,13 @@ class FicheEspeceWebTest extends TestCase
 
     public function test_les_sept_routes_ouvrent_leur_filiere_quand_leur_module_est_actif(): void
     {
-        $this->activer('cuniculture', 'pisciculture', 'heliciculture', 'bovins', 'aviculture_classique');
+        $this->activer('cuniculture', 'pisciculture', 'heliciculture', 'ovins', 'aviculture_classique');
         $u = $this->animalier();
 
         foreach ([
             '/elevage/goliaths' => 'Fiche Goliaths', '/elevage/pintades' => 'Fiche Pintades', '/elevage/lapins' => 'Fiche Lapins',
             '/elevage/poissons-chats' => 'Fiche Poissons-Chats', '/elevage/escargots' => 'Fiche Escargots',
-            '/elevage/bovins' => 'Fiche Bovins', '/elevage/poulets-pondeuses' => 'Fiche Poulets',
+            '/elevage/ovins' => 'Fiche Ovins', '/elevage/poulets-pondeuses' => 'Fiche Poulets',
         ] as $route => $titre) {
             $this->actingAs($u)->get($route)->assertOk()->assertSee($titre);
         }
@@ -158,7 +158,7 @@ class FicheEspeceWebTest extends TestCase
     public function test_une_filiere_dont_le_module_est_inactif_repond_404(): void
     {
         $u = $this->animalier();
-        foreach (['/elevage/lapins', '/elevage/poissons-chats', '/elevage/escargots', '/elevage/bovins', '/elevage/poulets-pondeuses'] as $route) {
+        foreach (['/elevage/lapins', '/elevage/poissons-chats', '/elevage/escargots', '/elevage/ovins', '/elevage/poulets-pondeuses'] as $route) {
             $this->actingAs($u)->get($route)->assertNotFound();
         }
         $this->actingAs($u)->get('/elevage/goliaths')->assertOk();
@@ -227,7 +227,7 @@ class FicheEspeceWebTest extends TestCase
         $c = $this->fiche($this->animalier())->assertSee('Historique du Mois — Novembre 2026');
         $html = $c->html();
 
-        $this->assertMatchesRegularExpression('#data-jour="5".*?05/11.*?>12<.*?>3<.*?>1<.*?>3<.*?>4<.*?>40<#s', $html);
+        $this->assertMatchesRegularExpression('#data-jour="5".*?05/11.*?>12<.*?>3<.*?>3<.*?>1<.*?>4<.*?>40<#s', $html);
         $this->assertMatchesRegularExpression('#data-jour="6".*?06/11.*?—.*?—.*?—.*?—.*?—.*?—#s', $html);
         $this->assertSame(30, substr_count($html, 'data-jour="'));
     }
