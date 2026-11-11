@@ -165,7 +165,7 @@
                 @forelse ($evenements as $e)
                     <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}">
                         <td class="px-md py-sm font-bold">{{ $e['client']->nom }}</td>
-                        <td class="px-md py-sm"><span class="inline-flex items-center gap-xs rounded-full bg-brand-gold/20 px-sm py-0.5 text-caption font-bold text-brand-navy"><x-icone nom="cake" class="text-[13px]" />Anniversaire</span></td>
+                        <td class="px-md py-sm"><span class="inline-flex items-center gap-xs rounded-full bg-brand-gold/20 px-sm py-0.5 text-caption font-bold text-brand-navy"><x-icone nom="cake" class="text-[15px]" />Anniversaire</span></td>
                         <td class="px-md py-sm">{{ $e['date']->format('d/m/Y') }}</td>
                         @php($restants = (int) $maintenant->startOfDay()->diffInDays($e['date'], true))
                         <td class="px-md py-sm text-center font-bold {{ $restants <= 1 ? 'text-error-deep' : 'text-brand-navy' }}">{{ $restants }} jour{{ $restants > 1 ? 's' : '' }}</td>
