@@ -140,6 +140,11 @@
                             </div>
                         </div>
 
+                        {{-- Synchronisation : état réel des postes appairés (réservé à qui gère les postes). --}}
+                        @can('manage-users')
+                            <livewire:indicateur-synchro />
+                        @endcan
+
                         {{-- Notifications : les alertes critiques du tableau de bord. --}}
                         <details class="relative" data-menu="notifications">
                             <summary class="relative flex cursor-pointer list-none text-outline hover:text-brand-navy" aria-label="Notifications">
