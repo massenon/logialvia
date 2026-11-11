@@ -1,3 +1,31 @@
+# --- Performance du premier chargement (47x_ : LCP < 2 s) --------------------------------------------------
+# Brotli d'abord (mod_brotli), gzip en repli (mod_deflate). Les polices WOFF2 et les images sont deja compressees.
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>
+<IfModule !mod_brotli.c>
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml
+    </IfModule>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType font/woff2 .woff2
+</IfModule>
+
+# Fichiers nommes par empreinte (/build) : cache d'un an, jamais revalide. Polices et icones : 30 jours.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(woff2|png|webmanifest)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteRule ^build/ - [E=LONG_CACHE:1]
+    </IfModule>
+    Header set Cache-Control "public, max-age=31536000, immutable" env=LONG_CACHE
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

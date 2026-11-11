@@ -1,0 +1,59 @@
+name: Performance web
+
+# Garde PWA-PERF (docs/logialvia/47x_PWA_ET_PERFORMANCE.md) : le LCP de la page de connexion et du tableau de bord
+# doit rester < 2 s (Lighthouse desktop + mobile 4G lente, et mesure réelle Playwright). Échoue sinon.
+# Le poids des fichiers (JS <= 300 Ko, CSS <= 100 Ko) est gardé par PerformanceAssetsTest dans le job « laravel ».
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'logialvia_laravel/**'
+      - '.github/workflows/performance.yml'
+  pull_request:
+    paths:
+      - 'logialvia_laravel/**'
+      - '.github/workflows/performance.yml'
+  workflow_dispatch:
+
+jobs:
+  lcp:
+    name: LCP < 2 s (Lighthouse + Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: logialvia_laravel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm ci
+        working-directory: logialvia_laravel/e2e/performance
+      - name: Chromium (Playwright)
+        working-directory: logialvia_laravel/e2e/performance
+        run: |
+          npx playwright install --with-deps chromium
+          echo "CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Mesure (base jetable, serveur local, comptes d'essai)
+        run: LV_SCRIPT=e2e/performance.mjs bash e2e/lancer.sh 8799
+
+      - name: Rapports Lighthouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-performance
+          path: logialvia_laravel/e2e/rapports-performance/*.json
+          if-no-files-found: ignore

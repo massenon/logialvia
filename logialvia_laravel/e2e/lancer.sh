@@ -39,4 +39,4 @@ for _ in $(seq 1 30); do curl -s -o /dev/null "http://127.0.0.1:$PORT/up" && bre
 
 NODE_PATH="${NODE_PATH:-}:/opt/node-tools/node_modules" \
 LV_URL="http://127.0.0.1:$PORT" LV_MDP="$MDP" LV_DB="$DB_DATABASE" LV_DOSSIER="$LV_DOSSIER" \
-  node e2e/executer.mjs "$@"
+  node "${LV_SCRIPT:-e2e/executer.mjs}" "$@"

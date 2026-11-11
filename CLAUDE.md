@@ -39,6 +39,10 @@ dossier temporaire. Régénération volontaire du manuel :
 
 Web : suite navigateur (Playwright, 52 scénarios) : `bash logialvia_laravel/e2e/lancer.sh` (`47n_TESTS_NAVIGATEUR.md`).
 
+Performance web (PWA-PERF, `47x_PWA_ET_PERFORMANCE.md`) : garde LCP < 2 s (Lighthouse + Playwright) :
+`LV_SCRIPT=e2e/performance.mjs bash logialvia_laravel/e2e/lancer.sh` ; mesure d'un serveur en ligne :
+`bash logialvia_laravel/outils/mesure_performance.sh https://domaine`. `PerformanceAssetsTest` : JS ≤ 300 Ko, CSS ≤ 100 Ko.
+
 ## Web (`logialvia_laravel/`)
 
 ```bash

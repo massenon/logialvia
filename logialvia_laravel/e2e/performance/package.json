@@ -1,0 +1,13 @@
+{
+  "name": "logialvia-performance",
+  "private": true,
+  "type": "module",
+  "description": "Garde de performance du premier chargement web (47x_) : Lighthouse + Playwright, LCP < 2 s.",
+  "scripts": {
+    "garde": "node ../performance.mjs"
+  },
+  "devDependencies": {
+    "lighthouse": "^12.8.2",
+    "playwright": "^1.50.0"
+  }
+}

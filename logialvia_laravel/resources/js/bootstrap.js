@@ -1,4 +1,1 @@
-import axios from 'axios';
-window.axios = axios;
-
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+// Rien a initialiser : Livewire utilise `fetch`. (axios n'etait utilise nulle part : retire, ~35 Ko de JS en moins.)

@@ -30,7 +30,7 @@ lignes += ["];", ""]
 (racine / 'config/icones.php').write_text("\n".join(lignes), encoding='utf8')
 
 opts = subset.Options()
-opts.flavor = 'woff'
+opts.flavor = None
 opts.layout_features = ['*']
 opts.notdef_outline = True
 opts.glyph_names = False
@@ -38,6 +38,12 @@ police = subset.load_font(str(lib / 'fonts/MaterialSymbolsOutlined.ttf'), opts)
 s = subset.Subsetter(opts)
 s.populate(unicodes=[int(c, 16) for c in points.values()])
 s.subset(police)
-sortie = racine / 'public/fonts/MaterialSymbolsOutlined-LogiALVIA.woff'
-subset.save_font(police, str(sortie), opts)
+# Instance STATIQUE (remplissage 0, graisse 400, opsz 24, GRAD 0) : le web n'utilise aucun autre axe ;
+# la police variable pesait ~150 Ko, l'instance WOFF2 ~12 Ko (garde de performance LCP < 2 s, 47x_).
+from fontTools.varLib import instancer  # noqa: E402
+
+police = instancer.instantiateVariableFont(police, {'FILL': 0, 'wght': 400, 'GRAD': 0, 'opsz': 24})
+police.flavor = 'woff2'
+sortie = racine / 'public/fonts/MaterialSymbolsOutlined-LogiALVIA.woff2'
+police.save(str(sortie))
 print(f'{len(points)} icones, {sortie.stat().st_size} octets')
