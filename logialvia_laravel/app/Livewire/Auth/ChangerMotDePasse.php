@@ -9,7 +9,7 @@ use Livewire\Component;
 use App\Support\Audit;
 
 /** Changement du mot de passe : obligatoire apres un mot de passe temporaire. */
-#[Layout('components.layouts.invite')]
+#[Layout('components.layouts.connexion')]
 class ChangerMotDePasse extends Component
 {
     public string $actuel = '';

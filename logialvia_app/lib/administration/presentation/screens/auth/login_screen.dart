@@ -443,7 +443,7 @@ class _PiedDePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      '© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL '
+      '© 2026 LogiALVIA — (PAEB)/Cabinet FAGUEZ SARL '
       '— Conçu par Dr MASSENON Rhodes',
       textAlign: TextAlign.center,
       style: TextStyle(

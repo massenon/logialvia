@@ -263,6 +263,70 @@ void main() {
     expect(find.text('Appairer ce poste'), findsOneWidget);
   });
 
+  cas(
+    'jeton refusé : pastille rouge, compte pré-rempli, « Réappairer » mène au formulaire',
+    (t) async {
+      await afficher(t);
+      await saisir(t);
+      await t.tap(find.text('Appairer'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('jeton-actif')), findsOneWidget);
+      expect(find.byKey(const Key('appairage-reappairer')), findsNothing);
+
+      serveur = (_) async => json(401, {'message': 'Non authentifié.'});
+      await t.tap(find.text('Tester la connexion'));
+      await t.pumpAndSettle();
+
+      expect(find.byKey(const Key('jeton-revoque')), findsOneWidget);
+      expect(find.text('Jeton révoqué ou expiré'), findsOneWidget);
+      expect(
+        find.textContaining('Vos saisies sont conservées'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('jeton-actif')), findsNothing);
+      final identifiant = t.widget<TextField>(
+        find.byKey(const Key('appairage-identifiant')),
+      );
+      expect(identifiant.controller!.text, 'gerante', reason: 'dernier compte');
+
+      await t.tap(find.byKey(const Key('appairage-reappairer')));
+      await t.pumpAndSettle();
+      expect(identifiant.focusNode!.hasFocus, isTrue);
+
+      // Un nouvel appairage rétablit le jeton : plus de rouge.
+      serveur = (_) async => json(200, {
+        'token': '2|neuf',
+        'must_change_password': false,
+        'poste': {'id': 'x', 'code': 'P3'},
+      });
+      await t.enterText(
+        find.byKey(const Key('appairage-mot-de-passe')),
+        'secret',
+      );
+      await t.tap(find.text('Appairer'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('jeton-actif')), findsOneWidget);
+      expect(find.byKey(const Key('jeton-revoque')), findsNothing);
+    },
+  );
+
+  cas('déconnexion voulue : jamais de pastille rouge', (t) async {
+    await afficher(t);
+    await saisir(t);
+    await t.tap(find.text('Appairer'));
+    await t.pumpAndSettle();
+
+    await t.tap(find.text('Déconnecter ce poste'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Déconnecter'));
+    await t.pumpAndSettle();
+
+    expect(find.byKey(const Key('jeton-revoque')), findsNothing);
+    expect(find.byKey(const Key('appairage-reappairer')), findsNothing);
+    await t.pump(const Duration(seconds: 10));
+    await t.pumpAndSettle();
+  });
+
   cas('Synchroniser maintenant : envoie les clients et dit le résultat', (
     t,
   ) async {

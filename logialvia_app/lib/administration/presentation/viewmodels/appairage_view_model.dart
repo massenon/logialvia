@@ -60,9 +60,15 @@ class AppairageViewModel extends ChangeNotifier {
   void _surPlanificateur() {
     _notifier();
     if (_planificateur?.enCours ?? true) return;
-    unawaited(
-      _chargerDroits().then((_) => _notifier(), onError: (Object _) {}),
-    );
+    // Une synchronisation vient de finir : un 401 a pu tuer le jeton (pastille rouge,
+    // « Réappairer ») ; on relit donc aussi l'état de l'appairage.
+    unawaited(_actualiserApresCycle().then((_) => _notifier(), onError: (Object _) {}));
+  }
+
+  Future<void> _actualiserApresCycle() async {
+    if (_disposed) return;
+    _etat = await _service.etat();
+    await _chargerDroits();
   }
 
   EtatAppairage? _etat;
