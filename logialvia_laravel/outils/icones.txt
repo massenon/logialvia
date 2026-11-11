@@ -111,3 +111,9 @@ heart_broken
 settings_backup_restore
 add
 groups
+insights
+menu_book
+list_alt
+toggle_on
+block
+check_circle

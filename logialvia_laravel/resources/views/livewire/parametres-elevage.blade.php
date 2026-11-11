@@ -11,7 +11,7 @@
     <div class="mb-md flex gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
         @foreach (['rationnement' => 'Rationnement', 'prophylaxie' => 'Calendriers Prophylaxie', 'provende' => 'Intrants de Provende', 'numerotation' => 'Numérotation Bandes & Sujets'] as $cle => $libelle)
             <button type="button" role="tab" wire:click="choisirOnglet('{{ $cle }}')" aria-selected="{{ $onglet === $cle ? 'true' : 'false' }}"
-                    class="whitespace-nowrap border-b-2 px-md py-sm text-xs font-bold {{ $onglet === $cle ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold {{ $onglet === $cle ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
                 {{ $libelle }}
             </button>
         @endforeach

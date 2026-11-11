@@ -31,9 +31,9 @@
     <section class="mt-md max-w-2xl rounded-lg border border-outline-variant bg-surface-card p-lg" data-section="formulaire">
         <div class="mb-md flex gap-sm" role="tablist" aria-label="Type de message">
             <button type="button" role="tab" wire:click="choisirType('question')" aria-selected="{{ $type === 'question' ? 'true' : 'false' }}"
-                    class="rounded-lg px-md py-sm text-xs font-bold {{ $type === 'question' ? 'bg-brand-navy text-white' : 'border border-outline-variant text-outline' }}">Question générale</button>
+                    class="rounded-lg px-md py-2.5 text-xs font-bold {{ $type === 'question' ? 'bg-brand-navy text-white' : 'border border-outline-variant text-outline' }}">Question générale</button>
             <button type="button" role="tab" wire:click="choisirType('bug')" aria-selected="{{ $type === 'bug' ? 'true' : 'false' }}"
-                    class="rounded-lg px-md py-sm text-xs font-bold {{ $type === 'bug' ? 'bg-brand-navy text-white' : 'border border-outline-variant text-outline' }}">Problème technique</button>
+                    class="rounded-lg px-md py-2.5 text-xs font-bold {{ $type === 'bug' ? 'bg-brand-navy text-white' : 'border border-outline-variant text-outline' }}">Problème technique</button>
         </div>
         <h2 class="mb-sm text-section-title font-bold">{{ $type === 'bug' ? 'Signaler un problème technique' : 'Poser une question générale' }}</h2>
 

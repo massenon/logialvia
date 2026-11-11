@@ -13,7 +13,7 @@
     } elseif ($espece === 'lapins') {
         $entete = ['titre' => 'Fiches Lapins - Cuniculture', 'icone' => 'cruelty_free', 'sous' => 'Fiche de suivi mensuel du cheptel — transcription fidèle du registre de la ferme.'];
     } else {
-        $entete = ['titre' => 'Fiche '.$config['libelle'], 'icone' => 'pets', 'sous' => 'Suivi de croissance — de la naissance à la maturité commerciale, jour après jour.'];
+        $entete = ['titre' => 'Fiche '.$config['libelle'], 'icone' => $config['icone'], 'sous' => 'Suivi de croissance — de la naissance à la maturité commerciale, jour après jour.'];
     }
     $titreSaisie = $oeufs !== null ? 'Saisie Journalière Ponte & Cheptel' : 'Saisie Journalière';
 @endphp
