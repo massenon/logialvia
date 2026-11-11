@@ -58,7 +58,7 @@
                             <td class="px-md py-sm">
                                 @if ($b->confirme)
                                     <span class="font-bold text-success-deep">{{ $b->espece === 'lapins' ? 'Confirmé (Référence Cuniculture)' : 'Validé' }}</span>
-                                @elseif (in_array($b->espece, ['escargots', 'bovins'], true))
+                                @elseif (in_array($b->espece, ['escargots', 'ovins'], true))
                                     <span class="font-bold text-brand-gold">Repère à valider</span>
                                 @else
                                     <span class="font-bold text-brand-gold">Générique (Aviculture, à confirmer)</span>
@@ -104,7 +104,7 @@
                 @endif
             </div>
             <p class="mb-sm text-xs text-outline">
-                Pour les filières rationnées sur le poids vif (bovins, en matière sèche ; poissons-chats, en biomasse) : la provende du jour = pesée totale du lot × taux de la classe du poids moyen. Sans pesée, la fiche retombe sur la ration par tête du tableau ci-dessus.
+                Pour les filières rationnées sur le poids vif (ovins, en matière sèche ; poissons-chats, en biomasse) : la provende du jour = pesée totale du lot × taux de la classe du poids moyen. Sans pesée, la fiche retombe sur la ration par tête du tableau ci-dessus.
             </p>
             @if ($tauxClasses->isEmpty())
                 <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucune classe de poids : la provende se calcule par tête.</p>
@@ -269,7 +269,7 @@
                 'Cuniculture (Lapins)' => [['cage', 'Préfixe Cage', 'cage'], ['bande', 'Préfixe Bande', 'bande']],
                 'Pisciculture (Poissons-Chats)' => [['bassin', 'Préfixe Bassin', 'bassin']],
                 'Héliciculture (Escargots)' => [['bac', 'Préfixe Bac', 'bac']],
-                'Élevage bovin (Bovins)' => [['parc', 'Préfixe Parc', 'parc']],
+                'Élevage ovin (Ovins)' => [['parc', 'Préfixe Parc', 'parc']],
             ])
             <div class="grid grid-cols-1 gap-md sm:grid-cols-2">
                 @foreach ($groupes as $titre => $champs)

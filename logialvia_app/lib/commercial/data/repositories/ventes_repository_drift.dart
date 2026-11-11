@@ -89,7 +89,7 @@ class VentesRepositoryDrift implements VentesRepository {
     'pintades' => 'Pintades',
     'lapins' => 'Lapins',
     'escargots' => 'Escargots',
-    'bovins' => 'Bovins',
+    'ovins' => 'Ovins',
     'poissons-chats' => 'Poissons-Chats',
     'poulets' => 'Poulets',
     'pondeuses' => 'Pondeuses',

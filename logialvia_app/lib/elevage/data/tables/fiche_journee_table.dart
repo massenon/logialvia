@@ -18,7 +18,7 @@ import '../../../core/sync/identifiant_poste.dart';
 class FicheJournee extends Table {
   TextColumn get id => text().clientDefault(nouvelUuid)();
 
-  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
+  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','ovins'
   TextColumn get espece => text()();
 
   DateTimeColumn get date => dateTime()();

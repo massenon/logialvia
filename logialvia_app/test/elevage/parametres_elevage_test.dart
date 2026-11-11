@@ -33,11 +33,11 @@ void main() {
 
   group('Socle — les valeurs viennent du prototype, pas d\'une invention', () {
     test('les 12 barèmes de `RATIONS` sont présents, plus 6 pour les filières '
-        'ajoutées (escargots, bovins)', () async {
+        'ajoutées (escargots, ovins)', () async {
       expect(vm.baremes, hasLength(18));
       expect(
         vm.baremes.where(
-          (b) => b.espece != 'escargots' && b.espece != 'bovins',
+          (b) => b.espece != 'escargots' && b.espece != 'ovins',
         ),
         hasLength(12),
       );
@@ -63,11 +63,11 @@ void main() {
     });
 
     test('les 11 échéances de `PROPHYLAXIE_STORE` sont présentes, plus 21 '
-        '(escargots) et 9 (bovins)', () async {
+        '(escargots) et 9 (ovins)', () async {
       final toutes = await repository.chargerProphylaxie();
       expect(toutes, hasLength(41));
       expect(
-        toutes.where((e) => e.espece != 'escargots' && e.espece != 'bovins'),
+        toutes.where((e) => e.espece != 'escargots' && e.espece != 'ovins'),
         hasLength(11),
       );
 
@@ -250,7 +250,7 @@ void main() {
           ),
           isA<Echec<void>>(),
         );
-        // Un rappel annuel (bovins : J365) doit pouvoir etre saisi.
+        // Un rappel annuel (ovins : J365) doit pouvoir etre saisi.
         expect(
           await vm.enregistrerEcheance(
             jour: '365',
@@ -339,7 +339,7 @@ void main() {
       expect(vm.formats.apercuEnclos, 'E1, E2, E3');
     });
 
-    test('bacs des escargots et parcs des bovins : BAC et PARC par défaut', () {
+    test('bacs des escargots et parcs des ovins : BAC et PARC par défaut', () {
       expect(vm.formats.bac, 'BAC');
       expect(vm.formats.parc, 'PARC');
       expect(vm.formats.apercuBac, 'BAC1, BAC2, BAC3');

@@ -69,7 +69,7 @@ void main() {
         'cuniculture',
         'aviculture_classique',
         'heliciculture',
-        'bovins',
+        'ovins',
       });
       // Goliaths et Pintades n'ont volontairement aucune ligne (Doc I2 §2).
       expect(

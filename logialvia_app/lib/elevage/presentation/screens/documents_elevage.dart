@@ -393,7 +393,7 @@ class DocumentsElevage {
               CellulePdf(formats.apercuBac),
             ],
             [
-              const CellulePdf('Élevage bovin (Bovins)'),
+              const CellulePdf('Élevage ovin (Ovins)'),
               const CellulePdf('Parc'),
               CellulePdf(formats.parc, gras: true),
               CellulePdf(formats.apercuParc),

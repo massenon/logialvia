@@ -45,6 +45,7 @@ import '../../elevage/data/sync/identifiants_parametres_elevage.dart';
 import '../sync/identifiant_poste.dart';
 import '../../administration/data/tables/demandes_referentiel_table.dart';
 import '../../comptabilite/data/migration/migration_plan_syscohada.dart';
+import '../../elevage/data/migration/migration_bovins_vers_ovins.dart';
 
 part 'app_database.g.dart';
 
@@ -107,7 +108,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 50;
+  static const int versionSchema = 51;
 
   @override
   int get schemaVersion => versionSchema;
@@ -347,7 +348,7 @@ class AppDatabase extends _$AppDatabase {
         await _ajouterColonne(m, parametresEntreprise, parametresEntreprise.mecefNim);
       }
       if (from < 27) {
-        // Filieres escargots et bovins (DV-16, DV-17) et dose du calendrier de
+        // Filieres escargots et ovins (DV-16, DV-17) et dose du calendrier de
         // prophylaxie.
         //
         // La colonne `dose` est NULL sur les echeances existantes : leur dose
@@ -365,14 +366,14 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 28) {
         // Taux de ration par classe de poids vif (DV-17) : la ration d'un
-        // bovin se calcule sur son poids, pas en grammes fixes par tete.
+        // ovin se calcule sur son poids, pas en grammes fixes par tete.
         // Table nouvelle : aucune donnee a reprendre ; les 3 classes
         // d'ouverture ne sont semees que si la filiere n'en a aucune.
         await _creerTable(m, tauxRationPoids);
         await ParametresElevageSeeder.ajouterTauxPoidsParDefaut(this);
       }
       if (from < 29) {
-        // Numerotation des bacs (escargots) et des parcs (bovins). Les valeurs
+        // Numerotation des bacs (escargots) et des parcs (ovins). Les valeurs
         // par defaut (BAC, PARC) s'appliquent a la ligne de parametres
         // existante : aucun prefixe deja choisi n'est touche.
         await _ajouterColonne(
@@ -511,6 +512,13 @@ class AppDatabase extends _$AppDatabase {
         // synchronise). Seul endroit où le texte du motif est comparé : les refus d'aujourd'hui
         // portent un code stable (`droit_insuffisant`). Idempotent.
         await _rearmerRefusDeDroit();
+      }
+      if (from < 51) {
+        // DV-22 : la filiere Bovins devient Ovins (demande du client). Les lignes `bovins` de
+        // toutes les tables qui portent l'espece ou le module passent a `ovins`, sans doublon,
+        // en une transaction, avec les identifiants deterministes recalcules (le serveur les
+        // verifie). Idempotente : rejouee, elle ne trouve plus rien a renommer.
+        await MigrationBovinsVersOvins(this).executer();
       }
     },
     beforeOpen: (details) async {

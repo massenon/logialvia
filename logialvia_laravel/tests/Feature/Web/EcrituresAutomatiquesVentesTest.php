@@ -238,7 +238,7 @@ class EcrituresAutomatiquesVentesTest extends TestCase
         $this->assertSame(['702', null, 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => 'dragons'])));
         $this->assertSame(['702', null, 0.0], Ecritures::cleDeVentilation(null));
         $this->assertSame(['701', 'Commerce Annexe', 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Commerce Annexe', 'espece' => 'goliaths'])));
-        foreach (['goliaths' => 'Goliaths', 'pintades' => 'Pintades', 'lapins' => 'Lapins', 'escargots' => 'Escargots', 'bovins' => 'Bovins',
+        foreach (['goliaths' => 'Goliaths', 'pintades' => 'Pintades', 'lapins' => 'Lapins', 'escargots' => 'Escargots', 'ovins' => 'Ovins',
             'poissons-chats' => 'Poissons-Chats', 'poulets' => 'Poulets', 'pondeuses' => 'Pondeuses'] as $espece => $centre) {
             $this->assertSame(['702', $centre, 0.0], Ecritures::cleDeVentilation(new ProduitVendable(['cat' => 'Avicole', 'espece' => $espece])));
         }

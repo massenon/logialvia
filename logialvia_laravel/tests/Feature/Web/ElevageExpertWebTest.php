@@ -532,7 +532,7 @@ class ElevageExpertWebTest extends TestCase
         $this->assertNull($r::gmqGrammesParJour(1, 2, 0));
         $this->assertEqualsWithDelta(2.0, $r::indiceConsommation(3000, 1500), 1e-9);
         $this->assertNull($r::indiceConsommation(3000, 0));
-        $this->assertSame(['min' => 15000, 'max' => 1100000], $r::poidsMoyenPlausibleG('bovins'));
+        $this->assertSame(['min' => 2000, 'max' => 120000], $r::poidsMoyenPlausibleG('ovins'));
     }
 
     public function test_les_semaines_comptent_les_entrees_dans_l_effectif_expose(): void

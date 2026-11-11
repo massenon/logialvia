@@ -71,9 +71,9 @@
                 @can('manage-users')
                     <p class="px-xs pt-sm text-[12px] font-bold uppercase tracking-wider text-white/40">SERVEUR</p>
                     <div class="mb-sm space-y-xs">
-                        @foreach ([['/parametres/postes', 'devices', 'Postes & Appairage'], ['/parametres/audit', 'history', 'Journal d\'Audit']] as [$route, $icone, $libelle])
+                        @foreach ([['postes', '/parametres/postes', 'devices', 'Postes & Appairage'], ['audit', '/parametres/audit', 'history', 'Journal d\'Audit']] as [$nom, $route, $icone, $libelle])
                             @php($actif = $chemin === $route)
-                            <a href="{{ $route }}" @if ($actif) aria-current="page" @endif
+                            <a href="{{ route($nom) }}" @if ($actif) aria-current="page" @endif
                                class="flex items-center gap-sm rounded-lg px-sm py-xs transition-colors {{ $actif ? 'bg-white/[0.12] text-white' : 'text-white/90 hover:bg-white/10' }}">
                                 <x-icone :nom="$icone" :class="$actif ? 'text-[20px] text-brand-gold' : 'text-[20px]'" />
                                 <span class="text-[15px] {{ $actif ? 'font-bold' : '' }}">{{ $libelle }}</span>

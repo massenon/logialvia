@@ -210,7 +210,7 @@ class _Onglet extends StatelessWidget {
 class _OngletModulesActifs extends StatelessWidget {
   const _OngletModulesActifs();
 
-  /// Les 5 lignes du prototype, puis escargots et bovins (DV-16, DV-17).
+  /// Les 5 lignes du prototype, puis escargots et ovins (DV-16, DV-17).
   static const List<({String? moduleId, String libelle, String note})> _lignes =
       [
         (
@@ -244,8 +244,8 @@ class _OngletModulesActifs extends StatelessWidget {
           note: 'Filière ajoutée — désactivée par défaut',
         ),
         (
-          moduleId: 'bovins',
-          libelle: 'Bovins',
+          moduleId: 'ovins',
+          libelle: 'Ovins',
           note: 'Filière ajoutée — désactivée par défaut',
         ),
       ];

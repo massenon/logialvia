@@ -427,7 +427,8 @@ void main() {
         final r = ReperesZootechniques.poidsMoyenPlausibleG(id);
         expect(r.max, greaterThan(r.min), reason: id);
       }
-      expect(ReperesZootechniques.poidsMoyenPlausibleG('bovins').min, 15000);
+      expect(ReperesZootechniques.poidsMoyenPlausibleG('ovins').min, 2000);
+      expect(ReperesZootechniques.poidsMoyenPlausibleG('ovins').max, 120000);
       expect(ReperesZootechniques.poidsMoyenPlausibleG('escargots').max, 250);
     });
   });

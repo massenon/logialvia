@@ -84,7 +84,7 @@ import 'package:logialvia_app/elevage/data/sync/table_ventes_jour_poste.dart';
 ///        REMISE_A_ZERO_ACTIVEE=true                      # (essai « remise à zéro »)
 /// php artisan migrate:fresh --seed --force
 /// # comptes admin1…admin150 (rôle admin), caissier1, comptable1, animalier1, sans mot
-/// # de passe temporaire ; module bovins actif et paramètres décidés côté serveur (voir
+/// # de passe temporaire ; module ovins actif et paramètres décidés côté serveur (voir
 /// # le script pour la ligne tinker exacte)
 /// php artisan serve --port=8765
 /// ```
@@ -280,7 +280,7 @@ void main() {
         a.db.modulesActifs,
       )..where((m) => m.moduleId.equals(id))).getSingle()).isActif;
       expect(
-        await actif('bovins'),
+        await actif('ovins'),
         isTrue,
         reason: 'décidé sur le serveur : appliqué',
       );
@@ -2394,7 +2394,7 @@ void main() {
 
   group('huit filières : chaque fiche journalière, A contre B', () {
     test(
-      'goliaths, pintades, lapins, poissons-chats, poulets, pondeuses, escargots, bovins : trois jours chacune (décès, dons, pesée, œufs), lus à l\'identique chez B',
+      'goliaths, pintades, lapins, poissons-chats, poulets, pondeuses, escargots, ovins : trois jours chacune (décès, dons, pesée, œufs), lus à l\'identique chez B',
       () async {
         final a = await poste()
           ..let(postes.add);
@@ -3848,7 +3848,7 @@ void main() {
           rationGrammesParJour: 77,
         );
         await repo.enregistrerTauxPoids(
-          espece: 'bovins',
+          espece: 'ovins',
           poidsMinG: 700000 + uniq,
           poidsMaxG: 710000 + uniq,
           tauxPourcent: 2.5,

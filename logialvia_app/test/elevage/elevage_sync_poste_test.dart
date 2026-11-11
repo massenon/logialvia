@@ -317,7 +317,7 @@ void main() {
         await a.moteur.synchroniser();
         await b.moteur.synchroniser();
         await a.parametres.enregistrerTauxPoids(
-          espece: 'bovins',
+          espece: 'ovins',
           poidsMinG: 500000,
           poidsMaxG: null,
           tauxPourcent: 2.0,
@@ -326,7 +326,7 @@ void main() {
         await a.moteur.synchroniser();
         await b.moteur.synchroniser();
 
-        final id = IdentifiantsParametresElevage.taux('bovins', 500000);
+        final id = IdentifiantsParametresElevage.taux('ovins', 500000);
         expect(serveur.taux[id]!['taux_pourcent'], 2.0);
         final chezB = await b.db.select(b.db.tauxRationPoids).get();
         expect(chezB.where((t) => t.id == id), hasLength(1));
@@ -480,7 +480,7 @@ void main() {
       await a.preferences.definirParametresElevageAdoptes();
       serveur.taux['t'] = {
         'id': uuidA,
-        'espece': 'bovins',
+        'espece': 'ovins',
         'poids_min_g': 5000,
         'poids_max_g': 4000, // max <= min
         'taux_pourcent': 3.0,
@@ -491,7 +491,7 @@ void main() {
       };
       serveur.taux['t2'] = {
         'id': uuidB,
-        'espece': 'bovins',
+        'espece': 'ovins',
         'poids_min_g': 5000,
         'poids_max_g': null,
         'taux_pourcent': 0, // taux nul

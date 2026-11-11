@@ -110,7 +110,7 @@ final class ReperesZootechniques
             'pondeuses' => ['min' => 30, 'max' => 4000],
             'poissons-chats' => ['min' => 0, 'max' => 15000],
             'escargots' => ['min' => 0, 'max' => 250],
-            'bovins' => ['min' => 15000, 'max' => 1100000],
+            'ovins' => ['min' => 2000, 'max' => 120000],
             default => ['min' => 0, 'max' => 2000000],
         };
     }

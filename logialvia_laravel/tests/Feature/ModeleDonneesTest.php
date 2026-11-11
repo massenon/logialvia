@@ -167,12 +167,12 @@ class ModeleDonneesTest extends TestCase
     public function test_relancer_l_amorcage_ne_remet_pas_un_module_a_zero(): void
     {
         $this->seed(ModulesActifsSeeder::class);
-        ModuleActif::query()->where('module_id', 'bovins')->update(['is_actif' => true]);
+        ModuleActif::query()->where('module_id', 'ovins')->update(['is_actif' => true]);
 
         $this->seed(ModulesActifsSeeder::class);
 
         $this->assertSame(5, ModuleActif::query()->count(), 'Aucun doublon.');
-        $this->assertTrue(ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        $this->assertTrue(ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
     }
 
     // -------------------------------------------------------------- Parametres

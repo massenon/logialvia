@@ -26,7 +26,7 @@ return [
             ['libelle' => 'Fiche Poissons-Chats', 'icone' => 'set_meal', 'route' => '/elevage/poissons-chats', 'module' => 'pisciculture'],
             ['libelle' => 'Fiche Lapins', 'icone' => 'cruelty_free', 'route' => '/elevage/lapins', 'module' => 'cuniculture'],
             ['libelle' => 'Fiche Escargots', 'icone' => 'eco', 'route' => '/elevage/escargots', 'module' => 'heliciculture'],
-            ['libelle' => 'Fiche Bovins', 'icone' => 'grass', 'route' => '/elevage/bovins', 'module' => 'bovins'],
+            ['libelle' => 'Fiche Ovins', 'icone' => 'grass', 'route' => '/elevage/ovins', 'module' => 'ovins'],
             ['libelle' => 'Fiche Poulets/Pondeuses', 'icone' => 'egg_alt', 'route' => '/elevage/poulets-pondeuses', 'module' => 'aviculture_classique'],
             ['libelle' => 'Dashboard Élevage', 'icone' => 'monitoring', 'route' => '/elevage/dashboard', 'module' => null],
             ['libelle' => 'Paramètres Élevage', 'icone' => 'tune', 'route' => '/parametres/elevage', 'module' => null],

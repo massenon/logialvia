@@ -128,7 +128,7 @@ class ParametresElevageSeeder {
     ),
   ];
 
-  // ------------------------------------------------ escargots et bovins (v27)
+  // ------------------------------------------------ escargots et ovins (v27)
   //
   // ⚠️ Contrairement aux 12 barèmes et 11 échéances ci-dessus, ces valeurs ne
   // viennent PAS du prototype : les deux filières ont été ajoutées après lui
@@ -138,10 +138,11 @@ class ParametresElevageSeeder {
   // toute dose ci-dessous ; les rémanences sont prudentes (jamais plus courtes
   // que l'usage courant). Aucune n'est marquée « confirmée ».
   //
-  // Bovins : les rations en g/tête/j sont INDICATIVES (taux de matière sèche
-  // × poids moyen de référence : 3,5 % de 100 kg, 3 % de 230 kg, 2,5 % de
-  // 350 kg, complément seul). Le tableau en % du poids vif par classe de poids
-  // (DV-17) n'existe pas encore au poste.
+  // Ovins (DV-22, remplace Bovins) : les rations en g/tête/j sont INDICATIVES
+  // (complément seul : 300 / 600 / 800 g, repère générique à valider par
+  // l'animalier). Le tableau en % du poids vif par classe de poids (4,0 % sous
+  // 15 kg, 3,5 % de 15 à 30 kg, 3,0 % au-delà) est celui de DV-17, adapté ; le
+  // calendrier sanitaire est à valider par le vétérinaire.
 
   /// Barèmes des deux filières ajoutées.
   static const List<({String espece, String stade, int ration, bool confirme})>
@@ -149,13 +150,13 @@ class ParametresElevageSeeder {
     (espece: 'escargots', stade: 'Naissain', ration: 1, confirme: false),
     (espece: 'escargots', stade: 'Marchand', ration: 5, confirme: false),
     (espece: 'escargots', stade: 'Reproducteur', ration: 8, confirme: false),
-    (espece: 'bovins', stade: 'Veau', ration: 1500, confirme: false),
-    (espece: 'bovins', stade: 'Embouche', ration: 7000, confirme: false),
-    (espece: 'bovins', stade: 'Reproducteur', ration: 9000, confirme: false),
+    (espece: 'ovins', stade: 'Agneau', ration: 300, confirme: false),
+    (espece: 'ovins', stade: 'Embouche', ration: 600, confirme: false),
+    (espece: 'ovins', stade: 'Reproducteur', ration: 800, confirme: false),
   ];
 
   /// Échéances des deux filières ajoutées : 21 pour les escargots (hygiène et
-  /// soins, sur les 90 premiers jours), 9 pour les bovins.
+  /// soins, sur les 90 premiers jours), 9 pour les ovins.
   static List<
     ({
       String espece,
@@ -168,7 +169,7 @@ class ParametresElevageSeeder {
   >
   get echeancesNouvellesFilieres => [
     ..._echeancesEscargots,
-    ..._echeancesBovins,
+    ..._echeancesOvins,
   ];
 
   static List<
@@ -254,41 +255,41 @@ class ParametresElevageSeeder {
       int remanence,
     })
   >
-  _echeancesBovins = [
+  _echeancesOvins = [
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 1,
-      traitement: 'Déparasitage interne',
+      traitement: 'Déparasitage interne (strongles)',
       produit: 'Albendazole',
-      dose: '7,5 mg par kg de poids vif, voie orale',
+      dose: '5 mg par kg de poids vif, voie orale',
       remanence: 14,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 7,
-      traitement: 'Détiquage (lutte contre les tiques)',
+      traitement: 'Traitement externe (gale, tiques)',
       produit: 'Deltaméthrine, bain ou pulvérisation',
       dose: 'Dilution selon la notice du fabricant',
       remanence: 7,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 15,
-      traitement: 'Vaccin péripneumonie contagieuse bovine (PPCB)',
-      produit: 'Vaccin T1/44',
+      traitement: 'Vaccin peste des petits ruminants (PPR)',
+      produit: 'Vaccin PPR (souche Nigeria 75/1)',
       dose: '1 dose selon la notice, voie sous-cutanée',
       remanence: 0,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 30,
-      traitement: 'Vaccin charbon bactéridien et symptomatique',
-      produit: 'Vaccin charbon',
-      dose: '1 à 2 mL selon la notice, voie sous-cutanée',
+      traitement: 'Vaccin entérotoxémie',
+      produit: 'Vaccin clostridies (entérotoxémie)',
+      dose: '2 mL selon la notice, voie sous-cutanée',
       remanence: 0,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 45,
       traitement: 'Vaccin pasteurellose',
       produit: 'Vaccin Pasteurella',
@@ -296,7 +297,7 @@ class ParametresElevageSeeder {
       remanence: 0,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 60,
       traitement: 'Déparasitage interne et externe',
       produit: 'Ivermectine 1 %',
@@ -304,43 +305,43 @@ class ParametresElevageSeeder {
       remanence: 35,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 90,
-      traitement: 'Détiquage (rappel)',
-      produit: 'Deltaméthrine, bain ou pulvérisation',
-      dose: 'Dilution selon la notice du fabricant',
-      remanence: 7,
+      traitement: 'Vitamines et minéraux',
+      produit: 'Complexe vitamines A, D3, E et oligo-éléments',
+      dose: 'Selon la notice du produit, voie orale ou injectable',
+      remanence: 0,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 180,
-      traitement: 'Déparasitage interne (rappel semestriel)',
+      traitement: 'Déparasitage interne (rappel semestriel, strongles)',
       produit: 'Albendazole',
-      dose: '7,5 mg par kg de poids vif, voie orale',
+      dose: '5 mg par kg de poids vif, voie orale',
       remanence: 14,
     ),
     (
-      espece: 'bovins',
+      espece: 'ovins',
       jour: 365,
-      traitement: 'Rappel annuel PPCB et charbon',
-      produit: 'Vaccin T1/44 et vaccin charbon',
+      traitement: 'Rappel annuel PPR et entérotoxémie',
+      produit: 'Vaccin PPR et vaccin entérotoxémie',
       dose: '1 dose de chacun selon la notice',
       remanence: 0,
     ),
   ];
 
   /// Taux de ration par classe de poids vif, en grammes et en % par jour :
-  /// bovins (DV-17, matière sèche) et poissons-chats (DV-01, biomasse). Repères validés par l'animalier : jamais
+  /// ovins (DV-17, matière sèche) et poissons-chats (DV-01, biomasse). Repères validés par l'animalier : jamais
   /// « confirmés » tant qu'il ne les a pas validés dans Paramètres Élevage.
   ///
-  /// Classes `[min, max[` : un animal de 300 kg pile tombe dans la dernière.
+  /// Classes `[min, max[` : un animal de 30 kg pile tombe dans la dernière.
   static const List<
     ({String espece, int minG, int? maxG, double taux, bool confirme})
   >
   tauxPoidsInitiaux = [
-    (espece: 'bovins', minG: 0, maxG: 150000, taux: 3.5, confirme: false),
-    (espece: 'bovins', minG: 150000, maxG: 300000, taux: 3.0, confirme: false),
-    (espece: 'bovins', minG: 300000, maxG: null, taux: 2.5, confirme: false),
+    (espece: 'ovins', minG: 0, maxG: 15000, taux: 4.0, confirme: false),
+    (espece: 'ovins', minG: 15000, maxG: 30000, taux: 3.5, confirme: false),
+    (espece: 'ovins', minG: 30000, maxG: null, taux: 3.0, confirme: false),
     // Poissons-chats (DV-01) : une valeur retenue dans chaque fourchette du
     // registre (10-20 %, 6-8 %, 3-5 %, 2-3 %, 1-2 %). Le choix est un repere.
     (espece: 'poissons-chats', minG: 0, maxG: 5, taux: 15.0, confirme: false),
@@ -384,7 +385,7 @@ class ParametresElevageSeeder {
   }
 
   /// Migrations v28 et v30 : sème les classes de poids des filières qui n'en
-  /// ont aucune (bovins, puis poissons-chats). Réservée à la migration, comme
+  /// ont aucune (ovins, puis poissons-chats). Réservée à la migration, comme
   /// [ajouterNouvellesFilieres] : une filière qui a déjà au moins une classe est
   /// laissée telle quelle.
   static Future<void> ajouterTauxPoidsParDefaut(AppDatabase db) async {
@@ -421,14 +422,14 @@ class ParametresElevageSeeder {
     }
   }
 
-  /// Migration v27 : ajoute escargots et bovins à une base **déjà en service**.
+  /// Migration v27 : ajoute escargots et ovins à une base **déjà en service**.
   ///
   /// N'écrase rien : une filière qui a déjà au moins une ration (ou une
   /// échéance) est laissée telle quelle. Réservée à la migration — appelée au
   /// démarrage ordinaire, elle ressusciterait des lignes que l'animalier a
   /// supprimées volontairement.
   static Future<void> ajouterNouvellesFilieres(AppDatabase db) async {
-    for (final espece in const ['escargots', 'bovins']) {
+    for (final espece in const ['escargots', 'ovins']) {
       final aDesRations =
           await (db.select(db.baremesRation)
                 ..where((b) => b.espece.equals(espece))

@@ -69,12 +69,12 @@ void main() {
 
   group('file locale', () {
     test('basculer un module dépose une demande', () async {
-      await ModulesActifsRepositoryDrift(db).definirEtat('bovins', actif: true);
+      await ModulesActifsRepositoryDrift(db).definirEtat('ovins', actif: true);
 
       final d = (await demandes()).single;
       expect(d.type, 'module_actif');
-      expect(d.cle, 'bovins');
-      expect(jsonDecode(d.donnees), {'module_id': 'bovins', 'is_actif': true});
+      expect(d.cle, 'ovins');
+      expect(jsonDecode(d.donnees), {'module_id': 'ovins', 'is_actif': true});
       expect(d.syncStatus, 'pending');
       expect(d.id, matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4')));
     });
@@ -83,8 +83,8 @@ void main() {
       'deux bascules avant l\'envoi : une seule demande, la dernière',
       () async {
         final repo = ModulesActifsRepositoryDrift(db);
-        await repo.definirEtat('bovins', actif: true);
-        await repo.definirEtat('bovins', actif: false);
+        await repo.definirEtat('ovins', actif: true);
+        await repo.definirEtat('ovins', actif: false);
 
         final d = (await demandes()).single;
         expect(
@@ -127,11 +127,11 @@ void main() {
       'une demande acceptée est conservée comme historique, la suivante en crée une nouvelle',
       () async {
         final repo = ModulesActifsRepositoryDrift(db);
-        await repo.definirEtat('bovins', actif: true);
+        await repo.definirEtat('ovins', actif: true);
         await moteur.synchroniser();
         expect((await demandes()).single.syncStatus, 'synced');
 
-        await repo.definirEtat('bovins', actif: false);
+        await repo.definirEtat('ovins', actif: false);
 
         final toutes = await demandes();
         expect(toutes.where((d) => d.syncStatus == 'pending'), hasLength(1));
@@ -145,7 +145,7 @@ void main() {
       () async {
         await ModulesActifsRepositoryDrift(
           db,
-        ).definirEtat('bovins', actif: true);
+        ).definirEtat('ovins', actif: true);
 
         final r = await moteur.synchroniser();
 
@@ -168,7 +168,7 @@ void main() {
             'Droit insuffisant pour modifier les modules actifs.';
         await ModulesActifsRepositoryDrift(
           db,
-        ).definirEtat('bovins', actif: true);
+        ).definirEtat('ovins', actif: true);
 
         final r = await moteur.synchroniser();
 
@@ -180,7 +180,7 @@ void main() {
           'Droit insuffisant pour modifier les modules actifs.',
         );
         expect(
-          await actif('bovins'),
+          await actif('ovins'),
           isTrue,
           reason: 'le choix local n\'est pas défait en silence',
         );
@@ -196,10 +196,10 @@ void main() {
       'une demande remplacée PENDANT l\'envoi repart au prochain envoi',
       () async {
         final repo = ModulesActifsRepositoryDrift(db);
-        await repo.definirEtat('bovins', actif: true);
+        await repo.definirEtat('ovins', actif: true);
         serveur.pendantDemandes = () async {
           await Future<void>.delayed(const Duration(milliseconds: 2));
-          await repo.definirEtat('bovins', actif: false);
+          await repo.definirEtat('ovins', actif: false);
         };
 
         await moteur.synchroniser();
@@ -218,7 +218,7 @@ void main() {
     );
 
     test('hors ligne : la demande reste en attente', () async {
-      await ModulesActifsRepositoryDrift(db).definirEtat('bovins', actif: true);
+      await ModulesActifsRepositoryDrift(db).definirEtat('ovins', actif: true);
       serveur.horsLigne = true;
       await moteur.synchroniser();
       expect((await demandes()).single.syncStatus, 'pending');
@@ -230,7 +230,7 @@ void main() {
         expect(await moteur.aDesSaisiesAEnvoyer(), isFalse);
         await ModulesActifsRepositoryDrift(
           db,
-        ).definirEtat('bovins', actif: true);
+        ).definirEtat('ovins', actif: true);
         expect(await moteur.aDesSaisiesAEnvoyer(), isTrue);
       },
     );
@@ -241,19 +241,19 @@ void main() {
       'le choix du poste, fait APRÈS la décision du serveur, n\'est pas écrasé par le tirage',
       () async {
         serveur.ajouterModule(
-          'bovins',
+          'ovins',
           actif: false,
           decisionLe: DateTime.now().subtract(const Duration(hours: 1)),
         );
         await ModulesActifsRepositoryDrift(
           db,
-        ).definirEtat('bovins', actif: true);
+        ).definirEtat('ovins', actif: true);
         serveur.demandesAccepteesParLeServeur =
             false; // on ne regarde que le tirage
 
         await moteur.synchroniser();
 
-        expect(await actif('bovins'), isTrue);
+        expect(await actif('ovins'), isTrue);
       },
     );
 
@@ -262,17 +262,17 @@ void main() {
       () async {
         await ModulesActifsRepositoryDrift(
           db,
-        ).definirEtat('bovins', actif: true);
+        ).definirEtat('ovins', actif: true);
         await Future<void>.delayed(const Duration(milliseconds: 5));
         serveur.ajouterModule(
-          'bovins',
+          'ovins',
           actif: false,
           decisionLe: DateTime.now().add(const Duration(minutes: 1)),
         );
 
         final r = await moteur.synchroniser();
 
-        expect(await actif('bovins'), isFalse);
+        expect(await actif('ovins'), isFalse);
         expect(r.supplantees, 1);
         expect(await demandes(), isEmpty);
         expect(serveur.demandesRecues, isEmpty);
@@ -285,17 +285,17 @@ void main() {
       'serveur de semis ≠ choix du poste : le poste propose le sien, une seule fois',
       () async {
         await (db.update(db.modulesActifs)
-              ..where((m) => m.moduleId.equals('bovins')))
+              ..where((m) => m.moduleId.equals('ovins')))
             .write(const ModulesActifsCompanion(isActif: Value(true)));
-        serveur.ajouterModule('bovins', actif: false, decide: false);
+        serveur.ajouterModule('ovins', actif: false, decide: false);
 
         await moteur.synchroniser();
 
         expect(serveur.demandesRecues.single['donnees'], {
-          'module_id': 'bovins',
+          'module_id': 'ovins',
           'is_actif': true,
         });
-        expect(await actif('bovins'), isTrue);
+        expect(await actif('ovins'), isTrue);
         expect((await demandes()).single.syncStatus, 'synced');
 
         // Le serveur a désormais décidé : le tirage suivant ne reproposera rien.
@@ -306,7 +306,7 @@ void main() {
     );
 
     test('serveur de semis identique au poste : rien à proposer', () async {
-      serveur.ajouterModule('bovins', actif: false, decide: false);
+      serveur.ajouterModule('ovins', actif: false, decide: false);
       await moteur.synchroniser();
       expect(serveur.demandesRecues, isEmpty);
     });

@@ -115,7 +115,7 @@ class ParametresElevageWebTest extends TestCase
     {
         // Valeurs calculees par `uuidDeterministe` du poste (Dart).
         $this->assertSame('f9bf68f2-fcd7-5a78-b691-c29668dee770', FilieresElevage::idBareme('goliaths', 'Mature'));
-        $this->assertSame('1d035c6b-29b1-5434-aa9d-d11b89019cd7', FilieresElevage::idTaux('bovins', 150000));
+        $this->assertSame('0910a025-8d19-5578-9d44-f13a51dc0488', FilieresElevage::idTaux('ovins', 15000));
         $this->assertSame('9506c65f-ebe3-56a3-a352-87c232d451ff', FilieresElevage::uuidDeterministe('echeance_prophylaxie:goliaths|15|Gumboro|Bursine'));
     }
 
@@ -125,14 +125,14 @@ class ParametresElevageWebTest extends TestCase
     {
         $this->bareme();
         $this->bareme(['espece' => 'lapins', 'stade' => 'Reproducteur', 'ration_grammes_par_jour' => 120, 'confirme' => true]);
-        $this->bareme(['espece' => 'bovins', 'stade' => 'Veau', 'ration_grammes_par_jour' => 1500]);
+        $this->bareme(['espece' => 'ovins', 'stade' => 'Agneau', 'ration_grammes_par_jour' => 1500]);
         $this->bareme(['espece' => 'goliaths', 'stade' => 'Ancien', 'archive_le' => now()]);
 
         Livewire::actingAs($this->admin())->test(ParametresElevage::class)
             ->assertSee('3 barème(s)')->assertSee('Mature')->assertDontSee('Ancien')
             ->assertSee('Confirmé (Référence Cuniculture)')->assertSee('Repère à valider')
             ->assertSee('Générique (Aviculture, à confirmer)')
-            ->set('rechercheRation', 'veau')->assertSee('1 barème(s)')->assertSee('1500 g/j')->assertDontSee('Mature')
+            ->set('rechercheRation', 'agneau')->assertSee('1 barème(s)')->assertSee('1500 g/j')->assertDontSee('Mature')
             ->set('rechercheRation', '')->set('especeRation', 'lapins')->assertSee('1 barème(s)')->assertSee('Reproducteur');
     }
 
@@ -201,16 +201,16 @@ class ParametresElevageWebTest extends TestCase
         $this->assertSame(0, BaremeRation::query()->count(), 'rien n\'est écrit sur un refus');
     }
 
-    public function test_le_plafond_d_un_bovin_est_de_20_kilos(): void
+    public function test_le_plafond_d_un_ovin_est_de_4_kilos(): void
     {
-        $this->activer('bovins');
+        $this->activer('ovins');
         $c = Livewire::actingAs($this->admin())->test(ParametresElevage::class)->call('nouveauBareme');
 
-        $c->set('espece', 'bovins')->set('stade', 'Embouche')->set('ration', '20001')->call('enregistrerBareme')
-            ->assertSet('erreur', 'Une ration de plus de 20 000 g par tête et par jour est invraisemblable.');
-        $c->set('ration', '20000')->call('enregistrerBareme')->assertSet('erreur', null);
+        $c->set('espece', 'ovins')->set('stade', 'Embouche')->set('ration', '4001')->call('enregistrerBareme')
+            ->assertSet('erreur', 'Une ration de plus de 4 000 g par tête et par jour est invraisemblable.');
+        $c->set('ration', '4000')->call('enregistrerBareme')->assertSet('erreur', null);
 
-        $this->assertSame(20000, BaremeRation::query()->where('stade', 'Embouche')->value('ration_grammes_par_jour'));
+        $this->assertSame(4000, BaremeRation::query()->where('stade', 'Embouche')->value('ration_grammes_par_jour'));
     }
 
     public function test_modifier_une_ration_repasse_a_valider_et_valider_confirme(): void
@@ -276,14 +276,14 @@ class ParametresElevageWebTest extends TestCase
 
     public function test_ajouter_une_classe_convertit_les_unites_et_utilise_la_cle_deterministe(): void
     {
-        $this->activer('bovins');
+        $this->activer('ovins');
 
         Livewire::actingAs($this->admin())->test(ParametresElevage::class)
-            ->call('nouveauTaux')->set('espece', 'bovins')->set('poidsMin', '150')->set('poidsMax', '300')->set('taux', '3,5')
+            ->call('nouveauTaux')->set('espece', 'ovins')->set('poidsMin', '150')->set('poidsMax', '300')->set('taux', '3,5')
             ->call('enregistrerTaux')->assertSet('erreur', null)->assertSee('Classe de poids ajoutée.');
 
         $t = TauxRationPoids::query()->firstOrFail();
-        $this->assertSame(FilieresElevage::idTaux('bovins', 150000), $t->id);
+        $this->assertSame(FilieresElevage::idTaux('ovins', 150000), $t->id);
         $this->assertSame(150000, $t->poids_min_g);
         $this->assertSame(300000, $t->poids_max_g);
         $this->assertSame(3.5, $t->taux_pourcent);
@@ -304,9 +304,9 @@ class ParametresElevageWebTest extends TestCase
 
     public function test_les_controles_du_poste_s_appliquent_aux_classes(): void
     {
-        $this->activer('bovins');
-        $this->taux(['espece' => 'bovins', 'poids_min_g' => 0, 'poids_max_g' => 150000, 'taux_pourcent' => 3.5]);
-        $c = Livewire::actingAs($this->admin())->test(ParametresElevage::class)->call('nouveauTaux')->set('espece', 'bovins');
+        $this->activer('ovins');
+        $this->taux(['espece' => 'ovins', 'poids_min_g' => 0, 'poids_max_g' => 150000, 'taux_pourcent' => 3.5]);
+        $c = Livewire::actingAs($this->admin())->test(ParametresElevage::class)->call('nouveauTaux')->set('espece', 'ovins');
 
         $c->set('poidsMin', '-1')->set('taux', '3')->call('enregistrerTaux')
             ->assertSet('erreur', 'Veuillez renseigner le poids minimum et le taux.');
@@ -319,7 +319,7 @@ class ParametresElevageWebTest extends TestCase
         $c->set('poidsMin', '100')->set('taux', '3')->call('enregistrerTaux')
             ->assertSet('erreur', 'Cette classe chevauche « Moins de 150 kg » : un animal aurait deux taux.');
         $c->set('espece', 'goliaths')->call('enregistrerTaux')
-            ->assertSet('erreur', 'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne s\'applique qu\'aux bovins et aux poissons-chats.');
+            ->assertSet('erreur', 'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne s\'applique qu\'aux ovins et aux poissons-chats.');
 
         $this->assertSame(1, TauxRationPoids::query()->count());
     }
@@ -500,20 +500,20 @@ class ParametresElevageWebTest extends TestCase
         // Onglet « Prophylaxie » : la liste d'especes ne montre que les filieres actives.
         Livewire::actingAs($admin)->test(ParametresElevage::class)->call('choisirOnglet', 'prophylaxie')
             ->assertSeeHtml('<option value="goliaths">')->assertSeeHtml('<option value="pintades">')
-            ->assertDontSeeHtml('<option value="bovins">')->assertDontSeeHtml('<option value="lapins">');
+            ->assertDontSeeHtml('<option value="ovins">')->assertDontSeeHtml('<option value="lapins">');
 
-        $this->activer('bovins');
+        $this->activer('ovins');
         $this->activer('cuniculture');
         Livewire::actingAs($admin)->test(ParametresElevage::class)->call('choisirOnglet', 'prophylaxie')
-            ->assertSeeHtml('<option value="bovins">')->assertSeeHtml('<option value="lapins">');
+            ->assertSeeHtml('<option value="ovins">')->assertSeeHtml('<option value="lapins">');
     }
 
     public function test_une_filiere_inactive_ne_recoit_pas_de_nouvelle_ligne_mais_ses_lignes_restent_visibles(): void
     {
-        $this->bareme(['espece' => 'bovins', 'stade' => 'Veau']);
+        $this->bareme(['espece' => 'ovins', 'stade' => 'Agneau']);
 
-        $c = Livewire::actingAs($this->admin())->test(ParametresElevage::class)->assertSee('Veau');
-        $c->call('nouvelleEcheance')->set('espece', 'bovins')->set('jour', '5')->set('traitement', 'X')->set('produit', 'Y')
+        $c = Livewire::actingAs($this->admin())->test(ParametresElevage::class)->assertSee('Agneau');
+        $c->call('nouvelleEcheance')->set('espece', 'ovins')->set('jour', '5')->set('traitement', 'X')->set('produit', 'Y')
             ->call('enregistrerEcheance')->assertSet('erreur', 'Cette filière n\'est pas active.');
         $this->assertSame(0, EcheanceProphylaxie::query()->count());
     }

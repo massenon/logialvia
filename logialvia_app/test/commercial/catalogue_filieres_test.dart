@@ -9,7 +9,7 @@ import 'package:logialvia_app/core/events/domain_event.dart';
 import 'package:logialvia_app/core/resultat/resultat.dart';
 
 /// Un produit du catalogue peut être rattaché à une filière d'élevage — dont
-/// escargots et bovins (DV-16, DV-17).
+/// escargots et ovins (DV-16, DV-17).
 ///
 /// Sans ce rattachement, la vente ne décrémente aucune catégorie de la fiche,
 /// n'incrémente pas le compteur de ventes du jour et n'est imputée à aucun
@@ -66,7 +66,7 @@ void main() {
   test('les catégories proposées incluent les deux filières', () {
     expect(
       ProduitVendable.categories,
-      containsAll(['Héliciculture', 'Élevage bovin']),
+      containsAll(['Héliciculture', 'Élevage ovin']),
     );
   });
 
@@ -119,7 +119,7 @@ void main() {
 
     for (final cas in const [
       ('escargots', 'Héliciculture', 'Escargot marchand (sujet)', 1500.0),
-      ('bovins', 'Élevage bovin', 'Bovin d\'embouche (tête)', 350000.0),
+      ('ovins', 'Élevage ovin', 'Ovin d\'embouche (tête)', 350000.0),
     ]) {
       test(
         '${cas.$1} : stock décrémenté et compteur de la fiche incrémenté',

@@ -216,3 +216,12 @@ Même décision que §14 : **stock propre à chaque poste + journal partagé**.
   produit archivé. Une saisie plus récente d'un poste hors ligne désarchive le produit (dernier écrivain gagne).
 - Limites : stock global et comptabilité restent hors synchronisation ; une vente d'un produit archivé venue d'un autre
   poste est refusée localement (« produit inconnu ») si ce poste ne l'a jamais eu.
+
+## 16. Alias hérité `bovins` -> `ovins` (DV-22, 11/11/2026)
+
+La filière **Bovins** a été remplacée par **Ovins** (`16_DECISIONS_VALIDEES.md`, DV-22). Un poste qui n'a pas encore migré (schéma v50) envoie encore `bovins` ; le contrat l'accepte comme **alias hérité**, normalisé en `ovins` **à l'entrée du serveur** (`App\Sync\AliasHerites`), avant toute validation :
+
+- **Faits poussés** (`POST /api/sync/push`) : `espece` des fiches journalières, compteurs de ventes, bandes, soins, infirmerie, et des lignes de vente. L'UUID déterministe d'une fiche (`fiche_journee:espece|jour`) ou d'un compteur (`fiche_ventes_jour:espece|jour|poste`) calculé avec `bovins` est **recalculé avec `ovins`** ; un UUID qui n'est celui d'aucune des deux clés reste refusé comme avant. L'accusé de réception (`accepted`) reprend l'identifiant **envoyé** par le poste.
+- **Demandes** (`POST /api/sync/demandes`) : `module_id` `bovins`, `espece` `bovins` (barème, taux, échéance, produit), stade `Veau` d'un barème (devenu `Agneau`), catégorie « Élevage bovin » (devenue « Élevage ovin »). L'identifiant d'un barème, d'un taux ou d'une échéance n'est recalculé que s'il était le déterministe de l'ancienne clé.
+- **Jamais dans l'autre sens** : le serveur n'écrit ni ne sert jamais `bovins` ; les tirages (`pull`) ne portent que `ovins`. Les lignes qu'il détenait ont été renommées par la migration serveur `2026_11_11_090000_renomme_bovins_en_ovins`, qui avance les curseurs de tirage pour que les postes reçoivent les lignes renommées. Un poste à jour (v51) n'envoie plus que `ovins`.
+- L'alias est **transitoire** : il peut être retiré une fois tous les postes passés en v51.

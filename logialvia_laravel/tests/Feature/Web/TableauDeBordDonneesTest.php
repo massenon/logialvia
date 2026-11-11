@@ -594,7 +594,8 @@ class TableauDeBordDonneesTest extends TestCase
 
         $this->assertCount(3, $tr['ventes']);
         // « Avance » : on montre l'encaisse (Dart : `v.status == 'Avance' ? v.paye : v.total`).
-        $this->assertSame($tr['ventes'][0]['ref'].' · Awa', $tr['ventes'][0]['libelle']);
+        $this->assertStringStartsWith('V-P1-2026-D', $tr['ventes'][0]['ref']);
+        $this->assertSame('Awa', $tr['ventes'][0]['libelle']);
         $this->assertSame(2500.0, $tr['ventes'][0]['montant']);
         $this->assertSame('Avance', $tr['ventes'][0]['statut']);
         $this->assertSame([3000.0, 2000.0], [$tr['ventes'][1]['montant'], $tr['ventes'][2]['montant']]);
@@ -602,10 +603,12 @@ class TableauDeBordDonneesTest extends TestCase
 
         $this->assertSame([400.0, 300.0, 200.0], array_column($tr['achats'], 'montant'));
         $this->assertSame('Commandé', $tr['achats'][0]['statut']);
-        $this->assertStringEndsWith(' · Provenderie du Nord', $tr['achats'][0]['libelle']);
+        $this->assertStringStartsWith('ACH-P1-2026-D', $tr['achats'][0]['ref']);
+        $this->assertSame('Provenderie du Nord', $tr['achats'][0]['libelle']);
 
         $this->assertSame([4000.0, 3000.0, 2000.0], array_column($tr['depenses'], 'montant'));
         $this->assertSame('DEP-P1-2026-0004', $tr['depenses'][0]['ref']);
+        $this->assertSame('Libelle DEP-P1-2026-0004', $tr['depenses'][0]['libelle']);
         $this->assertSame('Payée', $tr['depenses'][0]['statut']);
         $this->assertSame('En attente', $tr['depenses'][2]['statut']);
     }

@@ -189,7 +189,7 @@ class DashboardElevageWebTest extends TestCase
             ->assertSee('Filière aviculture classique disponible — non activée pour le moment.')
             ->assertSee('Filière Pisciculture disponible — non activée pour le moment.')
             ->assertSee('Filière Héliciculture disponible — non activée pour le moment.')
-            ->assertSee('Filière Bovins disponible — non activée pour le moment.')
+            ->assertSee('Filière Ovins disponible — non activée pour le moment.')
             ->assertSee('Activer depuis Paramètres →');
 
         Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(DashboardElevage::class)

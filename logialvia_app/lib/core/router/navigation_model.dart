@@ -107,10 +107,10 @@ class NavigationModel {
           moduleId: 'heliciculture',
         ),
         EntreeNavigation(
-          libelle: 'Fiche Bovins',
+          libelle: 'Fiche Ovins',
           icone: Symbols.grass,
-          route: '/elevage/bovins',
-          moduleId: 'bovins',
+          route: '/elevage/ovins',
+          moduleId: 'ovins',
         ),
         EntreeNavigation(
           libelle: 'Fiche Poulets/Pondeuses',

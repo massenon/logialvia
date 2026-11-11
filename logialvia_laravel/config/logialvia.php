@@ -24,7 +24,7 @@ return [
         '/elevage/lapins' => ['view-elevage', 'cuniculture'],
         '/elevage/poissons-chats' => ['view-elevage', 'pisciculture'],
         '/elevage/escargots' => ['view-elevage', 'heliciculture'],
-        '/elevage/bovins' => ['view-elevage', 'bovins'],
+        '/elevage/ovins' => ['view-elevage', 'ovins'],
         '/elevage/poulets-pondeuses' => ['view-elevage', 'aviculture_classique'],
         '/elevage/couveuse' => ['view-elevage', null],
         '/elevage/mirages' => ['view-elevage', null],
@@ -69,7 +69,7 @@ return [
         'cuniculture' => 'lapins',
         'aviculture_classique' => 'poulets',
         'heliciculture' => 'escargots',
-        'bovins' => 'bovins',
+        'ovins' => 'ovins',
     ],
 
     /*

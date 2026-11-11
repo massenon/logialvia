@@ -107,7 +107,7 @@ void main() {
       'un compte sans droit sur un type ne le propose pas : en attente, jamais en conflit',
       () async {
         serveur.droits = caissier;
-        await file.proposerModule('bovins', actif: true);
+        await file.proposerModule('ovins', actif: true);
 
         final r = await moteur.synchroniser();
 
@@ -146,7 +146,7 @@ void main() {
     test('ce que le compte peut écrire part, le reste attend', () async {
       serveur.droits = caissier;
       await client(_a, 'Aïcha');
-      await file.proposerModule('bovins', actif: true);
+      await file.proposerModule('ovins', actif: true);
 
       final r = await moteur.synchroniser();
 
@@ -160,7 +160,7 @@ void main() {
       'changement de compte : les demandes en attente de droit partent',
       () async {
         serveur.droits = caissier;
-        await file.proposerModule('bovins', actif: true);
+        await file.proposerModule('ovins', actif: true);
         await moteur.synchroniser();
         expect(serveur.demandesRecues, isEmpty);
 
@@ -185,7 +185,7 @@ void main() {
           ..droits = sansEcriture
           ..annoncerDroits = false;
         await client(_a, 'Aïcha');
-        await file.proposerModule('bovins', actif: true);
+        await file.proposerModule('ovins', actif: true);
 
         final r = await moteur.synchroniser();
 
@@ -211,7 +211,7 @@ void main() {
 
     test('un refus ordinaire (sans code) reste, lui, un conflit', () async {
       serveur.refuserDemandes = 'Données invalides.';
-      await file.proposerModule('bovins', actif: true);
+      await file.proposerModule('ovins', actif: true);
 
       await moteur.synchroniser();
 
@@ -224,7 +224,7 @@ void main() {
       'état de droits : compte, droits effectifs, nombre en attente',
       () async {
         serveur.droits = caissier;
-        await file.proposerModule('bovins', actif: true);
+        await file.proposerModule('ovins', actif: true);
         await moteur.synchroniser();
 
         final etat = await moteur.etatDroits();
@@ -238,7 +238,7 @@ void main() {
     );
 
     test('droits inconnus (ancien serveur) : le poste propose tout', () async {
-      await file.proposerModule('bovins', actif: true);
+      await file.proposerModule('ovins', actif: true);
 
       final r = await moteur.synchroniser();
 
@@ -398,7 +398,7 @@ void main() {
         () async {
           horlogePoste = () => DateTime.now().add(cas.$2);
           await client(_a, 'Aïcha');
-          await file.proposerModule('bovins', actif: true);
+          await file.proposerModule('ovins', actif: true);
 
           final r = await moteur.synchroniser();
 
@@ -421,7 +421,7 @@ void main() {
       // Deux jours d'avance : la saisie est datée DANS DEUX JOURS.
       horlogePoste = () => DateTime.now().add(const Duration(days: 2));
       await client(_a, 'Aïcha');
-      await file.proposerModule('bovins', actif: true);
+      await file.proposerModule('ovins', actif: true);
       await moteur.synchroniser();
       expect(serveur.clients, isEmpty);
       final dateeDuFutur = DateTime.parse((await ligne(_a)).updatedAt);
@@ -544,7 +544,7 @@ void main() {
         serveur.annoncerHeure = false;
         horlogePoste = () => DateTime.now().add(const Duration(hours: 1));
         await client(_a, 'Aïcha');
-        await file.proposerModule('bovins', actif: true);
+        await file.proposerModule('ovins', actif: true);
 
         final r = await moteur.synchroniser();
 

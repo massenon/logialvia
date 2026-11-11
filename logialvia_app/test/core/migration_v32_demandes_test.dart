@@ -50,7 +50,7 @@ void main() {
       await db.customSelect('SELECT 1').get();
       await db.customStatement(
         "INSERT INTO demandes_referentiel (id, type, cle, donnees, saisi_le) VALUES "
-        "('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'module_actif', 'bovins', '{}', '2026-11-09T09:00:00.000Z')",
+        "('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'module_actif', 'ovins', '{}', '2026-11-09T09:00:00.000Z')",
       );
       await db.customStatement('PRAGMA user_version = 31');
       await db.close();

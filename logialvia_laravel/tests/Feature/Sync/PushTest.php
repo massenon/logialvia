@@ -151,9 +151,9 @@ class PushTest extends TestCase
     public function test_un_referentiel_envoye_par_un_poste_est_ignore_et_journalise(): void
     {
         $poste = $this->poste();
-        $module = ModuleActif::query()->where('module_id', 'bovins')->firstOrFail();
+        $module = ModuleActif::query()->where('module_id', 'ovins')->firstOrFail();
 
-        $this->envoyer($poste, ['modules_actifs' => [['id' => $module->id, 'module_id' => 'bovins', 'is_actif' => true]]])
+        $this->envoyer($poste, ['modules_actifs' => [['id' => $module->id, 'module_id' => 'ovins', 'is_actif' => true]]])
             ->assertOk()
             ->assertJsonPath('modules_actifs.accepted', [])
             ->assertJsonPath('modules_actifs.ignored.0.id', $module->id);

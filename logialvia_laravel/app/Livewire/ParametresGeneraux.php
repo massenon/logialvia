@@ -43,7 +43,7 @@ class ParametresGeneraux extends Component
         'aviculture_classique' => ['Poulets / Pondeuses', 'Filière dupliquée — désactivée par défaut'],
         'cuniculture' => ['Lapins (Cuniculture)', 'Copie fidèle — désactivée par défaut'],
         'heliciculture' => ['Escargots (Héliciculture)', 'Filière ajoutée — désactivée par défaut'],
-        'bovins' => ['Bovins', 'Filière ajoutée — désactivée par défaut'],
+        'ovins' => ['Ovins', 'Filière ajoutée — désactivée par défaut'],
     ];
 
     public const SECURITES_SMTP = ['TLS', 'SSL', 'Aucun'];

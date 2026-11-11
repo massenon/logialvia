@@ -82,20 +82,20 @@ scenario('parametres : modifier l\'entreprise ; module desactive -> ecran 404 et
     await page.locator('form[data-onglet=entreprise] button[type=submit]').first().click();
     await calme(page);
     egal(valeur('select raison_sociale from parametres_entreprise limit 1'), 'ALLMANY ET COMPAGNIE SARL', 'raison sociale en base');
-    // Module bovins : desactive -> la fiche disparait.
+    // Module ovins : desactive -> la fiche disparait.
     await onglet(page, 'Modules Actifs');
-    await page.locator('[data-module=bovins] button').click();
+    await page.locator('[data-module=ovins] button').click();
     await calme(page);
-    egal(valeur("select is_actif from modules_actifs where module_id='bovins'"), 0, 'module desactive en base');
-    const r = await page.goto('/elevage/bovins');
-    egal(r.status(), 404, 'fiche bovins fermee');
+    egal(valeur("select is_actif from modules_actifs where module_id='ovins'"), 0, 'module desactive en base');
+    const r = await page.goto('/elevage/ovins');
+    egal(r.status(), 404, 'fiche ovins fermee');
     page.problemes.length = 0;
     await aller(page, '/dashboard');
-    verifier(await page.locator('aside a[href$="/elevage/bovins"]').count() === 0, 'lien Fiche Bovins retire de la barre');
+    verifier(await page.locator('aside a[href$="/elevage/ovins"]').count() === 0, 'lien Fiche Ovins retire de la barre');
     await aller(page, '/parametres/generaux');
-    await page.locator('[data-module=bovins] button').click();
+    await page.locator('[data-module=ovins] button').click();
     await calme(page);
-    egal(valeur("select is_actif from modules_actifs where module_id='bovins'"), 1, 'module reactive');
+    egal(valeur("select is_actif from modules_actifs where module_id='ovins'"), 1, 'module reactive');
   });
 });
 

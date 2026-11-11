@@ -191,7 +191,7 @@ class ScenariosTour {
           'détaillée n\'est pas nécessaire ce mois-ci.',
     ),
   ],
-  // ⚠️ Visites REDIGEES, non transcrites : les fiches Escargots et Bovins ont
+  // ⚠️ Visites REDIGEES, non transcrites : les fiches Escargots et Ovins ont
   // ete ajoutees apres le prototype (DV-16, DV-17), aucune page HTML ne les
   // porte. Elles decrivent ce que l'ecran fait reellement.
   '/elevage/escargots': [
@@ -219,12 +219,12 @@ class ScenariosTour {
           'détaillée n\'est pas nécessaire ce mois-ci.',
     ),
   ],
-  '/elevage/bovins': [
+  '/elevage/ovins': [
     EtapeTour(
       cible: 'saisie-journaliere',
       titre: 'Saisie Journalière',
       texte:
-          'Renseignez les achats, les vêlages, les morts par catégorie (Veau, '
+          'Renseignez les achats, les agnelages, les morts par catégorie (Agneau, '
           'Embouche, Reproducteur) et la pesée totale du lot : avec la pesée, '
           'la provende se calcule en pourcentage du poids vif ; sans pesée, '
           'elle retombe sur la ration indicative par tête.',

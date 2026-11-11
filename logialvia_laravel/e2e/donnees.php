@@ -27,7 +27,7 @@ $t = User::query()->firstOrNew(['username' => 'temporaire1']);
 $t->forceFill(['name' => 'Temporaire Test', 'password' => $mdp, 'is_active' => true, 'must_change_password' => true])->save();
 $t->syncRoles(['caissier']);
 
-foreach (['bovins', 'pisciculture', 'cuniculture', 'heliciculture', 'aviculture_classique'] as $m) {
+foreach (['ovins', 'pisciculture', 'cuniculture', 'heliciculture', 'aviculture_classique'] as $m) {
     ModuleActif::query()->where('module_id', $m)->update(['is_actif' => true]);
 }
 ParametresEntreprise::query()->update([

@@ -496,11 +496,11 @@ class SoinsCalendrierWebTest extends TestCase
         // Onglet « Calendrier » : aucun filtre, seule la modale propose des filieres.
         $c = Livewire::actingAs($admin)->test(SoinsCalendrier::class)->call('choisirOnglet', 'calendrier')->call('nouveauSoin');
         $c->assertSeeHtml('<option value="goliaths">')->assertSeeHtml('<option value="pintades">')
-            ->assertDontSeeHtml('<option value="bovins">')->assertDontSeeHtml('<option value="lapins">');
+            ->assertDontSeeHtml('<option value="ovins">')->assertDontSeeHtml('<option value="lapins">');
 
-        ModuleActif::query()->where('module_id', 'bovins')->update(['is_actif' => true]);
+        ModuleActif::query()->where('module_id', 'ovins')->update(['is_actif' => true]);
         Livewire::actingAs($admin)->test(SoinsCalendrier::class)->call('choisirOnglet', 'calendrier')->call('nouveauSoin')
-            ->assertSeeHtml('<option value="bovins">');
+            ->assertSeeHtml('<option value="ovins">');
     }
 
     // ------------------------------------------------------------------- Droits

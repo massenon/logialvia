@@ -168,6 +168,10 @@ class DemandesReferentiel
             return $v->errors()->first();
         }
 
+        // Alias herites (DV-22) : un poste ancien peut proposer `bovins` (module, espece, stade `Veau`,
+        // categorie « Élevage bovin ») ; le serveur ne connait et n'ecrit que `ovins`.
+        $demande = AliasHerites::normaliserDemande($demande);
+
         // Idempotence : une demande deja traitee rend la meme issue.
         $connue = DemandeReferentiel::query()->find($demande['id']);
         if ($connue !== null) {

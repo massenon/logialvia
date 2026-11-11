@@ -33,7 +33,8 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 | DV-14 | 08/11/2026 | Autonomie de provende : critique = délai fournisseur ; alerte = délai + marge de 4 j | recommandé, à confirmer avec le technicien | Q-DV-4 (en « recommandé ») | délai réel du fournisseur |
 | DV-15 | 08/11/2026 | `/inventaire` réservé à l'administrateur ; comptable calqué sur AgriERP | décision par défaut (aucune réponse du client) | — | Q-DV-5 et Q-DV-7 OUVERTES |
 | DV-16 | 08/11/2026 | Nouvelle filière **escargots** (achatines) : fiche générique du poste, 3 stades, vente à la pièce | ajout validé par le client ; repères recommandés, **validés par l'animalier** (Q-DV-9) | Q-ESC-1 à Q-ESC-7 (en « recommandé ») | repères zootechniques (poids, cycle, ration, mortalité) |
-| DV-17 | 08/11/2026 | Nouvelle filière **bovins** : fiche générique, 3 stades, ration en % du poids vif (mécanisme de DV-01), vente à la tête | ajout validé par le client ; repères recommandés, **validés par l'animalier** (Q-DV-9) | Q-BOV-1 à Q-BOV-7 (en « recommandé ») | race, poids de maturité, calendrier vétérinaire, doses |
+| DV-17 | 08/11/2026 | Nouvelle filière **bovins** (**REMPLACÉE par Ovins, voir DV-22**) : fiche générique, 3 stades, ration en % du poids vif (mécanisme de DV-01), vente à la tête | ajout validé par le client ; repères recommandés, **validés par l'animalier** (Q-DV-9) | Q-BOV-1 à Q-BOV-7 (en « recommandé ») | race, poids de maturité, calendrier vétérinaire, doses |
+| DV-22 | 11/11/2026 | **Filière Bovins remplacée par Ovins** (identifiant `ovins`, route `/elevage/ovins`, module `ovins`) ; migration poste v51 et serveur ; alias hérité `bovins` | demande du client ; repères génériques **à valider par l'animalier et le vétérinaire** | — | repères zootechniques ovins, calendrier sanitaire |
 | DV-18 | 08/11/2026 | Prototype HTML : si absent, le web est converti depuis le code Dart du poste ; s'il est fourni, il prime | validé par le client | Q-PROTO-1 | fourniture de `prototype_html` |
 
 ---
@@ -180,7 +181,9 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Q-ESC-7 Écran.** **Fiche générique du poste**, aucun champ propre dans cette version. Température et humidité des parcs : note libre de la saisie journalière. Champs d'ambiance dédiés : NON ADOPTÉ, évolution possible. Numérotation (Paramètres Élevage) : groupe « HÉLICICULTURE (ESCARGOTS) », préfixe **BAC** (proposé), préfixe vide refusé comme les autres.
 - **Reste À DÉFINIR.** Poids et âge de maturité réels de l'élevage ; densité par bac ; seuils de mortalité ; vente au kilo si le marché l'exige (calendrier d'hygiène et rations : COMPLÉTÉS en §3b, à ajuster par l'animalier).
 
-### DV-17 — Bovins [ajout validé ; repères recommandés, validés par l'animalier]
+### DV-17 — Bovins [ajout validé ; repères recommandés, validés par l'animalier] — REMPLACÉE par Ovins (DV-22, 11/11/2026)
+
+> **Mise à jour du 11/11/2026 :** à la demande du client, cette filière est devenue la filière **Ovins** (voir **DV-22** ci-dessous). Le texte qui suit est conservé comme historique de la décision ; les identifiants, repères et valeurs d'ouverture en vigueur sont ceux de DV-22.
 
 - **Identité (proposée).** `identifiant` `bovins` · libellé « Bovins » · route `/elevage/bovins` · module activable `bovins` · icône à choisir (proposé : `agriculture`).
 - **Q-BOV-1 Race.** Taurins locaux (Borgou, Somba) et zébus (Peulh) du nord du Bénin ; non distinguées dans la fiche (à confirmer).
@@ -191,6 +194,22 @@ Statut de chaque ligne ci-dessous : **validé par le client** (la règle) ; les 
 - **Q-BOV-6 Prophylaxie (modèle : calendrier du poste) — COMPLÉTÉ.** Calendrier sanitaire complet semé à la création de la filière (liste en §3b) : vaccins (péripneumonie contagieuse bovine, charbon bactéridien et symptomatique, pasteurellose), déparasitages interne et externe, détiquage, rappels, avec produit, **dose** et rémanence. L'animalier le valide et le modifie dans l'écran « Calendriers Prophylaxie » (pastille « Bovins »).
 - **Q-BOV-7 Écran.** Fiche générique du poste, plus le champ de poids vif (Q-BOV-3). Numérotation : groupe « ÉLEVAGE BOVIN », préfixe **PARC** (proposé).
 - **Reste À DÉFINIR.** Race, gestion du fourrage et du pâturage, traçabilité par tête (boucle d'identification) si le client la veut (rations, calendrier, produits et doses : COMPLÉTÉS en §3b, à ajuster par l'animalier).
+
+### DV-22 — Filière Bovins remplacée par Ovins (2026-11-11, demande du client)
+
+- **Demande.** « Remplace Fiche Bovins par Fiche Ovins (on considère Ovins). » La filière DV-17 devient la filière **Ovins** (moutons) partout : poste Flutter, web Laravel, base de données, synchronisation, tests, documentation.
+- **Ce qui change.** `identifiant` **`ovins`** (au lieu de `bovins`) · libellé « Ovins » · menu « **Fiche Ovins** » · route **`/elevage/ovins`** (`/elevage/bovins` n'existe plus) · module activable **`ovins`** · icône `grass` (inchangée) · catégorie de produit « **Élevage ovin** » · numérotation « Élevage ovin (Ovins) », préfixe `PARC` inchangé · emoji 🐑. Le mécanisme (3 catégories, vente à la tête, ration en % du poids vif de DV-01/DV-17, tableau par classe de poids) est inchangé.
+- **Repères zootechniques (génériques, TOUS « à valider par l'animalier / le vétérinaire », `confirme: false`).**
+  - Catégories : **Agneau** (jeune, 0 à 3 mois ; reçoit achats et naissances) · **Embouche** (commercialisée, déduite des ventes) · **Reproducteur** (brebis et béliers). Étapes : *Naissance (agnelage) → Agneau (0 → 3 mois) → Embouche (≥ 35 kg ou 12 mois) — Éligible à la Vente → Reproducteur*. Glossaire : « Achats », « **Nés (Agnelage)** ».
+  - Maturité commerciale : `poidsMaturiteGrammes` **35 000** (35 kg), `ageMaturiteJours` **365**.
+  - Rations de repli (complément seul, g/tête/j) : Agneau **300** · Embouche **600** · Reproducteur **800** ; plafond par tête `rationMaxGrammesParJour` **4 000**.
+  - Ration en % du poids vif (matière sèche), classes `[min, max[` : **moins de 15 kg : 4,0 %** · **15 à moins de 30 kg : 3,5 %** · **30 kg et plus : 3,0 %** ; plafond de saisie du taux inchangé (10 %).
+  - Poids moyen plausible (contrôle de vraisemblance) : de **2 kg** (agneau) à **120 kg**.
+  - Calendrier sanitaire, 9 échéances (mêmes jours, même structure, même nombre que pour les bovins) : J1 déparasitage interne (strongles, albendazole) · J7 traitement externe (gale, tiques) · J15 **vaccin peste des petits ruminants (PPR)** · J30 vaccin entérotoxémie · J45 vaccin pasteurellose · J60 déparasitage interne et externe (ivermectine, rémanence 35 j) · J90 vitamines et minéraux · J180 rappel semestriel de déparasitage · J365 rappel annuel PPR et entérotoxémie. Rémanences prudentes inchangées (albendazole 14 j, ivermectine 35 j, vaccins 0). **Doses et produits : à valider par le vétérinaire** ; la notice du produit utilisé prévaut toujours.
+  - Catalogue : aucun produit bovin n'était semé (les 14 produits d'ouverture viennent du prototype) ; la seule trace était la catégorie « Élevage bovin », devenue « Élevage ovin ». Les produits ovins (agneau d'embouche, brebis ou bélier reproducteur, agneau) se créent dans le catalogue, avec leur prix.
+- **Migration.** *Poste* : schéma **v50 → v51** (`MigrationBovinsVersOvins`). Les lignes `bovins` passent à `ovins` dans toutes les tables qui portent l'espèce ou le module (modules actifs, fiches journalières, compteurs de ventes, bandes, soins, infirmerie, lignes de vente, barèmes, taux par classe de poids, échéances de prophylaxie, produits et leur catégorie, demandes de référentiel en attente), en une transaction, **idempotente** et **sans doublon** (la ligne `ovins` existante l'emporte). Les identifiants déterministes sont recalculés avec la nouvelle espèce ; les faits sont remis « à envoyer ». Un barème, une classe ou une échéance restés EXACTEMENT à leur valeur d'ouverture bovine prennent la valeur d'ouverture ovine ; une valeur modifiée par l'animalier est conservée. *Serveur* : migration `2026_11_11_090000_renomme_bovins_en_ovins`, mêmes règles (un référentiel écarté est archivé, jamais effacé).
+- **Alias hérité.** Un poste ancien (schéma v50) peut encore envoyer `bovins` : le serveur l'accepte et le **normalise en `ovins` à l'entrée** (voir `46_CONTRAT_SYNCHRONISATION.md` §16). Le serveur n'écrit jamais `bovins`.
+- **Reste À DÉFINIR.** Race(s) (Djallonké, Peulh, Oudah…), saison et mode d'agnelage, fourrage et pâturage, traçabilité par tête (boucle), validation de tous les repères ci-dessus par l'animalier et le vétérinaire.
 
 ### DV-18 — Prototype HTML : convertir depuis le Dart tant qu'il n'est pas fourni
 

@@ -2580,7 +2580,7 @@ class FauxServeurSync {
     'poulets',
     'pondeuses',
     'escargots',
-    'bovins',
+    'ovins',
   };
 
   static const _entiersFiche = [

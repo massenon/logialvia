@@ -73,7 +73,7 @@ class ElevageTest extends TestCase
     private function ligneTaux(array $surcharge = []): array
     {
         return array_merge([
-            'id' => (string) Str::uuid(), 'espece' => 'bovins', 'poids_min_g' => 0, 'poids_max_g' => 150000,
+            'id' => (string) Str::uuid(), 'espece' => 'ovins', 'poids_min_g' => 0, 'poids_max_g' => 150000,
             'taux_pourcent' => 3.5, 'confirme' => false,
         ], $surcharge);
     }

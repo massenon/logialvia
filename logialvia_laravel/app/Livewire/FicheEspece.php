@@ -54,7 +54,7 @@ class FicheEspece extends Component
         '/elevage/lapins' => ['lapins'],
         '/elevage/poissons-chats' => ['poissons-chats'],
         '/elevage/escargots' => ['escargots'],
-        '/elevage/bovins' => ['bovins'],
+        '/elevage/ovins' => ['ovins'],
         '/elevage/poulets-pondeuses' => ['poulets', 'pondeuses'],
     ];
 

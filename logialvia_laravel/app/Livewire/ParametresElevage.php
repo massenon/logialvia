@@ -141,7 +141,7 @@ class ParametresElevage extends Component
 
     private function plafondRation(string $espece): int
     {
-        return $espece === 'bovins' ? 20000 : 5000;
+        return $espece === 'ovins' ? 4000 : 5000;
     }
 
     private function especeProposee(string $espece): bool
@@ -338,7 +338,7 @@ class ParametresElevage extends Component
         }
         $espece = $existant->espece ?? $this->espece;
         if (! array_key_exists($espece, FilieresElevage::POIDS_VIF)) {
-            $this->erreur = 'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne s\'applique qu\'aux bovins et aux poissons-chats.';
+            $this->erreur = 'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne s\'applique qu\'aux ovins et aux poissons-chats.';
 
             return;
         }

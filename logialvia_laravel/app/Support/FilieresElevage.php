@@ -88,15 +88,15 @@ final class FilieresElevage
                 'etapes' => ['Ponte et éclosion', 'Naissain', 'Marchand (≈ 6 à 8 mois, ≈ 100 g) — Éligible à la Vente', 'Reproducteur'],
                 'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés (Éclosions)',
             ],
-            'bovins' => [
-                'libelle' => 'Bovins', 'icone' => 'grass', 'route' => '/elevage/bovins',
+            'ovins' => [
+                'libelle' => 'Ovins', 'icone' => 'grass', 'route' => '/elevage/ovins',
                 'categories' => [
-                    ['Veau', 1500, true, false],
-                    ['Embouche', 7000, false, true],
-                    ['Reproducteur', 9000, false, false],
+                    ['Agneau', 300, true, false],
+                    ['Embouche', 600, false, true],
+                    ['Reproducteur', 800, false, false],
                 ],
-                'etapes' => ['Naissance (vêlage)', 'Veau (0 → 6 mois)', 'Embouche (≥ 250 kg ou 24 mois) — Éligible à la Vente', 'Reproducteur'],
-                'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés (Vêlage)',
+                'etapes' => ['Naissance (agnelage)', 'Agneau (0 → 3 mois)', 'Embouche (≥ 35 kg ou 12 mois) — Éligible à la Vente', 'Reproducteur'],
+                'libelle_achats' => 'Achats', 'libelle_naissances' => 'Nés (Agnelage)',
             ],
         ];
     }
@@ -113,7 +113,7 @@ final class FilieresElevage
     ];
 
     /** Filieres rationnees en % du poids vif (matiere seche) : `rationEnPourcentagePoidsVif` du Dart. */
-    public const RATION_AU_POIDS_VIF = ['poissons-chats', 'bovins'];
+    public const RATION_AU_POIDS_VIF = ['poissons-chats', 'ovins'];
 
     /** @return list<string> Les identifiants, dans l'ordre du Dart. */
     public static function identifiants(): array
@@ -146,15 +146,15 @@ final class FilieresElevage
         'poulets' => 'Poulets',
         'pondeuses' => 'Pondeuses',
         'escargots' => 'Escargots',
-        'bovins' => 'Bovins',
+        'ovins' => 'Ovins',
     ];
 
     /** Les 6 filieres de « Parametres Elevage » (`EspecesParametrables`). */
-    public const PARAMETRABLES = ['goliaths', 'pintades', 'lapins', 'poissons-chats', 'escargots', 'bovins'];
+    public const PARAMETRABLES = ['goliaths', 'pintades', 'lapins', 'poissons-chats', 'escargots', 'ovins'];
 
     /** Filieres rationnees sur le poids vif : espece => [unite, grammes par unite, taux max en %]. */
     public const POIDS_VIF = [
-        'bovins' => ['kg', 1000, 10.0],
+        'ovins' => ['kg', 1000, 10.0],
         'poissons-chats' => ['g', 1, 25.0],
     ];
 
@@ -163,7 +163,7 @@ final class FilieresElevage
         'pisciculture' => ['poissons-chats'],
         'cuniculture' => ['lapins'],
         'heliciculture' => ['escargots'],
-        'bovins' => ['bovins'],
+        'ovins' => ['ovins'],
         'aviculture_classique' => ['poulets', 'pondeuses'],
     ];
 
@@ -214,6 +214,17 @@ final class FilieresElevage
     public static function idBareme(string $espece, string $stade): string
     {
         return self::uuidDeterministe("bareme_ration:$espece|$stade");
+    }
+
+    public static function idEcheance(string $espece, int $jourCycle, string $traitement, string $produit): string
+    {
+        return self::uuidDeterministe("echeance_prophylaxie:$espece|$jourCycle|$traitement|$produit");
+    }
+
+    /** Alias herite (DV-22) : `bovins` est accepte a l'entree et normalise en `ovins` (voir `AliasHerites`). */
+    public static function normaliser(mixed $espece): mixed
+    {
+        return \App\Sync\AliasHerites::espece($espece);
     }
 
     public static function idTaux(string $espece, int $poidsMinG): string

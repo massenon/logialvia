@@ -537,7 +537,7 @@ class InventaireWebTest extends TestCase
 
     public function test_le_total_et_le_kpi_des_animaux_additionnent_les_huit_filieres(): void
     {
-        foreach (['goliaths', 'pintades', 'lapins', 'poissons-chats', 'poulets', 'pondeuses', 'escargots', 'bovins'] as $i => $espece) {
+        foreach (['goliaths', 'pintades', 'lapins', 'poissons-chats', 'poulets', 'pondeuses', 'escargots', 'ovins'] as $i => $espece) {
             $this->fiche($espece, '2026-11-10', 10 * ($i + 1));
         }
 
@@ -545,7 +545,7 @@ class InventaireWebTest extends TestCase
         $html = $composant->html();
         $this->assertSame(8, substr_count($html, 'data-effectif="'));
         $this->assertSame('10', $this->cellule($html, 'data-effectif="goliaths"', 'effectif'));
-        $this->assertSame('80', $this->cellule($html, 'data-effectif="bovins"', 'effectif'));
+        $this->assertSame('80', $this->cellule($html, 'data-effectif="ovins"', 'effectif'));
         $this->assertMatchesRegularExpression('/data-kpi="animaux".*?text-kpi-value font-bold">360</s', $html);
         $this->assertStringContainsString('data-col="total-effectif">360<', $html);
     }

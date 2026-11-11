@@ -45,7 +45,7 @@ class DashboardElevage extends Component
         'pintades' => 'Pintadaux',
         'lapins' => 'Lapereaux',
         'escargots' => 'Naissains',
-        'bovins' => 'Veaux',
+        'ovins' => 'Agneaux',
         'poulets' => 'Poulettes',
         'pondeuses' => 'Poulettes',
         'poissons-chats' => 'Juvéniles',
@@ -57,7 +57,7 @@ class DashboardElevage extends Component
         'aviculture_classique' => ['Poulets / Pondeuses', 'Filière aviculture classique disponible — non activée pour le moment.'],
         'pisciculture' => ['Poissons-Chats', 'Filière Pisciculture disponible — non activée pour le moment.'],
         'heliciculture' => ['Escargots', 'Filière Héliciculture disponible — non activée pour le moment.'],
-        'bovins' => ['Bovins', 'Filière Bovins disponible — non activée pour le moment.'],
+        'ovins' => ['Ovins', 'Filière Ovins disponible — non activée pour le moment.'],
     ];
 
     private function maintenant(): CarbonImmutable

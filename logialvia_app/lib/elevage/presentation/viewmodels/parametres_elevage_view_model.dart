@@ -83,7 +83,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  /// Plafond de ration par tête de l'espèce (5 kg, 20 kg pour un bovin).
+  /// Plafond de ration par tête de l'espèce (5 kg, 4 kg pour un ovin).
   static int _plafondRation(String espece) =>
       ConfigurationsEspeces.parIdentifiant[espece]?.rationMaxGrammesParJour ??
       5000;
@@ -188,7 +188,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
 
   // ------------------------------------- Rationnement : classes de poids vif
 
-  /// Espèces rationnées en % du poids vif (aujourd'hui : les bovins) — les
+  /// Espèces rationnées en % du poids vif (aujourd'hui : les ovins) — les
   /// seules à qui le tableau « Taux de ration par classe de poids » s'applique.
   static List<({String id, String libelle})> get especesSurPoidsVif => [
     for (final e in EspecesParametrables.toutes)
@@ -227,10 +227,10 @@ class ParametresElevageViewModel extends ChangeNotifier {
     if (!rationneSurPoidsVif(espece)) {
       return const Echec(
         'Cette espèce n\'est pas rationnée sur le poids vif : le tableau ne '
-        's\'applique qu\'aux bovins et aux poissons-chats.',
+        's\'applique qu\'aux ovins et aux poissons-chats.',
       );
     }
-    // Bornes saisies dans l'unite de la filiere (kg pour un bovin, g pour un
+    // Bornes saisies dans l'unite de la filiere (kg pour un ovin, g pour un
     // poisson) ; la base les garde en grammes.
     final unite = ConfigurationsEspeces.parIdentifiant[espece]!;
     final facteur = unite.grammesParUniteClassePoids;
@@ -372,7 +372,7 @@ class ParametresElevageViewModel extends ChangeNotifier {
       );
     }
     // Le prototype bornait le formulaire a 31 jours, ce qui convient a une
-    // volaille mais pas a un bovin : vaccins de rappel a J180 et J365. La
+    // volaille mais pas a un ovin : vaccins de rappel a J180 et J365. La
     // borne est portee a une annee.
     if (jourCycle < 1 || jourCycle > joursCycleMax) {
       return const Echec(

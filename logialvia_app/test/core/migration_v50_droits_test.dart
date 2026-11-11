@@ -106,7 +106,7 @@ void main() {
       "SELECT count(*) AS n FROM demandes_referentiel WHERE sync_status = 'pending'",
     );
     expect(n.single['n'], 74);
-    expect(AppDatabase.versionSchema, 50);
+    expect(AppDatabase.versionSchema, greaterThanOrEqualTo(50));
     await db.close();
   });
 }
