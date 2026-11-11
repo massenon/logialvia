@@ -120,10 +120,10 @@ class PwaTest extends TestCase
             $this->assertStringContainsString($police, $css);
             $this->assertFileExists(public_path('fonts/'.$police));
         }
-        // L'italique (97 Ko) est charge au repos apres `load` (app.js), pas par le CSS : il ne concurrence pas le premier affichage.
+        // Pas d'italique telecharge : son echange re-peignait le texte apres le LCP (CI mobile > 2 s).
         $this->assertStringNotContainsString('Roboto-Italic', $css);
-        $this->assertStringContainsString('Roboto-Italic-Variable-latin.woff2', (string) file_get_contents(resource_path('js/app.js')));
-        $this->assertFileExists(public_path('fonts/Roboto-Italic-Variable-latin.woff2'));
+        $this->assertStringNotContainsString('Roboto-Italic', (string) file_get_contents(resource_path('js/app.js')));
+        $this->assertFileDoesNotExist(public_path('fonts/Roboto-Italic-Variable-latin.woff2'));
     }
 
     public function test_budgets_de_poids_du_premier_chargement(): void

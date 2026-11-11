@@ -48,7 +48,7 @@ Sans mandataire : c'est ce que le serveur sert réellement (donc la preuve que B
 
 ## Défauts trouvés en étendant la garde à tous les écrans (corrigés)
 - **CLS 0,2–0,34 (achats, catalogue, ventes, fiches pintades/escargots, états financiers)** : la police Roboto arrivait après le premier affichage ; son échange avec la police de repli changeait la largeur des titres et faisait passer les boutons d'en-tête de la ligne du dessous à la ligne du titre. Correction : Roboto est de nouveau préchargée (`Link: rel=preload` + `<link>`), CLS ≈ 0.
-- **LCP mobile 2,2 s (rapports, profil, paramètres généraux)** : (1) le bandeau « Installer LogiALVIA » devenait le plus grand élément texte ; il n'apparaît plus qu'à la première interaction (ou après 8 s) ; (2) l'italique de Roboto (97 Ko) concurrençait le premier affichage ; il est maintenant chargé après `load` (FontFace, `app.js`).
+- **LCP mobile 2,2 s (rapports, profil, paramètres généraux)** : (1) le bandeau « Installer LogiALVIA » devenait le plus grand élément texte ; il n'apparaît plus qu'à la première interaction (ou après 8 s) ; (2) l'italique de Roboto (97 Ko) concurrençait le premier affichage ; chargé après `load`, son échange re-peignait le texte et repoussait encore le LCP (constaté en CI sur inventaire, clôture, dashboard élevage) : il est **supprimé**, le navigateur incline la Roboto droite.
 - La boîte des icônes est fixée à 1em × 1em (évite qu'un glyphe de remplacement plus large ne pousse la page avant l'arrivée de la police d'icônes).
 
 ## Limites connues

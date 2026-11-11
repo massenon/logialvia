@@ -6,8 +6,8 @@
     font-style: normal;
     font-display: swap;
 }
-/* L'italique (97 Ko) n'est PAS dans le CSS : il est charge apres `load` par resources/js/app.js (FontFace), pour ne pas
-   concurrencer le premier affichage ; d'ici la, le navigateur incline la police droite. */
+/* Pas de police italique : le navigateur incline Roboto droite (italique de synthese). Charger la vraie italique (97 Ko), meme
+   apres `load`, re-peignait le texte et repoussait le LCP mobile au-dela de 2 s (CI, 47x_). */
 
 /* Material Symbols Outlined (la police du poste), reduite aux icones utilisees : voir public/fonts. */
 @font-face {
