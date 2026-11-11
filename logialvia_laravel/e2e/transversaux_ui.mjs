@@ -119,7 +119,7 @@ scenario('double clic sur « Enregistrer » : catalogue, clients, fournisseurs, 
   });
 });
 
-scenario('double clic sur « Encaisser la Vente » : une seule vente', async () => {
+scenario('double clic sur « Valider la Vente » : une seule vente', async () => {
   await avec('caissier', 'double_clic_caisse', async (page) => {
     await aller(page, '/ventes');
     const avant = valeur('select count(*) from ventes');
@@ -130,7 +130,7 @@ scenario('double clic sur « Encaisser la Vente » : une seule vente', async () 
     await m.locator('button[type=submit]').click();
     await m.waitFor({ state: 'detached' });
     await page.fill('[data-section=panier] input[inputmode=numeric]', '5000');
-    await page.locator('button:has-text("Encaisser la Vente")').dblclick();
+    await page.locator('button:has-text("Valider la Vente")').dblclick();
     await calme(page, 800);
     egal(valeur('select count(*) from ventes') - avant, 1, 'ventes creees par un double clic');
   });

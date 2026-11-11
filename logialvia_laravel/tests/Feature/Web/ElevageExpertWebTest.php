@@ -575,7 +575,7 @@ class ElevageExpertWebTest extends TestCase
         $this->journee('goliaths', '2026-11-08', ['effectif' => 97, 'poids_general_g' => 180000]);
 
         Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(\App\Livewire\DashboardElevage::class)
-            ->assertSeeHtml('data-gmq="goliaths"')->assertSee('Goliaths : 56,5 g/j (500 g → 1856 g en 24 j)');
+            ->assertSeeHtml('data-gmq="goliaths"')->assertSee('Goliaths : 56,5 g/j')->assertSee('500 g → 1856 g en 24 j');
     }
 
     public function test_sans_deux_pesees_le_gmq_est_declare_absent(): void

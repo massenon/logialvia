@@ -1,37 +1,68 @@
 <div>
-    <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Gestion des Stocks</h1>
-        @if ($peutGerer)
-            <button type="button" wire:click="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
-                Ajouter un Intrant
-            </button>
-        @endif
+    <div class="mb-lg flex flex-wrap items-center justify-between gap-sm">
+        <div>
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="inventory_2" class="text-[24px]" />Gestion des Stocks</h1>
+            <p class="mt-xs text-xs text-outline">Intrants de provende, marchandises du commerce annexe, produits vétérinaires.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-xs">
+            {{-- La fabrication décrémente le stock : opération propre à chaque poste --}}
+            <span class="flex cursor-not-allowed items-center gap-xs rounded-full border border-outline-variant bg-surface-zebra px-md py-sm text-xs font-bold text-outline opacity-60" data-action-poste="fabrication" title="Disponible sur le poste (le stock est propre à chaque poste)">
+                <x-icone nom="blender" class="text-[16px]" />Fabrication de Provende <span class="font-normal">— sur le poste</span></span>
+            @if ($peutGerer)
+                <button type="button" wire:click="nouveau" class="flex items-center gap-xs rounded-full bg-brand-gold px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-brand-gold-light">
+                    <x-icone nom="add_circle" class="text-[16px]" />Ajouter un Intrant</button>
+            @endif
+        </div>
     </div>
 
-    <p class="mb-md text-xs text-outline">
-        Les intrants et le journal sont partagés par tous les postes. Le <strong>stock</strong>, le prix unitaire (PMP),
+    <details class="mb-md rounded-lg bg-surface-zebra p-sm text-xs text-outline">
+        <summary class="cursor-pointer font-semibold text-brand-navy">Ce qui est partagé entre postes, et ce qui reste au poste</summary>
+        <p class="mt-xs">Les intrants et le journal sont partagés par tous les postes. Le <strong>stock</strong>, le prix unitaire (PMP),
         la valeur du stock et les intrants sous seuil restent <strong>propres à chaque poste</strong> : ils se lisent et se
         corrigent sur le poste, jamais ici. Les ajustements d'inventaire et la fabrication de provende se font donc au poste,
-        et la suppression d'un intrant n'existe pas côté serveur.
-    </p>
+        et la suppression d'un intrant n'existe pas côté serveur.</p>
+    </details>
 
     @if ($message)
         <p role="status" class="mb-md rounded-lg bg-success-container p-sm text-xs text-success-deep">{{ $message }}</p>
     @endif
 
-    <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2">
-        <div class="rounded-lg border-l-4 border-info-blue bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Articles Suivis</p>
-            <p class="text-page-title font-bold" data-kpi="articles">{{ $articlesSuivis }}</p>
+    <div class="mb-lg grid grid-cols-2 gap-md md:grid-cols-4">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md opacity-60 shadow-sm" data-carte-poste="Valeur Totale Stock">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Valeur Totale Stock</span><x-icone nom="payments" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-caption text-outline">Disponible sur le poste</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Mouvements (7j)</p>
-            <p class="text-page-title font-bold" data-kpi="mouvements">{{ $mouvements7Jours }}</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md opacity-60 shadow-sm" data-carte-poste="Intrants Sous Seuil">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Intrants Sous Seuil</span><x-icone nom="warning" class="text-[18px] text-error-deep" /></div>
+            <p class="mt-xs text-caption text-outline">Disponible sur le poste</p>
+        </div>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Articles Suivis</span><x-icone nom="category" class="text-[18px] text-brand-gold" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="articles">{{ $articlesSuivis }}</p>
+        </div>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Mouvements (7j)</span><x-icone nom="sync_alt" class="text-[18px] text-success-deep" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="mouvements">{{ $mouvements7Jours }}</p>
         </div>
     </div>
 
-    <h2 class="mb-sm text-modal-title font-bold">Intrants</h2>
+    {{-- Onglets (maquette gestion-stocks.html) : les trois panneaux restent dans la page, seul l'affichage change --}}
+    <div x-data="{ onglet: 'tableau' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['tableau' => 'Tableau & Valorisation', 'mouvements' => 'Journal des Mouvements', 'ajustements' => 'Ajustement / Correction'] as $cle => $libelle)
+            <button type="button" role="tab" data-onglet-stock="{{ $cle }}" x-on:click="onglet = '{{ $cle }}'" x-bind:aria-selected="onglet === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="onglet === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">{{ $libelle }}</button>
+        @endforeach
+    </div>
+    <div class="mb-md flex flex-wrap items-center gap-xs">
+        <a href="{{ url('/stocks/impression') }}" target="_blank" rel="noopener" data-action="imprimer-journal"
+           class="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-2 text-xs font-bold hover:bg-surface-zebra"><x-icone nom="picture_as_pdf" class="text-[16px]" />Imprimer / PDF</a>
+        <button type="button" wire:click="exporter" data-action="exporter"
+                class="rounded-lg border border-outline-variant px-md py-2 text-xs font-bold hover:bg-surface-zebra">Exporter (XLSX)</button>
+    </div>
+
+    <div x-show="onglet === 'tableau'" data-panneau-stock="tableau">
 
     <div class="mb-md flex flex-col gap-sm sm:flex-row">
         <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Désignation ou code…"
@@ -94,15 +125,9 @@
         @endforelse
     </div>
 
-    <div class="mb-sm flex flex-wrap items-center justify-between gap-sm">
-        <h2 class="text-modal-title font-bold">Journal des Mouvements</h2>
-        <div class="flex gap-sm">
-            <a href="{{ url('/stocks/impression') }}" target="_blank" rel="noopener" data-action="imprimer-journal"
-               class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
-            <button type="button" wire:click="exporter" data-action="exporter"
-                    class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
-        </div>
     </div>
+
+    <div x-show="onglet === 'mouvements'" x-cloak data-panneau-stock="mouvements">
     <p class="mb-sm text-xs text-outline">
         Historique de tous les postes (les {{ \App\Livewire\GestionStocks::LIMITE_JOURNAL }} derniers), en lecture seule :
         un mouvement d'un autre poste ne change jamais le stock d'un poste, sauf s'il le désigne : « Web → P2 » signale une opération saisie au web
@@ -153,6 +178,16 @@
         @empty
             <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucun mouvement enregistré. Les réceptions de commandes et les ajustements d'inventaire apparaissent ici automatiquement.</p>
         @endforelse
+    </div>
+
+    </div>
+
+    <div x-show="onglet === 'ajustements'" x-cloak data-panneau-stock="ajustements">
+        <div class="max-w-xl rounded-lg border border-outline-variant bg-white p-lg opacity-80 shadow-sm" data-stock-poste>
+            <h2 class="mb-sm text-xs font-bold text-brand-navy">Saisir un Ajustement d'Inventaire</h2>
+            <p class="text-xs text-outline">Disponible sur le poste : l'ajustement compare le stock théorique au stock physique constaté, et le stock est propre à chaque poste. L'écart calculé y est journalisé, puis apparaît ici dans le journal des mouvements.</p>
+        </div>
+    </div>
     </div>
 
     @if ($formulaire)

@@ -117,7 +117,7 @@ class GestionStocksWebTest extends TestCase
             ->assertSee('Journal des Mouvements')->assertSee('Réception de commande')->assertSee('CMD-001')
             ->assertSee('+120')
             // Décision du client : rien de ce qui vit sur le poste.
-            ->assertDontSee('Valeur Totale Stock')->assertDontSee('Intrants Sous Seuil')->assertDontSee('Prix Unitaire')
+            ->assertSeeHtml('data-carte-poste="Valeur Totale Stock"')->assertSeeHtml('data-carte-poste="Intrants Sous Seuil"')->assertDontSee('Prix Unitaire')
             ->assertDontSeeHtml('>Stock</th>')->assertDontSeeHtml('>Valeur</th>')->assertDontSeeHtml('>Statut</th>')
             ->assertDontSee('Critique')
             ->assertSee('propres à chaque poste');
@@ -190,7 +190,7 @@ class GestionStocksWebTest extends TestCase
         $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('intrants', 'stock'));
         $this->assertFalse(method_exists($composant->instance(), 'supprimer'));
         $this->assertFalse(method_exists($composant->instance(), 'confirmerSuppression'));
-        $composant->assertDontSee('Supprimer')->assertDontSee('Ajustement d\'inventaire')->assertDontSee('Fabrication de Provende');
+        $composant->assertDontSee('Supprimer')->assertSeeHtml('data-action-poste="fabrication"')->assertDontSeeHtml('wire:click="fabriquer');
     }
 
     // ----------------------------------------------------------------- Ecriture

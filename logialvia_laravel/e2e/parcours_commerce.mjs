@@ -194,12 +194,12 @@ scenario('caisse : panier -> encaissement -> historique -> detail -> annulation 
     await page.locator('[data-suggestion="Koffi Mensah"]').click();
     // Montant recu insuffisant -> refus a l'ecran.
     await page.fill('[data-section=panier] input[inputmode=numeric]', '1000');
-    await page.click('button:has-text("Encaisser la Vente")');
+    await page.click('button:has-text("Valider la Vente")');
     await page.locator('[data-erreur=caisse]').waitFor();
     // Montant recu correct : monnaie a rendre, encaissement.
     await page.fill('[data-section=panier] input[inputmode=numeric]', '20000');
     await attendreTexte(page, 'Monnaie à rendre : 5 000', { zone: '[data-section=panier]' });
-    await page.click('button:has-text("Encaisser la Vente")');
+    await page.click('button:has-text("Valider la Vente")');
     await attendreTexte(page, 'Panier vide', { zone: '[data-section=panier]' });
     const v = un("select * from ventes where client='Koffi Mensah' order by date_vente desc");
     verifier(v && v.total === 15000 && v.paye === 15000 && v.status === 'Payée', `vente en base : ${JSON.stringify(v)}`);
@@ -248,7 +248,7 @@ scenario('caisse : vente a credit (avance) -> creance visible dans Clients', asy
     await calme(page);
     // REGRESSION (47n_) : clic immediat apres la frappe (< 300 ms de debounce) -> le montant recu doit partir avec l'action.
     await page.fill('[data-section=panier] input[inputmode=numeric]', '8000');
-    await page.click('button:has-text("Encaisser la Vente")');
+    await page.click('button:has-text("Valider la Vente")');
     await attendreTexte(page, 'Panier vide', { zone: '[data-section=panier]' });
     const v = un("select * from ventes where client='Hôtel Bénin Royal'");
     egal([v.total, v.paye, v.status], [18000, 8000, 'Avance'], 'vente a credit en base');

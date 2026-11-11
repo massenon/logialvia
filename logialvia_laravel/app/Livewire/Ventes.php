@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Ventes (Dart : `ventes_screen.dart`, `onglet_pos.dart`, `onglets_ventes_secondaires.dart`, `ventes_view_model.dart`).
  *
- * Onglets : Enregistrer Vente (caisse), Historique des Ventes, Retours et Avoirs. L'onglet « Devis Prestations »
+ * Onglets : Point de Vente (caisse), Historique des Ventes, Retours et Avoirs. L'onglet « Devis Prestations »
  * appartient au composant des devis (autre tranche) : `$onglets` est la liste a completer.
  *
  * Toute ecriture passe par `App\Services\Commerce\VentesWeb` (tables de synchronisation, ecritures automatiques,
@@ -29,7 +29,7 @@ class Ventes extends Component
 {
     public const STATUTS = ['Payée', 'Avance', 'Annulée'];
 
-    public const ONGLETS = ['caisse' => 'Enregistrer Vente', 'historique' => 'Historique des Ventes', 'retours' => 'Retours et Avoirs'];
+    public const ONGLETS = ['caisse' => 'Point de Vente', 'historique' => 'Historique des Ventes', 'retours' => 'Retours et Avoirs'];
 
     public string $onglet = 'caisse';
 

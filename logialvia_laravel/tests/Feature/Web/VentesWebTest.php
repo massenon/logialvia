@@ -151,8 +151,8 @@ class VentesWebTest extends TestCase
         $this->vente(['reference' => 'V-RECENT', 'client' => 'Kofi', 'total' => 12345]);
 
         Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
-            ->assertSeeHtmlInOrder(['data-vente="V-RECENT"', 'V-RECENT', '09/11/2026', 'Kofi', '12 345', 'Payée', 'data-vente="V-ANCIEN"', '04/11/2026'])
-            ->assertSee('Référence')->assertSee('Montant')->assertSee('Statut');
+            ->assertSeeHtmlInOrder(['data-vente="V-RECENT"', 'V-RECENT', 'Kofi', '09/11/2026', '12 345', 'Payée', 'data-vente="V-ANCIEN"', '04/11/2026'])
+            ->assertSee('Référence')->assertSee('Total')->assertSee('Statut');
     }
 
     public function test_la_liste_vide_affiche_le_message_du_poste(): void
@@ -241,7 +241,7 @@ class VentesWebTest extends TestCase
         $avant = [Vente::query()->count(), LigneVente::query()->count(), $v->fresh()->getAttributes()];
 
         Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Ventes::class)
-            ->assertSee('exige le droit de gérer les ventes')->assertDontSee('Encaisser la Vente')
+            ->assertSee('exige le droit de gérer les ventes')->assertDontSee('Valider la Vente')
             ->set('onglet', 'historique')->assertDontSeeHtml('data-action="annuler-vente"')->assertDontSeeHtml('data-action="modifier-vente"')
             ->set('recherche', 'x')->set('statut', 'Avance')->set('statut', '')->set('recherche', '')
             ->call('ouvrir', $v->id)->call('fermer');
