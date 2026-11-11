@@ -115,4 +115,34 @@ void main() {
       expect((await db.select(db.clients).get()).single.syncStatus, 'synced');
     },
   );
+
+  test(
+    'un refus de clôture est listé (clé = année) sans « Remettre en file »',
+    () async {
+      await db
+          .into(db.exerciceComptable)
+          .insert(
+            ExerciceComptableCompanion.insert(
+              annee: const Value(2026),
+              syncStatus: const Value('conflict'),
+              syncMotif: const Value(
+                'Clôture refusée : écritures déséquilibrées',
+              ),
+            ),
+          );
+
+      final lignes = await depot.refusees(table: 'exercice_comptable');
+
+      expect(lignes, hasLength(1));
+      expect(lignes.single.designation, '2026');
+      expect(lignes.single.motif, contains('déséquilibrées'));
+      expect(lignes.single.remisePossible, isFalse);
+      expect(
+        await depot.remettreEnFile(),
+        0,
+        reason: 'une clôture se refait, elle ne se renvoie pas',
+      );
+      expect(await depot.refusees(table: 'exercice_comptable'), hasLength(1));
+    },
+  );
 }

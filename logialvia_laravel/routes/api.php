@@ -31,6 +31,7 @@ Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(func
 
         Route::get('/sync/demande', [SyncController::class, 'demande'])->middleware('poste.jeton:lecture');
         Route::post('/sync/resynchronisation/acquittement', [SyncController::class, 'acquittement'])->middleware('poste.jeton:lecture');
+        Route::get('/sync/coherence', [SyncController::class, 'coherence'])->middleware('poste.jeton:lecture');
         Route::get('/sync/pull', [SyncController::class, 'pull'])->middleware('poste.jeton:lecture');
         Route::post('/sync/push', [SyncController::class, 'push'])->middleware('poste.jeton');
         Route::post('/sync/demandes', [SyncController::class, 'demandes'])->middleware('poste.jeton');

@@ -373,4 +373,29 @@ class PostesAppairageTest extends TestCase
         $this->assertDatabaseCount('demandes_synchronisation', 0);
         $this->assertNull($poste->fresh()->resync_demandee_le);
     }
+
+    // ------------------------------------------------------------------- Retard
+
+    public function test_le_retard_dit_jamais_synchronise_puis_a_jour_puis_retard(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $poste = $this->appairer($admin);
+
+        Livewire::actingAs($admin)->test(PostesAppairage::class)->assertSee('Jamais synchronisé');
+
+        // Un tirage complet : le serveur retient le curseur du poste.
+        app(\App\Services\DemandesSynchronisationService::class)->memoriserCurseur(
+            $poste->device_id,
+            now('UTC')->addMinute()->format('Y-m-d\TH:i:s.u\Z'),
+        );
+        Livewire::actingAs($admin)->test(PostesAppairage::class)->assertSee('À jour')->assertDontSee('Jamais synchronisé');
+
+        // Le temps passe, puis le serveur apprend une ligne plus récente que ce tirage.
+        $this->travel(10)->minutes();
+        \App\Models\Client::query()->forceCreate([
+            'id' => (string) Str::uuid(), 'nom' => 'Nouveau', 'updated_at' => now('UTC'),
+            'serveur_modifie_le' => now('UTC'),
+        ]);
+        Livewire::actingAs($admin)->test(PostesAppairage::class)->assertSee('Retard : 1 ligne(s)');
+    }
 }

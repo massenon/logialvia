@@ -38,6 +38,7 @@ class LigneRefusee {
     required this.id,
     required this.designation,
     required this.motif,
+    required this.remisePossible,
   });
 
   final String table;
@@ -47,20 +48,31 @@ class LigneRefusee {
   /// Ce qui permet de reconnaître la ligne (référence, nom, désignation…), sinon son identifiant.
   final String designation;
   final String motif;
+
+  /// « Remettre en file » a un sens pour cette ligne. Faux pour les clôtures : un refus y a déjà
+  /// rouvert la période ici ; il faut la REFAIRE depuis Comptabilité, pas renvoyer l'ancien état.
+  final bool remisePossible;
 }
 
 /// Ce que le poste sait, table par table, de l'état de ses lignes (`pending`,
 /// `synced`, `conflict`) — sans rien demander au serveur.
 ///
 /// Générique : une table est « synchronisée » dès qu'elle porte `sync_status`
-/// et `sync_motif` (comme la remise en attente des refus de droit, `47g_`).
+/// et `sync_motif` ; sa clé est `id`, ou à défaut `rowid` (les clôtures ont pour clé l'année) (comme la remise en attente des refus de droit, `47g_`).
 class DepotEtatSynchronisation {
   DepotEtatSynchronisation(this._db);
 
   final AppDatabase _db;
 
+  /// Tables dont un refus se règle autrement qu'en renvoyant la ligne (clôtures).
+  static const Set<String> _sansRemiseEnFile = {
+    'exercice_comptable',
+    'clotures_periodiques',
+  };
+
   /// Colonnes qui aident à reconnaître une ligne refusée, par ordre de préférence.
   static const List<String> _colonnesDesignation = [
+    'annee',
     'reference',
     'designation',
     'nom',
@@ -102,6 +114,8 @@ class DepotEtatSynchronisation {
     'modules_actifs': 'Modules actifs',
     'parametres_entreprise': 'Paramètres de l\'entreprise',
     'effets_stock': 'Effets de stock',
+    'effets_appliques': 'Effets de stock appliqués',
+    'demandes_referentiel': 'Demandes de réglages',
   };
 
   static String libelleTable(String table) =>
@@ -123,9 +137,7 @@ class DepotEtatSynchronisation {
     final noms = <String>[];
     for (final t in _db.allTables) {
       final colonnes = await _colonnes(t.actualTableName);
-      if (colonnes.contains('sync_status') &&
-          colonnes.contains('sync_motif') &&
-          colonnes.contains('id')) {
+      if (colonnes.contains('sync_status') && colonnes.contains('sync_motif')) {
         noms.add(t.actualTableName);
       }
     }
@@ -174,18 +186,20 @@ class DepotEtatSynchronisation {
     for (final t in await tablesSynchronisees()) {
       if (table != null && t != table) continue;
       final colonnes = await _colonnes(t);
+      final cle = colonnes.contains('id') ? 'id' : 'rowid';
       final designation = _colonnesDesignation.firstWhere(
         colonnes.contains,
-        orElse: () => 'id',
+        orElse: () => cle,
       );
       final resultat = await _db
           .customSelect(
-            'SELECT id, CAST("$designation" AS TEXT) AS designation, sync_motif '
-            'FROM "$t" WHERE sync_status = \'conflict\' ORDER BY id',
+            'SELECT CAST($cle AS TEXT) AS cle, '
+            'CAST("$designation" AS TEXT) AS designation, sync_motif '
+            'FROM "$t" WHERE sync_status = \'conflict\' ORDER BY $cle',
           )
           .get();
       for (final r in resultat) {
-        final id = r.read<String>('id');
+        final id = r.read<String>('cle');
         lignes.add(
           LigneRefusee(
             table: t,
@@ -193,6 +207,7 @@ class DepotEtatSynchronisation {
             id: id,
             designation: r.readNullable<String>('designation') ?? id,
             motif: r.readNullable<String>('sync_motif') ?? 'Motif non précisé',
+            remisePossible: !_sansRemiseEnFile.contains(t),
           ),
         );
       }
@@ -207,6 +222,7 @@ class DepotEtatSynchronisation {
     var remises = 0;
     for (final t in await tablesSynchronisees()) {
       if (table != null && t != table) continue;
+      if (_sansRemiseEnFile.contains(t)) continue;
       final where = id == null ? '' : ' AND id = ?';
       final n = await _db.customUpdate(
         'UPDATE "$t" SET sync_status = \'pending\', sync_motif = NULL '

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/depot_etat_synchronisation.dart';
 import '../../../core/sync/depot_journal_synchronisation.dart';
+import '../../../core/sync/moteur_synchronisation.dart';
 import '../../../core/sync/planificateur_synchronisation.dart';
 
 /// Écran « Synchronisation » : l'état du poste, l'historique des tentatives, les
@@ -111,10 +112,16 @@ class SynchronisationViewModel extends ChangeNotifier {
     return n;
   }
 
-  /// Contrôle local : recompte les lignes du poste par état.
+  /// Réponse du serveur au dernier contrôle ; `null` : pas encore contrôlé.
+  ReponseCoherence? _coherenceServeur;
+  ReponseCoherence? get coherenceServeur => _coherenceServeur;
+
+  /// Contrôle : recompte les lignes du poste par état (local), puis demande au serveur ce qu'il a de
+  /// plus récent que le dernier tirage de ce poste. Hors ligne ou non appairé : le contrôle local reste.
   Future<void> verifierCoherence() async {
     _parTable = await _etat.parTable();
     _refusees = await _etat.refusees();
+    _coherenceServeur = await _planificateur.moteur.coherenceServeur();
     _coherenceVerifieeLe = DateTime.now();
     _notifier();
   }

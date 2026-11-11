@@ -13,7 +13,7 @@ Un poste = un **jeton Sanctum** + un **identifiant de poste** (UUID v4 choisi pa
 | **Renvoyer** (un poste) / **Renvoyer vers tous les postes** | confirmation, puis le poste repart d'un **tirage complet** à son prochain contact (`renvoyer`) |
 | **Révoquer l'appairage** | confirmation, puis suppression de tous les jetons du poste, journal d'audit ; le poste reçoit 401 et se suspend |
 
-Badges d'état par poste : *Appairé / Révoqué / Sans jeton*, plus **Synchro demandée** et **Renvoi complet en attente** tant que le poste n'a pas servi la demande. Colonnes : code, poste, dernier utilisateur, droits, appairé le, dernier contact. Garde : `tests/Feature/Web/PostesAppairageTest.php` (27 essais).
+Badges d'état par poste : *Appairé / Révoqué / Sans jeton*, plus **Synchro demandée** et **Renvoi complet en attente** tant que le poste n'a pas servi la demande, et le **retard** (voir « Cohérence »). Colonnes : code, poste, dernier utilisateur, droits, appairé le, dernier contact. Garde : `tests/Feature/Web/PostesAppairageTest.php` (27 essais).
 
 Routes d'API correspondantes (déjà existantes) : `POST /api/parametres/postes/synchroniser`, `…/renvoyer`, `…/revoquer`.
 
@@ -24,19 +24,25 @@ Liste des postes avec leur état (en ligne, joint récemment, sans contact, rév
 Cartes : *Ce poste* (code, identifiant, serveur, compte, date d'appairage) ; *Droits et horloge* (+ « Réessayer ») ; **Synchro automatique** (nouveau : intervalle de la routine 1, 2, 5, 10, 15 ou 30 minutes, 5 par défaut, mémorisé et appliqué tout de suite) ; *Connexion au serveur* (Synchroniser maintenant, **Tester la connexion** = `GET /api/auth/me`, Déconnecter ce poste, qui ramène à l'appairage) ; formulaire d'appairage (adresse, identifiant, mot de passe) quand le poste n'est pas appairé.
 **Carte « Environnement »** : environnement de la construction (`build_windows.bat --env dev|recette|production`, transmis par `--dart-define=LOGIALVIA_ENV`) et adresse proposée à l'appairage : **production = `https://logialvia.digitonpro.com`** ; recette et développement : aucune adresse proposée. L'adresse reste modifiable (`Environnement`, `environnement.dart`).
 
-## Écran 4 — Poste : Synchronisation (Paramètres Généraux > Synchronisation) — FAIT (cohérence : contrôle local)
+## Écran 4 — Poste : Synchronisation (Paramètres Généraux > Synchronisation) — FAIT
 Quatre blocs :
 | Bloc | Contenu |
 |---|---|
 | **État du poste** | grand compteur **EN ATTENTE** (saisies pas encore envoyées, toutes tables ; doré si > 0, vert « à jour » sinon), dernière réception, dernier envoi, bouton **Synchroniser** |
 | **Historique des 10 dernières tentatives** | date, déclencheur (à l'ouverture, automatique, après une saisie, manuel, demande du serveur, à la fermeture, après l'appairage), reçus, envoyés, refusés, statut (pastille ; le message du rapport en infobulle) ; bouton **Exporter le journal** (CSV `;`, UTF-8 avec BOM, dans `Documents\LogiALVIA\Journal`) |
 | **Refusés par le serveur** | lignes `conflict` de toutes les tables : table, désignation (référence, nom… sinon identifiant), **motif** ; filtres par table ; **Remettre en file** (une ligne), **Tout remettre en file** / « Remettre la table en file » ; la remise en file lance aussitôt une synchronisation |
-| **Cohérence** | bouton **Vérifier la cohérence** : recompte, table par table, les lignes du poste par état (en attente, synchronisées, refusées) ; « Conforme » ou « N écart(s) » |
+| **Cohérence** | bouton **Vérifier la cohérence** : recompte local, table par table (en attente, synchronisées, refusées ; « Conforme » ou « N écart(s) »), puis verdict du serveur (voir ci-dessous) |
 
 **Le journal** est une table locale neuve (`journal_synchronisation`, **schéma poste 51 → 52**, migration idempotente testée) : jamais synchronisée, 200 cycles gardés, deux « hors ligne » de suite ne font qu'une ligne, un poste non appairé ne journalise rien. Code : `core/sync/depot_journal_synchronisation.dart`, `depot_etat_synchronisation.dart`, `administration/presentation/viewmodels/synchronisation_view_model.dart`, `widgets/onglet_synchronisation.dart`.
 
-### Limite assumée : la cohérence est LOCALE
-« Vérifier la cohérence » **ne compare pas le contenu du poste avec celui du serveur**. Une comparaison exacte table par table suppose, pour chaque table synchronisée, de savoir comment le serveur compte ses lignes (pierres tombales, lignes servies à d'autres postes, tables propres au poste comme le stock). Aucun point d'API de comptage n'existe ; en inventer un qui donnerait de faux écarts serait pire que de ne pas l'avoir. À construire si le client le demande : un point d'API de comptage + un test d'accord sur le vrai serveur (`essai_vrai_serveur.sh`).
+### Cohérence : poste ET serveur — ce que « à jour » veut dire
+« Vérifier la cohérence » fait deux choses :
+1. **Local** : recompte, table par table, les lignes du poste par état (en attente, synchronisées, refusées).
+2. **Serveur** : `GET /api/sync/coherence` (même droits et mêmes tables que le tirage ; `device_id` recoupé avec le nom du jeton) répond, pour chaque table lisible, le nombre de lignes du serveur **plus récentes que le dernier tirage de ce poste** (`curseur_tirage`, que le serveur retient à la dernière page de chaque tirage). Verdicts : « à jour » (rien de plus récent), « N ligne(s) plus récente(s) à recevoir » (par table), « jamais reçu de tirage complet », ou, hors ligne / non appairé / jeton refusé, « contrôle local seulement ».
+
+**Ce que ce contrôle n'est pas** : une comparaison ligne à ligne des deux bases. Une telle comparaison est impossible à rendre sûre sans règles par table (pierres tombales, lignes que l'absorbeur écarte, tables propres au poste comme le stock) : elle donnerait de faux écarts. Le « retard » est exact et sans faux positif, avec une seule subtilité : **les saisies que ce poste vient d'envoyer reviennent au tirage suivant** et comptent donc comme « à recevoir » jusqu'à ce tirage ; un second « Synchroniser » ramène à « à jour ». Les refus de **clôture** (exercice, clôtures mensuelles) sont listés avec leur motif mais **sans « Remettre en file »** : un refus a déjà rouvert la période ici, il faut la refaire depuis Comptabilité.
+
+**Côté web** (Postes & Appairage) : un badge par poste appairé, calculé avec les droits de son dernier compte : « Jamais synchronisé », « Retard : N ligne(s) » ou « À jour ». Gardes : `CoherenceTest` (PHP, 5 essais), `PostesAppairageTest`, `coherence_serveur_test.dart` (7 essais), et l'essai contre le **vrai** serveur (`serveur_reel_test.dart` : jamais synchronisé, puis plus rien à recevoir après le tirage).
 
 ## Le flux complet avec le serveur réel (LogiALVIA)
 

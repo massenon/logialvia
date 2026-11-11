@@ -172,6 +172,38 @@ void main() {
     expect((await a.appairage.tester()).reussi, isTrue);
   }, skip: saute);
 
+  test(
+    'cohérence réelle : jamais synchronisé, puis plus rien à recevoir',
+    () async {
+      final a = await poste()
+        ..let(postes.add);
+      final b = await poste()
+        ..let(postes.add);
+      await ClientsRepositoryDrift(a.db).creerClient(
+        nom: 'Client cohérence ${DateTime.now().microsecondsSinceEpoch}',
+      );
+      expect((await a.moteur.synchroniser()).reussie, isTrue);
+
+      // B n'a jamais tiré : tout est « à recevoir », dont le client de A.
+      final avant = await b.moteur.coherenceServeur();
+      expect(avant.repondu, isTrue);
+      expect(avant.jamaisSynchronise, isTrue);
+      expect(avant.retard['clients'], greaterThanOrEqualTo(1));
+
+      // Après son tirage complet, plus rien de plus récent que ce que B a reçu.
+      expect((await b.moteur.synchroniser()).reussie, isTrue);
+      final apres = await b.moteur.coherenceServeur();
+      expect(apres.jamaisSynchronise, isFalse);
+      expect(
+        apres.retard,
+        isEmpty,
+        reason: 'B n\'a rien envoyé : rien ne revient',
+      );
+      expect(apres.aJour, isTrue);
+    },
+    skip: saute,
+  );
+
   test('deux postes, vraie base : création, correction, convergence', () async {
     final a = await poste()
       ..let(postes.add);

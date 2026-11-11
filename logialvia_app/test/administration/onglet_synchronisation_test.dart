@@ -184,6 +184,11 @@ void main() {
 
     expect(find.byKey(const Key('coherence-tableau')), findsOneWidget);
     expect(
+      find.text('Poste non appairé : contrôle local seulement.'),
+      findsOneWidget,
+      reason: 'hors appairage, seul le contrôle local est possible',
+    );
+    expect(
       find.textContaining('1 table(s) avec des lignes refusées'),
       findsOneWidget,
     );
