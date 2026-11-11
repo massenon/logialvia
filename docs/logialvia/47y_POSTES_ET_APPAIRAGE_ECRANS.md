@@ -37,3 +37,27 @@ Quatre blocs :
 
 ### Limite assumée : la cohérence est LOCALE
 « Vérifier la cohérence » **ne compare pas le contenu du poste avec celui du serveur**. Une comparaison exacte table par table suppose, pour chaque table synchronisée, de savoir comment le serveur compte ses lignes (pierres tombales, lignes servies à d'autres postes, tables propres au poste comme le stock). Aucun point d'API de comptage n'existe ; en inventer un qui donnerait de faux écarts serait pire que de ne pas l'avoir. À construire si le client le demande : un point d'API de comptage + un test d'accord sur le vrai serveur (`essai_vrai_serveur.sh`).
+
+## Le flux complet avec le serveur réel (LogiALVIA)
+
+Serveur de production : **`https://logialvia.digitonpro.com`** (proposé par le poste construit en `--env production`).
+
+1. **Appairage (une fois par poste)** — Paramètres Généraux > Appairage : adresse du serveur, identifiant et mot de passe d'un compte **web** → `POST /api/auth/login` avec `device_name` = identifiant du poste (UUID). Le serveur crée un jeton Sanctum **nommé** ainsi (90 jours) et attribue le code `P<n>` ; le jeton va dans le coffre du système.
+2. **Synchronisation normale** — à l'ouverture, 3 s après une saisie, toutes les N minutes (carte « Synchro automatique », 5 par défaut), à la fermeture, ou bouton « Synchroniser » : `GET /api/sync/demande` (toutes les 30 s), `GET /api/sync/pull` (paginé, **GET**), `POST /api/sync/push`, `POST /api/sync/demandes`. Une ligne refusée par le serveur passe en `conflict` dans la base du poste et figure dans le bloc « Refusés par le serveur » de l'onglet Synchronisation (« Remettre en file »).
+3. **Synchronisation demandée depuis le web** — `/parametres/postes` > **Demander** (un poste) ou « Synchroniser tous les postes » : une demande valable 60 min ; le poste la lit au prochain `GET /api/sync/demande` (≤ 30 s) et synchronise. **Renvoyer** : tirage complet.
+4. **Révocation depuis le web** — **Révoquer l'appairage** (avec confirmation) : tous les jetons Sanctum de ce poste sont supprimés, audit `sync.appairage_revoque`. À sa prochaine tentative le poste reçoit **401**, **oublie son jeton**, suspend sa synchronisation et **redevient « non appairé »** dans l'onglet Appairage (le formulaire d'appairage réapparaît : réappairer = se reconnecter avec un compte). Ses saisies locales sont conservées.
+5. **Test de connexion** — bouton « Tester la connexion » : `GET /api/auth/me`.
+
+| Endpoint | Usage |
+|---|---|
+| `POST /api/auth/login` | appairage |
+| `GET /api/auth/me` | test de connexion |
+| `GET /api/sync/pull` | tirage des données du serveur (**GET**, pas POST) |
+| `POST /api/sync/push` | envoi des saisies |
+| `POST /api/sync/demandes` | propositions de modification d'un référentiel |
+| `GET /api/sync/demande` | interrogation : le web a-t-il demandé une synchronisation ? |
+| `POST /api/parametres/postes/synchroniser` | « Demander » (administrateur) |
+| `POST /api/parametres/postes/renvoyer` | « Renvoyer » (administrateur) |
+| `POST /api/parametres/postes/revoquer` | révocation (administrateur) |
+
+**Différences avec le projet voisin** : pas de `GET /api/postes` (la liste est l'écran web `/parametres/postes`, composant Livewire) ; routes d'administration sous `/api/parametres/postes/…` ; `pull` en GET ; après une révocation, **pas de pastille de jeton rouge ni de bouton « Réappairer »** : le poste retombe sur le formulaire d'appairage.

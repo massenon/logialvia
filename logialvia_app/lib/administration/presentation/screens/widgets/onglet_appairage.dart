@@ -306,9 +306,9 @@ class _BandeauEtat extends StatelessWidget {
             AppColors.successContainer,
             AppColors.successDeep,
             Symbols.link,
-            'Poste appairé au serveur (code ${etat.codePoste}). Pour '
-                'l\'instant, seuls les CLIENTS sont synchronisés ; les autres '
-                'données restent sur ce poste, branchées une à une.',
+            'Poste appairé au serveur (code ${etat.codePoste}). Ses saisies '
+                'sont envoyées au serveur et celles des autres postes reçues ; '
+                'le détail est dans l\'onglet Synchronisation.',
           )
         : (
             AppColors.surfaceZebra,

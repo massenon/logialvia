@@ -151,7 +151,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('seuls les CLIENTS sont synchronisés'),
+      find.textContaining('celles des autres postes reçues'),
       findsOneWidget,
       reason: 'appairé ne doit pas être pris pour synchronisé',
     );
