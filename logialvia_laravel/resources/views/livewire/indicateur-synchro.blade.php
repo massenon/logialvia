@@ -3,7 +3,7 @@
     <button type="button" @click="ouvert = true" title="{{ $texte }} — cliquer pour le détail" aria-label="État de la synchronisation : {{ $texte }}"
             class="hidden items-center gap-xs rounded-full border border-brand-gold bg-brand-gold/20 px-sm py-xs text-brand-navy hover:bg-brand-gold/30 lg:flex" data-indicateur-synchro>
         <x-icone :nom="$icone" :class="'text-[16px] '.$couleur" />
-        <span class="text-[11px] font-bold">{{ $texte }}</span>
+        <span class="text-caption font-bold">{{ $texte }}</span>
     </button>
     <button type="button" @click="ouvert = true" aria-label="État de la synchronisation : {{ $texte }}" class="flex lg:hidden {{ $couleur }}">
         <x-icone :nom="$icone" class="text-[22px]" />
@@ -12,7 +12,7 @@
     <div x-show="ouvert" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="ouvert = false" x-bind:role="ouvert ? 'dialog' : false" x-bind:aria-modal="ouvert ? 'true' : false" aria-labelledby="titre-synchro">
         <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
             <div class="mb-4 flex items-center justify-between">
-                <h3 id="titre-synchro" class="flex items-center gap-xs text-lg font-bold text-brand-navy"><x-icone nom="cloud_sync" class="text-[22px]" />Synchronisation des postes</h3>
+                <h3 id="titre-synchro" class="flex items-center gap-xs text-section-title font-bold text-brand-navy"><x-icone nom="cloud_sync" class="text-[22px]" />Synchronisation des postes</h3>
                 <button type="button" @click="ouvert = false" aria-label="Fermer" class="text-outline hover:text-error-deep"><x-icone nom="close" /></button>
             </div>
             <p class="mb-3 text-xs text-outline">Le web est le serveur : les postes envoient leurs saisies et reçoivent celles des autres toutes les 5 minutes, et interrogent le serveur toutes les 30 secondes.</p>
@@ -24,7 +24,7 @@
                             <p class="font-bold text-brand-navy">Poste {{ $p['code'] }}</p>
                             <p class="text-outline">{{ $p['contact'] ? 'Dernier contact '.$p['contact'] : 'Aucun contact' }}@if ($p['utilisateur']) · {{ $p['utilisateur'] }}@endif</p>
                         </div>
-                        <span class="rounded-full border px-sm py-0.5 text-[12px] font-bold
+                        <span class="rounded-full border px-sm py-0.5 text-caption font-bold
                             {{ match ($p['etat']) {
                                 'en_ligne' => 'border-success-deep bg-success-container text-success-deep',
                                 'recent' => 'border-brand-gold bg-brand-gold/30 text-brand-navy',

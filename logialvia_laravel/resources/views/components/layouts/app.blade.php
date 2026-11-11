@@ -49,14 +49,14 @@
             <div class="border-b border-white/10 px-md py-lg">
                 <div class="flex items-center gap-xs">
                     <x-icone nom="egg" class="text-[26px] text-brand-gold" />
-                    <a href="/dashboard" class="text-lg font-extrabold text-white">Logi<span class="text-brand-gold">ALVIA</span></a>
+                    <a href="/dashboard" class="text-section-title font-extrabold text-white">Logi<span class="text-brand-gold">ALVIA</span></a>
                 </div>
-                <p class="mt-xs text-[12px] uppercase tracking-wider text-white/50">ALLMANY ET COMPAGNIE</p>
+                <p class="mt-xs text-caption uppercase tracking-wider text-white/50">ALLMANY ET COMPAGNIE</p>
             </div>
 
             <nav id="menu-principal" class="custom-scrollbar flex-1 overflow-y-auto px-md py-md">
                 @foreach ($groupes as $groupe)
-                    <p class="px-xs pt-sm text-[12px] font-bold uppercase tracking-wider text-white/40">{{ $groupe['titre'] }}</p>
+                    <p class="px-xs pt-sm text-caption font-bold uppercase tracking-wider text-white/40">{{ $groupe['titre'] }}</p>
                     <div class="mb-sm space-y-xs">
                         @foreach ($groupe['entrees'] as $entree)
                             @php($actif = $chemin === $entree['route'])
@@ -69,7 +69,7 @@
                     </div>
                 @endforeach
                 @can('manage-users')
-                    <p class="px-xs pt-sm text-[12px] font-bold uppercase tracking-wider text-white/40">SERVEUR</p>
+                    <p class="px-xs pt-sm text-caption font-bold uppercase tracking-wider text-white/40">SERVEUR</p>
                     <div class="mb-sm space-y-xs">
                         @foreach ([['postes', '/parametres/postes', 'devices', 'Postes & Appairage'], ['audit', '/parametres/audit', 'history', 'Journal d\'Audit']] as [$nom, $route, $icone, $libelle])
                             @php($actif = $chemin === $route)
@@ -89,7 +89,7 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white"><x-icone nom="account_circle" class="text-[18px]" /></span>
                         <div class="flex min-w-0 flex-col leading-tight">
                             <span class="truncate text-xs font-semibold text-white">{{ $utilisateur->name }}</span>
-                            <span class="text-[9px] uppercase tracking-wider text-white/50">{{ $role }}</span>
+                            <span class="text-caption uppercase tracking-wider text-white/50">{{ $role }}</span>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@
                             <summary class="relative flex cursor-pointer list-none text-outline hover:text-brand-navy" aria-label="Notifications">
                                 <x-icone nom="notifications" class="text-[24px]" />
                                 @if (count($alertesBarre) > 0)
-                                    <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-error-deep text-[9px] font-bold text-white">{{ count($alertesBarre) }}</span>
+                                    <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-error-deep text-caption font-bold text-white">{{ count($alertesBarre) }}</span>
                                 @endif
                             </summary>
                             <div class="absolute right-0 z-50 mt-sm w-80 overflow-hidden rounded-lg border border-outline-variant bg-white shadow-lg">
@@ -200,7 +200,7 @@
                 @foreach ($barreBas as [$libelle, $icone, $route])
                     <a href="{{ $route }}" class="flex flex-1 flex-col items-center justify-center gap-0.5 {{ $chemin === $route ? 'text-brand-navy' : 'text-outline' }}">
                         <x-icone :nom="$icone" class="text-[22px]" />
-                        <span class="text-[9px] font-bold">{{ $libelle }}</span>
+                        <span class="text-caption font-bold">{{ $libelle }}</span>
                     </a>
                 @endforeach
             </nav>
@@ -216,7 +216,7 @@
             <div x-show="acces" x-cloak x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
                  class="fixed right-0 top-0 z-[70] flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl print:hidden" x-bind:role="acces ? 'dialog' : false" x-bind:aria-modal="acces ? 'true' : false" aria-label="Accès rapide">
                 <div class="flex items-center justify-between border-b border-outline-variant bg-brand-navy px-md py-md">
-                    <span class="flex items-center gap-xs text-sm font-bold text-white"><x-icone nom="apps" class="text-[20px] text-brand-gold" />Accès Rapide</span>
+                    <span class="flex items-center gap-xs text-xs font-bold text-white"><x-icone nom="apps" class="text-[20px] text-brand-gold" />Accès Rapide</span>
                     <button type="button" @click="acces = false" aria-label="Fermer" class="text-white/80 hover:text-white"><x-icone nom="close" /></button>
                 </div>
                 <div class="flex-1 space-y-xs overflow-y-auto p-sm">

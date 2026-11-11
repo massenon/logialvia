@@ -15,10 +15,10 @@
                 <span class="icone text-[38px] text-brand-navy">&#xeacc;</span>
                 <div class="flex flex-col items-start leading-none">
                     <span class="text-[22px] font-black tracking-tight text-brand-navy">Logi<span class="text-brand-gold">ALVIA</span></span>
-                    <span class="mt-0.5 text-[9px] font-extrabold uppercase tracking-widest text-brand-navy">ALLMANY ET COMPAGNIE</span>
+                    <span class="mt-0.5 text-caption font-extrabold uppercase tracking-widest text-brand-navy">ALLMANY ET COMPAGNIE</span>
                 </div>
             </div>
-            <p class="w-full border-t border-brand-navy/10 pt-1 text-[12px] font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
+            <p class="w-full border-t border-brand-navy/10 pt-1 text-caption font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
         </div>
 
         {{-- Bandeau des 7 modules (login.html l.62-70, ordre exact) --}}
@@ -29,7 +29,7 @@
         </div>
 
         <div>
-            <h2 class="text-xl font-bold leading-tight text-brand-navy">Bienvenue !</h2>
+            <h2 class="text-page-title font-bold leading-tight text-brand-navy">Bienvenue !</h2>
             <p class="text-xs text-outline">Connectez-vous à votre espace LogiALVIA.</p>
         </div>
 
@@ -42,7 +42,7 @@
 
         <form wire:submit="connecter" class="space-y-4" novalidate>
             <div>
-                <label for="identifiant" class="mb-1 block text-[12px] font-bold tracking-wider text-brand-navy">NOM D'UTILISATEUR OU EMAIL</label>
+                <label for="identifiant" class="mb-1 block text-caption font-bold tracking-wider text-brand-navy">NOM D'UTILISATEUR OU EMAIL</label>
                 <div class="relative">
                     <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xf0d3;</span>
                     <input id="identifiant" type="text" wire:model="identifiant" autocomplete="username" autofocus placeholder="Entrez votre nom d'utilisateur"
@@ -52,7 +52,7 @@
             </div>
 
             <div>
-                <label for="password" class="mb-1 block text-[12px] font-bold tracking-wider text-brand-navy">MOT DE PASSE</label>
+                <label for="password" class="mb-1 block text-caption font-bold tracking-wider text-brand-navy">MOT DE PASSE</label>
                 <div class="relative">
                     <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xe899;</span>
                     <input id="password" wire:model="password" autocomplete="current-password" placeholder="Entrez votre mot de passe" x-bind:type="voir ? 'text' : 'password'" type="password"
@@ -80,7 +80,7 @@
         </form>
     </div>
 
-    <div class="mt-6 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-[12px] text-outline">
+    <div class="mt-6 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-caption text-outline">
         <span>© 2026 LogiALVIA — Projet d'Appui à l'Entrepreneuriat au Bénin (PAEB) — FAGUEZ SARL</span>
     </div>
 
@@ -88,7 +88,7 @@
     <div x-show="oubli" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="oubli = false" x-bind:role="oubli ? 'dialog' : false" x-bind:aria-modal="oubli ? 'true' : false" aria-labelledby="titre-oubli">
         <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
             <div class="mb-4 flex items-center justify-between">
-                <h3 id="titre-oubli" class="text-lg font-bold text-brand-navy">Mot de passe oublié</h3>
+                <h3 id="titre-oubli" class="text-section-title font-bold text-brand-navy">Mot de passe oublié</h3>
                 <button type="button" @click="oubli = false" aria-label="Fermer" class="text-outline hover:text-error-deep"><span class="icone">&#xe5cd;</span></button>
             </div>
             <div class="rounded-lg border border-outline-variant bg-surface-zebra p-3 text-xs leading-normal text-outline">

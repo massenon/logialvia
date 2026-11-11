@@ -53,7 +53,7 @@ class ClocheNotificationsTest extends TestCase
     {
         $this->connecte('admin');
 
-        $this->get('/ventes')->assertOk()->assertSee('Aucune alerte en cours.')->assertDontSeeHtml('bg-error-deep text-[9px]');
+        $this->get('/ventes')->assertOk()->assertSee('Aucune alerte en cours.')->assertDontSeeHtml('bg-error-deep text-caption');
     }
 
     public function test_une_vente_en_avance_non_soldee_alerte_sur_toutes_les_pages(): void
@@ -65,7 +65,7 @@ class ClocheNotificationsTest extends TestCase
             Cache::flush();
             $this->get($page)->assertOk()
                 ->assertSee('Soldes restant dus — 1 vente(s) en avance non soldée(s).')
-                ->assertSeeHtml('bg-error-deep text-[9px]');
+                ->assertSeeHtml('bg-error-deep text-caption');
         }
     }
 

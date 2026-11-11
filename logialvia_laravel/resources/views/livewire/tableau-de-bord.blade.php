@@ -37,7 +37,7 @@
     <div class="mb-lg flex flex-col gap-md">
         <div class="flex flex-wrap items-center justify-between gap-sm">
             <div>
-                <h1 class="text-xl font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h1>
+                <h1 class="text-page-title font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h1>
                 <p class="text-xs text-outline">Rapport généré le {{ $maintenant->format('d/m/Y') }} à {{ $maintenant->format('H:i') }} · ALLMANY ET COMPAGNIE</p>
             </div>
             <div class="flex w-full flex-col items-stretch gap-xs sm:w-auto sm:flex-row sm:items-center">
@@ -89,81 +89,81 @@
         <div id="kpi-panel" class="grid grid-cols-2 gap-md xl:grid-cols-4">
             @if ($voirVentes)
                 <div class="{{ $carte }} border-l-4 border-l-brand-navy" data-carte="ca">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Chiffre d'Affaires</span><x-icone nom="trending_up" class="text-[18px] text-brand-navy" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="ca">{{ $nb($ca['total']) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline">Avicole : <span data-kpi="ca-avicole">{{ $nb($ca['avicole']) }}</span> · Commerce annexe : <span data-kpi="ca-commerce">{{ $nb($ca['commerce']) }}</span></p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Chiffre d'Affaires</span><x-icone nom="trending_up" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="ca">{{ $nb($ca['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline">Avicole : <span data-kpi="ca-avicole">{{ $nb($ca['avicole']) }}</span> · Commerce annexe : <span data-kpi="ca-commerce">{{ $nb($ca['commerce']) }}</span></p>
                 </div>
             @endif
             @if ($tresorerie !== null)
                 <div class="{{ $carte }} border-l-4 border-l-info-blue" data-carte="tresorerie">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Trésorerie</span><x-icone nom="account_balance_wallet" class="text-[18px] text-info-blue" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="tresorerie">{{ $nb($tresorerie['total']) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline">Espèces : {{ $nb($tresorerie['especes']) }} · Mobile Money : {{ $nb($tresorerie['mobile']) }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Trésorerie</span><x-icone nom="account_balance_wallet" class="text-[18px] text-info-blue" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="tresorerie">{{ $nb($tresorerie['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline">Espèces : {{ $nb($tresorerie['especes']) }} · Mobile Money : {{ $nb($tresorerie['mobile']) }}</p>
                 </div>
             @endif
             @if ($depenses !== null)
                 <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="depenses">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Dépenses</span><x-icone nom="shopping_cart" class="text-[18px] text-brand-navy" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="depenses">{{ $nb($depenses['total']) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline">Dont intrants provende : {{ $nb($depenses['intrants']) }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Dépenses</span><x-icone nom="shopping_cart" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="depenses">{{ $nb($depenses['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline">Dont intrants provende : {{ $nb($depenses['intrants']) }}</p>
                 </div>
             @endif
             @if ($resultatNet !== null)
                 <div class="{{ $carte }} border-l-4 border-l-success-deep" data-carte="resultat">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Résultat Net</span><x-icone nom="savings" class="text-[18px] text-success-deep" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="resultat">{{ $nb($resultatNet['montant']) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline">{{ $resultatNet['marge'] === null ? 'Marge nette : —' : 'Marge nette : '.$pourcent($resultatNet['marge']) }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Résultat Net</span><x-icone nom="savings" class="text-[18px] text-success-deep" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="resultat">{{ $nb($resultatNet['montant']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline">{{ $resultatNet['marge'] === null ? 'Marge nette : —' : 'Marge nette : '.$pourcent($resultatNet['marge']) }}</p>
                 </div>
             @endif
             @if ($voirVentes)
                 <div class="{{ $carte }} border-l-4 border-l-error-deep" data-carte="encours">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Soldes Restant Dus</span><x-icone nom="request_quote" class="text-[18px] text-error-deep" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="encours">{{ $nb($encours) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline" data-detail="encours">{{ $encoursNombre === 0 ? 'Aucune vente en avance non soldée' : "$encoursNombre vente(s) en avance non soldée(s)" }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Soldes Restant Dus</span><x-icone nom="request_quote" class="text-[18px] text-error-deep" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="encours">{{ $nb($encours) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline" data-detail="encours">{{ $encoursNombre === 0 ? 'Aucune vente en avance non soldée' : "$encoursNombre vente(s) en avance non soldée(s)" }}</p>
                 </div>
             @endif
             @if ($stockCritique !== null)
                 <div class="{{ $carte }} border-l-4 border-l-error-deep" data-carte="stock">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Stock Critique</span><x-icone nom="warning" class="text-[18px] text-error-deep" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="stock">{{ $stockCritique['nombre'] }} <small class="text-xs font-normal">{{ $stockCritique['nombre'] > 1 ? 'intrants' : 'intrant' }}</small></span>
-                    <p class="mt-xs text-[12px] text-outline">{{ $stockCritique['nombre'] === 0 ? 'Aucun intrant sous le seuil d\'alerte' : ($stockCritique['premier'] ?? '').' sous le seuil d\'alerte' }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Stock Critique</span><x-icone nom="warning" class="text-[18px] text-error-deep" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="stock">{{ $stockCritique['nombre'] }} <small class="text-xs font-normal">{{ $stockCritique['nombre'] > 1 ? 'intrants' : 'intrant' }}</small></span>
+                    <p class="mt-xs text-caption text-outline">{{ $stockCritique['nombre'] === 0 ? 'Aucun intrant sous le seuil d\'alerte' : ($stockCritique['premier'] ?? '').' sous le seuil d\'alerte' }}</p>
                 </div>
             @endif
             @if ($stockCritique === null && $voirStocks)
                 {{-- Le stock d'intrants est propre à chaque poste : jamais un chiffre inventé ici. --}}
                 <div class="rounded-lg border border-l-4 border-outline-variant border-l-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="Stock Critique">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase">Stock Critique</span><x-icone nom="warning" class="text-[18px]" /></div>
-                    <span class="mt-xs block text-lg font-extrabold md:text-2xl">—</span>
-                    <p class="mt-xs text-[12px] font-semibold">Disponible sur le poste</p>
-                    <p class="text-[12px]">Le stock est propre à chaque poste.</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase">Stock Critique</span><x-icone nom="warning" class="text-[18px]" /></div>
+                    <span class="mt-xs block text-kpi-value font-extrabold">—</span>
+                    <p class="mt-xs text-caption font-semibold">Disponible sur le poste</p>
+                    <p class="text-caption">Le stock est propre à chaque poste.</p>
                 </div>
             @endif
             @if ($cheptel !== null)
                 <div class="{{ $carte }} border-l-4 border-l-brand-navy" data-carte="cheptel">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Effectif Cheptel</span><x-icone nom="pets" class="text-[18px] text-brand-navy" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="cheptel">{{ $nb($cheptel['effectif']) }} <small class="text-xs font-normal">têtes</small></span>
-                    <p class="mt-xs text-[12px] text-outline">{{ $cheptel['libelle'] }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Effectif Cheptel</span><x-icone nom="pets" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="cheptel">{{ $nb($cheptel['effectif']) }} <small class="text-xs font-normal">têtes</small></span>
+                    <p class="mt-xs text-caption text-outline">{{ $cheptel['libelle'] }}</p>
                 </div>
             @endif
             @if ($couveuse !== null)
                 <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="couveuse">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Cycles Couveuse en Cours</span><x-icone nom="egg" class="text-[18px] text-brand-gold" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="couveuse">{{ $couveuse['cycles'] }} <small class="text-xs font-normal">{{ $couveuse['cycles'] > 1 ? 'cycles' : 'cycle' }}</small></span>
-                    <p class="mt-xs text-[12px] text-outline">{{ $couveuse['eclosionProchaine'] ?? 'Aucune éclosion prévue prochainement' }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Cycles Couveuse en Cours</span><x-icone nom="egg" class="text-[18px] text-brand-gold" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="couveuse">{{ $couveuse['cycles'] }} <small class="text-xs font-normal">{{ $couveuse['cycles'] > 1 ? 'cycles' : 'cycle' }}</small></span>
+                    <p class="mt-xs text-caption text-outline">{{ $couveuse['eclosionProchaine'] ?? 'Aucune éclosion prévue prochainement' }}</p>
                 </div>
             @endif
             @if ($voirVentes)
                 <div class="{{ $carte }} border-l-4 border-l-info-blue" data-carte="clients">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Clients Enregistrés</span><x-icone nom="person" class="text-[18px] text-info-blue" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="clients">{{ $clients }}</span>
-                    <p class="mt-xs text-[12px] text-outline">Clients actifs de tous les postes</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Clients Enregistrés</span><x-icone nom="person" class="text-[18px] text-info-blue" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="clients">{{ $clients }}</span>
+                    <p class="mt-xs text-caption text-outline">Clients actifs de tous les postes</p>
                 </div>
             @endif
             @if ($voirAchats)
                 <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="dettes">
-                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Dettes Fournisseurs</span><x-icone nom="local_shipping" class="text-[18px] text-brand-gold" /></div>
-                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="dettes">{{ $nb($dettes) }} <small class="text-xs font-normal">FCFA</small></span>
-                    <p class="mt-xs text-[12px] text-outline" data-detail="dettes">{{ $dettesNombre === 0 ? 'Aucune commande non soldée' : "$dettesNombre commande(s) non soldée(s)" }}</p>
+                    <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Dettes Fournisseurs</span><x-icone nom="local_shipping" class="text-[18px] text-brand-gold" /></div>
+                    <span class="mt-xs block truncate text-kpi-value font-extrabold text-on-surface" data-kpi="dettes">{{ $nb($dettes) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-caption text-outline" data-detail="dettes">{{ $dettesNombre === 0 ? 'Aucune commande non soldée' : "$dettesNombre commande(s) non soldée(s)" }}</p>
                 </div>
             @endif
         </div>
@@ -173,7 +173,7 @@
         <div class="mb-lg grid grid-cols-1 gap-md lg:grid-cols-12">
             @if ($voirVentes)
                 <section class="{{ $carte }} lg:col-span-8" id="tour-chart" data-bloc="courbe">
-                    <h3 class="mb-md text-sm font-bold text-on-surface">CA vs Dépenses — 6 derniers mois</h3>
+                    <h3 class="mb-md text-xs font-bold text-on-surface">CA vs Dépenses — 6 derniers mois</h3>
                     <svg viewBox="0 0 600 220" class="h-52 w-full" role="img" aria-label="Chiffre d'affaires et dépenses par mois sur les 6 derniers mois">
                         <line x1="40" y1="10" x2="40" y2="190" stroke="#D8DCE3" stroke-width="1" />
                         <line x1="40" y1="190" x2="580" y2="190" stroke="#D8DCE3" stroke-width="1" />
@@ -195,7 +195,7 @@
                 </section>
             @endif
             <section class="{{ $carte }} {{ $voirVentes ? 'lg:col-span-4' : 'lg:col-span-12' }}" id="tour-alerts" data-bloc="alertes">
-                <h3 class="mb-md text-sm font-bold text-on-surface">Alertes Critiques</h3>
+                <h3 class="mb-md text-xs font-bold text-on-surface">Alertes Critiques</h3>
                 <div class="space-y-sm">
                     @forelse ($alertes as $a)
                         @php($critique = $a['niveau'] === 'critique')
@@ -215,23 +215,23 @@
         <div id="tour-species-cards" class="mb-lg grid grid-cols-1 gap-md md:grid-cols-3" data-bloc="filieres">
             @foreach ($filieres as $f)
                 <a href="{{ $f['route'] }}" class="{{ $carte }} block hover:bg-surface-zebra" data-filiere="{{ $f['code'] }}">
-                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="pets" class="text-brand-navy" /><h3 class="text-sm font-bold">{{ $f['nom'] }}</h3></div>
+                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="pets" class="text-brand-navy" /><h3 class="text-xs font-bold">{{ $f['nom'] }}</h3></div>
                     <div class="grid grid-cols-2 gap-sm text-xs">
-                        <div><p class="text-outline">Effectif</p><p class="text-lg font-bold">{{ $nb($f['effectif']) }}</p></div>
-                        <div><p class="text-outline">Matures</p><p class="text-lg font-bold">{{ $nb($f['matures']) }}</p></div>
-                        <div><p class="text-outline">{{ $f['libelleJeunes'] }}</p><p class="text-lg font-bold">{{ $nb($f['jeunes']) }}</p></div>
-                        <div><p class="text-outline">Mortalité</p><p class="text-lg font-bold {{ ($f['mortalite'] ?? 0) > 2 ? 'text-error-deep' : 'text-success-deep' }}">{{ $pourcent($f['mortalite']) }}</p></div>
+                        <div><p class="text-outline">Effectif</p><p class="text-section-title font-bold">{{ $nb($f['effectif']) }}</p></div>
+                        <div><p class="text-outline">Matures</p><p class="text-section-title font-bold">{{ $nb($f['matures']) }}</p></div>
+                        <div><p class="text-outline">{{ $f['libelleJeunes'] }}</p><p class="text-section-title font-bold">{{ $nb($f['jeunes']) }}</p></div>
+                        <div><p class="text-outline">Mortalité</p><p class="text-section-title font-bold {{ ($f['mortalite'] ?? 0) > 2 ? 'text-error-deep' : 'text-success-deep' }}">{{ $pourcent($f['mortalite']) }}</p></div>
                     </div>
                 </a>
             @endforeach
             @if ($couveuse !== null)
                 <div class="{{ $carte }}" data-filiere="couveuse">
-                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="egg" class="text-brand-gold" /><h3 class="text-sm font-bold">Couveuse</h3></div>
+                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="egg" class="text-brand-gold" /><h3 class="text-xs font-bold">Couveuse</h3></div>
                     <div class="grid grid-cols-2 gap-sm text-xs">
-                        <div><p class="text-outline">Cycles en cours</p><p class="text-lg font-bold">{{ $couveuse['cycles'] }}</p></div>
-                        <div><p class="text-outline">Œufs chargés</p><p class="text-lg font-bold">{{ $nb($couveuse['oeufs']) }}</p></div>
-                        <div><p class="text-outline">Taux éclosion moy.</p><p class="text-lg font-bold">{{ $pourcent($couveuse['eclosionMoy']) }}</p></div>
-                        <div><p class="text-outline">Taux perte moy.</p><p class="text-lg font-bold text-error-deep">{{ $pourcent($couveuse['perteMoy']) }}</p></div>
+                        <div><p class="text-outline">Cycles en cours</p><p class="text-section-title font-bold">{{ $couveuse['cycles'] }}</p></div>
+                        <div><p class="text-outline">Œufs chargés</p><p class="text-section-title font-bold">{{ $nb($couveuse['oeufs']) }}</p></div>
+                        <div><p class="text-outline">Taux éclosion moy.</p><p class="text-section-title font-bold">{{ $pourcent($couveuse['eclosionMoy']) }}</p></div>
+                        <div><p class="text-outline">Taux perte moy.</p><p class="text-section-title font-bold text-error-deep">{{ $pourcent($couveuse['perteMoy']) }}</p></div>
                     </div>
                 </div>
             @endif
@@ -243,13 +243,13 @@
             {{-- Statistiques de ventes --}}
             <section class="{{ $carte }}" data-bloc="statistiques">
                 <div class="mb-md flex items-center justify-between">
-                    <h3 class="flex items-center gap-xs text-sm font-bold text-on-surface"><x-icone nom="bar_chart" class="text-[18px] text-brand-navy" />Statistiques de Ventes</h3>
-                    <span class="text-[12px] font-bold text-outline">{{ $maintenant->format('Y') }}</span>
+                    <h3 class="flex items-center gap-xs text-xs font-bold text-on-surface"><x-icone nom="bar_chart" class="text-[18px] text-brand-navy" />Statistiques de Ventes</h3>
+                    <span class="text-caption font-bold text-outline">{{ $maintenant->format('Y') }}</span>
                 </div>
                 <div class="mb-md grid grid-cols-2 gap-sm">
-                    <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-lg font-extrabold text-brand-navy" data-kpi="semaine">{{ $nb($semaine) }} F</span><p class="text-[12px] text-outline">Revenu (semaine)</p></div>
+                    <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-section-title font-extrabold text-brand-navy" data-kpi="semaine">{{ $nb($semaine) }} F</span><p class="text-caption text-outline">Revenu (semaine)</p></div>
                     @if ($depenses !== null)
-                        <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-lg font-extrabold text-error-deep" data-kpi="depenses-jours">{{ $nb($depSemaine) }} F</span><p class="text-[12px] text-outline">Dépenses (6 jours)</p></div>
+                        <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-section-title font-extrabold text-error-deep" data-kpi="depenses-jours">{{ $nb($depSemaine) }} F</span><p class="text-caption text-outline">Dépenses (6 jours)</p></div>
                     @endif
                 </div>
                 <svg viewBox="0 0 500 140" class="h-32 w-full" role="img" aria-label="Chiffre d'affaires et dépenses des 6 derniers jours">
@@ -261,7 +261,7 @@
                         @if ($depenses !== null)<rect x="{{ 28 + $i * 50 }}" y="{{ 120 - $hd }}" width="14" height="{{ $hd }}" rx="3" fill="#B33A3A" />@endif
                     @endforeach
                 </svg>
-                <div class="mt-xs flex justify-between px-1 text-[9px] text-outline">
+                <div class="mt-xs flex justify-between px-1 text-caption text-outline">
                     @foreach ($jours as $j)<span>{{ $j['libelle'] }}</span>@endforeach
                 </div>
             </section>
@@ -269,15 +269,15 @@
             {{-- Transactions recentes --}}
             <section class="{{ $carte }}" data-bloc="recentes">
                 <div class="mb-md flex items-center justify-between">
-                    <h3 class="flex items-center gap-xs text-sm font-bold text-on-surface"><x-icone nom="receipt" class="text-[18px] text-brand-navy" />Transactions Récentes</h3>
-                    <a href="/ventes" class="text-[12px] font-bold text-brand-navy hover:underline">Voir tout</a>
+                    <h3 class="flex items-center gap-xs text-xs font-bold text-on-surface"><x-icone nom="receipt" class="text-[18px] text-brand-navy" />Transactions Récentes</h3>
+                    <a href="/ventes" class="text-caption font-bold text-brand-navy hover:underline">Voir tout</a>
                 </div>
                 <div class="mb-sm flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
                     @foreach ([['ventes', 'Vente'], ['achats', 'Achat'], ['depenses', 'Dépenses']] as [$cle, $libelle])
                         @if ($cle === 'ventes' || $transactions[$cle] !== null)
                             <button type="button" role="tab" @click="onglet = '{{ $cle }}'"
                                     :class="onglet === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
-                                    class="whitespace-nowrap border-b-2 px-sm py-1.5 text-[11px] font-bold">{{ $libelle }}</button>
+                                    class="whitespace-nowrap border-b-2 px-sm py-1.5 text-caption font-bold">{{ $libelle }}</button>
                         @endif
                     @endforeach
                 </div>
@@ -312,12 +312,12 @@
     <div class="grid grid-cols-1 gap-md lg:grid-cols-2">
         @if (count($activites) || $voirVentes)
             <section class="{{ $carte }}" data-bloc="activites">
-                <h3 class="mb-md text-sm font-bold text-on-surface">Activités du Jour</h3>
+                <h3 class="mb-md text-xs font-bold text-on-surface">Activités du Jour</h3>
                 <div class="space-y-md">
                     @forelse ($activites as $a)
                         <div class="flex gap-sm">
                             <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-brand-navy"></span>
-                            <div><p class="text-xs font-semibold">{{ $a['texte'] }}</p><p class="text-[12px] text-outline">{{ $a['heure'] }}{{ ($a['auteur'] ?? null) ? ' — '.$a['auteur'] : '' }}</p></div>
+                            <div><p class="text-xs font-semibold">{{ $a['texte'] }}</p><p class="text-caption text-outline">{{ $a['heure'] }}{{ ($a['auteur'] ?? null) ? ' — '.$a['auteur'] : '' }}</p></div>
                         </div>
                     @empty
                         <p class="text-xs text-outline">Aucune activité aujourd'hui.</p>
@@ -328,7 +328,7 @@
 
         @if ($voirVentes)
             <section class="{{ $carte }} overflow-x-auto" data-bloc="meilleures">
-                <h3 class="mb-md text-sm font-bold text-on-surface">Meilleures Ventes de la Période</h3>
+                <h3 class="mb-md text-xs font-bold text-on-surface">Meilleures Ventes de la Période</h3>
                 <table class="w-full text-xs" data-table="meilleures">
                     <thead><tr class="border-b border-outline-variant text-outline"><th class="py-xs text-left">Produit</th><th class="py-xs text-right">Qté</th><th class="py-xs text-right">CA</th><th class="py-xs text-right">Activité</th></tr></thead>
                     <tbody>

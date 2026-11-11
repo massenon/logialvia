@@ -184,19 +184,16 @@ class AppairageTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors('device_name');
     }
 
-    public function test_la_connexion_est_limitee_a_cinq_par_minute(): void
+    public function test_la_connexion_n_est_pas_limitee(): void
     {
         $this->compte();
 
-        for ($i = 0; $i < 5; $i++) {
+        // Decision du client : aucun blocage de connexion, ni au web ni a l'appairage d'un poste.
+        for ($i = 0; $i < 12; $i++) {
             $this->connexion('marie', null, 'faux-'.$i)->assertStatus(401);
         }
 
-        $this->connexion('marie', null, 'faux-6')
-            ->assertStatus(429)
-            ->assertJsonPath('code', 'trop_de_tentatives');
-        // Meme avec le BON mot de passe : la limite protege la devinette.
-        $this->connexion('marie')->assertStatus(429);
+        $this->connexion('marie')->assertOk();
     }
 
     public function test_la_connexion_laisse_une_trace_d_audit(): void

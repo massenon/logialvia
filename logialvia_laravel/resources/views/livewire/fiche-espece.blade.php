@@ -1,20 +1,30 @@
 @php
     $pct = fn (float $v): string => number_format($v, 1, ',', ' ').' %';
-    $champ = 'mt-xs h-10 w-full rounded-lg border border-outline-variant bg-white px-md text-sm';
-    $etiquette = 'block text-[12px] font-bold uppercase text-brand-navy';
+    $champ = 'mt-xs h-10 w-full rounded-lg border border-outline-variant bg-white px-md text-xs';
+    $etiquette = 'block text-caption font-bold uppercase text-brand-navy';
     $carteKpi = 'rounded-lg border border-outline-variant border-l-4 bg-white p-md shadow-sm';
     $categories = $config['categories'];
     $colonnes = count($categories) > 3 ? 'sm:grid-cols-4' : 'sm:grid-cols-3';
     $mois = \App\Livewire\FicheEspece::MOIS;
+    $groupeAvicole = count($onglets) > 0;
+    // Titre, icône et sous-titre propres à chaque fiche (maquettes fiche-lapins.html, fiche-poulets-pondeuses.html).
+    if ($groupeAvicole) {
+        $entete = ['titre' => 'Fiche Poulets & Pondeuses', 'icone' => 'egg_alt', 'sous' => 'Filière dupliquée (Aviculture classique) — désactivée par défaut, activable via Modules Actifs.'];
+    } elseif ($espece === 'lapins') {
+        $entete = ['titre' => 'Fiches Lapins - Cuniculture', 'icone' => 'cruelty_free', 'sous' => 'Fiche de suivi mensuel du cheptel — transcription fidèle du registre de la ferme.'];
+    } else {
+        $entete = ['titre' => 'Fiche '.$config['libelle'], 'icone' => 'pets', 'sous' => 'Suivi de croissance — de la naissance à la maturité commerciale, jour après jour.'];
+    }
+    $titreSaisie = $oeufs !== null ? 'Saisie Journalière Ponte & Cheptel' : 'Saisie Journalière';
 @endphp
 <div data-fiche="{{ $espece }}">
     {{-- En-tête (maquette fiche-goliaths.html) --}}
     <div class="mb-lg flex flex-col gap-sm border-b border-outline-variant pb-md lg:flex-row lg:items-center lg:justify-between">
         <div>
-            <h1 class="flex items-center gap-xs text-xl font-bold text-on-surface lg:text-2xl">
-                <x-icone nom="pets" class="text-[26px] text-brand-navy" />Fiche {{ $config['libelle'] }}
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-on-surface lg:text-2xl">
+                <x-icone :nom="$entete['icone']" class="text-[26px] text-brand-navy" />{{ $entete['titre'] }}
             </h1>
-            <p class="mt-xs text-xs text-outline">Suivi de croissance — de la naissance à la maturité commerciale, jour après jour.</p>
+            <p class="mt-xs text-xs text-outline">{{ $entete['sous'] }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-xs print:hidden">
             <button type="button" onclick="window.print()" data-action="imprimer" class="flex items-center gap-xs rounded-full border border-outline-variant bg-white px-md py-2 text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
@@ -31,11 +41,11 @@
         </div>
     </div>
 
-        @if (count($onglets) > 0)
-        <div class="mb-md flex gap-sm border-b border-outline-variant" role="tablist" data-onglets>
+    @if (count($onglets) > 0)
+        <div class="mb-lg flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist" data-onglets>
             @foreach ($onglets as $o)
                 <button type="button" role="tab" wire:click="choisirOnglet('{{ $o }}')" aria-selected="{{ $o === $espece ? 'true' : 'false' }}"
-                        class="px-md py-sm text-xs font-bold {{ $o === $espece ? 'border-b-2 border-brand-navy text-brand-navy' : 'text-outline' }}">
+                        class="whitespace-nowrap border-b-2 px-lg py-2.5 text-xs font-bold {{ $o === $espece ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
                     {{ \App\Support\FilieresElevage::configuration($o)['libelle'] }}
                 </button>
             @endforeach
@@ -86,7 +96,7 @@
         <span class="text-xs font-bold text-brand-navy">Rappel du Cycle :</span>
         @foreach ($config['etapes'] as $i => $etape)
             @if ($i > 0)<x-icone nom="arrow_forward" class="text-[15px] text-outline" />@endif
-            <span class="rounded-full px-sm py-1 text-[11px] font-bold
+            <span class="rounded-full px-sm py-1 text-caption font-bold
                 {{ $i % 3 === 0 ? 'bg-brand-navy text-white' : ($i % 3 === 1 ? 'bg-brand-gold/30 text-brand-navy' : 'bg-success-container text-success-deep') }}">{{ $etape }}</span>
         @endforeach
     </div>
@@ -123,24 +133,44 @@
         @endif
     </div>
 
-    {{-- KPI --}}
-    <div class="mb-lg grid grid-cols-2 gap-md md:grid-cols-4">
+    {{-- KPI (propres à chaque fiche : lapins = géniteurs/naissances, pondeuses = ponte/plateaux) --}}
+    <div class="mb-lg grid grid-cols-2 gap-md md:grid-cols-4" data-kpis>
         <div class="{{ $carteKpi }} border-l-brand-navy">
-            <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Effectif Vivant</span><x-icone nom="pets" class="text-[18px] text-brand-navy" /></div>
-            <span class="mt-xs block text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="effectif">{{ $kpi['effectif'] }}</span>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">{{ $oeufs !== null ? 'Effectif Total' : 'Effectif Vivant' }}</span><x-icone :nom="$oeufs !== null ? 'egg' : $entete['icone']" class="text-[18px] text-brand-navy" /></div>
+            <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="effectif">{{ $kpi['effectif'] }}</span>
             @unless ($kpi['a_des_donnees'])<p class="text-caption text-outline">Aucune journée saisie ce mois-ci</p>@endunless
         </div>
-        <div class="{{ $carteKpi }} border-l-success-deep">
-            <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">{{ $kpi['libelle_mature'] }} (Éligibles Vente)</span><x-icone nom="verified" class="text-[18px] text-success-deep" /></div>
-            <span class="mt-xs block text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="matures">{{ $kpi['matures'] }}</span>
-        </div>
-        <div class="{{ $carteKpi }} border-l-brand-gold">
-            <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">{{ $kpi['libelle_immature'] }} (Immatures)</span><x-icone nom="child_care" class="text-[18px] text-brand-gold" /></div>
-            <span class="mt-xs block text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="immatures">{{ $kpi['immatures'] }}</span>
-        </div>
+        @if ($espece === 'pondeuses')
+            <div class="{{ $carteKpi }} border-l-info-blue">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Taux de Ponte Moyen</span><x-icone nom="egg" class="text-[18px] text-info-blue" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="taux-ponte">{{ $kpi['taux_ponte'] === null ? '—' : $pct($kpi['taux_ponte']) }}</span>
+            </div>
+            <div class="{{ $carteKpi }} border-l-brand-gold">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Stock Plateaux</span><x-icone nom="inventory_2" class="text-[18px] text-brand-gold" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="stock-plateaux">{{ $kpi['stock_plateaux'] }} Plateaux</span>
+            </div>
+        @elseif ($espece === 'lapins')
+            <div class="{{ $carteKpi }} border-l-info-blue">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Géniteurs ({{ $kpi['libelle_mature'] }}s)</span><x-icone nom="favorite" class="text-[18px] text-info-blue" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="matures">{{ $kpi['matures'] }}</span>
+            </div>
+            <div class="{{ $carteKpi }} border-l-brand-gold">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Naissances du Mois</span><x-icone nom="child_care" class="text-[18px] text-brand-navy" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="naissances">{{ $kpi['naissances'] }}</span>
+            </div>
+        @else
+            <div class="{{ $carteKpi }} {{ $groupeAvicole ? 'border-l-brand-gold' : 'border-l-success-deep' }}">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">{{ $kpi['libelle_mature'] }} (Éligibles Vente)</span><x-icone nom="verified" class="text-[18px] {{ $groupeAvicole ? 'text-brand-gold' : 'text-success-deep' }}" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="matures">{{ $kpi['matures'] }}</span>
+            </div>
+            <div class="{{ $carteKpi }} {{ $groupeAvicole ? 'border-l-info-blue' : 'border-l-brand-gold' }}">
+                <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">{{ $groupeAvicole ? 'Poulettes + Poussins' : $kpi['libelle_immature'].' (Immatures)' }}</span><x-icone nom="child_care" class="text-[18px] {{ $groupeAvicole ? 'text-info-blue' : 'text-brand-gold' }}" /></div>
+                <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="immatures">{{ $kpi['immatures'] }}</span>
+            </div>
+        @endif
         <div class="{{ $carteKpi }} {{ ['critique' => 'border-l-error-deep', 'avertissement' => 'border-l-brand-gold', 'normal' => 'border-l-success-deep'][$kpi['niveau_mortalite']] }}" data-niveau-mortalite="{{ $kpi['niveau_mortalite'] }}">
-            <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Taux de Mortalité (Cumul)</span><x-icone nom="trending_down" class="text-[18px] text-error-deep" /></div>
-            <span class="mt-xs block text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="mortalite">{{ $pct($kpi['mortalite']) }}</span>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Taux de Mortalité (Cumul)</span><x-icone nom="trending_down" class="text-[18px] text-error-deep" /></div>
+            <span class="mt-xs block text-kpi-value font-extrabold text-on-surface" data-kpi="mortalite">{{ $pct($kpi['mortalite']) }}</span>
         </div>
     </div>
 
@@ -149,7 +179,7 @@
         <div class="mb-md flex flex-wrap items-center justify-between gap-xs border-b border-outline-variant pb-sm">
             <div class="flex items-center gap-xs">
                 <x-icone nom="edit_note" class="text-[24px] text-brand-navy" />
-                <h2 id="titre-saisie" class="text-base font-bold text-brand-navy">Saisie Journalière — {{ $date->format('d/m/Y') }}@if ($bande) <span class="font-black text-brand-gold">· Jour {{ $jourDeCycle }}</span>@endif</h2>
+                <h2 id="titre-saisie" class="text-section-title font-bold text-brand-navy">{{ $titreSaisie }} — {{ $date->format('d/m/Y') }}@if ($bande) <span class="font-black text-brand-gold">· Jour {{ $jourDeCycle }}</span>@endif</h2>
             </div>
             <label class="flex items-center gap-xs print:hidden">
                 <span class="text-xs font-semibold text-outline">Changer de date :</span>
@@ -164,7 +194,7 @@
                     <input type="number" min="0" step="1" wire:model.live.debounce.400ms="achat" data-champ="achat" class="{{ $champ }}"></label>
                 <label class="{{ $etiquette }}">{{ $config['libelle_naissances'] }}
                     <input type="number" min="0" step="1" wire:model.live.debounce.400ms="ne" data-champ="ne" class="{{ $champ }}"></label>
-                <label class="{{ $etiquette }}">Ventes <span class="text-[9px] font-normal normal-case text-outline">(POS)</span>
+                <label class="{{ $etiquette }}">Ventes <span class="text-caption font-normal normal-case text-outline">(POS)</span>
                     <input type="number" value="{{ $venteDuJour }}" readonly data-champ="vente" class="{{ $champ }} cursor-not-allowed bg-surface-zebra text-outline"></label>
             </div>
 
@@ -176,11 +206,11 @@
                         @foreach ($categories as $i => $categorie)
                             @php($valeur = (int) (($groupe === 'morts' ? $morts[$i] : $dons[$i]) ?? 0))
                             <div>
-                                <span class="mb-xs block text-center text-[9px] font-bold uppercase text-outline">{{ $categorie[0] }}</span>
+                                <span class="mb-xs block text-center text-caption font-bold uppercase text-outline">{{ $categorie[0] }}</span>
                                 <div class="flex items-center overflow-hidden rounded-lg border border-outline-variant bg-white">
                                     <button type="button" wire:click="$set('{{ $groupe }}.{{ $i }}', {{ max(0, $valeur - 1) }})" aria-label="Moins {{ $categorie[0] }}" class="h-9 w-8 bg-surface-zebra font-bold text-brand-navy">−</button>
                                     <input type="number" min="0" step="1" wire:model.live.debounce.400ms="{{ $groupe }}.{{ $i }}" data-champ="{{ $groupe }}-{{ $i }}" aria-label="{{ $titre }} : {{ $categorie[0] }}"
-                                           class="h-9 w-full border-0 px-0 text-center text-sm font-bold [appearance:textfield] focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+                                           class="h-9 w-full border-0 px-0 text-center text-xs font-bold [appearance:textfield] focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
                                     <button type="button" wire:click="$set('{{ $groupe }}.{{ $i }}', {{ $valeur + 1 }})" aria-label="Plus {{ $categorie[0] }}" class="h-9 w-8 bg-surface-zebra font-bold text-brand-navy">+</button>
                                 </div>
                             </div>
@@ -192,14 +222,14 @@
             <div class="space-y-md border-t border-outline-variant pt-md">
                 <div class="grid grid-cols-1 gap-md rounded-lg border border-outline-variant bg-surface-zebra p-md sm:grid-cols-2">
                     <div>
-                        <p class="text-[12px] font-bold uppercase text-brand-navy">Effectif Final du Jour (calculé)</p>
-                        <p class="text-[12px] text-outline">= Effectif (J-1) + Achats/Nés − (Morts + Ventes + Dons)</p>
-                        <p class="mt-1 flex h-10 items-center rounded-lg bg-white px-md text-base font-black text-brand-navy shadow-sm" data-total="effectif">{{ $totaux['effectif_total'] }}</p>
+                        <p class="text-caption font-bold uppercase text-brand-navy">Effectif Final du Jour (calculé)</p>
+                        <p class="text-caption text-outline">= Effectif (J-1) + Achats/Nés − (Morts + Ventes + Dons)</p>
+                        <p class="mt-1 flex h-10 items-center rounded-lg bg-white px-md text-section-title font-black text-brand-navy shadow-sm" data-total="effectif">{{ $totaux['effectif_total'] }}</p>
                     </div>
                     <div>
-                        <p class="text-[12px] font-bold uppercase text-brand-navy">Taux de Mortalité du Jour (%)</p>
-                        <p class="text-[12px] text-outline">= (Morts du Jour ÷ Effectif J-1) × 100</p>
-                        <p class="mt-1 flex h-10 items-center rounded-lg bg-white px-md text-base font-black text-error-deep shadow-sm" data-total="mortalite">{{ $pct($totaux['taux_mortalite']) }}</p>
+                        <p class="text-caption font-bold uppercase text-brand-navy">Taux de Mortalité du Jour (%)</p>
+                        <p class="text-caption text-outline">= (Morts du Jour ÷ Effectif J-1) × 100</p>
+                        <p class="mt-1 flex h-10 items-center rounded-lg bg-white px-md text-section-title font-black text-error-deep shadow-sm" data-total="mortalite">{{ $pct($totaux['taux_mortalite']) }}</p>
                     </div>
                 </div>
 
@@ -251,36 +281,51 @@
             </div>
 
             @if ($oeufs !== null)
-                <div class="rounded-lg border border-brand-gold/40 bg-white p-md" data-oeufs>
-                    <p class="mb-sm text-xs font-bold uppercase text-brand-navy">Suivi du Stock d'Œufs</p>
-                    <div class="grid grid-cols-1 gap-md sm:grid-cols-3">
-                        <div>
-                            <p class="text-caption uppercase text-outline">Stock Hier (SRH)</p>
-                            <p class="text-xs font-bold" data-oeufs="srh">{{ $srh }}</p>
-                            <p class="text-caption text-outline">Stock Final de la veille</p>
-                        </div>
-                        <label class="{{ $etiquette }}">Œufs Pondus
-                            <input type="number" min="0" step="1" wire:model.live.debounce.400ms="oeufsPondus" data-champ="oeufs-pondus" class="{{ $champ }}"></label>
-                        <label class="{{ $etiquette }}">Œufs Cassés
+                @php($commercialisables = max(0, (int) $oeufsPondus - (int) $oeufsCasses))
+                <div class="space-y-sm rounded-lg border border-brand-gold/30 bg-brand-gold/10 p-md" data-oeufs>
+                    <p class="flex items-center gap-xs text-xs font-bold uppercase text-brand-navy"><x-icone nom="egg" class="text-[18px] text-brand-gold" />Workflow Récolte &amp; Stock d'Œufs</p>
+                    <div class="grid grid-cols-1 gap-sm sm:grid-cols-4">
+                        <label class="{{ $etiquette }}">Total Œufs Récoltés
+                            <input type="number" min="0" step="1" wire:model.live.debounce.400ms="oeufsPondus" data-champ="oeufs-pondus" class="{{ $champ }} font-bold text-brand-navy"></label>
+                        <label class="{{ $etiquette }}">Œufs Cassés / Fêlés
                             <input type="number" min="0" step="1" wire:model.live.debounce.400ms="oeufsCasses" data-champ="oeufs-casses" class="{{ $champ }}">
                             @if ((int) $oeufsCasses > (int) $oeufsPondus)
                                 <span class="text-caption normal-case text-error-deep">Ne peut dépasser les œufs pondus.</span>
                             @endif
                         </label>
                         <div>
+                            <span class="{{ $etiquette }}">Commercialisables</span>
+                            <p class="mt-xs flex h-10 items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-xs font-bold text-success-deep" data-oeufs="commercialisables">{{ $commercialisables }}</p>
+                        </div>
+                        <div>
+                            <span class="{{ $etiquette }}">Taux de Ponte Calculé</span>
+                            <p class="mt-xs flex h-10 items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-xs font-bold text-success-deep" data-oeufs="taux-ponte">{{ $totaux['effectif_total'] > 0 ? $pct((int) $oeufsPondus / $totaux['effectif_total'] * 100) : '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-sm sm:grid-cols-3">
+                        <div class="rounded-lg border border-outline-variant bg-white p-sm">
+                            <p class="text-caption uppercase text-outline">Stock Hier (SRH)</p>
+                            <p class="text-xs font-bold text-brand-navy" data-oeufs="srh">{{ $srh }}</p>
+                            <p class="text-caption text-outline">Stock Final de la veille</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-variant bg-white p-sm">
                             <p class="text-caption uppercase text-outline">Total Stock (TS)</p>
-                            <p class="text-xs font-bold" data-oeufs="ts">{{ $oeufs['total_stock'] }}</p>
+                            <p class="text-xs font-bold text-brand-navy" data-oeufs="ts">{{ $oeufs['total_stock'] }}</p>
                             <p class="text-caption text-outline">= (Pondus − Cassés) + SRH</p>
                         </div>
+                        <div class="rounded-lg border border-outline-variant bg-white p-sm">
+                            <p class="text-caption uppercase text-outline">Stock Final</p>
+                            <p class="text-xs font-bold text-success-deep" data-oeufs="final">{{ $oeufs['stock_final'] }}</p>
+                            <p class="text-caption text-outline">= TS − Sorties · devient le SRH de demain</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-sm sm:grid-cols-2">
+                        <div class="rounded-lg border border-outline-variant bg-white p-sm text-xs font-semibold text-brand-navy" data-oeufs="plateaux">Plateaux Nets Générés ({{ \App\Support\CalculFicheJournaliere::OEUFS_PAR_PLATEAU }} œufs/plateau) :
+                            <strong class="text-success-deep">{{ intdiv($commercialisables, \App\Support\CalculFicheJournaliere::OEUFS_PAR_PLATEAU) }} Plateaux ({{ $commercialisables % \App\Support\CalculFicheJournaliere::OEUFS_PAR_PLATEAU }} œufs vrac)</strong></div>
                         <label class="{{ $etiquette }}">Sorties (Plateaux)
                             <input type="number" min="0" step="1" wire:model.live.debounce.400ms="sortiesPlateaux" data-champ="oeufs-sorties" class="{{ $champ }}">
                             <span class="text-caption font-normal normal-case text-outline">{{ $oeufs['sorties_oeufs'] }} œufs ({{ \App\Support\CalculFicheJournaliere::OEUFS_PAR_PLATEAU }} par plateau)</span>
                         </label>
-                        <div>
-                            <p class="text-caption uppercase text-outline">Stock Final</p>
-                            <p class="text-xs font-bold" data-oeufs="final">{{ $oeufs['stock_final'] }}</p>
-                            <p class="text-caption text-outline">= TS − Sorties · devient le SRH de demain</p>
-                        </div>
                     </div>
                 </div>
             @endif
@@ -291,11 +336,11 @@
                     <input type="number" min="0" step="1" wire:model.live.debounce.400ms="poids" placeholder="ex : 3500" data-champ="poids" class="{{ $champ }} font-bold"></label>
                 <div>
                     <span class="{{ $etiquette }}">Taille Échantillon <span class="font-normal normal-case text-outline">(Auto = Effectif Final)</span></span>
-                    <p class="mt-xs flex h-10 cursor-not-allowed items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-sm font-bold text-brand-navy">{{ $totaux['effectif_total'] }}</p>
+                    <p class="mt-xs flex h-10 cursor-not-allowed items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-xs font-bold text-brand-navy">{{ $totaux['effectif_total'] }}</p>
                 </div>
                 <div>
                     <span class="{{ $etiquette }}">Poids Moyen Constaté</span>
-                    <p class="mt-xs flex h-10 items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-sm font-bold text-brand-navy" data-poids-moyen>{{ $poidsMoyen !== null ? $poidsMoyen.' g' : '—' }}</p>
+                    <p class="mt-xs flex h-10 items-center rounded-lg border border-outline-variant bg-surface-zebra px-md text-xs font-bold text-brand-navy" data-poids-moyen>{{ $poidsMoyen !== null ? $poidsMoyen.' g' : '—' }}</p>
                 </div>
             </div>
 
@@ -304,7 +349,7 @@
                 <div class="flex items-center justify-between gap-sm">
                     <p class="flex items-center gap-xs text-xs font-bold text-brand-navy"><x-icone nom="vaccines" class="text-[18px] text-info-blue" />Traitements &amp; Prophylaxie Automatiques Prévus pour ce Jour</p>
                     @if ($bande)
-                        <span class="rounded-full border px-sm py-0.5 text-[12px] font-bold {{ count($prophylaxieDuJour) === 0 ? 'border-outline-variant bg-surface-zebra text-outline' : 'border-brand-gold bg-brand-gold/30 text-brand-navy' }}">{{ count($prophylaxieDuJour) === 0 ? 'Libre' : count($prophylaxieDuJour).' Prévu(s)' }}</span>
+                        <span class="rounded-full border px-sm py-0.5 text-caption font-bold {{ count($prophylaxieDuJour) === 0 ? 'border-outline-variant bg-surface-zebra text-outline' : 'border-brand-gold bg-brand-gold/30 text-brand-navy' }}">{{ count($prophylaxieDuJour) === 0 ? 'Libre' : count($prophylaxieDuJour).' Prévu(s)' }}</span>
                     @endif
                 </div>
                 <div class="rounded-lg border border-outline-variant bg-white p-sm">
@@ -315,7 +360,7 @@
                             <div class="flex flex-wrap items-center justify-between gap-sm border-b border-outline-variant/40 py-1 text-xs last:border-0" data-echeance="{{ $p['echeance']->id }}">
                                 <p><strong class="text-brand-navy">{{ $p['echeance']->traitement }}</strong> — {{ $p['echeance']->produit }}@if ($p['echeance']->dose) ({{ $p['echeance']->dose }})@endif · J{{ $p['echeance']->jour_cycle }} du cycle</p>
                                 @if ($p['soin'])
-                                    <span class="rounded-full border border-success-deep bg-success-container px-sm py-0.5 text-[12px] font-bold text-success-deep">{{ $p['soin']->statut }}</span>
+                                    <span class="rounded-full border border-success-deep bg-success-container px-sm py-0.5 text-caption font-bold text-success-deep">{{ $p['soin']->statut }}</span>
                                 @elseif ($peutGerer)
                                     <span class="flex flex-wrap gap-xs">
                                         @foreach ($typesSoin as $type)
@@ -360,7 +405,7 @@
             @if ($peutGerer)
                 <div class="flex justify-end pt-sm">
                     <button type="button" wire:click="enregistrer" wire:loading.attr="disabled"
-                            class="flex items-center gap-xs rounded-lg bg-brand-navy px-lg py-sm text-sm font-bold text-white hover:bg-brand-navy-dark"><x-icone nom="save" class="text-[18px]" />Enregistrer la Saisie du Jour</button>
+                            class="flex items-center gap-xs rounded-lg bg-brand-navy px-lg py-sm text-xs font-bold text-white hover:bg-brand-navy-dark"><x-icone nom="save" class="text-[18px]" />Enregistrer la Saisie du Jour</button>
                 </div>
             @endif
         </fieldset>
@@ -370,21 +415,76 @@
     {{-- Historique du mois --}}
     <section class="mb-lg" aria-labelledby="titre-historique">
         <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-            <h2 id="titre-historique" class="text-sm font-bold text-brand-navy">Historique du Mois — {{ $libelleMois }}</h2>
+            <h2 id="titre-historique" class="text-xs font-bold text-brand-navy">Historique du Mois — {{ $libelleMois }}</h2>
+            @unless ($groupeAvicole)
             <div class="inline-flex items-center rounded-full border border-outline-variant bg-white p-1" role="group" aria-label="Densité d'affichage">
                 <button type="button" wire:click="basculer(false)" data-bascule="quotidienne"
                         class="rounded-full px-md py-1.5 text-xs font-bold {{ $hebdomadaire ? 'text-outline' : 'bg-brand-navy text-white' }}">Grille Quotidienne</button>
                 <button type="button" wire:click="basculer(true)" data-bascule="hebdomadaire"
                         class="rounded-full px-md py-1.5 text-xs font-bold {{ $hebdomadaire ? 'bg-brand-navy text-white' : 'text-outline' }}">Vue Hebdomadaire</button>
             </div>
+            @endunless
         </div>
 
-        @if (! $hebdomadaire)
+        @if ($groupeAvicole || ! $hebdomadaire)
+            @if ($oeufs !== null)
+            <div class="hidden overflow-hidden rounded-lg border border-outline-variant bg-white shadow-sm sm:block">
+                <div class="overflow-x-auto">
+                <table class="w-full text-xs" data-table="mensuel">
+                    <thead>
+                        <tr class="border-b border-outline-variant bg-surface-zebra text-caption font-bold uppercase text-outline">
+                            <th class="sticky left-0 border-r border-outline-variant bg-surface-zebra px-sm py-sm text-left">Date</th>
+                            <th class="border-r border-outline-variant px-sm py-sm text-right">Œufs Récoltés</th>
+                            <th class="border-r border-outline-variant px-sm py-sm text-right">Taux Ponte</th>
+                            <th class="px-sm py-sm text-right">Mort</th>
+                            <th class="border-r border-outline-variant px-sm py-sm text-right">Effectif</th>
+                            <th class="px-sm py-sm text-right">Stock Hier (SRH)</th>
+                            <th class="px-sm py-sm text-right">Total Stock (TS)</th>
+                            <th class="px-sm py-sm text-right">Sortie Vente (OS)</th>
+                            <th class="border-r border-outline-variant px-sm py-sm text-right">Stock Final</th>
+                            <th class="px-sm py-sm text-left">Traitements &amp; Prophylaxie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for ($j = 1; $j <= $nombreJours; $j++)
+                            @php($d = $journees[$j] ?? null)
+                            @php($saisie = $d !== null && $d['is_recorded'])
+                            @php($actif = $j === $date->day)
+                            @php($veille = $journees[$j - 1] ?? null)
+                            @php($mortsJour = $saisie ? array_sum($d['morts']) : 0)
+                            @php($notes = $saisie && trim((string) ($d['traitement_obs'] ?? '')) !== '' ? $d['traitement_obs'] : '—')
+                            @if (! $saisie)
+                                <tr wire:click="selectionnerJour({{ $j }})" data-jour="{{ $j }}" class="cursor-pointer border-b border-outline-variant italic text-outline/60 {{ $actif ? 'bg-brand-gold/10' : '' }}">
+                                    <td class="sticky left-0 bg-white px-sm py-xs font-semibold">{{ str_pad($j, 2, '0', STR_PAD_LEFT) }}/{{ $date->format('m') }}</td>
+                                    <td colspan="8" class="border-r border-outline-variant px-sm py-xs text-center">Saisie non effectuée</td>
+                                    <td class="px-sm py-xs text-left not-italic">—</td>
+                                </tr>
+                            @else
+                                <tr wire:click="selectionnerJour({{ $j }})" data-jour="{{ $j }}" @if($actif) aria-current="date" @endif
+                                    class="cursor-pointer border-b border-outline-variant hover:bg-brand-navy/5 {{ $actif ? 'bg-brand-gold/10' : '' }}">
+                                    <td class="sticky left-0 bg-white px-sm py-xs font-semibold">{{ str_pad($j, 2, '0', STR_PAD_LEFT) }}/{{ $date->format('m') }}</td>
+                                    <td class="border-r border-outline-variant px-sm py-xs text-right">{{ $d['oeufs_pondus'] ?? '—' }}</td>
+                                    <td class="border-r border-outline-variant px-sm py-xs text-right">{{ $veille !== null && $veille['is_recorded'] && $veille['effectif'] > 0 && $d['oeufs_pondus'] !== null ? number_format($d['oeufs_pondus'] / $veille['effectif'] * 100, 1, ',', ' ').'%' : '—' }}</td>
+                                    <td class="px-sm py-xs text-right {{ $mortsJour > 0 ? 'font-bold text-error-deep' : '' }}">{{ $mortsJour }}</td>
+                                    <td class="border-r border-outline-variant px-sm py-xs text-right font-bold">{{ $d['effectif'] }}</td>
+                                    <td class="px-sm py-xs text-right text-outline">{{ $d['srh'] ?? 0 }}</td>
+                                    <td class="px-sm py-xs text-right font-bold">{{ $d['ts'] ?? 0 }}</td>
+                                    <td class="px-sm py-xs text-right {{ ($d['sorties_plateaux'] ?? 0) > 0 ? 'font-bold text-info-blue' : 'text-outline' }}">{{ ($d['sorties_plateaux'] ?? 0) > 0 ? $d['sorties_plateaux'].' Pl.' : '—' }}</td>
+                                    <td class="border-r border-outline-variant px-sm py-xs text-right font-bold text-success-deep">{{ $d['stock_final_oeufs'] ?? 0 }}</td>
+                                    <td class="px-sm py-xs text-left">{{ $notes }}</td>
+                                </tr>
+                            @endif
+                        @endfor
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            @else
             <div class="relative hidden overflow-hidden rounded-lg border border-outline-variant bg-white shadow-sm sm:block">
                 <div class="overflow-x-auto">
                 <table class="w-full text-xs" data-table="mensuel">
                     <thead>
-                        <tr class="border-b border-outline-variant bg-surface-zebra text-[12px] font-bold uppercase text-outline">
+                        <tr class="border-b border-outline-variant bg-surface-zebra text-caption font-bold uppercase text-outline">
                             <th rowspan="2" class="sticky left-0 border-r border-outline-variant bg-surface-zebra px-sm py-sm text-left">Date</th>
                             <th colspan="2" class="border-r border-outline-variant px-sm py-sm text-center">Entrées</th>
                             <th colspan="3" class="border-r border-outline-variant px-sm py-sm text-center">Sorties</th>
@@ -393,7 +493,7 @@
                             <th rowspan="2" class="border-r border-outline-variant px-sm py-sm text-right">Poids Moy. (g)</th>
                             <th rowspan="2" class="px-sm py-sm text-left">Traitements &amp; Prophylaxie</th>
                         </tr>
-                        <tr class="border-b border-outline-variant bg-surface-zebra text-[12px] font-bold uppercase text-outline">
+                        <tr class="border-b border-outline-variant bg-surface-zebra text-caption font-bold uppercase text-outline">
                             <th class="px-sm py-sm text-right">Achat</th>
                             <th class="border-r border-outline-variant px-sm py-sm text-right">Né</th>
                             <th class="px-sm py-sm text-right">Mort</th>
@@ -426,6 +526,7 @@
                 </table>
                 </div>
             </div>
+            @endif
             <div class="flex flex-col gap-xs sm:hidden" data-vue="cartes">
                 @for ($j = 1; $j <= $nombreJours; $j++)
                     @php($d = $journees[$j] ?? null)

@@ -165,7 +165,7 @@
 
                     @if ($erreur)<p role="alert" class="mb-sm text-xs text-error-deep" data-erreur="caisse">{{ $erreur }}</p>@endif
                     <button type="button" wire:click="encaisser" {{ $panier === [] ? "disabled" : "" }}
-                            class="w-full rounded-lg bg-brand-navy px-md py-sm text-sm font-semibold text-white disabled:opacity-50">Encaisser la Vente</button>
+                            class="w-full rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white disabled:opacity-50">Encaisser la Vente</button>
                 </section>
             </div>
 

@@ -175,7 +175,7 @@ class FicheEspeceWebTest extends TestCase
             ->assertSee('Fiche Poulets')->assertSeeHtml('data-onglets')->assertSee('Pondeuses')
             ->assertSeeHtml('data-kpi="effectif">30<');
 
-        $c->call('choisirOnglet', 'pondeuses')->assertSee('Fiche Pondeuses')->assertSeeHtml('data-kpi="effectif">77<')
+        $c->call('choisirOnglet', 'pondeuses')->assertSee('Fiche Poulets &amp; Pondeuses', false)->assertSee('Taux de Ponte Moyen')->assertSee('Stock Plateaux')->assertSeeHtml('data-kpi="effectif">77<')
             ->assertSeeHtml('data-oeufs>');
     }
 
@@ -325,7 +325,7 @@ class FicheEspeceWebTest extends TestCase
     public function test_les_libelles_propres_a_la_filiere_viennent_du_dart(): void
     {
         $this->activer('cuniculture', 'heliciculture');
-        $this->fiche($this->animalier(), '/elevage/lapins')->assertSee('Nés (Mise bas)')->assertSee('Reproducteur')->assertSee('Chair (Immatures)');
+        $this->fiche($this->animalier(), '/elevage/lapins')->assertSee('Nés (Mise bas)')->assertSee('Reproducteur')->assertSee('Fiches Lapins - Cuniculture')->assertSee('Naissances du Mois')->assertSee('Géniteurs (Reproducteurs)');
         $this->fiche($this->animalier(), '/elevage/escargots')->assertSee('Nés (Éclosions)')->assertSee('Naissain')->assertSee('Marchand (Immatures)');
     }
 
