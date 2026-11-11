@@ -34,6 +34,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $titre ?? 'LogiALVIA' }} — LogiALVIA</title>
+    <x-pwa-tete />
+    {{-- Premier affichage < 2 s (47x_) : CSS critique precharge ; Livewire/Alpine sont dans le build Vite (module differe). --}}
+    <link rel="preload" href="{{ Vite::asset('resources/css/app.css') }}" as="style">
+    @livewireStyles
+    @livewireScriptConfig
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-surface-bg text-on-surface antialiased">

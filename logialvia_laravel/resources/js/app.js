@@ -1,4 +1,9 @@
 import './bootstrap';
+import { Livewire, Alpine } from '../../vendor/livewire/livewire/dist/livewire.esm';
+
+// 47x_ : Livewire/Alpine viennent du build Vite (module differe, fichier a part) au lieu de livewire.min.js bloquant le rendu.
+window.Livewire = Livewire;
+window.Alpine = Alpine;
 
 /*
  * Saisie « debounce » puis clic immediat (47n_) : `wire:model.live.debounce.300ms` ne met l'etat du composant a jour
@@ -102,4 +107,15 @@ document.addEventListener('keydown', (e) => {
         if (e.shiftKey && (document.activeElement === premier || !m.contains(document.activeElement))) { e.preventDefault(); dernier.focus(); }
         else if (!e.shiftKey && (document.activeElement === dernier || !m.contains(document.activeElement))) { e.preventDefault(); premier.focus(); }
     }
+});
+
+// Demarre Livewire : declenche `livewire:init` (ecouteur plus haut) puis initialise Alpine sur la page.
+Livewire.start();
+
+/*
+ * PWA (47x_) : chargee APRES `load`, au repos du navigateur — jamais sur le chemin critique du premier affichage.
+ */
+window.addEventListener('load', () => {
+    const plusTard = window.requestIdleCallback || ((f) => setTimeout(f, 1500));
+    plusTard(() => import('./pwa'));
 });

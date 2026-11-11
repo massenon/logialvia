@@ -8,6 +8,10 @@ use App\Support\Navigation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// PWA (47x_) : service worker genere (precache = build Vite) et page d'attente, publics.
+Route::get('/sw.js', \App\Http\Controllers\ServiceWorkerController::class)->name('pwa.sw');
+Route::view('/hors-ligne', 'pwa.hors-ligne')->name('pwa.hors-ligne');
+
 // Invites : connexion.
 Route::get('/login', Connexion::class)->middleware('guest')->name('login');
 

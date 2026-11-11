@@ -38,6 +38,13 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/sync/*'),
         ]);
 
+        // 47x : prechargement des fichiers critiques (Link: rel=preload, repris en 103 Early Hints par les serveurs qui le savent).
+        $middleware->web(append: [
+            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\PrechargerPolices::class,
+            \App\Http\Middleware\CompresserReponse::class,
+        ]);
+
         // 47r : l'en-tete Authorization retire par l'hebergeur est rendu depuis X-Authorization.
         $middleware->api(prepend: [RestaurerEnTeteAutorisation::class]);
 

@@ -1,23 +1,18 @@
 /* Roboto variable, servie par le site : aucune requete externe au chargement. */
 @font-face {
     font-family: 'Roboto';
-    src: url('/fonts/Roboto-Variable.ttf') format('truetype');
+    src: url('/fonts/Roboto-Variable-latin.woff2') format('woff2');
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
 }
-@font-face {
-    font-family: 'Roboto';
-    src: url('/fonts/Roboto-Italic-Variable.ttf') format('truetype');
-    font-weight: 100 900;
-    font-style: italic;
-    font-display: swap;
-}
+/* Pas de police italique : le navigateur incline Roboto droite (italique de synthese). Charger la vraie italique (97 Ko), meme
+   apres `load`, re-peignait le texte et repoussait le LCP mobile au-dela de 2 s (CI, 47x_). */
 
 /* Material Symbols Outlined (la police du poste), reduite aux icones utilisees : voir public/fonts. */
 @font-face {
     font-family: 'Material Symbols Outlined';
-    src: url('/fonts/MaterialSymbolsOutlined-LogiALVIA.woff') format('woff');
+    src: url('/fonts/MaterialSymbolsOutlined-LogiALVIA.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: block;
@@ -38,6 +33,10 @@
         text-transform: none;
         display: inline-block;
         white-space: nowrap;
+        /* Boite fixe 1em x 1em : avant l'arrivee de la police d'icones, le glyphe de remplacement (plus large) decalait la page (CLS). */
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
         -webkit-font-smoothing: antialiased;
         user-select: none;
     }
