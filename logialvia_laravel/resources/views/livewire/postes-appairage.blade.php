@@ -79,6 +79,15 @@
                                 @if ($attente[$poste->id]['renvoi'])
                                     <span class="mt-xs inline-block rounded-full bg-brand-gold/30 px-sm py-xs font-semibold text-brand-navy" data-attente="renvoi">Renvoi complet en attente</span>
                                 @endif
+                                @if ($retards[$poste->id] ?? null)
+                                    @if ($retards[$poste->id]['jamais'])
+                                        <span class="mt-xs inline-block rounded-full bg-surface-zebra px-sm py-xs font-semibold text-outline" data-retard="jamais">Jamais synchronisé</span>
+                                    @elseif ($retards[$poste->id]['lignes'] > 0)
+                                        <span class="mt-xs inline-block rounded-full bg-brand-gold/30 px-sm py-xs font-semibold text-brand-navy" data-retard="{{ $retards[$poste->id]['lignes'] }}">Retard : {{ $retards[$poste->id]['lignes'] }} ligne(s)</span>
+                                    @else
+                                        <span class="mt-xs inline-block rounded-full bg-success-container px-sm py-xs font-semibold text-success-deep" data-retard="0">À jour</span>
+                                    @endif
+                                @endif
                             @elseif ($etat === 'revoque')
                                 <span class="rounded-full bg-error-container px-sm py-xs font-semibold text-error-deep">Révoqué</span>
                             @else
@@ -145,6 +154,13 @@
                     <dd>{{ $poste->dernier_contact_le?->diffForHumans() ?? 'jamais' }}</dd>
                 </dl>
                 @if ($etat === 'appaire')
+                    @if ($retards[$poste->id] ?? null)
+                        <p class="mt-sm text-xs font-semibold text-brand-navy" data-retard-carte="{{ $poste->code }}">
+                            @if ($retards[$poste->id]['jamais']) Jamais synchronisé
+                            @elseif ($retards[$poste->id]['lignes'] > 0) Retard : {{ $retards[$poste->id]['lignes'] }} ligne(s)
+                            @else À jour @endif
+                        </p>
+                    @endif
                     @if ($attente[$poste->id]['demande'] || $attente[$poste->id]['renvoi'])
                         <p class="mt-sm text-xs font-semibold text-brand-navy">
                             @if ($attente[$poste->id]['demande']) Synchro demandée @endif

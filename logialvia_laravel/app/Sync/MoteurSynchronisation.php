@@ -44,6 +44,32 @@ class MoteurSynchronisation
         return ParametresEntreprise::courant()->marque_remise_a_zero;
     }
 
+    // ---------------------------------------------------------------- Retard
+
+    /**
+     * Retard d'un poste : pour chaque table que le compte peut lire, le nombre de lignes du serveur plus
+     * RECENTES que le dernier tirage du poste (`curseur_tirage`). 0 partout : le poste a recu tout ce que le
+     * serveur savait au moment de son dernier tirage. Les saisies que le poste vient d'envoyer comptent
+     * (elles reviennent au tirage suivant) : un retard n'est pas une anomalie, c'est « a recevoir ».
+     *
+     * @return array<string, int> table => lignes a recevoir (les tables a 0 sont omises)
+     */
+    public function retard(?string $curseur, User $utilisateur): array
+    {
+        $depuis = $curseur !== null ? CarbonImmutable::parse($curseur, 'UTC')->addMicrosecond() : null;
+        $jusqua = CarbonImmutable::now('UTC');
+
+        $retard = [];
+        foreach ($this->tablesLisibles($utilisateur) as $table) {
+            $n = $table->requeteTirage($depuis, $jusqua)->toBase()->getCountForPagination();
+            if ($n > 0) {
+                $retard[$table->nom()] = $n;
+            }
+        }
+
+        return $retard;
+    }
+
     // ---------------------------------------------------------------- Tirage
 
     /**

@@ -53,6 +53,24 @@ class SyncController extends Controller
         return response()->json($tirage);
     }
 
+    /**
+     * « Vérifier la cohérence » du poste : ce que le serveur a de plus récent que son dernier tirage.
+     * Lecture seule ; mêmes tables et mêmes droits que le tirage.
+     */
+    public function coherence(Request $request): JsonResponse
+    {
+        $poste = \App\Models\Poste::query()->where('device_id', $this->poste($request))->first();
+        $curseur = $poste?->getRawOriginal('curseur_tirage');
+        $retard = $this->moteur->retard($curseur, $request->user());
+
+        return response()->json([
+            'server_now' => now('UTC')->format('Y-m-d\TH:i:s.u\Z'),
+            'curseur' => $curseur === null ? null : \Carbon\CarbonImmutable::parse($curseur, 'UTC')->format('Y-m-d\TH:i:s.u\Z'),
+            'retard' => (object) $retard,
+            'total' => array_sum($retard),
+        ]);
+    }
+
     /** Interrogee par le poste (toutes les 30 s) : « synchronise maintenant ? ». */
     public function demande(Request $request): JsonResponse
     {

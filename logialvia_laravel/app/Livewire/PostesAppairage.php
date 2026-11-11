@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Poste;
 use App\Services\DemandesSynchronisationService;
 use App\Services\PostesService;
+use App\Sync\MoteurSynchronisation;
 use App\Sync\DroitsPoste;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -161,7 +162,7 @@ class PostesAppairage extends Component
         ];
     }
 
-    public function render()
+    public function render(MoteurSynchronisation $moteur)
     {
         $this->verifierDroit();
 
@@ -191,7 +192,20 @@ class PostesAppairage extends Component
             ];
         }
 
+        // Retard : lignes du serveur plus recentes que le dernier tirage du poste (avec les droits de son dernier compte).
+        $retards = [];
+        foreach ($postes as $poste) {
+            $compte = $poste->dernierUtilisateur;
+            $retards[$poste->id] = $poste->etat() !== 'appaire' || $compte === null || $compte->trashed()
+                ? null
+                : [
+                    'jamais' => $poste->getRawOriginal('curseur_tirage') === null,
+                    'lignes' => array_sum($moteur->retard($poste->getRawOriginal('curseur_tirage'), $compte)),
+                ];
+        }
+
         return view('livewire.postes-appairage', [
+            'retards' => $retards,
             'attente' => $attente,
             'renvoiCible' => $this->renvoiAConfirmer === '*'
                 ? 'tous'

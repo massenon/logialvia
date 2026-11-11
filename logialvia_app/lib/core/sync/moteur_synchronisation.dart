@@ -364,6 +364,45 @@ class MoteurSynchronisationPoste {
     );
   }
 
+  /// « Vérifier la cohérence » : ce que le serveur a de plus récent que le dernier tirage de ce poste
+  /// (`GET /api/sync/coherence`). Lecture seule ; jamais d'effet sur les données du poste.
+  Future<ReponseCoherence> coherenceServeur() async {
+    final adresse = await preferences.adresseServeur();
+    final jeton = await depot.lire();
+    if (adresse == null || jeton == null || jeton.isEmpty) {
+      return const ReponseCoherence(IssueSynchronisation.nonAppairee);
+    }
+    final idPoste = await preferences.identifiantPoste();
+    final resultat = await _appeler(
+      adresse,
+      (c, base) => c.get(
+        Uri.parse(
+          '$base/api/sync/coherence',
+        ).replace(queryParameters: {'device_id': idPoste}),
+        headers: _entetes(jeton),
+      ),
+    );
+    final arret = await _verifier(resultat);
+    if (arret != null) return ReponseCoherence(arret.issue);
+    if (resultat.reponse!.statusCode != 200) {
+      return const ReponseCoherence(IssueSynchronisation.refusee);
+    }
+
+    final json = _json(resultat.reponse!.body);
+    final brut = json?['retard'];
+    final retard = <String, int>{
+      if (brut is Map)
+        for (final e in brut.entries)
+          if (e.value is int && (e.value as int) > 0)
+            '${e.key}': e.value as int,
+    };
+    return ReponseCoherence(
+      IssueSynchronisation.terminee,
+      retard: retard,
+      jamaisSynchronise: json?['curseur'] == null,
+    );
+  }
+
   /// Le tirage complet demandé est fait : le serveur peut baisser son drapeau.
   Future<bool> acquitterResynchronisation() async {
     final adresse = await preferences.adresseServeur();
@@ -1043,6 +1082,28 @@ class ReponseDemande {
   final IssueSynchronisation issue;
   final bool synchroniser;
   final bool resynchronisationComplete;
+}
+
+/// Réponse à `GET /api/sync/coherence`.
+class ReponseCoherence {
+  const ReponseCoherence(
+    this.issue, {
+    this.retard = const {},
+    this.jamaisSynchronise = false,
+  });
+
+  /// `terminee` = le serveur a répondu ; sinon voir [IssueSynchronisation].
+  final IssueSynchronisation issue;
+
+  /// Par table du serveur : lignes plus récentes que le dernier tirage de ce poste (les tables à 0 sont omises).
+  final Map<String, int> retard;
+
+  /// Le serveur n'a jamais rendu de tirage complet à ce poste.
+  final bool jamaisSynchronise;
+
+  bool get repondu => issue == IssueSynchronisation.terminee;
+  int get total => retard.values.fold(0, (a, b) => a + b);
+  bool get aJour => repondu && !jamaisSynchronise && total == 0;
 }
 
 /// Fusion minimale de flux (évite une dépendance pour une fonction).

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/formatage/formats.dart';
 import '../../../../core/sync/depot_etat_synchronisation.dart';
+import '../../../../core/sync/moteur_synchronisation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -348,13 +349,19 @@ class _Conflits extends StatelessWidget {
                             ],
                           ),
                         ),
-                        AppButton(
-                          label: 'Remettre en file',
-                          icon: Symbols.replay,
-                          variant: AppButtonVariant.outline,
-                          onPressed: () =>
-                              _remettre(context, table: l.table, id: l.id),
-                        ),
+                        if (l.remisePossible)
+                          AppButton(
+                            label: 'Remettre en file',
+                            icon: Symbols.replay,
+                            variant: AppButtonVariant.outline,
+                            onPressed: () =>
+                                _remettre(context, table: l.table, id: l.id),
+                          )
+                        else
+                          const Text(
+                            'À refaire depuis Comptabilité',
+                            style: _petit,
+                          ),
                       ],
                     ),
                   ),
@@ -388,9 +395,11 @@ class _Coherence extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Contrôle local : recompte, table par table, les lignes de ce poste '
-            'selon leur état (en attente, synchronisées, refusées). Il ne '
-            'compare pas avec le contenu du serveur.',
+            'Recompte, table par table, les lignes de ce poste selon leur état '
+            '(en attente, synchronisées, refusées), puis demande au serveur ce '
+            'qu\'il a de plus récent que le dernier tirage de ce poste. Les '
+            'saisies que ce poste vient d\'envoyer reviennent au tirage '
+            'suivant : elles comptent comme « à recevoir ».',
             style: _petit,
           ),
           if (verifiee != null) ...[
@@ -409,6 +418,10 @@ class _Coherence extends StatelessWidget {
                     : AppColors.errorDeep,
               ),
             ),
+            if (vm.coherenceServeur != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              _VerdictServeur(reponse: vm.coherenceServeur!),
+            ],
             const SizedBox(height: AppSpacing.xs),
             if (vm.parTable.isEmpty)
               const EtatVide(
@@ -467,6 +480,52 @@ class _Coherence extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Ce que le serveur dit de ce poste : à jour, ou N lignes plus récentes à recevoir.
+class _VerdictServeur extends StatelessWidget {
+  const _VerdictServeur({required this.reponse});
+
+  final ReponseCoherence reponse;
+
+  @override
+  Widget build(BuildContext context) {
+    final (texte, couleur) = switch (reponse) {
+      ReponseCoherence(repondu: false, :final issue) => (
+        switch (issue) {
+          IssueSynchronisation.horsLigne =>
+            'Serveur injoignable : contrôle local seulement.',
+          IssueSynchronisation.nonAppairee =>
+            'Poste non appairé : contrôle local seulement.',
+          IssueSynchronisation.revoque =>
+            'Jeton refusé par le serveur : réappairez ce poste.',
+          _ => 'Le serveur n\'a pas pu répondre : contrôle local seulement.',
+        },
+        AppColors.outline,
+      ),
+      ReponseCoherence(jamaisSynchronise: true) => (
+        'Serveur : ce poste n\'a jamais reçu de tirage complet. Lancez '
+            '« Synchroniser ».',
+        AppColors.errorDeep,
+      ),
+      ReponseCoherence(aJour: true) => (
+        'Serveur : à jour, rien de plus récent que le dernier tirage de ce poste.',
+        AppColors.successDeep,
+      ),
+      _ => (
+        'Serveur : ${reponse.total} ligne(s) plus récente(s) à recevoir '
+            '(${reponse.retard.entries.map((e) => '${DepotEtatSynchronisation.libelleTable(e.key)} : ${e.value}').join(', ')}). '
+            'Lancez « Synchroniser ».',
+        AppColors.brandGold,
+      ),
+    };
+
+    return Text(
+      texte,
+      key: const Key('coherence-serveur'),
+      style: _texte.copyWith(fontWeight: FontWeight.w700, color: couleur),
     );
   }
 }
