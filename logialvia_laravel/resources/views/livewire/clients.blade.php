@@ -1,9 +1,9 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Clients et Créances</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="payments" class="text-[24px]" />Clients et Créances</h1><p class="mt-xs text-xs text-outline">Fiches clients, suivi des soldes restant dus, relances commerciales et fidélisation.</p></div>
         @if ($peutGerer)
             <button type="button" wire:click="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                    class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                 Ajouter un Client
             </button>
         @endif
@@ -15,20 +15,20 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Clients Enregistrés</p>
-            <p class="text-page-title font-bold" data-kpi="clients">{{ $nombre }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Clients Enregistrés</span><x-icone nom="group" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="clients">{{ $nombre }}</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Solde Total Restant Dû</p>
-            <p class="text-page-title font-bold" data-kpi="solde">{{ number_format($soldeTotal, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Solde Total Restant Dû</span><x-icone nom="request_quote" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="solde">{{ number_format($soldeTotal, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Soldes Anciens (&gt;10j)</p>
-            <p class="text-page-title font-bold" data-kpi="anciens">{{ $anciens }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Soldes Anciens (&gt;10j)</span><x-icone nom="schedule" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="anciens">{{ $anciens }}</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-info-blue bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Événements CRM (7j)</p>
-            <p class="text-page-title font-bold" data-kpi="crm">{{ $evenements->count() }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Événements CRM (7j)</span><x-icone nom="celebration" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="crm">{{ $evenements->count() }}</p>
         </div>
     </div>
 

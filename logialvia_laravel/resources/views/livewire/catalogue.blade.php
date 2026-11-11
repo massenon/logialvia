@@ -1,9 +1,9 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Catalogue &amp; Seuils</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="category" class="text-[24px]" />Catalogue &amp; Seuils</h1><p class="mt-xs text-xs text-outline">Fiche produit maître (SKU, tarification) — distincte du suivi de quantités de Gestion Stocks.</p></div>
         @if ($peutGerer)
             <button type="button" wire:click="nouveau"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                    class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                 Ajouter un Produit
             </button>
         @endif
@@ -21,12 +21,12 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Produits au catalogue</p>
-            <p class="text-page-title font-bold" data-kpi="produits">{{ $nombre }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Produits au catalogue</span><x-icone nom="inventory_2" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="produits">{{ $nombre }}</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Catégories</p>
-            <p class="text-page-title font-bold" data-kpi="categories">{{ $nombreCategories }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Catégories</span><x-icone nom="category" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="categories">{{ $nombreCategories }}</p>
         </div>
     </div>
 
@@ -157,7 +157,7 @@
                 <div class="grid grid-cols-1 gap-sm sm:grid-cols-2">
                     <label class="text-xs sm:col-span-2">Désignation
                         <input type="text" wire:model="nom" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
-                    <label class="text-xs sm:col-span-2">Catégorie
+                    <label class="text-xs sm:col-span-2">Catégorie (filière : Avicole, Cuniculture, Héliciculture, Élevage ovin, Pisciculture…)
                         <select wire:model="cat" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
                             @foreach ($categories as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach
                         </select></label>

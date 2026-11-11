@@ -1,6 +1,6 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Fournisseurs</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="contact_page" class="text-[24px]" />Fournisseurs</h1><p class="mt-xs text-xs text-outline">Fiches fournisseurs et suivi des dettes envers eux (achats à crédit).</p></div>
         <div class="flex flex-wrap gap-sm">
             <a href="{{ url('/fournisseurs/impression') }}" target="_blank" rel="noopener" data-action="imprimer-liste"
                class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Imprimer / PDF</a>
@@ -8,7 +8,7 @@
                     class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Exporter (XLSX)</button>
             @if ($peutGerer)
                 <button type="button" wire:click="nouveau"
-                        class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                        class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                     Ajouter un Fournisseur
                 </button>
             @endif
@@ -21,20 +21,20 @@
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Fournisseurs Actifs</p>
-            <p class="text-page-title font-bold" data-kpi="actifs">{{ $nombre }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Fournisseurs Actifs</span><x-icone nom="store" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="actifs">{{ $nombre }}</p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Dette Totale</p>
-            <p class="text-page-title font-bold" data-kpi="dette">{{ number_format($detteTotale, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Dette Totale</span><x-icone nom="request_quote" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="dette">{{ number_format($detteTotale, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Achats Cumulés (Mois)</p>
-            <p class="text-page-title font-bold" data-kpi="achats-mois">{{ number_format($achatsDuMois, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Achats Cumulés (Mois)</span><x-icone nom="shopping_cart" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="achats-mois">{{ number_format($achatsDuMois, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
         <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Dettes Soldées (Mois)</p>
-            <p class="text-page-title font-bold" data-kpi="soldees-mois">{{ $dettesSoldeesMois }}</p>
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Dettes Soldées (Mois)</span><x-icone nom="task_alt" class="text-[18px] text-brand-navy" /></div>
+            <p class="mt-xs text-kpi-value font-extrabold" data-kpi="soldees-mois">{{ $dettesSoldeesMois }}</p>
         </div>
     </div>
 

@@ -1,6 +1,6 @@
 <div>
     <div class="mb-md">
-        <h1 class="text-page-title font-bold">Paramètres Élevage</h1>
+        <div><h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="tune" class="text-[24px]" />Paramètres Élevage</h1><p class="mt-xs text-xs text-outline">Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.</p></div>
         <p class="text-xs text-outline">Configuration des barèmes utilisés automatiquement dans les fiches de saisie journalière.</p>
     </div>
 
@@ -22,7 +22,7 @@
         <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
             <p class="text-xs text-outline">Ration normative en grammes/tête/jour — utilisée pour le calcul automatique dans les fiches journalières.</p>
             @if ($peutGerer)
-                <button type="button" wire:click="nouveauBareme" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Ajouter</button>
+                <button type="button" wire:click="nouveauBareme" class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">Ajouter</button>
             @endif
         </div>
 
@@ -100,7 +100,7 @@
             <div class="mb-md mt-lg flex flex-wrap items-center justify-between gap-sm">
                 <h2 class="text-section-title font-bold">Taux de ration par classe de poids</h2>
                 @if ($peutGerer)
-                    <button type="button" wire:click="nouveauTaux" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Ajouter une classe</button>
+                    <button type="button" wire:click="nouveauTaux" class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">Ajouter une classe</button>
                 @endif
             </div>
             <p class="mb-sm text-xs text-outline">
@@ -149,7 +149,7 @@
         <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
             <p class="text-xs text-outline">Calendrier daté depuis la mise en bande, puis affiché dans « Traitements &amp; Prophylaxie » des fiches journalières.</p>
             @if ($peutGerer)
-                <button type="button" wire:click="nouvelleEcheance" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Ajouter une Échéance</button>
+                <button type="button" wire:click="nouvelleEcheance" class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">Ajouter une Échéance</button>
             @endif
         </div>
 
@@ -291,7 +291,7 @@
             @endif
             @if ($peutNumeroter)
                 <div class="mt-md flex justify-end">
-                    <button type="submit" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Enregistrer Tous les Formats de Numérotation</button>
+                    <button type="submit" class="rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">Enregistrer Tous les Formats de Numérotation</button>
                 </div>
             @endif
         </form>
