@@ -40,14 +40,14 @@
                 <h2 class="text-xl font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h2>
                 <p class="text-xs text-outline">Rapport généré le {{ $maintenant->format('d/m/Y') }} à {{ $maintenant->format('H:i') }} · ALLMANY ET COMPAGNIE</p>
             </div>
-            <div class="flex items-center gap-xs">
+            <div class="flex w-full flex-col items-stretch gap-xs sm:w-auto sm:flex-row sm:items-center">
                 @if ($voirVentes)
-                    <a href="/ventes" class="flex items-center gap-xs rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
+                    <a href="/ventes" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                         <x-icone nom="point_of_sale" class="text-[16px]" />Enregistrer une Vente
                     </a>
                 @endif
                 @if ($voirElevage)
-                    <a href="/elevage/dashboard" class="flex items-center gap-xs rounded-full border border-outline-variant bg-white px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
+                    <a href="/elevage/dashboard" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full border border-outline-variant bg-white px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
                         <x-icone nom="monitoring" class="text-[16px]" />Dashboard Élevage
                     </a>
                 @endif
