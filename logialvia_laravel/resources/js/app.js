@@ -117,5 +117,11 @@ Livewire.start();
  */
 window.addEventListener('load', () => {
     const plusTard = window.requestIdleCallback || ((f) => setTimeout(f, 1500));
+    // Roboto italique, hors chemin critique (47x_) : meme fichier que l'ancien @font-face, demande au repos du navigateur.
+    plusTard(() => {
+        if (!('FontFace' in window)) return;
+        new FontFace('Roboto', "url('/fonts/Roboto-Italic-Variable-latin.woff2') format('woff2')", { weight: '100 900', style: 'italic', display: 'swap' })
+            .load().then((f) => document.fonts.add(f)).catch(() => {});
+    });
     plusTard(() => import('./pwa'));
 });

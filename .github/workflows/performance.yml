@@ -20,7 +20,7 @@ jobs:
   lcp:
     name: LCP < 2 s (Lighthouse + Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: logialvia_laravel

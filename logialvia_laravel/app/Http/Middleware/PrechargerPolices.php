@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PrechargerPolices
 {
     public const POLICES = [
+        '/fonts/Roboto-Variable-latin.woff2',
         '/fonts/MaterialSymbolsOutlined-LogiALVIA.woff2',
     ];
 

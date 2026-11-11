@@ -40,7 +40,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
         boite.remove();
         try { localStorage.setItem(CLE_REFUS, '1'); } catch { /* navigation privee : tant pis */ }
     });
-    document.body.appendChild(boite);
+    // Affichee a la premiere interaction (ou apres 8 s) : un bandeau de texte pose pendant le chargement pouvait devenir
+    // le « plus grand element » de la page et retarder le LCP mesure (rapports mobile > 2 s).
+    const montrer = () => {
+        ['pointerdown', 'keydown', 'scroll'].forEach((t) => window.removeEventListener(t, montrer, true));
+        if (!document.getElementById('pwa-installer') && invite) document.body.appendChild(boite);
+    };
+    ['pointerdown', 'keydown', 'scroll'].forEach((t) => window.addEventListener(t, montrer, { capture: true, once: true, passive: true }));
+    setTimeout(montrer, 8000);
 });
 
 window.addEventListener('appinstalled', () => document.getElementById('pwa-installer')?.remove());

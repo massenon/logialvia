@@ -6,4 +6,5 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preload" href="/fonts/Roboto-Variable-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/MaterialSymbolsOutlined-LogiALVIA.woff2" as="font" type="font/woff2" crossorigin>

@@ -18,7 +18,7 @@ Objectif (PWA-PERF) : **LCP < 2 s au premier chargement**, page de connexion et 
 
 1. **`PerformanceAssetsTest`** (job `laravel`, `php artisan test`) : échoue si le JS total du build > 300 Ko ou le CSS > 100 Ko ; si Livewire/Alpine retournent dans le bundle applicatif ; si une page contient un `<script>` bloquant ; si le CSS critique n'est plus préchargé. En CI, un build absent est une erreur.
 2. **`PwaTest`, `CompresserReponseTest`** : manifeste, règles du service worker, précache existant, middleware.
-3. **Garde LCP** `logialvia_laravel/e2e/performance.mjs` (workflow `.github/workflows/performance.yml`) : Lighthouse **desktop** et **mobile** (4G lente simulée, CPU ×4) + LCP réel Playwright (liaison 10 Mbit/s, 40 ms, cache vide), sur `/login` et `/dashboard`. Seuils : LCP < 2000 ms, score ≥ 90, CLS ≤ 0,1, TBT ≤ 200 ms. Vérifie aussi, via Playwright (`response.fromServiceWorker()`), que **tous** les fichiers `/build/assets/` de la 2ᵉ visite viennent du service worker.
+3. **Garde LCP** `logialvia_laravel/e2e/performance.mjs` (workflow `.github/workflows/performance.yml`) : Lighthouse **desktop** et **mobile** (4G lente simulée, CPU ×4) + LCP réel Playwright (liaison 10 Mbit/s, 40 ms, cache vide), sur `/login` **et sur les 36 autres écrans de l'application** (élevage, ventes, stocks, achats, comptabilité, paramètres, profil, aide…). Les écrans d'impression sont exclus. Seuils : LCP < 2000 ms, score ≥ 90, CLS ≤ 0,1, TBT ≤ 200 ms. Vérifie aussi, via Playwright (`response.fromServiceWorker()`), que **tous** les fichiers `/build/assets/` de la 2ᵉ visite viennent du service worker.
 
 ```bash
 # base jetable + serveur local + comptes d'essai
@@ -45,6 +45,11 @@ Sans mandataire : c'est ce que le serveur sert réellement (donc la preuve que B
 | Tableau de bord | ≈ 0,55–0,6 s / 100 | ≈ 1,97 s / 99 | ≈ 0,18 s |
 
 **Marge faible sur mobile simulé** (≈ 30–40 ms sous 2 s) : le profil Lighthouse mobile impose RTT 150 ms et 1,6 Mbit/s ; le plancher est dû au nombre d'aller-retours (HTML puis CSS), pas au poids. Avant ce lot, avec Livewire en `<script>` bloquant et sans compression : 2,6 s (connexion) et 3,1 s (tableau de bord). Si un hébergeur n'active ni Brotli ni gzip sur les fichiers statiques, le mobile peut dépasser 2 s : `mesure_performance.sh` le montrera.
+
+## Défauts trouvés en étendant la garde à tous les écrans (corrigés)
+- **CLS 0,2–0,34 (achats, catalogue, ventes, fiches pintades/escargots, états financiers)** : la police Roboto arrivait après le premier affichage ; son échange avec la police de repli changeait la largeur des titres et faisait passer les boutons d'en-tête de la ligne du dessous à la ligne du titre. Correction : Roboto est de nouveau préchargée (`Link: rel=preload` + `<link>`), CLS ≈ 0.
+- **LCP mobile 2,2 s (rapports, profil, paramètres généraux)** : (1) le bandeau « Installer LogiALVIA » devenait le plus grand élément texte ; il n'apparaît plus qu'à la première interaction (ou après 8 s) ; (2) l'italique de Roboto (97 Ko) concurrençait le premier affichage ; il est maintenant chargé après `load` (FontFace, `app.js`).
+- La boîte des icônes est fixée à 1em × 1em (évite qu'un glyphe de remplacement plus large ne pousse la page avant l'arrivée de la police d'icônes).
 
 ## Limites connues
 - Mesures faites en HTTP local ; en HTTPS réel s'ajoute le coût TLS (non simulé ici).

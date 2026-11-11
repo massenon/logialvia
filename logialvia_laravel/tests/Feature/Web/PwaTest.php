@@ -116,10 +116,14 @@ class PwaTest extends TestCase
     {
         $css = (string) file_get_contents(resource_path('css/app.css'));
         $this->assertStringNotContainsString('.ttf', $css, 'plus de TTF servi au navigateur (489 Ko -> 83 Ko en WOFF2 latin)');
-        foreach (['Roboto-Variable-latin.woff2', 'Roboto-Italic-Variable-latin.woff2', 'MaterialSymbolsOutlined-LogiALVIA.woff2'] as $police) {
+        foreach (['Roboto-Variable-latin.woff2', 'MaterialSymbolsOutlined-LogiALVIA.woff2'] as $police) {
             $this->assertStringContainsString($police, $css);
             $this->assertFileExists(public_path('fonts/'.$police));
         }
+        // L'italique (97 Ko) est charge au repos apres `load` (app.js), pas par le CSS : il ne concurrence pas le premier affichage.
+        $this->assertStringNotContainsString('Roboto-Italic', $css);
+        $this->assertStringContainsString('Roboto-Italic-Variable-latin.woff2', (string) file_get_contents(resource_path('js/app.js')));
+        $this->assertFileExists(public_path('fonts/Roboto-Italic-Variable-latin.woff2'));
     }
 
     public function test_budgets_de_poids_du_premier_chargement(): void

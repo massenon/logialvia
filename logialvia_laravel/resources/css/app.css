@@ -6,13 +6,8 @@
     font-style: normal;
     font-display: swap;
 }
-@font-face {
-    font-family: 'Roboto';
-    src: url('/fonts/Roboto-Italic-Variable-latin.woff2') format('woff2');
-    font-weight: 100 900;
-    font-style: italic;
-    font-display: swap;
-}
+/* L'italique (97 Ko) n'est PAS dans le CSS : il est charge apres `load` par resources/js/app.js (FontFace), pour ne pas
+   concurrencer le premier affichage ; d'ici la, le navigateur incline la police droite. */
 
 /* Material Symbols Outlined (la police du poste), reduite aux icones utilisees : voir public/fonts. */
 @font-face {
@@ -38,6 +33,10 @@
         text-transform: none;
         display: inline-block;
         white-space: nowrap;
+        /* Boite fixe 1em x 1em : avant l'arrivee de la police d'icones, le glyphe de remplacement (plus large) decalait la page (CLS). */
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
         -webkit-font-smoothing: antialiased;
         user-select: none;
     }

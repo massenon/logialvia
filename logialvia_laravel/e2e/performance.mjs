@@ -76,11 +76,12 @@ const mandataire = process.env.LV_MANDATAIRE === '0' ? null : await demarrerMand
 const URL_BASE = mandataire ? mandataire.url : URL_SERVEUR;
 
 const resultats = [];
+// Connexion (public) puis TOUS les ecrans de l'application (une seule session). Les `nom` servent au filtre LV_PAGES et aux rapports.
 const TOUTES_PAGES = [
     { nom: 'connexion', chemin: '/login', authentifie: false },
-    { nom: 'tableau-de-bord', chemin: '/dashboard', authentifie: true },
+    ...['dashboard', 'elevage/dashboard', 'elevage/goliaths', 'elevage/pintades', 'elevage/lapins', 'elevage/poulets-pondeuses', 'elevage/poissons-chats', 'elevage/escargots', 'elevage/ovins', 'elevage/couveuse', 'elevage/mirages', 'elevage/soins', 'ventes', 'ventes/devis', 'factures-mecef', 'clients', 'fournisseurs', 'achats', 'catalogue', 'stocks', 'inventaire', 'depenses', 'rapports', 'comptabilite', 'comptabilite/journal', 'comptabilite/grand-livre', 'comptabilite/balance', 'comptabilite/etats-financiers', 'comptabilite/cloture', 'comptabilite/analytique', 'parametres/generaux', 'parametres/elevage', 'parametres/postes', 'parametres/audit', 'profil', 'aide'].map((c) => ({ nom: c === 'dashboard' ? 'tableau-de-bord' : c.replaceAll('/', '-'), chemin: `/${c}`, authentifie: true })),
 ];
-// LV_PAGES=connexion : sans identifiants (mesure d'un serveur de production dont on n'a pas de compte d'essai).
+// LV_PAGES=connexion,ventes (liste de noms) : sans identifiants (mesure d'un serveur de production dont on n'a pas de compte d'essai).
 const pages = TOUTES_PAGES.filter((p) => !process.env.LV_PAGES || process.env.LV_PAGES.split(',').includes(p.nom));
 
 /** Profil de navigateur persistant : c'est le contexte PAR DEFAUT, celui que Lighthouse (port de debogage) pilote aussi. */
@@ -177,7 +178,7 @@ try {
             await seConnecter(contexte);
             connecte = true;
         }
-        if (!secondeVisite && !p.authentifie) secondeVisite = await verifierSecondeVisite(contexte);
+        if (!secondeVisite) secondeVisite = await verifierSecondeVisite(contexte);
         const lcpReel = await mesureLcpReel(contexte, p.chemin);
         for (const profil of PROFILS) {
             const lh = await mesureLighthouse(p.chemin, profil);
@@ -193,9 +194,9 @@ try {
 // ---------------------------------------------------------------------------------------------- verdict
 const fautes = [];
 console.log('\nPerformance du premier chargement (cache vide)');
-console.log('page'.padEnd(18), 'score', 'LCP LH', 'LCP reel', 'FCP', 'TBT', 'CLS', 'Ko');
+console.log('page'.padEnd(34), 'score', 'LCP LH', 'LCP reel', 'FCP', 'TBT', 'CLS', 'Ko');
 for (const r of resultats) {
-    console.log(r.page.padEnd(18), String(r.score).padEnd(5), String(r.lcp).padEnd(6), String(r.lcpReel).padEnd(8), String(r.fcp).padEnd(3), String(r.tbt).padEnd(3), String(r.cls).padEnd(3), r.poids);
+    console.log(r.page.padEnd(34), String(r.score).padEnd(5), String(r.lcp).padEnd(6), String(r.lcpReel).padEnd(8), String(r.fcp).padEnd(3), String(r.tbt).padEnd(3), String(r.cls).padEnd(3), r.poids);
     if (r.lcp > SEUIL_LCP_MS) fautes.push(`${r.page} : LCP Lighthouse ${r.lcp} ms > ${SEUIL_LCP_MS} ms`);
     if (r.lcpReel > SEUIL_LCP_MS) fautes.push(`${r.page} : LCP reel ${r.lcpReel} ms > ${SEUIL_LCP_MS} ms`);
     if (r.score < SEUIL_SCORE) fautes.push(`${r.page} : score de performance ${r.score} < ${SEUIL_SCORE}`);
@@ -210,4 +211,4 @@ if (fautes.length) {
     console.error('\nECHEC — seuils de performance non tenus :\n  ' + fautes.join('\n  '));
     process.exit(1);
 }
-console.log(`\nOK — LCP < ${SEUIL_LCP_MS} ms sur la connexion et le tableau de bord (Lighthouse + mesure reelle).`);
+console.log(`\nOK — LCP < ${SEUIL_LCP_MS} ms sur la connexion et sur les ${resultats.length / PROFILS.length - 1} ecrans de l'application (Lighthouse + mesure reelle).`);
