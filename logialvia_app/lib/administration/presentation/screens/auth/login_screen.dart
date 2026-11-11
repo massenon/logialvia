@@ -431,8 +431,8 @@ class _PiedDePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      '© 2026 LogiALVIA — Projet d\'Appui à l\'Entrepreneuriat au Bénin (PAEB) '
-      '— FAGUEZ SARL',
+      '© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL '
+      '— Conçu par Dr MASSENON Rhodes',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontFamily: AppTypography.fontFamily,

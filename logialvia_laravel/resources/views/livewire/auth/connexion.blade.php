@@ -74,7 +74,7 @@
     </div>
 
     <div class="mt-6 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-caption text-outline">
-        <span>© 2026 LogiALVIA — Projet d'Appui à l'Entrepreneuriat au Bénin (PAEB) — FAGUEZ SARL</span>
+        <span>© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL — Conçu par Dr MASSENON Rhodes</span>
     </div>
 
     {{-- Modale « Mot de passe oublié » : meme texte que le poste (aucun envoi d'e-mail n'existe). --}}
