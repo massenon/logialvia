@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -150,16 +152,26 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           if (!large) return formulaire;
 
+          // Largeur = min(moitie de la fenetre, hauteur) : le visuel (carre) s'affiche ENTIER, sans rogner ses textes ;
+          // si la moitie est plus etroite que la hauteur, il est centre sur le fond marine.
+          final largeurVisuel = math.min(
+            contraintes.maxWidth / 2,
+            contraintes.maxHeight,
+          );
+
           return Row(
             children: [
-              Expanded(
-                child: Image.asset(
-                  _visuelConnexion,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.centerLeft,
-                  excludeFromSemantics: true,
-                  errorBuilder: (_, _, _) =>
-                      const ColoredBox(color: AppColors.brandNavyDark),
+              SizedBox(
+                width: largeurVisuel,
+                height: double.infinity,
+                child: ColoredBox(
+                  color: AppColors.brandNavyDark,
+                  child: Image.asset(
+                    _visuelConnexion,
+                    fit: BoxFit.contain,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
               Expanded(child: formulaire),
@@ -378,7 +390,7 @@ class _EnTeteMarque extends StatelessWidget {
             ),
           ),
           child: const Text(
-            'Gestion et Suivi Avicole Intégré',
+            'GESTION ET SUIVI AVICOLE INTÉGRÉ',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: AppTypography.fontFamily,

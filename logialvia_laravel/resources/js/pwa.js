@@ -25,7 +25,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     boite.id = 'pwa-installer';
     boite.setAttribute('role', 'dialog');
     boite.setAttribute('aria-label', "Installer l'application");
-    boite.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:60;max-width:22rem;padding:12px 16px;border-radius:8px;'
+    boite.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:60;max-width:22rem;padding:12px 16px;border-radius:8px;'
         + 'background:#1F3864;color:#fff;font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;gap:12px;align-items:center';
     boite.innerHTML = '<span style="flex:1">Installer LogiALVIA sur cet appareil ?</span>'
         + '<button type="button" data-pwa="installer" style="background:#B58B2A;color:#1F3864;font-weight:700;padding:6px 12px;border-radius:999px">Installer</button>'
