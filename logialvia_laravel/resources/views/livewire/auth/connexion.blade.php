@@ -9,17 +9,7 @@
     </div>
 
     <div class="space-y-8">
-        {{-- Marque --}}
-        <div class="flex flex-col items-center gap-1 text-center">
-            <div class="flex items-center gap-2">
-                <span class="icone text-[48px] text-brand-navy">&#xeacc;</span>
-                <div class="flex flex-col items-start leading-none">
-                    <span class="text-[30px] font-black tracking-tight text-brand-navy">Logi<span class="text-brand-gold">ALVIA</span></span>
-                    <span class="mt-0.5 text-xs font-extrabold uppercase tracking-widest text-brand-navy">ALLMANY ET COMPAGNIE</span>
-                </div>
-            </div>
-            <p class="w-full border-t border-brand-navy/10 pt-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
-        </div>
+        <x-marque-connexion />
 
         <div>
             <h2 class="text-kpi-value font-bold leading-tight text-brand-navy">Bienvenue !</h2>
@@ -73,9 +63,7 @@
         </form>
     </div>
 
-    <div class="mt-8 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-xs text-outline">
-        <span>© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL — Conçu par Dr MASSENON Rhodes</span>
-    </div>
+    <x-pied-connexion />
 
     {{-- Modale « Mot de passe oublié » : meme texte que le poste (aucun envoi d'e-mail n'existe). --}}
     <div x-show="oubli" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" @click.self="oubli = false" x-bind:role="oubli ? 'dialog' : false" x-bind:aria-modal="oubli ? 'true' : false" aria-labelledby="titre-oubli">

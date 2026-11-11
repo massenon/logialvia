@@ -54,6 +54,8 @@ class EtatAppairage {
     this.appaireLe,
     this.droits,
     this.decalageHorloge,
+    this.jetonRevoqueLe,
+    this.dernierCompte,
   });
 
   final String identifiantPoste;
@@ -68,6 +70,16 @@ class EtatAppairage {
 
   /// Dernier écart mesuré de l'horloge (poste − serveur), `null` : jamais mesuré.
   final Duration? decalageHorloge;
+
+  /// Le serveur a refusé le jeton de ce poste (401 : révoqué ou expiré) à cette date ; `null` :
+  /// pas de refus en cours (jamais appairé, appairé, ou déconnecté à la main).
+  final DateTime? jetonRevoqueLe;
+
+  /// Dernier compte web appairé (pré-remplit le réappairage).
+  final String? dernierCompte;
+
+  /// Le jeton a été refusé et le poste attend un nouvel appairage.
+  bool get jetonRevoque => !appaire && jetonRevoqueLe != null;
 
   AnalyseHorloge? get horloge =>
       decalageHorloge == null ? null : analyserHorloge(decalageHorloge!);
@@ -122,6 +134,8 @@ class ServiceAppairage {
       appaireLe: await preferences.appaireLe(),
       droits: await preferences.droitsSync(),
       decalageHorloge: await preferences.decalageHorloge(),
+      jetonRevoqueLe: await preferences.jetonRevoqueLe(),
+      dernierCompte: await preferences.dernierCompte(),
     );
   }
 
@@ -286,6 +300,8 @@ class ServiceAppairage {
   Future<void> oublierLocalement() async {
     await depot.effacer();
     await preferences.oublierAppairage();
+    // On se souvient POURQUOI le poste n'est plus appairé : pastille rouge et « Réappairer ».
+    await preferences.memoriserJetonRevoque(DateTime.now());
   }
 
   /// Rompt l'appairage. Le jeton local est **toujours** effacé ; le serveur est
@@ -311,6 +327,8 @@ class ServiceAppairage {
 
     await depot.effacer();
     await preferences.oublierAppairage();
+    // Déconnexion voulue : ce n'est pas un jeton refusé.
+    await preferences.effacerJetonRevoque();
 
     return ResultatAppairage(
       IssueAppairage.deconnecte,

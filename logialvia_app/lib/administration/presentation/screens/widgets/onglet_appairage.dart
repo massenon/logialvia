@@ -33,8 +33,34 @@ const TextStyle _texte = TextStyle(
 ///   utilisé une seule fois pour obtenir le jeton de synchronisation ;
 /// - il ne **synchronise** pas encore : l'envoi et la réception sont l'étape P2.
 ///   L'onglet le dit, pour qu'« appairé » ne soit pas pris pour « synchronisé ».
-class OngletAppairage extends StatelessWidget {
+class OngletAppairage extends StatefulWidget {
   const OngletAppairage({super.key});
+
+  @override
+  State<OngletAppairage> createState() => _OngletAppairageState();
+}
+
+class _OngletAppairageState extends State<OngletAppairage> {
+  /// « Réappairer » amène ici : le formulaire d'appairage, curseur sur l'identifiant.
+  final GlobalKey _cleFormulaire = GlobalKey();
+  final FocusNode _focusIdentifiant = FocusNode();
+
+  @override
+  void dispose() {
+    _focusIdentifiant.dispose();
+    super.dispose();
+  }
+
+  void _reappairer() {
+    final contexte = _cleFormulaire.currentContext;
+    if (contexte != null) {
+      Scrollable.ensureVisible(
+        contexte,
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+    _focusIdentifiant.requestFocus();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +77,10 @@ class OngletAppairage extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         const _CarteEnvironnement(),
         const SizedBox(height: AppSpacing.md),
+        if (etat.jetonRevoque) ...[
+          _CarteJetonRevoque(etat: etat, onReappairer: _reappairer),
+          const SizedBox(height: AppSpacing.md),
+        ],
         CarteSection(
           titre: 'Ce poste',
           icone: Symbols.computer,
@@ -87,9 +117,12 @@ class OngletAppairage extends StatelessWidget {
           _CarteAppaire(vm: vm)
         else
           _FormulaireAppairage(
+            key: _cleFormulaire,
             vm: vm,
             adresseInitiale:
                 etat.adresse ?? Environnement.courant.adresseProposee ?? '',
+            identifiantInitial: etat.dernierCompte ?? '',
+            focusIdentifiant: _focusIdentifiant,
           ),
         if (vm.dernierRapport != null) ...[
           const SizedBox(height: AppSpacing.md),
@@ -123,6 +156,83 @@ class _CarteEnvironnement extends StatelessWidget {
           _Ligne(
             'Adresse par défaut',
             env.adresseProposee ?? 'Aucune : à saisir à l\'appairage',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pastille d'état du jeton : verte (actif) ou rouge (refusé par le serveur).
+class _PastilleJeton extends StatelessWidget {
+  const _PastilleJeton({required this.actif});
+
+  final bool actif;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleur = actif ? AppColors.successDeep : AppColors.errorDeep;
+    final fond = actif ? AppColors.successContainer : AppColors.errorContainer;
+
+    return Container(
+      key: Key(actif ? 'jeton-actif' : 'jeton-revoque'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: fond, borderRadius: AppRadius.pill),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Symbols.circle, size: 10, fill: 1, color: couleur),
+          const SizedBox(width: 6),
+          Text(
+            actif ? 'Jeton actif' : 'Jeton révoqué ou expiré',
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              fontSize: AppTypography.textXs,
+              fontWeight: FontWeight.w700,
+              color: couleur,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Le serveur a refusé le jeton de ce poste : la synchronisation est suspendue
+/// jusqu'à un nouvel appairage. Les saisies du poste sont conservées.
+class _CarteJetonRevoque extends StatelessWidget {
+  const _CarteJetonRevoque({required this.etat, required this.onReappairer});
+
+  final EtatAppairage etat;
+  final VoidCallback onReappairer;
+
+  @override
+  Widget build(BuildContext context) {
+    final le = etat.jetonRevoqueLe!;
+
+    return CarteSection(
+      titre: 'État du jeton',
+      icone: Symbols.key_off,
+      couleurIcone: AppColors.errorDeep,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _PastilleJeton(actif: false),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Le serveur a refusé le jeton de ce poste le ${Formats.date(le)} à '
+            '${Formats.heure(le)} : il a été révoqué depuis le web (Postes & '
+            'Appairage) ou il a expiré (90 jours). La synchronisation est '
+            'suspendue. Vos saisies sont conservées sur ce poste et partiront '
+            'après un nouvel appairage.',
+            style: _texte.copyWith(height: 1.5),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            key: const Key('appairage-reappairer'),
+            label: 'Réappairer',
+            icon: Symbols.link,
+            onPressed: onReappairer,
           ),
         ],
       ),
@@ -463,10 +573,20 @@ class _MessageSynchro extends StatelessWidget {
 }
 
 class _FormulaireAppairage extends StatefulWidget {
-  const _FormulaireAppairage({required this.vm, required this.adresseInitiale});
+  const _FormulaireAppairage({
+    super.key,
+    required this.vm,
+    required this.adresseInitiale,
+    required this.identifiantInitial,
+    required this.focusIdentifiant,
+  });
 
   final AppairageViewModel vm;
   final String adresseInitiale;
+
+  /// Dernier compte web appairé : pré-rempli quand le jeton a été refusé.
+  final String identifiantInitial;
+  final FocusNode focusIdentifiant;
 
   @override
   State<_FormulaireAppairage> createState() => _FormulaireAppairageState();
@@ -476,7 +596,9 @@ class _FormulaireAppairageState extends State<_FormulaireAppairage> {
   late final TextEditingController _adresse = TextEditingController(
     text: widget.adresseInitiale,
   );
-  final TextEditingController _identifiant = TextEditingController();
+  late final TextEditingController _identifiant = TextEditingController(
+    text: widget.identifiantInitial,
+  );
   final TextEditingController _motDePasse = TextEditingController();
 
   @override
@@ -517,6 +639,7 @@ class _FormulaireAppairageState extends State<_FormulaireAppairage> {
             cle: const Key('appairage-identifiant'),
             libelle: 'Identifiant du compte web',
             controleur: _identifiant,
+            focus: widget.focusIdentifiant,
           ),
           _Champ(
             cle: const Key('appairage-mot-de-passe'),
@@ -550,8 +673,10 @@ class _Champ extends StatelessWidget {
     this.indice,
     this.masque = false,
     this.note,
+    this.focus,
   });
 
+  final FocusNode? focus;
   final Key cle;
   final String libelle;
   final TextEditingController controleur;
@@ -571,6 +696,7 @@ class _Champ extends StatelessWidget {
           TextField(
             key: cle,
             controller: controleur,
+            focusNode: focus,
             obscureText: masque,
             enableSuggestions: !masque,
             autocorrect: false,
@@ -652,7 +778,9 @@ class _CarteAppaire extends StatelessWidget {
       child: Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          const _PastilleJeton(actif: true),
           if (vm.peutSynchroniser)
             AppButton(
               label: vm.synchronisationEnCours

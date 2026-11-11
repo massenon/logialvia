@@ -66,7 +66,7 @@ class ConnexionWebTest extends TestCase
             ->assertSee('MOT DE PASSE')
             ->assertSee('Se souvenir de moi')
             ->assertSee('Mot de passe oublié ?')
-            ->assertSee('© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL — Conçu par Dr MASSENON Rhodes');
+            ->assertSee('© 2026 LogiALVIA — (PAEB)/Cabinet FAGUEZ SARL — Conçu par Dr MASSENON Rhodes');
     }
 
     public function test_se_souvenir_de_moi_retient_l_identifiant_apres_une_connexion_reussie(): void

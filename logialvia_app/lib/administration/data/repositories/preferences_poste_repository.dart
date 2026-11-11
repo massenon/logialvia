@@ -28,6 +28,8 @@ class PreferencesPosteRepository {
       'sync.parametres_elevage_adoptes';
   static const String _cleCompteAppaire = 'sync.compte';
   static const String _cleAppaireLe = 'sync.appaire_le';
+  static const String _cleJetonRevoqueLe = 'sync.jeton_revoque_le';
+  static const String _cleDernierCompte = 'sync.dernier_compte';
   static const String _cleCurseurTirage = 'sync.curseur';
   static const String _cleMarqueRemiseAZero = 'sync.marque_remise_a_zero';
   static const String _cleDroits = 'sync.droits';
@@ -201,7 +203,26 @@ class PreferencesPosteRepository {
     await _ecrire(_cleCodeAttribue, codePoste);
     await _ecrire(_cleCompteAppaire, compte);
     await _ecrire(_cleAppaireLe, le.toIso8601String());
+    // Nouvel appairage : le jeton est de nouveau bon ; on retient le compte pour le pré-remplir
+    // si le jeton meurt un jour.
+    await _ecrire(_cleDernierCompte, compte);
+    await _ecrire(_cleJetonRevoqueLe, null);
   }
+
+  /// Quand le serveur a refusé le jeton de ce poste (révoqué depuis le web, ou expiré) : sert la
+  /// pastille rouge et « Réappairer » de l'onglet Appairage. `null` : pas de refus en cours.
+  Future<DateTime?> jetonRevoqueLe() async {
+    final v = await _lire(_cleJetonRevoqueLe);
+    return v == null ? null : DateTime.tryParse(v);
+  }
+
+  Future<void> memoriserJetonRevoque(DateTime le) =>
+      _ecrire(_cleJetonRevoqueLe, le.toIso8601String());
+
+  Future<void> effacerJetonRevoque() => _ecrire(_cleJetonRevoqueLe, null);
+
+  /// Dernier compte web appairé (jamais son mot de passe), pour pré-remplir le réappairage.
+  Future<String?> dernierCompte() => _lire(_cleDernierCompte);
 
   /// Oublie l'appairage (le code reste attribué côté serveur ; l'identifiant
   /// du poste et l'adresse sont conservés pour se reconnecter).
