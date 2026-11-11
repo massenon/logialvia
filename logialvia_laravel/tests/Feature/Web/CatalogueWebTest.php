@@ -215,4 +215,20 @@ class CatalogueWebTest extends TestCase
             );
         }
     }
+
+    public function test_la_filiere_se_choisit_et_l_onglet_seuils_modifie_le_seuil(): void
+    {
+        $c = Livewire::actingAs($this->utilisateur('admin', 'gerante'))->test(Catalogue::class)
+            ->assertSee("Seuils d'Alerte")
+            ->call('nouveau')->assertSeeHtml('data-champ="espece"')->assertSee('Ovins')->set('nom', 'Agneau 6 mois')->set('cat', 'Élevage ovin')->set('prix', '40000')->set('unite', 'sujet')->set('espece', 'ovins')
+            ->call('enregistrer')->assertSet('erreur', null)->assertSee('Sur le poste')->assertSee('Agneau 6 mois');
+
+        $produit = \App\Models\ProduitVendable::query()->where('name', 'Agneau 6 mois')->firstOrFail();
+        $this->assertSame('ovins', $produit->espece);
+
+        $c->call('majSeuil', $produit->id, '7')->assertSet('erreur', null);
+        $this->assertSame(7, (int) $produit->fresh()->threshold);
+        $c->call('majSeuil', $produit->id, '-3')->assertNotSet('erreur', null);
+        $this->assertSame(7, (int) $produit->fresh()->threshold);
+    }
 }

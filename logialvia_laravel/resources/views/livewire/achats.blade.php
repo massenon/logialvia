@@ -55,8 +55,31 @@
         </div>
     </div>
 
-    <h2 class="mb-sm text-section-title font-bold">Commandes</h2>
-    <div class="mb-sm flex flex-wrap gap-sm">
+    <div x-data="{ o: 'liste' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['enregistrer' => 'Enregistrer un Achat', 'liste' => 'Liste des Achats'] as $cle => $lib)
+            <button type="button" role="tab" data-onglet-achat="{{ $cle }}" x-on:click="o = '{{ $cle }}'" x-bind:aria-selected="o === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="o === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">{{ $lib }}</button>
+        @endforeach
+    </div>
+
+    <div x-show="o === 'enregistrer'" x-cloak data-panneau-achat="enregistrer">
+        <div class="max-w-2xl rounded-lg border border-outline-variant bg-white p-lg shadow-sm">
+            <p class="mb-sm text-xs font-bold uppercase text-brand-navy">Fournisseur, articles et règlement</p>
+            <p class="mb-md text-xs text-outline">Choisissez le fournisseur et la date d'achat, ajoutez les articles (intrant, quantité, prix unitaire), puis le mode de règlement : le total se calcule au fil de la saisie. Le formulaire s'ouvre en fenêtre pour ne rien perdre de la liste.</p>
+            @if ($peutGerer)
+                <button type="button" wire:click="nouveau" data-action="nouvelle-commande-onglet"
+                        class="flex items-center gap-xs rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark"><x-icone nom="add_circle" class="text-[18px]" />Enregistrer un Achat</button>
+            @else
+                <p class="text-xs text-outline">Consultation seule : seul l'administrateur enregistre un achat.</p>
+            @endif
+        </div>
+    </div>
+
+    <div x-show="o === 'liste'" data-panneau-achat="liste">
+    <h2 class="sr-only">Commandes</h2>
+    <div class="mb-sm flex flex-wrap items-center gap-sm">
         <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Référence ou fournisseur…" aria-label="Rechercher un achat"
                class="w-full rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs sm:max-w-sm">
         <select wire:model.live="statut" aria-label="Filtrer par statut"
@@ -66,6 +89,17 @@
                 <option value="{{ $s }}">{{ $s }}</option>
             @endforeach
         </select>
+        <select wire:model.live="modeFiltre" aria-label="Filtrer par mode" data-filtre="mode"
+                class="rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs">
+            <option value="">Mode : Tous</option>
+            <option value="Espèces">Espèces</option>
+            <option value="Mobile Money">Mobile Money</option>
+        </select>
+        <div class="flex items-center gap-xs rounded-lg border border-outline-variant bg-white px-sm py-1">
+            <input type="date" wire:model.live="debut" aria-label="Du" data-champ="debut" class="border-0 p-1 text-xs font-bold text-brand-navy outline-none focus:ring-0">
+            <span class="text-xs text-outline">au</span>
+            <input type="date" wire:model.live="fin" aria-label="Au" data-champ="fin" class="border-0 p-1 text-xs font-bold text-brand-navy outline-none focus:ring-0">
+        </div>
     </div>
 
     <div class="mb-lg hidden overflow-x-auto rounded-lg border border-outline-variant bg-surface-card sm:block">
@@ -224,6 +258,9 @@
     </div>
 
     @include('livewire.achats._reglement')
+
+    </div>
+    </div>
 
     @if ($formulaire)
         <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-commande" data-modale="commande">

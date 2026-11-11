@@ -58,9 +58,9 @@
                     <th class="px-md py-sm">Nom</th>
                     <th class="px-md py-sm">Téléphone</th>
                     <th class="px-md py-sm">Fournit</th>
-                    <th class="px-md py-sm text-center">Commandes</th>
                     <th class="px-md py-sm text-right">Total Achats</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
+                    <th class="px-md py-sm text-center">Commandes</th>
                     <th class="px-md py-sm text-right">Actions</th>
                 </tr>
             </thead>
@@ -71,9 +71,9 @@
                         <td class="px-md py-sm font-bold">{{ $f->nom }}</td>
                         <td class="px-md py-sm">{{ $f->telephone ?: '—' }}</td>
                         <td class="px-md py-sm">{{ $f->fournit ?: '—' }}</td>
-                        <td class="px-md py-sm text-center">{{ $ag['commandes'] }}</td>
                         <td class="px-md py-sm text-right">{{ number_format($ag['total'], 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right font-bold {{ $ag['solde'] > 0 ? 'text-error-deep' : 'text-success-deep' }}">{{ number_format($ag['solde'], 0, ',', ' ') }}</td>
+                        <td class="px-md py-sm text-center">{{ $ag['commandes'] }}</td>
                         <td class="whitespace-nowrap px-md py-sm text-right">
                             <a href="{{ url('/fournisseurs/'.$f->id.'/releve') }}" target="_blank" rel="noopener" data-action="releve"
                                class="rounded-lg border border-outline-variant px-sm py-xs font-semibold hover:bg-surface-zebra">Relevé</a>
@@ -127,8 +127,8 @@
                     <th class="px-md py-sm text-right">Montant Total</th>
                     <th class="px-md py-sm text-right">Déjà Réglé</th>
                     <th class="px-md py-sm text-right">Solde Dû</th>
-                    <th class="px-md py-sm text-center">Échéance</th>
                     <th class="px-md py-sm text-center">Ancienneté</th>
+                    <th class="px-md py-sm text-center">Échéance</th>
                     @if ($peutGerer)<th class="px-md py-sm text-right">Action</th>@endif
                 </tr>
             </thead>
@@ -141,12 +141,12 @@
                         <td class="px-md py-sm text-right">{{ number_format($d->total, 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right">{{ number_format($d->paye, 0, ',', ' ') }}</td>
                         <td class="px-md py-sm text-right font-bold text-error-deep">{{ number_format($d->total - $d->paye, 0, ',', ' ') }}</td>
-                        @php($echue = $d->echeance && $d->echeance->timezone(config('logialvia.fuseau'))->endOfDay()->lessThan($maintenant))
-                        <td class="px-md py-sm text-center {{ $echue ? 'font-bold text-error-deep' : 'text-outline' }}" data-echeance>
-                            {{ $d->echeance ? $d->echeance->timezone(config('logialvia.fuseau'))->format('d/m/Y').($echue ? ' (échue)' : '') : '—' }}</td>
                         <td class="px-md py-sm text-center">
                             <span class="rounded-full px-sm py-xs font-semibold {{ $jours > 10 ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-outline' }}">{{ $jours }} j</span>
                         </td>
+                        @php($echue = $d->echeance && $d->echeance->timezone(config('logialvia.fuseau'))->endOfDay()->lessThan($maintenant))
+                        <td class="px-md py-sm text-center {{ $echue ? 'font-bold text-error-deep' : 'text-outline' }}" data-echeance>
+                            {{ $d->echeance ? $d->echeance->timezone(config('logialvia.fuseau'))->format('d/m/Y').($echue ? ' (échue)' : '') : '—' }}</td>
                         @if ($peutGerer)
                             <td class="px-md py-sm text-right">
                                 <button type="button" wire:click="demanderReglement('{{ $d->id }}')" data-action="regler"

@@ -30,6 +30,15 @@
         </div>
     </div>
 
+    <div x-data="{ o: 'catalogue' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['catalogue' => 'Voir le Catalogue', 'seuils' => "Seuils d'Alerte"] as $cle => $lib)
+            <button type="button" role="tab" data-onglet-catalogue="{{ $cle }}" x-on:click="o = '{{ $cle }}'" x-bind:aria-selected="o === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="o === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">{{ $lib }}</button>
+        @endforeach
+    </div>
+    <div x-show="o === 'catalogue'" data-panneau-catalogue="catalogue">
     <div class="mb-md flex flex-col gap-sm sm:flex-row">
         <input type="search" wire:model.live.debounce.300ms="recherche" placeholder="Désignation ou code…"
                aria-label="Rechercher un produit"
@@ -50,6 +59,8 @@
                     <th class="px-md py-sm">SKU</th>
                     <th class="px-md py-sm">Désignation</th>
                     <th class="px-md py-sm">Catégorie</th>
+                    <th class="px-md py-sm">Filière</th>
+                    <th class="px-md py-sm text-right">Stock</th>
                     <th class="px-md py-sm">Unité</th>
                     <th class="px-md py-sm text-right">Tarif</th>
                     <th class="px-md py-sm text-right">Coût de revient</th>
@@ -63,6 +74,8 @@
                         <td class="px-md py-sm font-mono">{{ $p->sku }}</td>
                         <td class="px-md py-sm font-semibold">{{ $p->name }}</td>
                         <td class="px-md py-sm">{{ $p->cat }}</td>
+                        <td class="px-md py-sm" data-filiere>{{ $p->espece ? ($especes[$p->espece] ?? $p->espece) : '—' }}</td>
+                        <td class="px-md py-sm text-right text-caption text-outline" data-stock-poste title="Le stock est propre à chaque poste">Sur le poste</td>
                         <td class="px-md py-sm">{{ $p->unit }}</td>
                         <td class="px-md py-sm text-right font-bold text-brand-navy">
                             {{ number_format($p->price, 0, ',', ' ') }}@if ($p->price_max) – {{ number_format($p->price_max, 0, ',', ' ') }}@endif F
@@ -78,7 +91,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="px-md py-lg text-center text-outline">Aucun produit ne correspond.</td></tr>
+                    <tr><td colspan="10" class="px-md py-lg text-center text-outline">Aucun produit ne correspond.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -152,6 +165,47 @@
         </div>
     @endif
 
+    </div>
+
+    <div x-show="o === 'seuils'" x-cloak data-panneau-catalogue="seuils">
+        <p class="mb-md text-xs text-outline">Ajustez le seuil d'alerte de chaque produit : il déclenche le badge rouge sur le Point de Vente et le Tableau de Bord du poste dès que son stock repasse en dessous.</p>
+        <div class="overflow-x-auto rounded-lg border border-outline-variant bg-white shadow-sm">
+            <table class="w-full text-left text-xs" data-table="seuils">
+                <thead class="bg-surface-zebra text-caption uppercase text-outline">
+                    <tr>
+                        <th class="px-md py-sm">Désignation</th>
+                        <th class="px-md py-sm text-right">Stock Actuel</th>
+                        <th class="px-md py-sm text-right">Seuil d'Alerte</th>
+                        <th class="px-md py-sm text-center">Statut</th>
+                        <th class="px-md py-sm text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($produits as $p)
+                        <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-seuil="{{ $p->sku }}">
+                            <td class="px-md py-sm font-semibold">{{ $p->name }}</td>
+                            <td class="px-md py-sm text-right text-caption text-outline">Sur le poste</td>
+                            <td class="px-md py-sm text-right">
+                                @if ($peutGerer)
+                                    <input type="number" min="0" value="{{ $p->threshold }}" aria-label="Seuil d'alerte de {{ $p->name }}"
+                                           wire:change="majSeuil('{{ $p->id }}', $event.target.value)"
+                                           class="h-8 w-20 rounded border border-outline-variant text-center text-xs font-bold">
+                                @else
+                                    <span class="font-bold">{{ $p->threshold }}</span>
+                                @endif
+                            </td>
+                            <td class="px-md py-sm text-center"><span class="rounded-full bg-surface-zebra px-sm py-0.5 text-caption font-bold text-outline">Évalué sur le poste</span></td>
+                            <td class="px-md py-sm text-right text-caption text-outline">Auto (badge POS + Tableau de Bord)</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-md py-lg text-center text-outline">Aucun produit ne correspond.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+
     @if ($formulaire)
         <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-md" role="dialog" aria-modal="true" aria-labelledby="titre-produit">
             <form wire:submit="enregistrer" class="w-full max-w-lg rounded-lg bg-surface-card p-lg shadow-xl">
@@ -163,6 +217,12 @@
                         <select wire:model="cat" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
                             @foreach ($categories as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach
                         </select></label>
+                    <label class="text-xs sm:col-span-2">Filière (espèce rattachée)
+                        <select wire:model="espece" data-champ="espece" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm">
+                            <option value="">Aucune — marchandise ou prestation</option>
+                            @foreach ($especes as $cle => $libelle)<option value="{{ $cle }}">{{ $libelle }}</option>@endforeach
+                        </select>
+                        <span class="text-caption text-outline">Une vente de ce produit alimente le compteur de ventes du jour de la fiche de cette filière.</span></label>
                     <label class="text-xs">Tarif indicatif (F)
                         <input type="text" inputmode="decimal" wire:model="prix" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
                     <label class="text-xs">Prix haut de fourchette (F)
