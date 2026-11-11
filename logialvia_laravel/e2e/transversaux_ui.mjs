@@ -54,6 +54,35 @@ scenario('responsive bureau : le bouton Menu est masque et la navigation toujour
   });
 });
 
+// ------------------------------------------------------------------------------------------ navigation
+
+scenario('navigation sans rechargement : les liens internes echangent le contenu (wire:navigate), la page n\'est pas rechargee', async () => {
+  await avec('admin', 'navigation_spa', async (page) => {
+    await aller(page, '/dashboard');
+    await page.evaluate(() => { window.__marqueurNavigation = 'intact'; });
+    for (const route of ['/ventes', '/stocks', '/clients', '/comptabilite', '/parametres/generaux', '/dashboard']) {
+      await Promise.all([
+        page.waitForURL(`**${route}`),
+        page.locator(`a[href="${route}"]:visible`).first().click({ timeout: 8000 }),
+      ]);
+      await page.locator('main h1').first().waitFor({ timeout: 8000 });
+      const marque = await page.evaluate(() => window.__marqueurNavigation);
+      verifier(marque === 'intact', `${route} : la page a ete rechargee en entier (le marqueur JS a disparu)`);
+      verifier(await page.evaluate(() => typeof window.Livewire !== 'undefined' && !!document.querySelector('[wire\\:id]')), `${route} : Livewire n'est plus actif apres la navigation`);
+    }
+    // Retour arriere du navigateur : meme chose, sans rechargement.
+    await page.goBack();
+    await page.locator('main h1').first().waitFor({ timeout: 8000 });
+    verifier(await page.evaluate(() => window.__marqueurNavigation) === 'intact', 'retour arriere : la page a ete rechargee');
+    // Une action Livewire reste possible apres plusieurs navigations (jeton CSRF et composants OK).
+    await aller(page, '/catalogue');
+    await page.click('button:has-text("Ajouter un Produit")');
+    await dialogue(page).waitFor();
+    await page.keyboard.press('Escape');
+    await dialogue(page).waitFor({ state: 'detached' });
+  });
+});
+
 // ------------------------------------------------------------------------------------------ clavier
 
 scenario('clavier : connexion Tab/Entree ; modale : focus dedans, Tab y reste, Echap la ferme', async () => {

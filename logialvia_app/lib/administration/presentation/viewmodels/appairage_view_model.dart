@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../data/repositories/preferences_poste_repository.dart';
+
 import '../../../core/sync/moteur_synchronisation.dart';
 import '../../../core/sync/planificateur_synchronisation.dart';
 import '../../../core/sync/service_appairage.dart';
@@ -77,7 +79,22 @@ class AppairageViewModel extends ChangeNotifier {
   /// Dernier message à montrer sous le formulaire (réussite comme échec).
   ResultatAppairage? get dernierResultat => _dernierResultat;
 
+  int _intervalleMinutes =
+      PreferencesPosteRepository.intervalleSynchroParDefaut;
+
+  /// Synchro automatique : une synchronisation de routine toutes les N minutes.
+  int get intervalleMinutes => _intervalleMinutes;
+
+  /// Choisit l'intervalle de la synchro automatique : mémorisé, appliqué tout de suite.
+  Future<void> definirIntervalleMinutes(int minutes) async {
+    await _service.preferences.definirIntervalleSynchroMinutes(minutes);
+    _intervalleMinutes = minutes;
+    _planificateur?.changerIntervalleRoutine(Duration(minutes: minutes));
+    _notifier();
+  }
+
   Future<void> charger() async {
+    _intervalleMinutes = await _service.preferences.intervalleSynchroMinutes();
     _etat = await _service.etat();
     await _chargerDroits();
     _notifier();

@@ -29,9 +29,9 @@ Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(func
         Route::post('/parametres/remise-a-zero', [PostesController::class, 'remiseAZero'])
             ->middleware('can:manage-parametres');
 
-        Route::get('/sync/demande', [SyncController::class, 'demande']);
-        Route::post('/sync/resynchronisation/acquittement', [SyncController::class, 'acquittement']);
-        Route::get('/sync/pull', [SyncController::class, 'pull']);
+        Route::get('/sync/demande', [SyncController::class, 'demande'])->middleware('poste.jeton:lecture');
+        Route::post('/sync/resynchronisation/acquittement', [SyncController::class, 'acquittement'])->middleware('poste.jeton:lecture');
+        Route::get('/sync/pull', [SyncController::class, 'pull'])->middleware('poste.jeton:lecture');
         Route::post('/sync/push', [SyncController::class, 'push'])->middleware('poste.jeton');
         Route::post('/sync/demandes', [SyncController::class, 'demandes'])->middleware('poste.jeton');
         // `47a2_` : reservation de la transmission d'une facture emise au web.

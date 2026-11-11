@@ -59,6 +59,7 @@ import 'comptabilite/data/sync/table_plan_comptable_poste.dart';
 import 'core/sync/table_effets_stock_poste.dart';
 import 'core/sync/depot_jeton_sync.dart';
 import 'core/sync/moteur_synchronisation.dart';
+import 'core/sync/depot_journal_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
 import 'core/sync/service_appairage.dart';
 
@@ -257,6 +258,14 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
   late final PlanificateurSynchronisation
   _planificateur = PlanificateurSynchronisation(
     moteur: _moteurSynchro,
+    // Chaque cycle est tenu dans le journal des tentatives (écran Synchronisation).
+    journaliser: (debut, duree, declencheur, rapport) =>
+        DepotJournalSynchronisation(widget.database).enregistrer(
+          debut: debut,
+          duree: duree,
+          declencheur: declencheur,
+          rapport: rapport,
+        ),
     // La navigation depend des modules actifs : si le serveur les a changes,
     // la barre laterale doit suivre sans redemarrage.
     apresSynchronisation: (rapport) {
@@ -279,7 +288,11 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
   void initState() {
     super.initState();
     // Sans effet (aucun minuteur) tant que le poste n'est pas appaire.
-    _planificateur.demarrer();
+    // Synchro automatique : l'intervalle choisi dans Paramètres > Appairage.
+    _preferencesPoste.intervalleSynchroMinutes().then((minutes) {
+      _planificateur.changerIntervalleRoutine(Duration(minutes: minutes));
+      _planificateur.demarrer();
+    });
     // La fermeture passe par nous : une derniere synchronisation, bornee a 4 s.
     windowManager.addListener(this);
     unawaited(windowManager.setPreventClose(true));

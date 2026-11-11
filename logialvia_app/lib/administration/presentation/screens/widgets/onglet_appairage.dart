@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/formatage/formats.dart';
 import '../../../../core/sync/moteur_synchronisation.dart';
 import '../../../../core/sync/droits_poste.dart';
+import '../../../../core/sync/environnement.dart';
 import '../../../../core/sync/service_appairage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -14,6 +15,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/carte_section.dart';
+import '../../../data/repositories/preferences_poste_repository.dart';
 import '../../viewmodels/appairage_view_model.dart';
 
 const TextStyle _texte = TextStyle(
@@ -47,6 +49,8 @@ class OngletAppairage extends StatelessWidget {
       children: [
         _BandeauEtat(etat: etat),
         const SizedBox(height: AppSpacing.md),
+        const _CarteEnvironnement(),
+        const SizedBox(height: AppSpacing.md),
         CarteSection(
           titre: 'Ce poste',
           icone: Symbols.computer,
@@ -75,12 +79,18 @@ class OngletAppairage extends StatelessWidget {
         if (etat.appaire) ...[
           const SizedBox(height: AppSpacing.md),
           _CarteDroits(vm: vm, etat: etat),
+          const SizedBox(height: AppSpacing.md),
+          _CarteSynchroAuto(vm: vm),
         ],
         const SizedBox(height: AppSpacing.md),
         if (etat.appaire)
           _CarteAppaire(vm: vm)
         else
-          _FormulaireAppairage(vm: vm, adresseInitiale: etat.adresse ?? ''),
+          _FormulaireAppairage(
+            vm: vm,
+            adresseInitiale:
+                etat.adresse ?? Environnement.courant.adresseProposee ?? '',
+          ),
         if (vm.dernierRapport != null) ...[
           const SizedBox(height: AppSpacing.md),
           _MessageSynchro(rapport: vm.dernierRapport!),
@@ -90,6 +100,89 @@ class OngletAppairage extends StatelessWidget {
           _Message(resultat: vm.dernierResultat!),
         ],
       ],
+    );
+  }
+}
+
+/// Environnement de cette construction du logiciel (`Environnement`) et
+/// adresse proposée à l'appairage.
+class _CarteEnvironnement extends StatelessWidget {
+  const _CarteEnvironnement();
+
+  @override
+  Widget build(BuildContext context) {
+    final env = Environnement.courant;
+
+    return CarteSection(
+      titre: 'Environnement',
+      icone: Symbols.public,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Ligne('Environnement', env.libelle),
+          _Ligne(
+            'Adresse par défaut',
+            env.adresseProposee ?? 'Aucune : à saisir à l\'appairage',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// « Synchro automatique » : à quel rythme le poste reçoit ce que les autres
+/// postes ont saisi (la routine). Les autres déclencheurs ne changent pas : à
+/// l'ouverture, 3 s après une saisie, à la fermeture, et toutes les 30 s pour
+/// savoir si le web a demandé une synchronisation.
+class _CarteSynchroAuto extends StatelessWidget {
+  const _CarteSynchroAuto({required this.vm});
+
+  final AppairageViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    return CarteSection(
+      titre: 'Synchro automatique',
+      icone: Symbols.schedule,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Synchroniser toutes les'),
+              const SizedBox(width: AppSpacing.sm),
+              DropdownButton<int>(
+                key: const Key('intervalle-synchronisation'),
+                value: vm.intervalleMinutes,
+                items: [
+                  for (final minutes
+                      in PreferencesPosteRepository.intervallesSynchroMinutes)
+                    DropdownMenuItem(
+                      value: minutes,
+                      child: Text(
+                        minutes == 1 ? '1 minute' : '$minutes minutes',
+                      ),
+                    ),
+                ],
+                onChanged: (minutes) {
+                  if (minutes != null) vm.definirIntervalleMinutes(minutes);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            'Une saisie est envoyée 3 secondes après, à la fermeture du '
+            'logiciel et sur « Synchroniser maintenant » : ce réglage ne '
+            'concerne que la réception de ce que les autres postes ont saisi.',
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              fontSize: 11,
+              color: AppColors.outline,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -213,9 +306,9 @@ class _BandeauEtat extends StatelessWidget {
             AppColors.successContainer,
             AppColors.successDeep,
             Symbols.link,
-            'Poste appairé au serveur (code ${etat.codePoste}). Pour '
-                'l\'instant, seuls les CLIENTS sont synchronisés ; les autres '
-                'données restent sur ce poste, branchées une à une.',
+            'Poste appairé au serveur (code ${etat.codePoste}). Ses saisies '
+                'sont envoyées au serveur et celles des autres postes reçues ; '
+                'le détail est dans l\'onglet Synchronisation.',
           )
         : (
             AppColors.surfaceZebra,

@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/administration/data/repositories/parametres_repository_drift.dart';
 import 'package:logialvia_app/administration/data/repositories/auth_repository_drift.dart';
 import 'package:logialvia_app/administration/domain/entities/role_utilisateur.dart';
 import 'package:logialvia_app/administration/domain/entities/utilisateur.dart';
+import 'package:logialvia_app/administration/domain/services/service_images_entreprise.dart';
 import 'package:logialvia_app/administration/domain/usecases/connecter_utilisateur_usecase.dart';
 import 'package:logialvia_app/administration/presentation/viewmodels/parametres_generaux_view_model.dart';
 import 'package:logialvia_app/core/database/app_database.dart';
@@ -25,6 +28,80 @@ void main() {
   tearDown(() async {
     vm.dispose();
     await db.close();
+  });
+
+  group('Logo et favicon', () {
+    late Directory dossier;
+    late ParametresGenerauxViewModel vmImages;
+
+    setUp(() async {
+      dossier = Directory.systemTemp.createTempSync('logialvia-logo-');
+      vmImages = ParametresGenerauxViewModel(
+        repository,
+        ServiceImagesEntreprise(
+          () async =>
+              Directory('${dossier.path}${Platform.pathSeparator}images'),
+        ),
+      );
+      await vmImages.charger();
+    });
+
+    tearDown(() {
+      vmImages.dispose();
+      dossier.deleteSync(recursive: true);
+    });
+
+    File png() => File('${dossier.path}${Platform.pathSeparator}logo.png')
+      ..writeAsBytesSync(const [
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        9,
+      ]);
+
+    test('le logo importe est enregistre, relu, puis retire', () async {
+      vmImages.mettreAJour(vmImages.parametres.copyWith(ifu: '1234567890'));
+      final r = await vmImages.importerImage(
+        TypeImageEntreprise.logo,
+        png().path,
+      );
+      expect(r, isA<Succes<void>>());
+      expect(vmImages.parametres.cheminLogo, contains('logo-'));
+      expect(await vmImages.enregistrerParametres(), isA<Succes<void>>());
+
+      final relu = await ParametresRepositoryDrift(db).charger();
+      expect(relu.cheminLogo, vmImages.parametres.cheminLogo);
+      expect(File(relu.cheminLogo!).existsSync(), isTrue);
+      expect(relu.cheminFavicon, isNull);
+
+      vmImages.retirerImage(TypeImageEntreprise.logo);
+      expect(await vmImages.enregistrerParametres(), isA<Succes<void>>());
+      expect(
+        (await ParametresRepositoryDrift(db).charger()).cheminLogo,
+        isNull,
+      );
+    });
+
+    test(
+      'un fichier invalide est refuse sans toucher aux parametres',
+      () async {
+        final faux = File('${dossier.path}${Platform.pathSeparator}x.png')
+          ..writeAsBytesSync(const [1, 2, 3, 4]);
+
+        final r = await vmImages.importerImage(
+          TypeImageEntreprise.favicon,
+          faux.path,
+        );
+
+        expect(r, isA<Echec<void>>());
+        expect(vmImages.parametres.cheminFavicon, isNull);
+      },
+    );
   });
 
   group('Paramètres de l\'entreprise', () {

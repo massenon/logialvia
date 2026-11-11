@@ -52,15 +52,15 @@ class ChampConnexion extends StatelessWidget {
           label,
           style: const TextStyle(
             fontFamily: AppTypography.fontFamily,
-            fontSize: 12,
+            fontSize: AppTypography.textXs,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6, // `tracking-wider`
             color: AppColors.brandNavy,
           ),
         ),
-        const SizedBox(height: 4), // `mb-1`
+        const SizedBox(height: 6), // `mb-1.5`
         SizedBox(
-          height: 44, // `h-11`
+          height: 52,
           child: TextField(
             focusNode: focusNode,
             controller: controller,
@@ -69,7 +69,7 @@ class ChampConnexion extends StatelessWidget {
             onSubmitted: onSubmitted,
             style: const TextStyle(
               fontFamily: AppTypography.fontFamily,
-              fontSize: AppTypography.textXs,
+              fontSize: 16, // `text-section-title`
               color: AppColors.onSurface,
             ),
             decoration: InputDecoration(
@@ -82,16 +82,16 @@ class ChampConnexion extends StatelessWidget {
               hintText: placeholder,
               hintStyle: const TextStyle(
                 fontFamily: AppTypography.fontFamily,
-                fontSize: AppTypography.textXs,
+                fontSize: 16, // `text-section-title`
                 color: AppColors.outline,
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               prefixIcon: Padding(
                 // `left-4` sur une icone de 18px -> zone de 44px de large
                 padding: const EdgeInsets.only(left: 16, right: 10),
-                child: Icon(iconePrefixe, size: 18, color: AppColors.outline),
+                child: Icon(iconePrefixe, size: 20, color: AppColors.outline),
               ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 44),
+              prefixIconConstraints: const BoxConstraints(minWidth: 48),
               suffixIcon: suffixe,
               suffixIconConstraints: const BoxConstraints(minWidth: 44),
               enabledBorder: OutlineInputBorder(

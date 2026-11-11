@@ -49,6 +49,8 @@ class ParametresRepositoryDrift implements ParametresRepository {
       smtpSecurite: ligne.smtpSecurite,
       delaiPaiementJours: ligne.delaiPaiementJours,
       modeDonneesTest: ligne.modeDonneesTest,
+      cheminLogo: ligne.cheminLogo,
+      cheminFavicon: ligne.cheminFavicon,
     );
   }
 
@@ -81,6 +83,8 @@ class ParametresRepositoryDrift implements ParametresRepository {
             smtpSecurite: Value(parametres.smtpSecurite),
             delaiPaiementJours: Value(parametres.delaiPaiementJours),
             modeDonneesTest: Value(parametres.modeDonneesTest),
+            cheminLogo: Value(parametres.cheminLogo),
+            cheminFavicon: Value(parametres.cheminFavicon),
           ),
         );
     // Les parametres appartiennent au serveur : le poste les PROPOSE (`46_` §4.3).

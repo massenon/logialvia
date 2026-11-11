@@ -26,18 +26,32 @@ class PlanificateurSynchronisation extends ChangeNotifier {
   PlanificateurSynchronisation({
     required this.moteur,
     this.intervalleDemande = const Duration(seconds: 30),
-    this.intervalleRoutine = const Duration(minutes: 5),
+    Duration intervalleRoutine = const Duration(minutes: 5),
     this.delaiGeste = const Duration(seconds: 3),
     this.apresSynchronisation,
-  });
+    this.journaliser,
+  }) : _routine = intervalleRoutine;
 
   final MoteurSynchronisationPoste moteur;
   final Duration intervalleDemande;
-  final Duration intervalleRoutine;
+  Duration _routine;
+
+  /// Intervalle de la routine (5 min par défaut) ; réglable : [changerIntervalleRoutine].
+  Duration get intervalleRoutine => _routine;
   final Duration delaiGeste;
 
   /// Appelé après chaque synchronisation (ex. recharger les modules actifs).
   final void Function(RapportSynchronisation rapport)? apresSynchronisation;
+
+  /// Appelé après chaque cycle pour le tenir dans le journal des tentatives
+  /// (`DepotJournalSynchronisation`). Une panne du journal ne gêne jamais la synchro.
+  final Future<void> Function(
+    DateTime debut,
+    Duration duree,
+    String declencheur,
+    RapportSynchronisation rapport,
+  )?
+  journaliser;
 
   Timer? _tickDemande;
   Timer? _tickRoutine;
@@ -72,7 +86,7 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       return;
     }
     _armer();
-    await _lancer(); // à l'ouverture
+    await _lancer(declencheur: 'ouverture');
   }
 
   /// Après un nouvel appairage : on repart.
@@ -82,7 +96,7 @@ class PlanificateurSynchronisation extends ChangeNotifier {
     _suspendu = false;
     _armer();
     notifyListeners();
-    unawaited(_lancer());
+    unawaited(_lancer(declencheur: 'appairage'));
   }
 
   void _armer() {
@@ -91,7 +105,25 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       intervalleDemande,
       (_) => _surTickDemande(),
     );
-    _tickRoutine ??= Timer.periodic(intervalleRoutine, (_) => _lancer());
+    _tickRoutine ??= Timer.periodic(
+      _routine,
+      (_) => _lancer(declencheur: 'routine'),
+    );
+  }
+
+  /// Change l'intervalle de la routine (réglage « Synchro automatique » de
+  /// l'onglet Appairage). Prend effet tout de suite si les minuteurs tournent.
+  void changerIntervalleRoutine(Duration intervalle) {
+    if (_ferme || intervalle <= Duration.zero || intervalle == _routine) return;
+    _routine = intervalle;
+    if (_tickRoutine != null) {
+      _tickRoutine!.cancel();
+      _tickRoutine = Timer.periodic(
+        _routine,
+        (_) => _lancer(declencheur: 'routine'),
+      );
+    }
+    notifyListeners();
   }
 
   void _desarmer() {
@@ -106,7 +138,7 @@ class PlanificateurSynchronisation extends ChangeNotifier {
   /// Bouton « Synchroniser maintenant ». Renvoie `null` si une synchronisation
   /// est déjà en cours.
   Future<RapportSynchronisation?> synchroniserMaintenant() async {
-    final rapport = await _lancer(forcer: true);
+    final rapport = await _lancer(forcer: true, declencheur: 'manuel');
     // Réussie : le poste est bien appairé, les minuteurs peuvent (re)partir.
     if (rapport != null && rapport.reussie && _suspendu) {
       _suspendu = false;
@@ -137,7 +169,7 @@ class PlanificateurSynchronisation extends ChangeNotifier {
     if (restant <= Duration.zero) return false;
     try {
       if (!await moteur.aDesSaisiesAEnvoyer()) return false;
-      final rapport = await _lancer().timeout(restant);
+      final rapport = await _lancer(declencheur: 'fermeture').timeout(restant);
       return rapport?.reussie ?? false;
     } on TimeoutException {
       return false;
@@ -150,7 +182,9 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       if (_suspendu || _enCours || _ferme) return;
       // Garde « rien à envoyer » : sans elle, la synchronisation se
       // relancerait elle-même à chaque écriture d'un accusé.
-      if (await moteur.aDesSaisiesAEnvoyer()) await _lancer();
+      if (await moteur.aDesSaisiesAEnvoyer()) {
+        await _lancer(declencheur: 'saisie');
+      }
     });
   }
 
@@ -167,7 +201,10 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       return; // hors ligne : plus tard
     }
     if (demande.synchroniser || demande.resynchronisationComplete) {
-      await _lancer(complet: demande.resynchronisationComplete);
+      await _lancer(
+        complet: demande.resynchronisationComplete,
+        declencheur: 'demande',
+      );
     }
   }
 
@@ -187,13 +224,25 @@ class PlanificateurSynchronisation extends ChangeNotifier {
   Future<RapportSynchronisation?> _lancer({
     bool complet = false,
     bool forcer = false,
+    String declencheur = 'routine',
   }) async {
     if (_enCours || _ferme || (_suspendu && !forcer)) return null;
     _enCours = true;
-    _derniereTentative = DateTime.now();
+    final debut = DateTime.now();
+    _derniereTentative = debut;
     notifyListeners();
     try {
       final rapport = await moteur.synchroniser(complet: complet);
+      try {
+        await journaliser?.call(
+          debut,
+          DateTime.now().difference(debut),
+          declencheur,
+          rapport,
+        );
+      } catch (_) {
+        // Le journal est un confort : il ne doit jamais faire échouer la synchronisation.
+      }
       if (_ferme) return rapport;
       _dernierRapport = rapport;
 

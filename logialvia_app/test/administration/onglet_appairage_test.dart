@@ -151,7 +151,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('seuls les CLIENTS sont synchronisés'),
+      find.textContaining('celles des autres postes reçues'),
       findsOneWidget,
       reason: 'appairé ne doit pas être pris pour synchronisé',
     );
@@ -386,4 +386,44 @@ void main() {
     expect(find.byKey(const Key('appairage-horloge')), findsNothing);
     expect(find.textContaining('Juste (écart'), findsOneWidget);
   });
+
+  cas(
+    'poste appairé : « Synchro automatique » propose les intervalles et retient le choix',
+    (t) async {
+      await afficher(t);
+      await saisir(t);
+      await t.tap(find.text('Appairer'));
+      await t.pumpAndSettle();
+
+      final liste = find.byKey(const Key('intervalle-synchronisation'));
+      expect(liste, findsOneWidget);
+      expect(vm.intervalleMinutes, 5, reason: '5 minutes par défaut');
+
+      await t.tap(liste);
+      await t.pumpAndSettle();
+      await t.tap(find.text('15 minutes').last);
+      await t.pumpAndSettle();
+
+      expect(vm.intervalleMinutes, 15);
+      expect(planificateur.intervalleRoutine, const Duration(minutes: 15));
+      expect(
+        await PreferencesPosteRepository(db).intervalleSynchroMinutes(),
+        15,
+        reason: 'le choix survit au redémarrage',
+      );
+    },
+  );
+
+  test(
+    'l\'intervalle de synchro : défaut 5, valeur inconnue ignorée, refus hors liste',
+    () async {
+      final p = PreferencesPosteRepository(db);
+      expect(await p.intervalleSynchroMinutes(), 5);
+
+      await p.definirIntervalleSynchroMinutes(30);
+      expect(await p.intervalleSynchroMinutes(), 30);
+
+      expect(() => p.definirIntervalleSynchroMinutes(7), throwsArgumentError);
+    },
+  );
 }

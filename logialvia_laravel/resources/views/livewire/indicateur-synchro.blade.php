@@ -37,7 +37,7 @@
                 @endforelse
             </div>
             <div class="mt-4 flex justify-between gap-sm">
-                <a href="{{ route('postes') }}" class="flex h-11 items-center rounded-lg bg-brand-navy px-4 text-xs font-bold uppercase tracking-wider text-white hover:bg-brand-navy-dark">Postes &amp; Appairage</a>
+                <a wire:navigate.hover href="{{ route('postes') }}" class="flex h-11 items-center rounded-lg bg-brand-navy px-4 text-xs font-bold uppercase tracking-wider text-white hover:bg-brand-navy-dark">Postes &amp; Appairage</a>
                 <button type="button" @click="ouvert = false" class="h-11 rounded-lg border border-outline-variant px-4 text-xs font-bold uppercase tracking-wider text-brand-navy hover:bg-surface-zebra">Fermer</button>
             </div>
         </div>

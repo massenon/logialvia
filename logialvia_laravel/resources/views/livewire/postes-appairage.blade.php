@@ -1,12 +1,28 @@
 <div>
     @can('view-parametres')
-        <p class="mb-xs text-xs"><a href="/parametres/generaux" class="font-semibold text-brand-navy underline">← Paramètres Généraux</a></p>
+        <p class="mb-xs text-xs"><a wire:navigate.hover href="/parametres/generaux" class="font-semibold text-brand-navy underline">← Paramètres Généraux</a></p>
     @endcan
     <h1 class="mb-xs text-page-title font-bold">Postes &amp; Appairage</h1>
     <p class="mb-md text-xs text-outline">
         Un jeton par poste : le poste se reconnaît à son identifiant. Révoquer un poste coupe tous ses jetons ;
         il suspendra sa synchronisation et redemandera une connexion. Ses saisies non envoyées restent sur le poste.
+        « Demander » fait synchroniser un poste sous 30 secondes ; « Renvoyer » le fait repartir d'un tirage complet de toutes les données.
     </p>
+
+    <div class="mb-md flex flex-wrap gap-sm" data-barre-postes>
+        <button type="button" wire:click="actualiser" data-action="actualiser"
+                class="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold text-brand-navy hover:bg-surface-zebra">
+            <x-icone nom="refresh" class="text-[16px]" />Actualiser
+        </button>
+        <button type="button" wire:click="demander" data-action="demander-tous"
+                class="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold text-brand-navy hover:bg-surface-zebra">
+            <x-icone nom="sync" class="text-[16px]" />Synchroniser tous les postes
+        </button>
+        <button type="button" wire:click="demanderRenvoi('*')" data-action="renvoyer-tous"
+                class="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold text-brand-navy hover:bg-surface-zebra">
+            <x-icone nom="cloud_sync" class="text-[16px]" />Renvoyer vers tous les postes
+        </button>
+    </div>
 
     @if ($message)
         <p role="status" class="mb-md rounded-lg bg-success-container p-sm text-xs text-success-deep">{{ $message }}</p>
@@ -57,6 +73,12 @@
                         <td class="px-md py-sm">
                             @if ($etat === 'appaire')
                                 <span class="rounded-full bg-success-container px-sm py-xs font-semibold text-success-deep">Appairé</span>
+                                @if ($attente[$poste->id]['demande'])
+                                    <span class="mt-xs inline-block rounded-full bg-brand-gold/30 px-sm py-xs font-semibold text-brand-navy" data-attente="demande">Synchro demandée</span>
+                                @endif
+                                @if ($attente[$poste->id]['renvoi'])
+                                    <span class="mt-xs inline-block rounded-full bg-brand-gold/30 px-sm py-xs font-semibold text-brand-navy" data-attente="renvoi">Renvoi complet en attente</span>
+                                @endif
                             @elseif ($etat === 'revoque')
                                 <span class="rounded-full bg-error-container px-sm py-xs font-semibold text-error-deep">Révoqué</span>
                             @else
@@ -65,10 +87,16 @@
                         </td>
                         <td class="px-md py-sm text-right">
                             @if ($etat === 'appaire')
-                                <button type="button" wire:click="demanderRevocation('{{ $poste->device_id }}')"
-                                        class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">
-                                    Révoquer l'appairage
-                                </button>
+                                <div class="flex flex-wrap justify-end gap-xs">
+                                    <button type="button" wire:click="demander('{{ $poste->device_id }}')" data-action="demander" data-poste-action="{{ $poste->code }}"
+                                            class="rounded-lg border border-outline-variant px-sm py-xs font-semibold text-brand-navy hover:bg-surface-zebra">Demander</button>
+                                    <button type="button" wire:click="demanderRenvoi('{{ $poste->device_id }}')" data-action="renvoyer" data-poste-action="{{ $poste->code }}"
+                                            class="rounded-lg border border-outline-variant px-sm py-xs font-semibold text-brand-navy hover:bg-surface-zebra">Renvoyer</button>
+                                    <button type="button" wire:click="demanderRevocation('{{ $poste->device_id }}')"
+                                            class="rounded-lg border border-error-deep px-sm py-xs font-semibold text-error-deep hover:bg-error-container">
+                                        Révoquer l'appairage
+                                    </button>
+                                </div>
                             @endif
                         </td>
                     </tr>
@@ -117,8 +145,20 @@
                     <dd>{{ $poste->dernier_contact_le?->diffForHumans() ?? 'jamais' }}</dd>
                 </dl>
                 @if ($etat === 'appaire')
+                    @if ($attente[$poste->id]['demande'] || $attente[$poste->id]['renvoi'])
+                        <p class="mt-sm text-xs font-semibold text-brand-navy">
+                            @if ($attente[$poste->id]['demande']) Synchro demandée @endif
+                            @if ($attente[$poste->id]['renvoi']) · Renvoi complet en attente @endif
+                        </p>
+                    @endif
+                    <div class="mt-md grid grid-cols-2 gap-sm">
+                        <button type="button" wire:click="demander('{{ $poste->device_id }}')"
+                                class="rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold text-brand-navy hover:bg-surface-zebra">Demander</button>
+                        <button type="button" wire:click="demanderRenvoi('{{ $poste->device_id }}')"
+                                class="rounded-lg border border-outline-variant px-sm py-sm text-xs font-semibold text-brand-navy hover:bg-surface-zebra">Renvoyer</button>
+                    </div>
                     <button type="button" wire:click="demanderRevocation('{{ $poste->device_id }}')"
-                            class="mt-md w-full rounded-lg border border-error-deep px-sm py-sm text-xs font-semibold text-error-deep hover:bg-error-container">
+                            class="mt-sm w-full rounded-lg border border-error-deep px-sm py-sm text-xs font-semibold text-error-deep hover:bg-error-container">
                         Révoquer l'appairage
                     </button>
                 @endif
@@ -145,6 +185,29 @@
                             class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
                     <button type="button" wire:click="confirmerRevocation"
                             class="rounded-lg bg-error-deep px-md py-sm text-xs font-semibold text-white">Révoquer l'appairage</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($renvoiCible)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md" role="dialog" aria-modal="true"
+             aria-labelledby="titre-renvoi">
+            <div class="w-full max-w-md rounded-lg bg-surface-card p-lg shadow-xl">
+                <h2 id="titre-renvoi" class="mb-sm text-modal-title font-bold">Renvoyer toutes les données ?</h2>
+                <p class="mb-md text-xs">
+                    @if ($renvoiCible === 'tous')
+                        <strong>Chaque poste appairé</strong> repartira d'un tirage COMPLET à son prochain contact.
+                    @else
+                        Le poste <strong>{{ $renvoiCible }}</strong> repartira d'un tirage COMPLET à son prochain contact.
+                    @endif
+                    Ses saisies non envoyées ne sont pas perdues ; le tirage peut prendre un moment sur un gros volume.
+                </p>
+                <div class="flex justify-end gap-sm">
+                    <button type="button" wire:click="annuler"
+                            class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Annuler</button>
+                    <button type="button" wire:click="confirmerRenvoi" data-action="confirmer-renvoi"
+                            class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white">Renvoyer</button>
                 </div>
             </div>
         </div>

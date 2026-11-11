@@ -3,7 +3,7 @@
         <div>
             <h1 class="text-page-title font-bold">Devis Prestations</h1>
             <p class="text-xs text-outline">Un devis n'est pas une vente : aucun stock, aucune écriture comptable, aucun chiffre d'affaires.
-                <a href="/ventes" class="font-semibold text-brand-navy underline">Retour aux Ventes</a></p>
+                <a wire:navigate.hover href="/ventes" class="font-semibold text-brand-navy underline">Retour aux Ventes</a></p>
         </div>
         <div class="flex flex-wrap gap-sm">
             @if ($peutExporter)

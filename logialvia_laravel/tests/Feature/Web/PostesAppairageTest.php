@@ -280,4 +280,97 @@ class PostesAppairageTest extends TestCase
             ->call('demanderRevocation', (string) Str::uuid())
             ->assertSet('posteAConfirmer', null);
     }
+
+    // ------------------------------------------- Actualiser, Demander, Renvoyer (47y_)
+
+    public function test_actualiser_reaffiche_la_liste_avec_un_message(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $this->appairer($admin);
+
+        Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->call('actualiser')
+            ->assertSee('Liste des postes actualisée.');
+    }
+
+    public function test_demander_depose_une_demande_pour_ce_poste_et_le_dit(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $poste = $this->appairer($admin);
+
+        Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->call('demander', $poste->device_id)
+            ->assertSee("Synchronisation demandée au poste {$poste->code}")
+            ->assertSee('Synchro demandée');
+
+        $this->assertDatabaseHas('demandes_synchronisation', ['device_id' => $poste->device_id, 'demandee_par' => $admin->id]);
+        $this->assertTrue(app(\App\Services\DemandesSynchronisationService::class)->lirePour($poste->device_id), 'le poste la lit');
+    }
+
+    public function test_demander_a_tous_depose_une_demande_sans_poste(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $this->appairer($admin);
+
+        Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->call('demander')
+            ->assertSee('Synchronisation demandée à tous les postes');
+
+        $this->assertDatabaseHas('demandes_synchronisation', ['device_id' => null]);
+    }
+
+    public function test_demander_un_poste_inconnu_ne_depose_rien(): void
+    {
+        Livewire::actingAs($this->utilisateur('admin'))->test(PostesAppairage::class)
+            ->call('demander', (string) Str::uuid())
+            ->assertSee('Poste inconnu.');
+
+        $this->assertDatabaseCount('demandes_synchronisation', 0);
+    }
+
+    public function test_le_renvoi_complet_passe_par_une_confirmation(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $poste = $this->appairer($admin);
+
+        $c = Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->call('demanderRenvoi', $poste->device_id)
+            ->assertSet('renvoiAConfirmer', $poste->device_id)
+            ->assertSee('Renvoyer toutes les données ?');
+        $this->assertNull($poste->fresh()->resync_demandee_le, 'rien n\'est demande avant la confirmation');
+
+        $c->call('annuler')->assertSet('renvoiAConfirmer', null);
+        $this->assertNull($poste->fresh()->resync_demandee_le);
+
+        $c->call('demanderRenvoi', $poste->device_id)->call('confirmerRenvoi')
+            ->assertSee("Renvoi complet demandé au poste {$poste->code}")
+            ->assertSee('Renvoi complet en attente');
+        $this->assertNotNull($poste->fresh()->resync_demandee_le);
+        $this->assertTrue(AuditLog::query()->where('action', 'sync.resynchronisation_demandee')->exists());
+    }
+
+    public function test_renvoyer_a_tous_n_atteint_que_les_postes_non_revoques(): void
+    {
+        $admin = $this->utilisateur('admin', 'admin');
+        $actif = $this->appairer($admin);
+        $revoque = $this->appairer($admin);
+        app(PostesService::class)->revoquer($revoque->device_id, $admin);
+
+        Livewire::actingAs($admin)->test(PostesAppairage::class)
+            ->call('demanderRenvoi', '*')->call('confirmerRenvoi')
+            ->assertSee('Renvoi complet demandé à tous les postes');
+
+        $this->assertNotNull($actif->fresh()->resync_demandee_le);
+        $this->assertNull($revoque->fresh()->resync_demandee_le);
+    }
+
+    public function test_un_caissier_ne_peut_ni_demander_ni_renvoyer(): void
+    {
+        $caissier = $this->utilisateur('caissier', 'c');
+        $poste = $this->appairer($this->utilisateur('admin', 'admin'));
+
+        Livewire::actingAs($caissier)->test(PostesAppairage::class)->assertForbidden();
+        $this->assertDatabaseCount('demandes_synchronisation', 0);
+        $this->assertNull($poste->fresh()->resync_demandee_le);
+    }
 }

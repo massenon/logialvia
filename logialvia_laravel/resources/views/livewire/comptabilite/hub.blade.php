@@ -21,7 +21,7 @@
             <x-icone nom="block" class="text-[20px] text-error-deep" />
             <p class="text-xs text-error-deep"><span class="font-bold">Conformité Fiscale Électronique (MeCeF/e-MECeF) — En Attente de Configuration</span><br>
             <span class="text-caption">Renseignez l'IFU et le RCCM depuis
-            <a href="/parametres/generaux" class="font-bold underline">Paramètres Généraux &gt; Données de l'Entreprise</a>.</span></p>
+            <a wire:navigate.hover href="/parametres/generaux" class="font-bold underline">Paramètres Généraux &gt; Données de l'Entreprise</a>.</span></p>
         </div>
     @endif
 
@@ -50,7 +50,7 @@
         @php($iconesTuiles = ['/comptabilite/plan' => 'list_alt', '/comptabilite/journal' => 'menu_book', '/comptabilite/grand-livre' => 'import_contacts', '/comptabilite/balance' => 'balance', '/comptabilite/etats-financiers' => 'description', '/comptabilite/bilan' => 'account_balance', '/comptabilite/cloture' => 'event_repeat', '/comptabilite/analytique' => 'insights', '/parametres/generaux' => 'toggle_on'])
         @foreach ($tuiles as [$titreTuile, $sousTitre, $route])
             @php($derniere = $route === '/parametres/generaux')
-            <a href="{{ $route }}" data-tuile="{{ $route }}"
+            <a wire:navigate.hover href="{{ $route }}" data-tuile="{{ $route }}"
                class="flex items-center gap-sm rounded-lg p-md shadow-sm transition-all {{ $derniere ? 'bg-brand-navy hover:bg-brand-navy-dark' : 'border border-outline-variant bg-white hover:border-brand-navy hover:shadow-md' }}">
                 <x-icone :nom="$iconesTuiles[$route] ?? 'description'" class="text-[28px] {{ $derniere ? 'text-brand-gold-light' : 'text-brand-navy' }}" />
                 <span><span class="block text-xs font-bold {{ $derniere ? 'text-white' : 'text-brand-navy' }}">{{ $titreTuile }}</span>

@@ -15,13 +15,15 @@
 <body class="bg-white text-on-surface antialiased">
     {{-- Connexion en deux volets (maquette « login », poste et web) : visuel de marque a gauche (grands ecrans seulement), formulaire a droite. --}}
     <div class="flex min-h-screen w-full">
-        <div class="relative hidden w-1/2 shrink-0 overflow-hidden bg-brand-navy-dark lg:block" aria-hidden="true">
+        {{-- Largeur = min(moitie de l'ecran, hauteur de l'ecran) : le visuel (carre) s'affiche ENTIER, sans rogner ses textes ;
+             si la moitie de l'ecran est plus etroite que sa hauteur, il est centre sur le fond marine. --}}
+        <div class="relative hidden shrink-0 overflow-hidden bg-brand-navy-dark lg:block lg:w-[min(50vw,100vh)]" aria-hidden="true">
             {{-- Non charge sur telephone (conteneur masque + loading=lazy) : le LCP mobile n'en depend pas. --}}
             <img src="{{ asset('images/login-visuel.webp') }}" alt="" width="1000" height="1000" loading="lazy" decoding="async"
-                 class="absolute inset-0 h-full w-full object-cover object-left">
+                 class="absolute inset-0 h-full w-full object-contain">
         </div>
         <main class="flex min-h-screen flex-1 items-center justify-center bg-white p-6 lg:p-12">
-            <div class="w-full max-w-[460px]">
+            <div class="w-full max-w-[560px]">
                 {{ $slot }}
             </div>
         </main>

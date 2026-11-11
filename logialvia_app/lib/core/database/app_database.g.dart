@@ -2672,7 +2672,7 @@ class ParametresEntrepriseRow extends DataClass
   /// Ajoute en v29 : la filiere n'existait pas dans le prototype.
   final String prefixeBac;
 
-  /// Prefixe des parcs — Elevage bovin (Bovins), DV-17. Apercu « PARC1, PARC2 ».
+  /// Prefixe des parcs — Elevage ovin (Ovins), DV-17. Apercu « PARC1, PARC2 ».
   /// Ajoute en v29.
   final String prefixeParc;
   const ParametresEntrepriseRow({
@@ -5363,6 +5363,659 @@ class DemandesReferentielCompanion
           ..write('syncStatus: $syncStatus, ')
           ..write('syncMotif: $syncMotif, ')
           ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $JournalSynchronisationTable extends JournalSynchronisation
+    with TableInfo<$JournalSynchronisationTable, EntreeJournalSynchro> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalSynchronisationTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _debutLeMeta = const VerificationMeta(
+    'debutLe',
+  );
+  @override
+  late final GeneratedColumn<DateTime> debutLe = GeneratedColumn<DateTime>(
+    'debut_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dureeMsMeta = const VerificationMeta(
+    'dureeMs',
+  );
+  @override
+  late final GeneratedColumn<int> dureeMs = GeneratedColumn<int>(
+    'duree_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _declencheurMeta = const VerificationMeta(
+    'declencheur',
+  );
+  @override
+  late final GeneratedColumn<String> declencheur = GeneratedColumn<String>(
+    'declencheur',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _issueMeta = const VerificationMeta('issue');
+  @override
+  late final GeneratedColumn<String> issue = GeneratedColumn<String>(
+    'issue',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageMeta = const VerificationMeta(
+    'message',
+  );
+  @override
+  late final GeneratedColumn<String> message = GeneratedColumn<String>(
+    'message',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recuesMeta = const VerificationMeta('recues');
+  @override
+  late final GeneratedColumn<int> recues = GeneratedColumn<int>(
+    'recues',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _envoyeesMeta = const VerificationMeta(
+    'envoyees',
+  );
+  @override
+  late final GeneratedColumn<int> envoyees = GeneratedColumn<int>(
+    'envoyees',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _accepteesMeta = const VerificationMeta(
+    'acceptees',
+  );
+  @override
+  late final GeneratedColumn<int> acceptees = GeneratedColumn<int>(
+    'acceptees',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _refuseesMeta = const VerificationMeta(
+    'refusees',
+  );
+  @override
+  late final GeneratedColumn<int> refusees = GeneratedColumn<int>(
+    'refusees',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _enAttenteDeDroitMeta = const VerificationMeta(
+    'enAttenteDeDroit',
+  );
+  @override
+  late final GeneratedColumn<int> enAttenteDeDroit = GeneratedColumn<int>(
+    'en_attente_de_droit',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    debutLe,
+    dureeMs,
+    declencheur,
+    issue,
+    message,
+    recues,
+    envoyees,
+    acceptees,
+    refusees,
+    enAttenteDeDroit,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_synchronisation';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EntreeJournalSynchro> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('debut_le')) {
+      context.handle(
+        _debutLeMeta,
+        debutLe.isAcceptableOrUnknown(data['debut_le']!, _debutLeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_debutLeMeta);
+    }
+    if (data.containsKey('duree_ms')) {
+      context.handle(
+        _dureeMsMeta,
+        dureeMs.isAcceptableOrUnknown(data['duree_ms']!, _dureeMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dureeMsMeta);
+    }
+    if (data.containsKey('declencheur')) {
+      context.handle(
+        _declencheurMeta,
+        declencheur.isAcceptableOrUnknown(
+          data['declencheur']!,
+          _declencheurMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_declencheurMeta);
+    }
+    if (data.containsKey('issue')) {
+      context.handle(
+        _issueMeta,
+        issue.isAcceptableOrUnknown(data['issue']!, _issueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_issueMeta);
+    }
+    if (data.containsKey('message')) {
+      context.handle(
+        _messageMeta,
+        message.isAcceptableOrUnknown(data['message']!, _messageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageMeta);
+    }
+    if (data.containsKey('recues')) {
+      context.handle(
+        _recuesMeta,
+        recues.isAcceptableOrUnknown(data['recues']!, _recuesMeta),
+      );
+    }
+    if (data.containsKey('envoyees')) {
+      context.handle(
+        _envoyeesMeta,
+        envoyees.isAcceptableOrUnknown(data['envoyees']!, _envoyeesMeta),
+      );
+    }
+    if (data.containsKey('acceptees')) {
+      context.handle(
+        _accepteesMeta,
+        acceptees.isAcceptableOrUnknown(data['acceptees']!, _accepteesMeta),
+      );
+    }
+    if (data.containsKey('refusees')) {
+      context.handle(
+        _refuseesMeta,
+        refusees.isAcceptableOrUnknown(data['refusees']!, _refuseesMeta),
+      );
+    }
+    if (data.containsKey('en_attente_de_droit')) {
+      context.handle(
+        _enAttenteDeDroitMeta,
+        enAttenteDeDroit.isAcceptableOrUnknown(
+          data['en_attente_de_droit']!,
+          _enAttenteDeDroitMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EntreeJournalSynchro map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EntreeJournalSynchro(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      debutLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}debut_le'],
+      )!,
+      dureeMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duree_ms'],
+      )!,
+      declencheur: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}declencheur'],
+      )!,
+      issue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}issue'],
+      )!,
+      message: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message'],
+      )!,
+      recues: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recues'],
+      )!,
+      envoyees: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}envoyees'],
+      )!,
+      acceptees: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}acceptees'],
+      )!,
+      refusees: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}refusees'],
+      )!,
+      enAttenteDeDroit: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}en_attente_de_droit'],
+      )!,
+    );
+  }
+
+  @override
+  $JournalSynchronisationTable createAlias(String alias) {
+    return $JournalSynchronisationTable(attachedDatabase, alias);
+  }
+}
+
+class EntreeJournalSynchro extends DataClass
+    implements Insertable<EntreeJournalSynchro> {
+  final int id;
+
+  /// Début du cycle (heure du poste).
+  final DateTime debutLe;
+  final int dureeMs;
+
+  /// Ce qui a lancé le cycle : `ouverture`, `routine`, `saisie`, `manuel`,
+  /// `demande`, `fermeture`, `appairage`.
+  final String declencheur;
+
+  /// `IssueSynchronisation.name` : `terminee`, `horsLigne`, `revoque`, `refusee`…
+  final String issue;
+
+  /// Message du rapport, tel qu'affiché.
+  final String message;
+  final int recues;
+  final int envoyees;
+  final int acceptees;
+  final int refusees;
+  final int enAttenteDeDroit;
+  const EntreeJournalSynchro({
+    required this.id,
+    required this.debutLe,
+    required this.dureeMs,
+    required this.declencheur,
+    required this.issue,
+    required this.message,
+    required this.recues,
+    required this.envoyees,
+    required this.acceptees,
+    required this.refusees,
+    required this.enAttenteDeDroit,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['debut_le'] = Variable<DateTime>(debutLe);
+    map['duree_ms'] = Variable<int>(dureeMs);
+    map['declencheur'] = Variable<String>(declencheur);
+    map['issue'] = Variable<String>(issue);
+    map['message'] = Variable<String>(message);
+    map['recues'] = Variable<int>(recues);
+    map['envoyees'] = Variable<int>(envoyees);
+    map['acceptees'] = Variable<int>(acceptees);
+    map['refusees'] = Variable<int>(refusees);
+    map['en_attente_de_droit'] = Variable<int>(enAttenteDeDroit);
+    return map;
+  }
+
+  JournalSynchronisationCompanion toCompanion(bool nullToAbsent) {
+    return JournalSynchronisationCompanion(
+      id: Value(id),
+      debutLe: Value(debutLe),
+      dureeMs: Value(dureeMs),
+      declencheur: Value(declencheur),
+      issue: Value(issue),
+      message: Value(message),
+      recues: Value(recues),
+      envoyees: Value(envoyees),
+      acceptees: Value(acceptees),
+      refusees: Value(refusees),
+      enAttenteDeDroit: Value(enAttenteDeDroit),
+    );
+  }
+
+  factory EntreeJournalSynchro.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EntreeJournalSynchro(
+      id: serializer.fromJson<int>(json['id']),
+      debutLe: serializer.fromJson<DateTime>(json['debutLe']),
+      dureeMs: serializer.fromJson<int>(json['dureeMs']),
+      declencheur: serializer.fromJson<String>(json['declencheur']),
+      issue: serializer.fromJson<String>(json['issue']),
+      message: serializer.fromJson<String>(json['message']),
+      recues: serializer.fromJson<int>(json['recues']),
+      envoyees: serializer.fromJson<int>(json['envoyees']),
+      acceptees: serializer.fromJson<int>(json['acceptees']),
+      refusees: serializer.fromJson<int>(json['refusees']),
+      enAttenteDeDroit: serializer.fromJson<int>(json['enAttenteDeDroit']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'debutLe': serializer.toJson<DateTime>(debutLe),
+      'dureeMs': serializer.toJson<int>(dureeMs),
+      'declencheur': serializer.toJson<String>(declencheur),
+      'issue': serializer.toJson<String>(issue),
+      'message': serializer.toJson<String>(message),
+      'recues': serializer.toJson<int>(recues),
+      'envoyees': serializer.toJson<int>(envoyees),
+      'acceptees': serializer.toJson<int>(acceptees),
+      'refusees': serializer.toJson<int>(refusees),
+      'enAttenteDeDroit': serializer.toJson<int>(enAttenteDeDroit),
+    };
+  }
+
+  EntreeJournalSynchro copyWith({
+    int? id,
+    DateTime? debutLe,
+    int? dureeMs,
+    String? declencheur,
+    String? issue,
+    String? message,
+    int? recues,
+    int? envoyees,
+    int? acceptees,
+    int? refusees,
+    int? enAttenteDeDroit,
+  }) => EntreeJournalSynchro(
+    id: id ?? this.id,
+    debutLe: debutLe ?? this.debutLe,
+    dureeMs: dureeMs ?? this.dureeMs,
+    declencheur: declencheur ?? this.declencheur,
+    issue: issue ?? this.issue,
+    message: message ?? this.message,
+    recues: recues ?? this.recues,
+    envoyees: envoyees ?? this.envoyees,
+    acceptees: acceptees ?? this.acceptees,
+    refusees: refusees ?? this.refusees,
+    enAttenteDeDroit: enAttenteDeDroit ?? this.enAttenteDeDroit,
+  );
+  EntreeJournalSynchro copyWithCompanion(JournalSynchronisationCompanion data) {
+    return EntreeJournalSynchro(
+      id: data.id.present ? data.id.value : this.id,
+      debutLe: data.debutLe.present ? data.debutLe.value : this.debutLe,
+      dureeMs: data.dureeMs.present ? data.dureeMs.value : this.dureeMs,
+      declencheur: data.declencheur.present
+          ? data.declencheur.value
+          : this.declencheur,
+      issue: data.issue.present ? data.issue.value : this.issue,
+      message: data.message.present ? data.message.value : this.message,
+      recues: data.recues.present ? data.recues.value : this.recues,
+      envoyees: data.envoyees.present ? data.envoyees.value : this.envoyees,
+      acceptees: data.acceptees.present ? data.acceptees.value : this.acceptees,
+      refusees: data.refusees.present ? data.refusees.value : this.refusees,
+      enAttenteDeDroit: data.enAttenteDeDroit.present
+          ? data.enAttenteDeDroit.value
+          : this.enAttenteDeDroit,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntreeJournalSynchro(')
+          ..write('id: $id, ')
+          ..write('debutLe: $debutLe, ')
+          ..write('dureeMs: $dureeMs, ')
+          ..write('declencheur: $declencheur, ')
+          ..write('issue: $issue, ')
+          ..write('message: $message, ')
+          ..write('recues: $recues, ')
+          ..write('envoyees: $envoyees, ')
+          ..write('acceptees: $acceptees, ')
+          ..write('refusees: $refusees, ')
+          ..write('enAttenteDeDroit: $enAttenteDeDroit')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    debutLe,
+    dureeMs,
+    declencheur,
+    issue,
+    message,
+    recues,
+    envoyees,
+    acceptees,
+    refusees,
+    enAttenteDeDroit,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EntreeJournalSynchro &&
+          other.id == this.id &&
+          other.debutLe == this.debutLe &&
+          other.dureeMs == this.dureeMs &&
+          other.declencheur == this.declencheur &&
+          other.issue == this.issue &&
+          other.message == this.message &&
+          other.recues == this.recues &&
+          other.envoyees == this.envoyees &&
+          other.acceptees == this.acceptees &&
+          other.refusees == this.refusees &&
+          other.enAttenteDeDroit == this.enAttenteDeDroit);
+}
+
+class JournalSynchronisationCompanion
+    extends UpdateCompanion<EntreeJournalSynchro> {
+  final Value<int> id;
+  final Value<DateTime> debutLe;
+  final Value<int> dureeMs;
+  final Value<String> declencheur;
+  final Value<String> issue;
+  final Value<String> message;
+  final Value<int> recues;
+  final Value<int> envoyees;
+  final Value<int> acceptees;
+  final Value<int> refusees;
+  final Value<int> enAttenteDeDroit;
+  const JournalSynchronisationCompanion({
+    this.id = const Value.absent(),
+    this.debutLe = const Value.absent(),
+    this.dureeMs = const Value.absent(),
+    this.declencheur = const Value.absent(),
+    this.issue = const Value.absent(),
+    this.message = const Value.absent(),
+    this.recues = const Value.absent(),
+    this.envoyees = const Value.absent(),
+    this.acceptees = const Value.absent(),
+    this.refusees = const Value.absent(),
+    this.enAttenteDeDroit = const Value.absent(),
+  });
+  JournalSynchronisationCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime debutLe,
+    required int dureeMs,
+    required String declencheur,
+    required String issue,
+    required String message,
+    this.recues = const Value.absent(),
+    this.envoyees = const Value.absent(),
+    this.acceptees = const Value.absent(),
+    this.refusees = const Value.absent(),
+    this.enAttenteDeDroit = const Value.absent(),
+  }) : debutLe = Value(debutLe),
+       dureeMs = Value(dureeMs),
+       declencheur = Value(declencheur),
+       issue = Value(issue),
+       message = Value(message);
+  static Insertable<EntreeJournalSynchro> custom({
+    Expression<int>? id,
+    Expression<DateTime>? debutLe,
+    Expression<int>? dureeMs,
+    Expression<String>? declencheur,
+    Expression<String>? issue,
+    Expression<String>? message,
+    Expression<int>? recues,
+    Expression<int>? envoyees,
+    Expression<int>? acceptees,
+    Expression<int>? refusees,
+    Expression<int>? enAttenteDeDroit,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (debutLe != null) 'debut_le': debutLe,
+      if (dureeMs != null) 'duree_ms': dureeMs,
+      if (declencheur != null) 'declencheur': declencheur,
+      if (issue != null) 'issue': issue,
+      if (message != null) 'message': message,
+      if (recues != null) 'recues': recues,
+      if (envoyees != null) 'envoyees': envoyees,
+      if (acceptees != null) 'acceptees': acceptees,
+      if (refusees != null) 'refusees': refusees,
+      if (enAttenteDeDroit != null) 'en_attente_de_droit': enAttenteDeDroit,
+    });
+  }
+
+  JournalSynchronisationCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? debutLe,
+    Value<int>? dureeMs,
+    Value<String>? declencheur,
+    Value<String>? issue,
+    Value<String>? message,
+    Value<int>? recues,
+    Value<int>? envoyees,
+    Value<int>? acceptees,
+    Value<int>? refusees,
+    Value<int>? enAttenteDeDroit,
+  }) {
+    return JournalSynchronisationCompanion(
+      id: id ?? this.id,
+      debutLe: debutLe ?? this.debutLe,
+      dureeMs: dureeMs ?? this.dureeMs,
+      declencheur: declencheur ?? this.declencheur,
+      issue: issue ?? this.issue,
+      message: message ?? this.message,
+      recues: recues ?? this.recues,
+      envoyees: envoyees ?? this.envoyees,
+      acceptees: acceptees ?? this.acceptees,
+      refusees: refusees ?? this.refusees,
+      enAttenteDeDroit: enAttenteDeDroit ?? this.enAttenteDeDroit,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (debutLe.present) {
+      map['debut_le'] = Variable<DateTime>(debutLe.value);
+    }
+    if (dureeMs.present) {
+      map['duree_ms'] = Variable<int>(dureeMs.value);
+    }
+    if (declencheur.present) {
+      map['declencheur'] = Variable<String>(declencheur.value);
+    }
+    if (issue.present) {
+      map['issue'] = Variable<String>(issue.value);
+    }
+    if (message.present) {
+      map['message'] = Variable<String>(message.value);
+    }
+    if (recues.present) {
+      map['recues'] = Variable<int>(recues.value);
+    }
+    if (envoyees.present) {
+      map['envoyees'] = Variable<int>(envoyees.value);
+    }
+    if (acceptees.present) {
+      map['acceptees'] = Variable<int>(acceptees.value);
+    }
+    if (refusees.present) {
+      map['refusees'] = Variable<int>(refusees.value);
+    }
+    if (enAttenteDeDroit.present) {
+      map['en_attente_de_droit'] = Variable<int>(enAttenteDeDroit.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalSynchronisationCompanion(')
+          ..write('id: $id, ')
+          ..write('debutLe: $debutLe, ')
+          ..write('dureeMs: $dureeMs, ')
+          ..write('declencheur: $declencheur, ')
+          ..write('issue: $issue, ')
+          ..write('message: $message, ')
+          ..write('recues: $recues, ')
+          ..write('envoyees: $envoyees, ')
+          ..write('acceptees: $acceptees, ')
+          ..write('refusees: $refusees, ')
+          ..write('enAttenteDeDroit: $enAttenteDeDroit')
           ..write(')'))
         .toString();
   }
@@ -16605,7 +17258,7 @@ class $FicheJourneeTable extends FicheJournee
 class FicheJourneeRow extends DataClass implements Insertable<FicheJourneeRow> {
   final String id;
 
-  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','bovins'
+  /// 'goliaths','pintades','lapins','poulets','pondeuses','poissons-chats','escargots','ovins'
   final String espece;
   final DateTime date;
   final int achat;
@@ -26354,6 +27007,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CorbeilleTable corbeille = $CorbeilleTable(this);
   late final $DemandesReferentielTable demandesReferentiel =
       $DemandesReferentielTable(this);
+  late final $JournalSynchronisationTable journalSynchronisation =
+      $JournalSynchronisationTable(this);
   late final $EffetsAppliquesTable effetsAppliques = $EffetsAppliquesTable(
     this,
   );
@@ -26416,6 +27071,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     preferencesPoste,
     corbeille,
     demandesReferentiel,
+    journalSynchronisation,
     effetsAppliques,
     produitsVendables,
     mouvementsProduit,
@@ -29655,6 +30311,337 @@ typedef $$DemandesReferentielTableProcessedTableManager =
         >,
       ),
       DemandeReferentielRow,
+      PrefetchHooks Function()
+    >;
+typedef $$JournalSynchronisationTableCreateCompanionBuilder =
+    JournalSynchronisationCompanion Function({
+      Value<int> id,
+      required DateTime debutLe,
+      required int dureeMs,
+      required String declencheur,
+      required String issue,
+      required String message,
+      Value<int> recues,
+      Value<int> envoyees,
+      Value<int> acceptees,
+      Value<int> refusees,
+      Value<int> enAttenteDeDroit,
+    });
+typedef $$JournalSynchronisationTableUpdateCompanionBuilder =
+    JournalSynchronisationCompanion Function({
+      Value<int> id,
+      Value<DateTime> debutLe,
+      Value<int> dureeMs,
+      Value<String> declencheur,
+      Value<String> issue,
+      Value<String> message,
+      Value<int> recues,
+      Value<int> envoyees,
+      Value<int> acceptees,
+      Value<int> refusees,
+      Value<int> enAttenteDeDroit,
+    });
+
+class $$JournalSynchronisationTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalSynchronisationTable> {
+  $$JournalSynchronisationTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get debutLe => $composableBuilder(
+    column: $table.debutLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dureeMs => $composableBuilder(
+    column: $table.dureeMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get declencheur => $composableBuilder(
+    column: $table.declencheur,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get issue => $composableBuilder(
+    column: $table.issue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get recues => $composableBuilder(
+    column: $table.recues,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get envoyees => $composableBuilder(
+    column: $table.envoyees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get acceptees => $composableBuilder(
+    column: $table.acceptees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get refusees => $composableBuilder(
+    column: $table.refusees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get enAttenteDeDroit => $composableBuilder(
+    column: $table.enAttenteDeDroit,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$JournalSynchronisationTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalSynchronisationTable> {
+  $$JournalSynchronisationTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get debutLe => $composableBuilder(
+    column: $table.debutLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dureeMs => $composableBuilder(
+    column: $table.dureeMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get declencheur => $composableBuilder(
+    column: $table.declencheur,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get issue => $composableBuilder(
+    column: $table.issue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get recues => $composableBuilder(
+    column: $table.recues,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get envoyees => $composableBuilder(
+    column: $table.envoyees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get acceptees => $composableBuilder(
+    column: $table.acceptees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get refusees => $composableBuilder(
+    column: $table.refusees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get enAttenteDeDroit => $composableBuilder(
+    column: $table.enAttenteDeDroit,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$JournalSynchronisationTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalSynchronisationTable> {
+  $$JournalSynchronisationTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get debutLe =>
+      $composableBuilder(column: $table.debutLe, builder: (column) => column);
+
+  GeneratedColumn<int> get dureeMs =>
+      $composableBuilder(column: $table.dureeMs, builder: (column) => column);
+
+  GeneratedColumn<String> get declencheur => $composableBuilder(
+    column: $table.declencheur,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get issue =>
+      $composableBuilder(column: $table.issue, builder: (column) => column);
+
+  GeneratedColumn<String> get message =>
+      $composableBuilder(column: $table.message, builder: (column) => column);
+
+  GeneratedColumn<int> get recues =>
+      $composableBuilder(column: $table.recues, builder: (column) => column);
+
+  GeneratedColumn<int> get envoyees =>
+      $composableBuilder(column: $table.envoyees, builder: (column) => column);
+
+  GeneratedColumn<int> get acceptees =>
+      $composableBuilder(column: $table.acceptees, builder: (column) => column);
+
+  GeneratedColumn<int> get refusees =>
+      $composableBuilder(column: $table.refusees, builder: (column) => column);
+
+  GeneratedColumn<int> get enAttenteDeDroit => $composableBuilder(
+    column: $table.enAttenteDeDroit,
+    builder: (column) => column,
+  );
+}
+
+class $$JournalSynchronisationTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalSynchronisationTable,
+          EntreeJournalSynchro,
+          $$JournalSynchronisationTableFilterComposer,
+          $$JournalSynchronisationTableOrderingComposer,
+          $$JournalSynchronisationTableAnnotationComposer,
+          $$JournalSynchronisationTableCreateCompanionBuilder,
+          $$JournalSynchronisationTableUpdateCompanionBuilder,
+          (
+            EntreeJournalSynchro,
+            BaseReferences<
+              _$AppDatabase,
+              $JournalSynchronisationTable,
+              EntreeJournalSynchro
+            >,
+          ),
+          EntreeJournalSynchro,
+          PrefetchHooks Function()
+        > {
+  $$JournalSynchronisationTableTableManager(
+    _$AppDatabase db,
+    $JournalSynchronisationTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalSynchronisationTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$JournalSynchronisationTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$JournalSynchronisationTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> debutLe = const Value.absent(),
+                Value<int> dureeMs = const Value.absent(),
+                Value<String> declencheur = const Value.absent(),
+                Value<String> issue = const Value.absent(),
+                Value<String> message = const Value.absent(),
+                Value<int> recues = const Value.absent(),
+                Value<int> envoyees = const Value.absent(),
+                Value<int> acceptees = const Value.absent(),
+                Value<int> refusees = const Value.absent(),
+                Value<int> enAttenteDeDroit = const Value.absent(),
+              }) => JournalSynchronisationCompanion(
+                id: id,
+                debutLe: debutLe,
+                dureeMs: dureeMs,
+                declencheur: declencheur,
+                issue: issue,
+                message: message,
+                recues: recues,
+                envoyees: envoyees,
+                acceptees: acceptees,
+                refusees: refusees,
+                enAttenteDeDroit: enAttenteDeDroit,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime debutLe,
+                required int dureeMs,
+                required String declencheur,
+                required String issue,
+                required String message,
+                Value<int> recues = const Value.absent(),
+                Value<int> envoyees = const Value.absent(),
+                Value<int> acceptees = const Value.absent(),
+                Value<int> refusees = const Value.absent(),
+                Value<int> enAttenteDeDroit = const Value.absent(),
+              }) => JournalSynchronisationCompanion.insert(
+                id: id,
+                debutLe: debutLe,
+                dureeMs: dureeMs,
+                declencheur: declencheur,
+                issue: issue,
+                message: message,
+                recues: recues,
+                envoyees: envoyees,
+                acceptees: acceptees,
+                refusees: refusees,
+                enAttenteDeDroit: enAttenteDeDroit,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$JournalSynchronisationTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalSynchronisationTable,
+      EntreeJournalSynchro,
+      $$JournalSynchronisationTableFilterComposer,
+      $$JournalSynchronisationTableOrderingComposer,
+      $$JournalSynchronisationTableAnnotationComposer,
+      $$JournalSynchronisationTableCreateCompanionBuilder,
+      $$JournalSynchronisationTableUpdateCompanionBuilder,
+      (
+        EntreeJournalSynchro,
+        BaseReferences<
+          _$AppDatabase,
+          $JournalSynchronisationTable,
+          EntreeJournalSynchro
+        >,
+      ),
+      EntreeJournalSynchro,
       PrefetchHooks Function()
     >;
 typedef $$EffetsAppliquesTableCreateCompanionBuilder =
@@ -41931,6 +42918,11 @@ class $AppDatabaseManager {
       $$CorbeilleTableTableManager(_db, _db.corbeille);
   $$DemandesReferentielTableTableManager get demandesReferentiel =>
       $$DemandesReferentielTableTableManager(_db, _db.demandesReferentiel);
+  $$JournalSynchronisationTableTableManager get journalSynchronisation =>
+      $$JournalSynchronisationTableTableManager(
+        _db,
+        _db.journalSynchronisation,
+      );
   $$EffetsAppliquesTableTableManager get effetsAppliques =>
       $$EffetsAppliquesTableTableManager(_db, _db.effetsAppliques);
   $$ProduitsVendablesTableTableManager get produitsVendables =>

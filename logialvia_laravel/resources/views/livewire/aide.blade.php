@@ -7,7 +7,7 @@
     <p class="mb-sm text-caption font-semibold uppercase text-outline">Modules du logiciel</p>
     <div class="mb-lg grid grid-cols-2 gap-md md:grid-cols-4" data-section="modules">
         @foreach ($vignettes as $v)
-            <a href="{{ $v['route'] }}" class="rounded-lg border border-outline-variant bg-surface-card p-md text-center text-xs font-bold hover:bg-surface-zebra" data-vignette="{{ $v['route'] }}">
+            <a wire:navigate.hover href="{{ $v['route'] }}" class="rounded-lg border border-outline-variant bg-surface-card p-md text-center text-xs font-bold hover:bg-surface-zebra" data-vignette="{{ $v['route'] }}">
                 {{ $v['libelle'] }}
             </a>
         @endforeach
@@ -36,6 +36,6 @@
         <p class="text-xs text-outline">{{ $description }}</p>
         <p class="mt-xs text-caption text-outline">{{ $mention }}</p>
         <p class="mt-xs text-xs font-bold text-brand-navy">Version {{ $version }}</p>
-        <p class="mt-sm text-caption text-outline">Éditeur : FAGUEZ SARL — <a href="/contact" class="font-semibold text-brand-navy underline">Contactez l'éditeur</a></p>
+        <p class="mt-sm text-caption text-outline">Éditeur : FAGUEZ SARL — <a wire:navigate.hover href="/contact" class="font-semibold text-brand-navy underline">Contactez l'éditeur</a></p>
     </section>
 </div>

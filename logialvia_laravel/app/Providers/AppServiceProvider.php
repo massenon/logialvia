@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Navigation sans rechargement (wire:navigate) : si un deploiement change les fichiers du build, la page
+        // suivante est chargee en entier au lieu de melanger d'anciens et de nouveaux fichiers.
+        \Illuminate\Support\Facades\Vite::useScriptTagAttributes(['data-navigate-track' => 'reload']);
+        \Illuminate\Support\Facades\Vite::useStyleTagAttributes(['data-navigate-track' => 'reload']);
+
         // Un compte desactive ne garde pas la main sur une page deja ouverte : chaque appel Livewire
         // repasse par la verification du compte (`CompteActifWeb`, doc 47u).
         \Livewire\Livewire::addPersistentMiddleware([\App\Http\Middleware\CompteActifWeb::class]);

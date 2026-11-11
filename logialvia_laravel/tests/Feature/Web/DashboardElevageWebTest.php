@@ -245,7 +245,7 @@ class DashboardElevageWebTest extends TestCase
     /** Le morceau de HTML de la carte d'une filiere. */
     private function carte(string $html, string $espece): string
     {
-        $this->assertSame(1, preg_match('#<a href="[^"]*" data-filiere="'.$espece.'".*?</a>#s', $html, $m), "carte $espece");
+        $this->assertSame(1, preg_match('#<a (?:wire:navigate\.hover )?href="[^"]*" data-filiere="'.$espece.'".*?</a>#s', $html, $m), "carte $espece");
 
         return $m[0];
     }

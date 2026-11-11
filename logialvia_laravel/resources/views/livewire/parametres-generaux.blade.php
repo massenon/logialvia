@@ -6,10 +6,10 @@
         </div>
         @can('manage-users')
             <div class="flex gap-sm">
-                <a href="{{ route('audit') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
+                <a wire:navigate.hover href="{{ route('audit') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
                     Journal d'Audit
                 </a>
-                <a href="{{ route('postes') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
+                <a wire:navigate.hover href="{{ route('postes') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
                     Postes &amp; Appairage
                 </a>
             </div>
@@ -189,8 +189,8 @@
                 <section class="rounded-lg border border-outline-variant bg-surface-card p-md">
                     <h2 class="mb-sm text-section-title font-bold">Logo / Favicon</h2>
                     <p class="text-xs text-outline">
-                        Le poste ne permet pas non plus de déposer le logo ni le favicon (le dépôt viendra avec le module d'impression, Doc E9) :
-                    le web ne l'offre donc pas non plus, et le fichier choisi sur un poste est un chemin propre à cette machine.
+                        Le logo et le favicon se renseignent au poste (Paramètres Généraux &gt; Logo / Favicon) : le fichier est copié dans le dossier
+                        du poste et reste propre à cette machine. Le web ne les offre donc pas : ils ne sont pas synchronisés avec le serveur.
                     </p>
                 </section>
             </fieldset>
@@ -258,7 +258,7 @@
             <h2 class="mb-sm text-section-title font-bold">Appairage</h2>
             @can('manage-users')
                 <p class="mb-md text-xs text-outline">Les postes connus du serveur, leur état et la révocation de leur appairage.</p>
-                <a href="{{ route('postes') }}" class="inline-block rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
+                <a wire:navigate.hover href="{{ route('postes') }}" class="inline-block rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
                     Ouvrir Postes &amp; Appairage
                 </a>
             @else

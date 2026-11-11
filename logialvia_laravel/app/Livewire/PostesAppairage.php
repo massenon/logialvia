@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\Poste;
+use App\Services\DemandesSynchronisationService;
 use App\Services\PostesService;
 use App\Sync\DroitsPoste;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -22,6 +24,9 @@ class PostesAppairage extends Component
 
     /** Identifiant (UUID) du poste dont on demande la revocation ; `null` = modale fermee. */
     public ?string $posteAConfirmer = null;
+
+    /** Poste dont on demande le renvoi COMPLET ; `'*'` = tous les postes appaires ; `null` = modale fermee. */
+    public ?string $renvoiAConfirmer = null;
 
     public ?string $message = null;
 
@@ -41,6 +46,73 @@ class PostesAppairage extends Component
     public function annuler(): void
     {
         $this->posteAConfirmer = null;
+        $this->renvoiAConfirmer = null;
+    }
+
+    /** Recharge la liste (l'etat des postes se lit a chaque rendu : il suffit de rendre de nouveau). */
+    public function actualiser(): void
+    {
+        $this->verifierDroit();
+
+        $this->message = 'Liste des postes actualisée.';
+    }
+
+    /**
+     * « Synchroniser maintenant » : un poste (`device_id`) ou tous (`null`). Le poste interroge le serveur toutes les
+     * 30 s : il synchronise sous 30 s s'il est joignable. Meme service que `POST /api/parametres/postes/synchroniser`.
+     */
+    public function demander(DemandesSynchronisationService $demandes, ?string $deviceId = null): void
+    {
+        $this->verifierDroit();
+
+        if ($deviceId === null) {
+            $demandes->demander(Auth::user(), null);
+            $this->message = 'Synchronisation demandée à tous les postes (ils synchronisent sous 30 secondes).';
+
+            return;
+        }
+
+        $poste = Poste::query()->where('device_id', $deviceId)->first();
+        if ($poste === null) {
+            $this->message = 'Poste inconnu.';
+
+            return;
+        }
+        $demandes->demander(Auth::user(), $deviceId);
+        $this->message = "Synchronisation demandée au poste {$poste->code} (il synchronise sous 30 secondes).";
+    }
+
+    /** Ouvre la confirmation d'un renvoi COMPLET (`'*'` = tous les postes appaires). */
+    public function demanderRenvoi(string $deviceId): void
+    {
+        $this->verifierDroit();
+
+        $this->message = null;
+        $this->renvoiAConfirmer = $deviceId === '*' || Poste::query()->where('device_id', $deviceId)->exists() ? $deviceId : null;
+    }
+
+    public function confirmerRenvoi(DemandesSynchronisationService $demandes): void
+    {
+        $this->verifierDroit();
+
+        $cible = $this->renvoiAConfirmer;
+        $this->renvoiAConfirmer = null;
+        if ($cible === null) {
+            return;
+        }
+
+        $postes = $cible === '*'
+            ? Poste::query()->whereNull('revoque_le')->get()
+            : Poste::query()->where('device_id', $cible)->get();
+        foreach ($postes as $poste) {
+            $demandes->renvoyer(Auth::user(), $poste->device_id);
+        }
+
+        $this->message = $postes->isEmpty()
+            ? 'Poste inconnu.'
+            : ($cible === '*'
+                ? 'Renvoi complet demandé à tous les postes : chacun repartira d\'un tirage complet à son prochain contact.'
+                : "Renvoi complet demandé au poste {$postes->first()->code} : il repartira d'un tirage complet à son prochain contact.");
     }
 
     public function confirmerRevocation(PostesService $postes): void
@@ -102,7 +174,28 @@ class PostesAppairage extends Component
             $droits[$poste->id] = $this->droitsDe($poste);
         }
 
+        // Ce qui attend un poste : une demande de synchronisation valide non servie, un renvoi complet non acquitte.
+        $attente = [];
+        foreach ($postes as $poste) {
+            $demandeEnAttente = DB::table('demandes_synchronisation as d')
+                ->where('d.expire_le', '>', now())
+                ->where(fn ($q) => $q->whereNull('d.device_id')->orWhere('d.device_id', $poste->device_id))
+                ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                    ->from('demandes_synchronisation_servies as s')
+                    ->whereColumn('s.demande_id', 'd.id')
+                    ->where('s.device_id', $poste->device_id))
+                ->exists();
+            $attente[$poste->id] = [
+                'demande' => $demandeEnAttente,
+                'renvoi' => $poste->resync_demandee_le !== null,
+            ];
+        }
+
         return view('livewire.postes-appairage', [
+            'attente' => $attente,
+            'renvoiCible' => $this->renvoiAConfirmer === '*'
+                ? 'tous'
+                : ($this->renvoiAConfirmer ? Poste::query()->where('device_id', $this->renvoiAConfirmer)->value('code') : null),
             'postes' => $postes,
             'droits' => $droits,
             'aConfirmer' => $this->posteAConfirmer

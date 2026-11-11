@@ -127,6 +127,27 @@ class PreferencesPosteRepository {
   }
 
   /// Code attribué par le serveur à l'appairage (`P1`, `P2`… : DV-21).
+  /// Intervalles proposés pour la synchronisation automatique, en minutes.
+  static const List<int> intervallesSynchroMinutes = [1, 2, 5, 10, 15, 30];
+
+  static const int intervalleSynchroParDefaut = 5;
+
+  /// Synchro automatique : toutes les N minutes (5 par défaut). Une valeur
+  /// inconnue (base modifiée à la main) retombe sur la valeur par défaut.
+  Future<int> intervalleSynchroMinutes() async {
+    final valeur = int.tryParse(await _lire('sync.intervalle_minutes') ?? '');
+    return intervallesSynchroMinutes.contains(valeur)
+        ? valeur!
+        : intervalleSynchroParDefaut;
+  }
+
+  Future<void> definirIntervalleSynchroMinutes(int minutes) {
+    if (!intervallesSynchroMinutes.contains(minutes)) {
+      throw ArgumentError.value(minutes, 'minutes', 'intervalle non proposé');
+    }
+    return _ecrire('sync.intervalle_minutes', '$minutes');
+  }
+
   Future<String?> codePoste() => _lire(_cleCodePoste);
 
   /// Code attribué une fois pour toutes par le serveur (`P1`, `P2`…), conservé

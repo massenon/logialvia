@@ -138,8 +138,8 @@ void main() {
     return total;
   }
 
-  test('la version du schéma est la 51 et plus aucune ligne ne dit bovins', () async {
-    expect(AppDatabase.versionSchema, 51);
+  test('la version du schéma est au moins la 51 et plus aucune ligne ne dit bovins', () async {
+    expect(AppDatabase.versionSchema, greaterThanOrEqualTo(51));
     final moi = await baseV50();
     final db = AppDatabase.pourFichier(fichier);
     expect(await restantsBovins(db), 0);

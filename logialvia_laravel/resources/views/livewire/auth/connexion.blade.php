@@ -12,17 +12,17 @@
         {{-- Marque --}}
         <div class="flex flex-col items-center gap-1 text-center">
             <div class="flex items-center gap-2">
-                <span class="icone text-[38px] text-brand-navy">&#xeacc;</span>
+                <span class="icone text-[48px] text-brand-navy">&#xeacc;</span>
                 <div class="flex flex-col items-start leading-none">
-                    <span class="text-[22px] font-black tracking-tight text-brand-navy">Logi<span class="text-brand-gold">ALVIA</span></span>
-                    <span class="mt-0.5 text-caption font-extrabold uppercase tracking-widest text-brand-navy">ALLMANY ET COMPAGNIE</span>
+                    <span class="text-[30px] font-black tracking-tight text-brand-navy">Logi<span class="text-brand-gold">ALVIA</span></span>
+                    <span class="mt-0.5 text-xs font-extrabold uppercase tracking-widest text-brand-navy">ALLMANY ET COMPAGNIE</span>
                 </div>
             </div>
-            <p class="w-full border-t border-brand-navy/10 pt-1 text-caption font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
+            <p class="w-full border-t border-brand-navy/10 pt-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
         </div>
 
         <div>
-            <h2 class="text-page-title font-bold leading-tight text-brand-navy">Bienvenue !</h2>
+            <h2 class="text-kpi-value font-bold leading-tight text-brand-navy">Bienvenue !</h2>
             <p class="text-xs text-outline">Connectez-vous à votre espace LogiALVIA.</p>
         </div>
 
@@ -35,24 +35,24 @@
 
         <form wire:submit="connecter" class="space-y-4" novalidate>
             <div>
-                <label for="identifiant" class="mb-1 block text-caption font-bold tracking-wider text-brand-navy">NOM D'UTILISATEUR OU EMAIL</label>
+                <label for="identifiant" class="mb-1.5 block text-xs font-bold tracking-wider text-brand-navy">NOM D'UTILISATEUR OU EMAIL</label>
                 <div class="relative">
-                    <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xf0d3;</span>
+                    <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-outline">&#xf0d3;</span>
                     <input id="identifiant" type="text" wire:model="identifiant" autocomplete="username" autofocus placeholder="Entrez votre nom d'utilisateur"
-                           class="h-11 w-full rounded-lg border border-outline-variant py-2.5 pl-11 pr-4 text-xs outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('identifiant') border-error-deep bg-error-container @enderror">
+                           class="h-[52px] w-full rounded-lg border border-outline-variant py-2.5 pl-12 pr-4 text-section-title outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('identifiant') border-error-deep bg-error-container @enderror">
                 </div>
                 @error('identifiant') <p class="mt-0.5 text-invalid text-error-deep">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="password" class="mb-1 block text-caption font-bold tracking-wider text-brand-navy">MOT DE PASSE</label>
+                <label for="password" class="mb-1.5 block text-xs font-bold tracking-wider text-brand-navy">MOT DE PASSE</label>
                 <div class="relative">
-                    <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-outline">&#xe899;</span>
+                    <span class="icone absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-outline">&#xe899;</span>
                     <input id="password" wire:model="password" autocomplete="current-password" placeholder="Entrez votre mot de passe" x-bind:type="voir ? 'text' : 'password'" type="password"
-                           class="h-11 w-full rounded-lg border border-outline-variant py-2.5 pl-11 pr-11 text-xs outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('password') border-error-deep bg-error-container @enderror">
+                           class="h-[52px] w-full rounded-lg border border-outline-variant py-2.5 pl-12 pr-12 text-section-title outline-none focus:border-brand-navy focus:ring-2 focus:ring-brand-navy @error('password') border-error-deep bg-error-container @enderror">
                     <button type="button" @click="voir = !voir" x-bind:aria-label="voir ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-brand-navy">
-                        <span class="icone text-[18px]" x-text="voir ? '' : ''">&#xe8f4;</span>
+                        <span class="icone text-[20px]" x-text="voir ? '' : ''">&#xe8f4;</span>
                     </button>
                 </div>
                 @error('password') <p class="mt-0.5 text-invalid text-error-deep">{{ $message }}</p> @enderror
@@ -67,13 +67,13 @@
             </div>
 
             <button type="submit" wire:loading.attr="disabled"
-                    class="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-navy text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-brand-navy-dark active:scale-[0.98] disabled:opacity-50">
-                <span class="icone text-[16px]">&#xe898;</span><span>Se connecter</span>
+                    class="flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-brand-navy text-section-title font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-brand-navy-dark active:scale-[0.98] disabled:opacity-50">
+                <span class="icone text-[20px]">&#xe898;</span><span>Se connecter</span>
             </button>
         </form>
     </div>
 
-    <div class="mt-6 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-caption text-outline">
+    <div class="mt-8 flex items-center justify-center border-t border-outline-variant pt-4 text-center text-xs text-outline">
         <span>© 2026 LogiAgriERP — (PAEB)/Cabinet FAGUEZ SARL — Conçu par Dr MASSENON Rhodes</span>
     </div>
 

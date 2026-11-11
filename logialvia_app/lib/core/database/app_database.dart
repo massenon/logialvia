@@ -43,6 +43,7 @@ import '../../elevage/data/tables/parametres_elevage_tables.dart';
 import '../../elevage/data/tables/soins_calendrier_table.dart';
 import '../../elevage/data/sync/identifiants_parametres_elevage.dart';
 import '../sync/identifiant_poste.dart';
+import '../sync/journal_synchronisation_table.dart';
 import '../../administration/data/tables/demandes_referentiel_table.dart';
 import '../../comptabilite/data/migration/migration_plan_syscohada.dart';
 import '../../elevage/data/migration/migration_bovins_vers_ovins.dart';
@@ -75,6 +76,8 @@ part 'app_database.g.dart';
     Roles, Utilisateurs, PermissionsRole, AuditLogs, SecurityLogs, ModulesActifs,
     ParametresEntreprise, MessagesEditeur, PreferencesPoste, Corbeille,
     DemandesReferentiel,
+    // Journal des tentatives de synchronisation de CE poste (jamais synchronisé)
+    JournalSynchronisation,
     // Effets de stock délégués par le web (`47s_`)
     EffetsAppliques,
     // Commercial
@@ -108,7 +111,7 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// Le controle d'une sauvegarde a besoin de savoir jusqu'ou ce logiciel sait
   /// lire, et il a lieu avant toute ouverture de base.
-  static const int versionSchema = 51;
+  static const int versionSchema = 52;
 
   @override
   int get schemaVersion => versionSchema;
@@ -519,6 +522,11 @@ class AppDatabase extends _$AppDatabase {
         // en une transaction, avec les identifiants deterministes recalcules (le serveur les
         // verifie). Idempotente : rejouee, elle ne trouve plus rien a renommer.
         await MigrationBovinsVersOvins(this).executer();
+      }
+      if (from < 52) {
+        // Journal des tentatives de synchronisation du poste : table locale neuve.
+        // Idempotente : rejouée, la table existe déjà.
+        await _creerTable(m, journalSynchronisation);
       }
     },
     beforeOpen: (details) async {

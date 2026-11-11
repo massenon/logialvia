@@ -6,12 +6,16 @@ import '../../domain/entities/parametres_entreprise.dart';
 import '../../domain/entities/role_utilisateur.dart';
 import '../../domain/entities/utilisateur.dart';
 import '../../domain/repositories/parametres_repository.dart';
+import '../../domain/services/service_images_entreprise.dart';
 
 /// Paramètres Généraux — Doc F8, 4 onglets.
 class ParametresGenerauxViewModel extends ChangeNotifier {
-  ParametresGenerauxViewModel(this._repository);
+  ParametresGenerauxViewModel(this._repository, [this._images]);
 
   final ParametresRepository _repository;
+
+  /// Reçoit le logo et le favicon ; absent dans les tests qui n'en parlent pas.
+  final ServiceImagesEntreprise? _images;
 
   bool _chargement = true;
   bool get chargement => _chargement;
@@ -68,6 +72,38 @@ class ParametresGenerauxViewModel extends ChangeNotifier {
       if (kDebugMode) debugPrint('Echec enregistrement parametres: $e');
       return const Echec('Impossible d\'enregistrer les paramètres.');
     }
+  }
+
+  /// Valide le fichier indiqué, le copie dans le dossier du poste et le retient
+  /// comme logo ou favicon (enregistré au bouton « Enregistrer les
+  /// Modifications », comme le reste).
+  Future<Resultat<void>> importerImage(
+    TypeImageEntreprise type,
+    String cheminSaisi,
+  ) async {
+    final service = _images;
+    if (service == null) {
+      return const Echec('Le dépôt d\'image n\'est pas disponible.');
+    }
+    final resultat = await service.importer(type, cheminSaisi);
+    switch (resultat) {
+      case Echec<String>(:final message):
+        return Echec(message);
+      case Succes<String>(:final valeur):
+        _parametres = type == TypeImageEntreprise.logo
+            ? _parametres.copyWith(cheminLogo: valeur)
+            : _parametres.copyWith(cheminFavicon: valeur);
+        notifyListeners();
+        return const Succes(null);
+    }
+  }
+
+  /// Retire le logo ou le favicon (effectif à l'enregistrement).
+  void retirerImage(TypeImageEntreprise type) {
+    _parametres = type == TypeImageEntreprise.logo
+        ? _parametres.copyWith(cheminLogo: null)
+        : _parametres.copyWith(cheminFavicon: null);
+    notifyListeners();
   }
 
   /// BR-ADM-004 — la bascule MeCeF est refusée tant que IFU et RCCM manquent.

@@ -1,7 +1,10 @@
 import '../../../core/widgets/auteur_courant.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/app_database.dart';
@@ -21,11 +24,16 @@ import '../../domain/repositories/parametres_repository.dart';
 import '../../../commercial/domain/services/transmission_mecef.dart';
 import '../../../core/sync/planificateur_synchronisation.dart';
 import '../../../core/sync/service_appairage.dart';
+import '../../../core/sync/depot_etat_synchronisation.dart';
+import '../../../core/sync/depot_journal_synchronisation.dart';
 import '../viewmodels/appairage_view_model.dart';
+import '../viewmodels/synchronisation_view_model.dart';
+import 'widgets/onglet_synchronisation.dart';
 import '../viewmodels/modules_actifs_view_model.dart';
 import '../viewmodels/parametres_generaux_view_model.dart';
 import '../../data/seed/seed_demonstration.dart';
 import '../../domain/services/service_archivage.dart';
+import '../../domain/services/service_images_entreprise.dart';
 import '../../domain/services/service_reinitialisation.dart';
 import '../../domain/services/service_sauvegarde.dart';
 import '../viewmodels/corbeille_view_model.dart';
@@ -47,6 +55,13 @@ class PageParametresGeneraux extends StatelessWidget {
         ChangeNotifierProvider<ParametresGenerauxViewModel>(
           create: (context) => ParametresGenerauxViewModel(
             ParametresRepositoryDrift(context.read<AppDatabase>()),
+            // Logo et favicon : copiés dans le dossier de données du poste.
+            ServiceImagesEntreprise(
+              () async => Directory(
+                '${(await getApplicationSupportDirectory()).path}'
+                '${Platform.pathSeparator}images',
+              ),
+            ),
           )..charger(),
         ),
         // Corbeille et Donnees de Test partagent un ViewModel : les deux
@@ -66,6 +81,19 @@ class PageParametresGeneraux extends StatelessWidget {
             ServiceSauvegarde(
               context.read<AppDatabase>(),
               context.read<DossierDocuments>().dossier,
+            ),
+          )..charger(),
+        ),
+        // Synchronisation : journal des tentatives, refuses, coherence locale.
+        ChangeNotifierProvider<SynchronisationViewModel>(
+          create: (context) => SynchronisationViewModel(
+            context.read<PlanificateurSynchronisation>(),
+            DepotJournalSynchronisation(context.read<AppDatabase>()),
+            DepotEtatSynchronisation(context.read<AppDatabase>()),
+            Directory(
+              '${context.read<DossierDocuments>().dossier.path}'
+              '${Platform.pathSeparator}LogiALVIA'
+              '${Platform.pathSeparator}Journal',
             ),
           )..charger(),
         ),
@@ -100,6 +128,7 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
     'Gestion Utilisateurs',
     'Modes de Paiement',
     'Appairage',
+    'Synchronisation',
     'Sauvegardes',
     'Corbeille',
     'Données de Test',
@@ -150,8 +179,9 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
             2 => _OngletUtilisateurs(vm: vm),
             3 => const _OngletModesPaiement(),
             4 => const OngletAppairage(),
-            5 => const OngletSauvegardes(),
-            6 => const OngletCorbeille(),
+            5 => const OngletSynchronisation(),
+            6 => const OngletSauvegardes(),
+            7 => const OngletCorbeille(),
             _ => const OngletDonneesTest(),
           },
         ],
@@ -708,21 +738,12 @@ class _OngletEntreprise extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        // ECART_DELIBERE : les 2 zones de depot Logo/Favicon (F8 Onglet 2) ne
-        // sont pas reproduites. Elles supposent un selecteur de fichier et la
-        // validation stricte de Doc I3 §2 (type reel verifie par signature,
-        // taille max, nom regenere). Les afficher sans cette chaine complete
-        // donnerait une zone de depot inerte. TODO(dette): implementer avec
-        // Doc E9 (impression), seul consommateur reel du logo.
-        const CarteSection(
+        // Logo / Favicon (F8 Onglet 2) : un champ de saisie du chemin par image ;
+        // le fichier est validé (type reel, taille) puis COPIE dans le dossier du
+        // poste — voir `ServiceImagesEntreprise` (Doc I3 §2).
+        CarteSection(
           titre: 'Logo / Favicon',
-          child: EtatVide(
-            message:
-                'Le dépôt de logo sera disponible avec le module d\'impression '
-                '(Doc E9), seul consommateur de ces images. Il exige une '
-                'validation stricte du fichier (Doc I3 §2) qui n\'aurait aucun '
-                'effet visible tant qu\'aucun document n\'est généré.',
-          ),
+          child: _ImagesEntreprise(vm: vm),
         ),
         const SizedBox(height: AppSpacing.md),
         AppButton(
@@ -1171,6 +1192,175 @@ class _JetonMecefState extends State<_JetonMecef> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Zone « Logo / Favicon » : saisie du chemin du fichier, « Importer »,
+/// aperçu, « Retirer ».
+class _ImagesEntreprise extends StatelessWidget {
+  const _ImagesEntreprise({required this.vm});
+
+  final ParametresGenerauxViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = vm.parametres;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LigneImage(
+          vm: vm,
+          type: TypeImageEntreprise.logo,
+          titre: 'Logo de l\'entreprise',
+          note: 'PNG, JPG ou WebP, 2 Mo au maximum.',
+          chemin: p.cheminLogo,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _LigneImage(
+          vm: vm,
+          type: TypeImageEntreprise.favicon,
+          titre: 'Favicon (icône)',
+          note: 'PNG, ICO, JPG ou WebP, carré, 512 Ko au maximum.',
+          chemin: p.cheminFavicon,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        const Text(
+          'Copiez le chemin du fichier (Explorateur : clic droit > « Copier en '
+          'tant que chemin d\'accès ») et collez-le dans le champ. Le fichier '
+          'est copié dans le dossier du poste : il peut ensuite être déplacé ou '
+          'supprimé. Ces images restent propres à ce poste (elles ne sont pas '
+          'synchronisées avec le serveur).',
+          style: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            fontSize: 11,
+            color: AppColors.outline,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LigneImage extends StatefulWidget {
+  const _LigneImage({
+    required this.vm,
+    required this.type,
+    required this.titre,
+    required this.note,
+    required this.chemin,
+  });
+
+  final ParametresGenerauxViewModel vm;
+  final TypeImageEntreprise type;
+  final String titre;
+  final String note;
+  final String? chemin;
+
+  @override
+  State<_LigneImage> createState() => _LigneImageState();
+}
+
+class _LigneImageState extends State<_LigneImage> {
+  final TextEditingController _saisie = TextEditingController();
+  bool _enCours = false;
+
+  @override
+  void dispose() {
+    _saisie.dispose();
+    super.dispose();
+  }
+
+  Future<void> _importer() async {
+    setState(() => _enCours = true);
+    final resultat = await widget.vm.importerImage(widget.type, _saisie.text);
+    if (!mounted) return;
+    setState(() => _enCours = false);
+    switch (resultat) {
+      case Succes<void>():
+        _saisie.clear();
+        showAppToast(
+          context,
+          '${widget.titre} importé : pensez à « Enregistrer les Modifications ».',
+          type: ToastType.success,
+        );
+      case Echec<void>(:final message):
+        showAppToast(context, message, type: ToastType.error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chemin = widget.chemin;
+    final existe = chemin != null && File(chemin).existsSync();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.titre.toUpperCase(), style: AppTypography.label),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              margin: const EdgeInsets.only(right: AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceZebra,
+                borderRadius: AppRadius.cardRadius,
+                border: Border.all(color: AppColors.outlineVariant),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: existe
+                  ? Image.file(
+                      File(chemin),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Symbols.broken_image,
+                        color: AppColors.outline,
+                      ),
+                    )
+                  : const Icon(Symbols.image, color: AppColors.outline),
+            ),
+            Expanded(
+              child: TextField(
+                controller: _saisie,
+                onSubmitted: (_) => _importer(),
+                style: _style,
+                decoration: _decoration.copyWith(
+                  hintText: r'C:\Images\mon-fichier.png',
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            AppButton(
+              label: 'Importer',
+              icon: Symbols.upload,
+              variant: AppButtonVariant.outline,
+              onPressed: _enCours ? null : _importer,
+            ),
+            if (chemin != null) ...[
+              const SizedBox(width: AppSpacing.sm),
+              AppButton(
+                label: 'Retirer',
+                icon: Symbols.delete,
+                variant: AppButtonVariant.outline,
+                onPressed: () => widget.vm.retirerImage(widget.type),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          widget.note,
+          style: const TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            fontSize: 11,
+            color: AppColors.outline,
+          ),
+        ),
+      ],
     );
   }
 }
