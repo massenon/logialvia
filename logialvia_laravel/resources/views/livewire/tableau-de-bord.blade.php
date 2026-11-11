@@ -1,178 +1,341 @@
 @php
-    $nb = fn ($v) => number_format($v, 0, ',', ' ');
-    // Cartes grisees : donnees absentes du serveur (declarees, jamais inventees). [libelle, droit requis, raison]
-    $surLePoste = [
-        ['Trésorerie', $voirComptabilite, 'Le solde de caisse se lit sur le poste (comptabilité).'],
-        ['Dépenses', $voirAchats, 'Les dépenses se lisent sur le poste (achats et comptabilité).'],
-        ['Résultat Net', $voirComptabilite, 'Il dépend des dépenses de la période, propres au poste.'],
-        ['Stock Critique', $voirStocks, 'Le stock est propre à chaque poste.'],
-        ['Effectif Cheptel', $voirElevage, 'Les journées d\'élevage restent sur le poste.'],
-        ['Cycles Couveuse en Cours', $voirElevage, 'Les cycles de couveuse restent sur le poste.'],
-    ];
+    /* Tableau de bord : transcrit de dashboard.html (structure, classes, tailles) et de dashboard_screen.dart (donnees). */
+    $nb = fn ($v) => number_format((float) $v, 0, ',', ' ');
+    $tresorerie ??= null; $depenses ??= null; $resultatNet ??= null; $stockCritique ??= null; $cheptel ??= null;
+    $couveuse ??= null; $filieres ??= []; $alertes ??= []; $jours ??= []; $moisDepenses ??= []; $activites ??= [];
+    $transactions ??= ['ventes' => [], 'achats' => [], 'depenses' => []];
+
+    /* Export (Dart `_exports`) : ouvre l'ecran qui porte le PDF ; seuls les ecrans permis au compte sont proposes. */
+    $exports = array_values(array_filter([
+        ['État des Stocks', '/stocks'], ['État du Cycle d\'Élevage', '/elevage/dashboard'], ['État des Cycles de Couveuse', '/elevage/couveuse'],
+        ['État des Recettes et Dépenses', '/rapports'], ['État des Créances et Avances', '/clients'], ['Rapport Mensuel de Synthèse', '/rapports'],
+    ], fn ($e) => \App\Support\Navigation::accessible(auth()->user(), $e[1])));
+    $pourcent = fn ($v) => $v === null ? '—' : rtrim(rtrim(number_format($v, 1, ',', ' '), '0'), ',').' %';
+
+    /* Courbe CA vs Depenses : 6 derniers mois, echelle commune. */
+    $courbe = null;
+    if ($voirVentes) {
+        $depParMois = collect($moisDepenses)->pluck('depenses', 'cle');
+        $maxC = max(1, ...array_column($mois, 'ca'), ...($depenses !== null ? array_map(fn ($m) => (float) ($depParMois[$m['cle']] ?? 0), $mois) : [0]));
+        $x0 = 40; $x1 = 580; $yh = 10; $yb = 190;
+        $pas = count($mois) > 1 ? ($x1 - $x0 - 60) / (count($mois) - 1) : 0;
+        $pt = fn ($i, $v) => [round($x0 + 30 + $i * $pas, 1), round($yb - ($v / ($maxC * 1.15)) * ($yb - $yh), 1)];
+        $pointsCa = []; $pointsDep = [];
+        foreach ($mois as $i => $m) {
+            $pointsCa[] = $pt($i, $m['ca']) + [2 => $m];
+            $pointsDep[] = $pt($i, (float) ($depParMois[$m['cle']] ?? 0));
+        }
+        $courbe = ['ca' => $pointsCa, 'dep' => $pointsDep];
+    }
+
+    /* Barres : 6 derniers jours. */
+    $maxJ = max(1, ...array_map(fn ($j) => max($j['ca'], $j['depenses']), $jours ?: [['ca' => 0, 'depenses' => 0]]));
+    $depSemaine = array_sum(array_column($jours, 'depenses'));
+    $carte = 'rounded-lg border border-outline-variant bg-white p-md shadow-sm';
 @endphp
-<div>
-    <div class="mb-md flex flex-wrap items-start justify-between gap-sm">
-        <div>
-            <h1 class="text-page-title font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }}</h1>
-            <p class="text-caption text-outline">Rapport généré le {{ $maintenant->format('d/m/Y') }} à {{ $maintenant->format('H:i') }} · ALLMANY ET COMPAGNIE</p>
+<div x-data="{ onglet: 'ventes' }">
+    <div class="mb-lg flex flex-col gap-md">
+        <div class="flex flex-wrap items-center justify-between gap-sm">
+            <div>
+                <h2 class="text-xl font-bold text-brand-navy" data-titre="bienvenue">Bienvenue, {{ auth()->user()->name }} 👋</h2>
+                <p class="text-xs text-outline">Rapport généré le {{ $maintenant->format('d/m/Y') }} à {{ $maintenant->format('H:i') }} · ALLMANY ET COMPAGNIE</p>
+            </div>
+            <div class="flex items-center gap-xs">
+                @if ($voirVentes)
+                    <a href="/ventes" class="flex items-center gap-xs rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
+                        <x-icone nom="point_of_sale" class="text-[16px]" />Enregistrer une Vente
+                    </a>
+                @endif
+                @if ($voirElevage)
+                    <a href="/elevage/dashboard" class="flex items-center gap-xs rounded-full border border-outline-variant bg-white px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
+                        <x-icone nom="monitoring" class="text-[16px]" />Dashboard Élevage
+                    </a>
+                @endif
+            </div>
         </div>
-        <div class="flex flex-wrap gap-sm">
+
+        @if ($voirVentes)
+            <div class="flex flex-col items-stretch gap-sm rounded-lg border border-outline-variant bg-white p-sm sm:flex-row sm:items-center" x-data="{ etat: '' }">
+                <div class="flex flex-1 items-center gap-xs">
+                    <x-icone nom="calendar_month" class="text-[18px] text-outline" />
+                    <input type="date" wire:model.live="debut" aria-label="Début de la période" class="flex-1 rounded-lg border border-outline-variant px-sm py-1.5 text-xs">
+                    <span class="text-xs text-outline">au</span>
+                    <input type="date" wire:model.live="fin" aria-label="Fin de la période" class="flex-1 rounded-lg border border-outline-variant px-sm py-1.5 text-xs">
+                </div>
+                @if (count($exports))
+                    <div class="flex items-center gap-xs">
+                        <select x-model="etat" aria-label="État ou rapport à exporter" class="flex-1 rounded-lg border border-outline-variant bg-white px-sm py-2 text-xs sm:w-56">
+                            <option value="">-- Choisir un état / rapport --</option>
+                            @foreach ($exports as [$libelle, $route])
+                                <option value="{{ $route }}">{{ $libelle }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" @click="etat && (window.location.href = etat)" :disabled="!etat"
+                                class="flex items-center gap-1 rounded-lg bg-brand-navy px-md py-2 text-xs font-bold text-white hover:bg-brand-navy-dark disabled:opacity-50">
+                            <x-icone nom="picture_as_pdf" class="text-[16px]" />PDF
+                        </button>
+                    </div>
+                @endif
+            </div>
+            @unless ($periodeValide)
+                <p role="alert" class="rounded-lg bg-error-container p-sm text-xs text-error-deep" data-alerte="periode">
+                    Période invalide (le début doit précéder la fin) : le mois en cours est affiché.</p>
+            @endunless
+        @endif
+    </div>
+
+    {{-- Indicateurs --}}
+    <div class="mb-lg">
+        <div id="kpi-panel" class="grid grid-cols-2 gap-md xl:grid-cols-4">
             @if ($voirVentes)
-                <a href="/ventes" class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">Enregistrer une Vente</a>
+                <div class="{{ $carte }} border-l-4 border-l-brand-navy" data-carte="ca">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Chiffre d'Affaires</span><x-icone nom="trending_up" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="ca">{{ $nb($ca['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline">Avicole : <span data-kpi="ca-avicole">{{ $nb($ca['avicole']) }}</span> · Commerce annexe : <span data-kpi="ca-commerce">{{ $nb($ca['commerce']) }}</span></p>
+                </div>
             @endif
-            @if ($voirElevage)
-                <a href="/elevage/dashboard" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">Dashboard Élevage</a>
+            @if ($tresorerie !== null)
+                <div class="{{ $carte }} border-l-4 border-l-info-blue" data-carte="tresorerie">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Trésorerie</span><x-icone nom="account_balance_wallet" class="text-[18px] text-info-blue" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="tresorerie">{{ $nb($tresorerie['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline">Espèces : {{ $nb($tresorerie['especes']) }} · Mobile Money : {{ $nb($tresorerie['mobile']) }}</p>
+                </div>
+            @endif
+            @if ($depenses !== null)
+                <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="depenses">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Dépenses</span><x-icone nom="shopping_cart" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="depenses">{{ $nb($depenses['total']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline">Dont intrants provende : {{ $nb($depenses['intrants']) }}</p>
+                </div>
+            @endif
+            @if ($resultatNet !== null)
+                <div class="{{ $carte }} border-l-4 border-l-success-deep" data-carte="resultat">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Résultat Net</span><x-icone nom="savings" class="text-[18px] text-success-deep" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="resultat">{{ $nb($resultatNet['montant']) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline">{{ $resultatNet['marge'] === null ? 'Marge nette : —' : 'Marge nette : '.$pourcent($resultatNet['marge']) }}</p>
+                </div>
+            @endif
+            @if ($voirVentes)
+                <div class="{{ $carte }} border-l-4 border-l-error-deep" data-carte="encours">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Soldes Restant Dus</span><x-icone nom="request_quote" class="text-[18px] text-error-deep" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="encours">{{ $nb($encours) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline" data-detail="encours">{{ $encoursNombre === 0 ? 'Aucune vente en avance non soldée' : "$encoursNombre vente(s) en avance non soldée(s)" }}</p>
+                </div>
+            @endif
+            @if ($stockCritique !== null)
+                <div class="{{ $carte }} border-l-4 border-l-error-deep" data-carte="stock">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Stock Critique</span><x-icone nom="warning" class="text-[18px] text-error-deep" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="stock">{{ $stockCritique['nombre'] }} <small class="text-xs font-normal">{{ $stockCritique['nombre'] > 1 ? 'intrants' : 'intrant' }}</small></span>
+                    <p class="mt-xs text-[12px] text-outline">{{ $stockCritique['nombre'] === 0 ? 'Aucun intrant sous le seuil d\'alerte' : ($stockCritique['premier'] ?? '').' sous le seuil d\'alerte' }}</p>
+                </div>
+            @endif
+            @if ($cheptel !== null)
+                <div class="{{ $carte }} border-l-4 border-l-brand-navy" data-carte="cheptel">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Effectif Cheptel</span><x-icone nom="pets" class="text-[18px] text-brand-navy" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="cheptel">{{ $nb($cheptel['effectif']) }} <small class="text-xs font-normal">têtes</small></span>
+                    <p class="mt-xs text-[12px] text-outline">{{ $cheptel['libelle'] }}</p>
+                </div>
+            @endif
+            @if ($couveuse !== null)
+                <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="couveuse">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Cycles Couveuse en Cours</span><x-icone nom="egg" class="text-[18px] text-brand-gold" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="couveuse">{{ $couveuse['cycles'] }} <small class="text-xs font-normal">{{ $couveuse['cycles'] > 1 ? 'cycles' : 'cycle' }}</small></span>
+                    <p class="mt-xs text-[12px] text-outline">{{ $couveuse['eclosionProchaine'] ?? 'Aucune éclosion prévue prochainement' }}</p>
+                </div>
+            @endif
+            @if ($voirVentes)
+                <div class="{{ $carte }} border-l-4 border-l-info-blue" data-carte="clients">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Clients Enregistrés</span><x-icone nom="person" class="text-[18px] text-info-blue" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="clients">{{ $clients }}</span>
+                    <p class="mt-xs text-[12px] text-outline">Clients actifs de tous les postes</p>
+                </div>
+            @endif
+            @if ($voirAchats)
+                <div class="{{ $carte }} border-l-4 border-l-brand-gold" data-carte="dettes">
+                    <div class="flex items-start justify-between"><span class="text-[12px] font-bold uppercase text-outline">Dettes Fournisseurs</span><x-icone nom="local_shipping" class="text-[18px] text-brand-gold" /></div>
+                    <span class="mt-xs block truncate text-lg font-extrabold text-on-surface md:text-2xl" data-kpi="dettes">{{ $nb($dettes) }} <small class="text-xs font-normal">FCFA</small></span>
+                    <p class="mt-xs text-[12px] text-outline" data-detail="dettes">{{ $dettesNombre === 0 ? 'Aucune commande non soldée' : "$dettesNombre commande(s) non soldée(s)" }}</p>
+                </div>
             @endif
         </div>
     </div>
 
-    @if ($voirVentes)
-        <div class="mb-md flex flex-wrap items-center gap-sm rounded-lg border border-outline-variant bg-surface-card p-sm">
-            <label class="flex items-center gap-sm text-xs text-outline">Du
-                <input type="date" wire:model.live="debut" aria-label="Début de la période"
-                       class="rounded-lg border border-outline-variant px-sm py-xs text-xs text-on-surface"></label>
-            <label class="flex items-center gap-sm text-xs text-outline">au
-                <input type="date" wire:model.live="fin" aria-label="Fin de la période"
-                       class="rounded-lg border border-outline-variant px-sm py-xs text-xs text-on-surface"></label>
+    @if ($voirVentes || count($alertes))
+        <div class="mb-lg grid grid-cols-1 gap-md lg:grid-cols-12">
+            @if ($voirVentes)
+                <section class="{{ $carte }} lg:col-span-8" id="tour-chart" data-bloc="courbe">
+                    <h3 class="mb-md text-sm font-bold text-on-surface">CA vs Dépenses — 6 derniers mois</h3>
+                    <svg viewBox="0 0 600 220" class="h-52 w-full" role="img" aria-label="Chiffre d'affaires et dépenses par mois sur les 6 derniers mois">
+                        <line x1="40" y1="10" x2="40" y2="190" stroke="#D8DCE3" stroke-width="1" />
+                        <line x1="40" y1="190" x2="580" y2="190" stroke="#D8DCE3" stroke-width="1" />
+                        <polyline fill="none" stroke="#1F3864" stroke-width="3" stroke-linejoin="round" points="{{ implode(' ', array_map(fn ($p) => $p[0].','.$p[1], $courbe['ca'])) }}" />
+                        @if ($depenses !== null)
+                            <polyline fill="none" stroke="#B33A3A" stroke-width="3" stroke-dasharray="5,4" stroke-linejoin="round" points="{{ implode(' ', array_map(fn ($p) => $p[0].','.$p[1], $courbe['dep'])) }}" />
+                        @endif
+                        @foreach ($courbe['ca'] as $p)
+                            <circle cx="{{ $p[0] }}" cy="{{ $p[1] }}" r="4" fill="#1F3864" data-mois="{{ $p[2]['cle'] }}" data-ca="{{ round($p[2]['ca']) }}"><title>{{ $p[2]['libelle'] }} : {{ $nb($p[2]['ca']) }} FCFA</title></circle>
+                            <text x="{{ $p[0] }}" y="205" text-anchor="middle" font-size="10" fill="#6B7280">{{ $p[2]['libelle'] }}</text>
+                        @endforeach
+                    </svg>
+                    <div class="mt-sm flex items-center gap-lg text-xs">
+                        <span class="flex items-center gap-xs text-outline"><span class="inline-block h-3 w-3 rounded-full bg-brand-navy"></span>Chiffre d'affaires</span>
+                        @if ($depenses !== null)
+                            <span class="flex items-center gap-xs text-outline"><span class="inline-block h-3 w-3 rounded-full bg-error-deep"></span>Dépenses</span>
+                        @endif
+                    </div>
+                </section>
+            @endif
+            <section class="{{ $carte }} {{ $voirVentes ? 'lg:col-span-4' : 'lg:col-span-12' }}" id="tour-alerts" data-bloc="alertes">
+                <h3 class="mb-md text-sm font-bold text-on-surface">Alertes Critiques</h3>
+                <div class="space-y-sm">
+                    @forelse ($alertes as $a)
+                        @php($critique = $a['niveau'] === 'critique')
+                        <div class="flex items-start gap-sm rounded-lg p-sm {{ $critique ? 'bg-error-container' : 'bg-brand-gold/20' }}">
+                            <x-icone :nom="['stock' => 'inventory_2', 'eclosion' => 'egg', 'solde' => 'request_quote', 'anniversaire' => 'cake', 'soin' => 'vaccines'][$a['icone']] ?? 'warning'" :class="'text-[18px] '.($critique ? 'text-error-deep' : 'text-brand-navy')" />
+                            <p class="text-xs {{ $critique ? 'text-error-deep' : 'text-brand-navy' }}">{{ $a['texte'] }}</p>
+                        </div>
+                    @empty
+                        <p class="text-xs text-outline">Aucune alerte en cours.</p>
+                    @endforelse
+                </div>
+            </section>
         </div>
-        @unless ($periodeValide)
-            <p role="alert" class="mb-md rounded-lg bg-error-container p-sm text-xs text-error-deep" data-alerte="periode">
-                Période invalide (le début doit précéder la fin) : le mois en cours est affiché.</p>
-        @endunless
     @endif
 
-    <div class="mb-lg grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4" id="kpi-panel">
-        @if ($voirVentes)
-            <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm" data-carte="ca">
-                <p class="text-caption uppercase text-outline">Chiffre d'Affaires</p>
-                <p class="text-kpi-value font-bold" data-kpi="ca">{{ $nb($ca['total']) }} <span class="text-xs font-normal">FCFA</span></p>
-                <p class="text-caption text-outline">Avicole : <span data-kpi="ca-avicole">{{ $nb($ca['avicole']) }}</span> · Commerce annexe : <span data-kpi="ca-commerce">{{ $nb($ca['commerce']) }}</span></p>
-            </div>
-        @endif
-
-        @foreach ($surLePoste as [$libelle, $droit, $raison])
-            @if ($droit)
-                <div class="rounded-lg border-l-4 border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste="{{ $libelle }}">
-                    <p class="text-caption uppercase">{{ $libelle }}</p>
-                    <p class="text-kpi-value font-bold">—</p>
-                    <p class="text-caption font-semibold">Disponible sur le poste</p>
-                    <p class="text-caption">{{ $raison }}</p>
+    @if (count($filieres) || $couveuse !== null)
+        <div id="tour-species-cards" class="mb-lg grid grid-cols-1 gap-md md:grid-cols-3" data-bloc="filieres">
+            @foreach ($filieres as $f)
+                <a href="{{ $f['route'] }}" class="{{ $carte }} block hover:bg-surface-zebra" data-filiere="{{ $f['code'] }}">
+                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="pets" class="text-brand-navy" /><h3 class="text-sm font-bold">{{ $f['nom'] }}</h3></div>
+                    <div class="grid grid-cols-2 gap-sm text-xs">
+                        <div><p class="text-outline">Effectif</p><p class="text-lg font-bold">{{ $nb($f['effectif']) }}</p></div>
+                        <div><p class="text-outline">Matures</p><p class="text-lg font-bold">{{ $nb($f['matures']) }}</p></div>
+                        <div><p class="text-outline">{{ $f['libelleJeunes'] }}</p><p class="text-lg font-bold">{{ $nb($f['jeunes']) }}</p></div>
+                        <div><p class="text-outline">Mortalité</p><p class="text-lg font-bold {{ ($f['mortalite'] ?? 0) > 2 ? 'text-error-deep' : 'text-success-deep' }}">{{ $pourcent($f['mortalite']) }}</p></div>
+                    </div>
+                </a>
+            @endforeach
+            @if ($couveuse !== null)
+                <div class="{{ $carte }}" data-filiere="couveuse">
+                    <div class="mb-sm flex items-center gap-xs"><x-icone nom="egg" class="text-brand-gold" /><h3 class="text-sm font-bold">Couveuse</h3></div>
+                    <div class="grid grid-cols-2 gap-sm text-xs">
+                        <div><p class="text-outline">Cycles en cours</p><p class="text-lg font-bold">{{ $couveuse['cycles'] }}</p></div>
+                        <div><p class="text-outline">Œufs chargés</p><p class="text-lg font-bold">{{ $nb($couveuse['oeufs']) }}</p></div>
+                        <div><p class="text-outline">Taux éclosion moy.</p><p class="text-lg font-bold">{{ $pourcent($couveuse['eclosionMoy']) }}</p></div>
+                        <div><p class="text-outline">Taux perte moy.</p><p class="text-lg font-bold text-error-deep">{{ $pourcent($couveuse['perteMoy']) }}</p></div>
+                    </div>
                 </div>
             @endif
-        @endforeach
-
-        @if ($voirVentes)
-            <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm" data-carte="encours">
-                <p class="text-caption uppercase text-outline">Soldes Restant Dus</p>
-                <p class="text-kpi-value font-bold" data-kpi="encours">{{ $nb($encours) }} <span class="text-xs font-normal">FCFA</span></p>
-                <p class="text-caption text-outline" data-detail="encours">{{ $encoursNombre === 0 ? 'Aucune vente en avance non soldée' : "$encoursNombre vente(s) en avance non soldée(s)" }}</p>
-            </div>
-            <div class="rounded-lg border-l-4 border-info-blue bg-surface-card p-md shadow-sm" data-carte="clients">
-                <p class="text-caption uppercase text-outline">Clients Enregistrés</p>
-                <p class="text-kpi-value font-bold" data-kpi="clients">{{ $clients }}</p>
-                <p class="text-caption text-outline">Clients actifs de tous les postes</p>
-            </div>
-        @endif
-
-        @if ($voirAchats)
-            <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm" data-carte="dettes">
-                <p class="text-caption uppercase text-outline">Dettes Fournisseurs</p>
-                <p class="text-kpi-value font-bold" data-kpi="dettes">{{ $nb($dettes) }} <span class="text-xs font-normal">FCFA</span></p>
-                <p class="text-caption text-outline" data-detail="dettes">{{ $dettesNombre === 0 ? 'Aucune commande non soldée' : "$dettesNombre commande(s) non soldée(s)" }}</p>
-            </div>
-        @endif
-    </div>
+        </div>
+    @endif
 
     @if ($voirVentes)
-        @php
-            // Courbe SVG simple (hors ligne, sans bibliotheque) : CA des 6 derniers mois.
-            $largeur = 600; $hauteur = 200; $gauche = 56; $bas = 24; $haut = 12; $droite = 12;
-            $max = max(array_column($mois, 'ca'));
-            $maxY = $max > 0 ? $max * 1.15 : 1;
-            $pas = (count($mois) - 1) > 0 ? ($largeur - $gauche - $droite) / (count($mois) - 1) : 0;
-            $points = [];
-            foreach ($mois as $i => $m) {
-                $points[] = [
-                    'x' => $gauche + $i * $pas,
-                    'y' => $hauteur - $bas - ($m['ca'] / $maxY) * ($hauteur - $bas - $haut),
-                    'm' => $m,
-                ];
-            }
-            $trace = implode(' ', array_map(fn ($p) => round($p['x'], 1).','.round($p['y'], 1), $points));
-        @endphp
-        <div class="mb-lg grid grid-cols-1 gap-md lg:grid-cols-3">
-            <section class="rounded-lg border border-outline-variant bg-surface-card p-md lg:col-span-2" data-bloc="courbe">
-                <h2 class="mb-sm text-section-title font-bold">Chiffre d'Affaires — 6 derniers mois</h2>
-                <svg viewBox="0 0 {{ $largeur }} {{ $hauteur }}" class="h-52 w-full" role="img" aria-label="Chiffre d'affaires par mois sur les 6 derniers mois">
-                    <line x1="{{ $gauche }}" y1="{{ $haut }}" x2="{{ $gauche }}" y2="{{ $hauteur - $bas }}" class="stroke-outline-variant" stroke-width="1" />
-                    <line x1="{{ $gauche }}" y1="{{ $hauteur - $bas }}" x2="{{ $largeur - $droite }}" y2="{{ $hauteur - $bas }}" class="stroke-outline-variant" stroke-width="1" />
-                    <text x="{{ $gauche - 6 }}" y="{{ $hauteur - $bas }}" text-anchor="end" class="fill-outline" font-size="10">0</text>
-                    <text x="{{ $gauche - 6 }}" y="{{ $haut + 8 }}" text-anchor="end" class="fill-outline" font-size="10">{{ $nb($maxY) }}</text>
-                    <polyline points="{{ $trace }}" fill="none" class="stroke-brand-navy" stroke-width="3" stroke-linejoin="round" />
-                    @foreach ($points as $p)
-                        <circle cx="{{ round($p['x'], 1) }}" cy="{{ round($p['y'], 1) }}" r="4" class="fill-brand-navy" data-mois="{{ $p['m']['cle'] }}" data-ca="{{ round($p['m']['ca']) }}">
-                            <title>{{ $p['m']['libelle'] }} : {{ $nb($p['m']['ca']) }} FCFA</title>
-                        </circle>
-                        <text x="{{ round($p['x'], 1) }}" y="{{ $hauteur - 8 }}" text-anchor="middle" class="fill-outline" font-size="10">{{ $p['m']['libelle'] }}</text>
+        <div class="mb-lg grid grid-cols-1 gap-md lg:grid-cols-2">
+            {{-- Statistiques de ventes --}}
+            <section class="{{ $carte }}" data-bloc="statistiques">
+                <div class="mb-md flex items-center justify-between">
+                    <h3 class="flex items-center gap-xs text-sm font-bold text-on-surface"><x-icone nom="bar_chart" class="text-[18px] text-brand-navy" />Statistiques de Ventes</h3>
+                    <span class="text-[12px] font-bold text-outline">{{ $maintenant->format('Y') }}</span>
+                </div>
+                <div class="mb-md grid grid-cols-2 gap-sm">
+                    <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-lg font-extrabold text-brand-navy" data-kpi="semaine">{{ $nb($semaine) }} F</span><p class="text-[12px] text-outline">Revenu (semaine)</p></div>
+                    @if ($depenses !== null)
+                        <div class="rounded-lg bg-surface-zebra p-sm"><span class="text-lg font-extrabold text-error-deep" data-kpi="depenses-jours">{{ $nb($depSemaine) }} F</span><p class="text-[12px] text-outline">Dépenses (6 jours)</p></div>
+                    @endif
+                </div>
+                <svg viewBox="0 0 500 140" class="h-32 w-full" role="img" aria-label="Chiffre d'affaires et dépenses des 6 derniers jours">
+                    <line x1="0" y1="120" x2="500" y2="120" stroke="#D8DCE3" stroke-width="1" />
+                    @foreach ($jours as $i => $j)
+                        @php($hc = round(($j['ca'] / $maxJ) * 100, 1))
+                        @php($hd = round(($j['depenses'] / $maxJ) * 100, 1))
+                        <rect x="{{ 10 + $i * 50 }}" y="{{ 120 - $hc }}" width="14" height="{{ $hc }}" rx="3" fill="#1F3864" />
+                        @if ($depenses !== null)<rect x="{{ 28 + $i * 50 }}" y="{{ 120 - $hd }}" width="14" height="{{ $hd }}" rx="3" fill="#B33A3A" />@endif
                     @endforeach
                 </svg>
-                <p class="mt-sm text-caption text-outline">Les dépenses ne sont pas connues du serveur : la courbe « CA vs Dépenses » est complète sur le poste.</p>
+                <div class="mt-xs flex justify-between px-1 text-[9px] text-outline">
+                    @foreach ($jours as $j)<span>{{ $j['libelle'] }}</span>@endforeach
+                </div>
             </section>
 
-            <section class="rounded-lg border border-outline-variant bg-surface-card p-md" data-bloc="recentes">
-                <h2 class="mb-sm text-section-title font-bold">Transactions Récentes</h2>
-                <div class="mb-sm rounded-lg bg-surface-zebra p-sm">
-                    <p class="text-section-title font-bold text-brand-navy" data-kpi="semaine">{{ $nb($semaine) }} F</p>
-                    <p class="text-caption text-outline">Revenu (semaine)</p>
+            {{-- Transactions recentes --}}
+            <section class="{{ $carte }}" data-bloc="recentes">
+                <div class="mb-md flex items-center justify-between">
+                    <h3 class="flex items-center gap-xs text-sm font-bold text-on-surface"><x-icone nom="receipt" class="text-[18px] text-brand-navy" />Transactions Récentes</h3>
+                    <a href="/ventes" class="text-[12px] font-bold text-brand-navy hover:underline">Voir tout</a>
                 </div>
-                <ul class="text-xs">
+                <div class="mb-sm flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+                    @foreach ([['ventes', 'Vente'], ['achats', 'Achat'], ['depenses', 'Dépenses']] as [$cle, $libelle])
+                        @if ($cle === 'ventes' || $transactions[$cle] !== null)
+                            <button type="button" role="tab" @click="onglet = '{{ $cle }}'"
+                                    :class="onglet === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                                    class="whitespace-nowrap border-b-2 px-sm py-1.5 text-[11px] font-bold">{{ $libelle }}</button>
+                        @endif
+                    @endforeach
+                </div>
+                <ul x-show="onglet === 'ventes'" class="space-y-xs text-xs">
                     @forelse ($recentes as $v)
-                        <li class="flex justify-between gap-sm border-b border-outline-variant py-sm" data-recente="{{ $v->reference }}">
+                        <li class="flex items-center justify-between gap-sm border-b border-outline-variant py-1.5 last:border-b-0" data-recente="{{ $v->reference }}">
                             <span>{{ $v->reference }} · {{ $v->client }}</span>
-                            <span class="font-bold {{ $v->status === 'Avance' ? 'text-brand-gold' : '' }}">{{ $nb($v->status === 'Avance' ? $v->paye : $v->total) }} F{{ $v->status === 'Avance' ? ' (avance)' : '' }}</span>
+                            <span class="font-bold {{ $v->status === 'Avance' ? 'text-brand-gold' : 'text-brand-navy' }}">{{ $nb($v->status === 'Avance' ? $v->paye : $v->total) }} F{{ $v->status === 'Avance' ? ' (avance)' : '' }}</span>
                         </li>
                     @empty
                         <li class="py-sm text-center text-outline">Aucune vente enregistrée.</li>
                     @endforelse
                 </ul>
+                @foreach (['achats' => 'Aucun achat enregistré.', 'depenses' => 'Aucune dépense enregistrée.'] as $cle => $vide)
+                    @if ($transactions[$cle] !== null)
+                        <ul x-show="onglet === '{{ $cle }}'" x-cloak class="space-y-xs text-xs" data-transactions="{{ $cle }}">
+                            @forelse ($transactions[$cle] as $t)
+                                <li class="flex items-center justify-between gap-sm border-b border-outline-variant py-1.5 last:border-b-0">
+                                    <span>{{ $t['ref'] }} · {{ $t['libelle'] }}</span>
+                                    <span class="font-bold {{ $cle === 'depenses' ? 'text-error-deep' : 'text-brand-navy' }}">{{ $nb($t['montant']) }} F</span>
+                                </li>
+                            @empty
+                                <li class="py-sm text-center text-outline">{{ $vide }}</li>
+                            @endforelse
+                        </ul>
+                    @endif
+                @endforeach
             </section>
         </div>
+    @endif
 
-        <section class="mb-lg rounded-lg border border-outline-variant bg-surface-card p-md" data-bloc="meilleures">
-            <h2 class="mb-sm text-section-title font-bold">Meilleures Ventes de la Période</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs" data-table="meilleures">
-                    <thead class="bg-surface-zebra text-caption uppercase text-outline">
-                        <tr>
-                            <th class="px-md py-sm">Produit</th>
-                            <th class="px-md py-sm">Activité</th>
-                            <th class="px-md py-sm text-right">Quantité</th>
-                            <th class="px-md py-sm text-right">Chiffre d'Affaires</th>
-                        </tr>
-                    </thead>
+    <div class="grid grid-cols-1 gap-md lg:grid-cols-2">
+        @if (count($activites) || $voirVentes)
+            <section class="{{ $carte }}" data-bloc="activites">
+                <h3 class="mb-md text-sm font-bold text-on-surface">Activités du Jour</h3>
+                <div class="space-y-md">
+                    @forelse ($activites as $a)
+                        <div class="flex gap-sm">
+                            <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-brand-navy"></span>
+                            <div><p class="text-xs font-semibold">{{ $a['texte'] }}</p><p class="text-[12px] text-outline">{{ $a['heure'] }}{{ ($a['auteur'] ?? null) ? ' — '.$a['auteur'] : '' }}</p></div>
+                        </div>
+                    @empty
+                        <p class="text-xs text-outline">Aucune activité aujourd'hui.</p>
+                    @endforelse
+                </div>
+            </section>
+        @endif
+
+        @if ($voirVentes)
+            <section class="{{ $carte }} overflow-x-auto" data-bloc="meilleures">
+                <h3 class="mb-md text-sm font-bold text-on-surface">Meilleures Ventes de la Période</h3>
+                <table class="w-full text-xs" data-table="meilleures">
+                    <thead><tr class="border-b border-outline-variant text-outline"><th class="py-xs text-left">Produit</th><th class="py-xs text-right">Qté</th><th class="py-xs text-right">CA</th><th class="py-xs text-right">Activité</th></tr></thead>
                     <tbody>
                         @forelse ($meilleures as $l)
-                            <tr class="{{ $loop->odd ? '' : 'bg-surface-zebra' }}" data-meilleure="{{ $l['produit'] }}">
-                                <td class="px-md py-sm font-bold">{{ $l['produit'] }}</td>
-                                <td class="px-md py-sm">{{ $l['activite'] }}</td>
-                                <td class="px-md py-sm text-right">{{ rtrim(rtrim(number_format($l['quantite'], 2, ',', ' '), '0'), ',') }}</td>
-                                <td class="px-md py-sm text-right font-bold">{{ $nb($l['ca']) }} F</td>
+                            <tr class="border-b border-outline-variant {{ $loop->odd ? 'bg-surface-zebra' : '' }}" data-meilleure="{{ $l['produit'] }}">
+                                <td class="py-xs font-bold">{{ $l['produit'] }}</td>
+                                <td class="text-right">{{ rtrim(rtrim(number_format($l['quantite'], 2, ',', ' '), '0'), ',') }}</td>
+                                <td class="text-right font-bold">{{ $nb($l['ca']) }} F</td>
+                                <td class="text-right {{ $l['activite'] === 'Commerce' ? 'text-brand-gold' : 'text-brand-navy' }}">{{ $l['activite'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-md py-lg text-center text-outline">Aucune vente sur la période.</td></tr>
+                            <tr><td colspan="4" class="py-lg text-center text-outline">Aucune vente sur la période.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </section>
-    @endif
-
-    <section class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md" data-bloc="ecarts">
-        <h2 class="mb-xs text-section-title font-bold">Disponible sur le poste</h2>
-        <p class="text-xs text-outline">
-            Le web ne montre que ce que le serveur calcule : ventes, créances, clients et dettes fournisseurs. Restent au poste (jamais estimés ici) :
-            trésorerie, dépenses et résultat net, effectif du cheptel et cartes de filière, cycles de couveuse, stock critique et alertes de stock,
-            rappels de prophylaxie, fil d'activités du jour, courbe « CA vs Dépenses » complète et export d'état.
-        </p>
-    </section>
+            </section>
+        @endif
+    </div>
 </div>

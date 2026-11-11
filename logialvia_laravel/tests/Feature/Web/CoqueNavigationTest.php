@@ -149,7 +149,7 @@ class CoqueNavigationTest extends TestCase
 
             $this->get('/dashboard')->assertOk()
                 ->assertSeeHtml('data-menu="compte"')
-                ->assertSee('Mon Profil')->assertSee('Aide &amp; À Propos', false)->assertSee('Contact éditeur')
+                ->assertSee('Mon Profil')->assertSee('Aide &amp; À Propos', false)->assertSee("Contactez l'Éditeur", false)
                 ->assertSeeHtml('href="/profil"')->assertSeeHtml('href="/aide"')->assertSeeHtml('href="/contact"');
 
             foreach (['/profil', '/aide', '/contact'] as $page) {

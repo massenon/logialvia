@@ -44,7 +44,7 @@ class VuesImprimablesTest extends TestCase
     {
         $page = $this->actingAs($this->admin())->get('/parametres/audit')->assertOk();
 
-        $page->assertSee('<aside class="bg-brand-navy', false)->assertSee('aria-label="Navigation"', false);
+        $page->assertSee('<aside id="sidebar" aria-label="Navigation"', false)->assertSee('aria-label="Navigation"', false);
         $this->assertMatchesRegularExpression('#<body[^>]*>\s*<div[^>]*>.*?<div class="flex min-w-0 flex-1 flex-col">\s*<header#s', $page->getContent());
     }
 

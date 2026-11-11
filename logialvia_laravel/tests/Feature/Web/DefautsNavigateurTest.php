@@ -39,9 +39,12 @@ class DefautsNavigateurTest extends TestCase
 
         $html = $this->get('/dashboard')->assertOk()->getContent();
 
-        // Bouton reserve au telephone, relie a la navigation par aria-controls ; navigation cachee par defaut, visible des md.
-        $this->assertMatchesRegularExpression('/<button[^>]*data-menu-bascule[^>]*aria-controls="menu-principal"[^>]*aria-expanded="false"[^>]*md:hidden/s', $html);
-        $this->assertMatchesRegularExpression('/<nav id="menu-principal" class="hidden [^"]*md:block"/', $html);
+        // Maquette dashboard.html : la barre laterale est un tiroir (hors ecran sous `lg`), ouvert par un bouton reserve
+        // au telephone, relie a la barre par aria-controls ; elle est toujours visible des `lg`.
+        $this->assertMatchesRegularExpression('/<button[^>]*data-menu-bascule[^>]*aria-controls="sidebar"[^>]*aria-expanded="false"[^>]*lg:hidden/s', $html);
+        $this->assertStringContainsString('<aside id="sidebar" aria-label="Navigation"', $html);
+        $this->assertStringContainsString('-translate-x-full lg:translate-x-0', $html);
+        $this->assertStringContainsString('<nav id="menu-principal"', $html);
     }
 
     public function test_le_deces_est_decrit_comme_se_declarant_au_web(): void

@@ -79,4 +79,55 @@ class Navigation
 
         return null;
     }
+
+    /**
+     * Fil d'Ariane (Dart `NavigationModel.filDAriane`) : [groupe, ecran], ou [ecran] seul quand le groupe n'a qu'une entree
+     * (le Tableau de Bord, comme `dashboard.html` l.29). `[]` hors barre.
+     *
+     * @return list<string>
+     */
+    public static function filDAriane(string $route): array
+    {
+        foreach (config('navigation') as $groupe) {
+            foreach ($groupe['entrees'] as $e) {
+                if ($e['route'] === $route) {
+                    return count($groupe['entrees']) === 1 ? [$e['libelle']] : [self::titreLisible($groupe['titre']), $e['libelle']];
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /** « ÉLEVAGE & COUVEUSE » -> « Élevage & Couveuse » (Dart `_titreLisible`). */
+    public static function titreLisible(string $titre): string
+    {
+        return implode(' ', array_map(
+            fn (string $mot) => mb_strlen($mot) <= 1 ? $mot : mb_strtoupper(mb_substr($mot, 0, 1)).mb_strtolower(mb_substr($mot, 1)),
+            explode(' ', $titre),
+        ));
+    }
+
+    /**
+     * Entrees que le compte peut ouvrir, a plat (recherche globale : Dart `RechercheGlobale`).
+     *
+     * @return list<array{libelle: string, route: string, icone: string}>
+     */
+    public static function entreesAccessibles(User $utilisateur): array
+    {
+        $plat = [];
+        foreach (self::pourUtilisateur($utilisateur) as $groupe) {
+            foreach ($groupe['entrees'] as $e) {
+                $plat[] = ['libelle' => $e['libelle'], 'route' => $e['route'], 'icone' => $e['icone']];
+            }
+        }
+
+        return $plat;
+    }
+
+    /** Le compte peut-il ouvrir cette route, module actif compris ? (acces rapide, barre du bas). */
+    public static function accessible(User $utilisateur, string $route): bool
+    {
+        return self::droitPour($utilisateur, $route) && self::moduleDeRouteActif($route);
+    }
 }

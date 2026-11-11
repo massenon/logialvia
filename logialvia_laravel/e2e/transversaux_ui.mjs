@@ -28,16 +28,19 @@ for (const [nom, largeur, hauteur] of [['telephone', 390, 800], ['tablette', 768
   });
 }
 
-scenario('responsive telephone : le menu est replie, s\'ouvre au clic (aria-expanded), un lien navigue', async () => {
+scenario('responsive telephone : la barre est un tiroir ferme, s\'ouvre au clic (aria-expanded), un lien navigue', async () => {
   await avec('admin', 'menu_telephone', async (page) => {
     await aller(page, '/dashboard');
     const bouton = page.locator('[data-menu-bascule]');
     verifier(await bouton.isVisible(), 'bouton Menu visible sur telephone');
-    verifier(!(await page.locator('#menu-principal').isVisible()), 'menu replie au chargement');
+    const horsEcran = () => page.evaluate(() => { const r = document.querySelector('#sidebar').getBoundingClientRect(); return r.right <= 0; });
+    verifier(await horsEcran(), 'tiroir ferme (hors ecran) au chargement');
     const hautMain = await page.evaluate(() => document.querySelector('main').getBoundingClientRect().top);
-    verifier(hautMain < 250, `le contenu commence a ${Math.round(hautMain)}px (menu replie) : il doit rester dans le premier ecran`);
+    verifier(hautMain < 120, `le contenu commence a ${Math.round(hautMain)}px : il doit rester dans le premier ecran`);
     await bouton.click();
     egal(await bouton.getAttribute('aria-expanded'), 'true', 'aria-expanded apres ouverture');
+    await page.waitForTimeout(400);
+    verifier(!(await horsEcran()), 'tiroir ouvert');
     await page.locator('#menu-principal a[href$="/clients"]').click();
     await page.waitForURL('**/clients');
   }, { viewport: { width: 390, height: 800 } });

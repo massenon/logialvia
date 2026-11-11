@@ -42,6 +42,20 @@
         user-select: none;
     }
 
+    /* Barre laterale : degrade vertical bleu marine (Dart `FondDegradeMarque(angleDegres: 180)`). */
+    .sidebar-gradient {
+        background: linear-gradient(180deg, theme('colors.brand-navy') 0%, theme('colors.brand-navy-dark') 100%);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
     /* Fond de l'ecran de connexion : login.html (degrade 165deg + grain 26 px a 6 % x 0,5), comme FondDegradeMarque. */
     .fond-marque {
         position: relative;
@@ -86,6 +100,22 @@
 
     body {
         background: #fff !important;
+    }
+
+    /* La coque a hauteur d'ecran (contenu qui defile dans <main>) devient un flux normal : toute la page s'imprime. */
+    body > div {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    body > div > div {
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    main {
+        overflow: visible !important;
     }
 
     main {

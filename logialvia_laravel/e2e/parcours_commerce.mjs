@@ -19,7 +19,7 @@ scenario('connexion : identifiants faux refuses, bons acceptes (clic), deconnexi
     await attendreTexte(page, 'Bienvenue, Admin Test');
     // Deconnexion par le menu du compte.
     await page.click('details[data-menu=compte] summary');
-    await Promise.all([page.waitForURL('**/login'), page.click('text=Se déconnecter')]);
+    await Promise.all([page.waitForURL('**/login'), page.click('text=Déconnexion')]);
     await aller(page, '/dashboard');
     verifier(new URL(page.url()).pathname === '/login', 'apres deconnexion /dashboard renvoie a /login');
     page.problemes.length = 0;
@@ -52,7 +52,7 @@ scenario('connexion : mot de passe temporaire -> seul le changement est ouvert, 
     egal(valeur("select must_change_password from users where username='temporaire1'"), 0, 'drapeau must_change_password en base');
     // Reconnexion avec le nouveau mot de passe.
     await page.click('details[data-menu=compte] summary');
-    await Promise.all([page.waitForURL('**/login'), page.click('text=Se déconnecter')]);
+    await Promise.all([page.waitForURL('**/login'), page.click('text=Déconnexion')]);
     await connecter(page, 'temporaire1', 'NouveauMdp-2026');
     verifier(new URL(page.url()).pathname !== '/login', 'connexion avec le nouveau mot de passe');
     page.problemes.length = 0;
