@@ -16,7 +16,7 @@
     <div class="mb-lg grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3" data-grille="filieres">
         @foreach ($filieres as $f)
             @php $conf = \App\Support\FilieresElevage::configuration($f['espece']); $permanente = in_array($f['espece'], \App\Livewire\DashboardElevage::ESPECES_PERMANENTES, true); @endphp
-            <a href="{{ $f['route'] }}" data-filiere="{{ $f['espece'] }}"
+            <a wire:navigate.hover href="{{ $f['route'] }}" data-filiere="{{ $f['espece'] }}"
                class="block rounded-lg border bg-white p-md shadow-sm transition-all hover:border-brand-navy hover:shadow-md {{ $permanente ? 'border-outline-variant' : 'border-brand-gold/40' }}">
                 <div class="mb-sm flex items-center justify-between">
                     <div class="flex items-center gap-xs"><x-icone :nom="$conf['icone']" class="text-[20px] text-brand-navy" /><h2 class="text-xs font-bold text-brand-navy">{{ $f['libelle'] }}</h2></div>
@@ -35,7 +35,7 @@
             </a>
         @endforeach
 
-        <a href="/elevage/couveuse" data-carte="couveuse" class="block rounded-lg border border-outline-variant bg-white p-md shadow-sm transition-all hover:border-brand-navy hover:shadow-md">
+        <a wire:navigate.hover href="/elevage/couveuse" data-carte="couveuse" class="block rounded-lg border border-outline-variant bg-white p-md shadow-sm transition-all hover:border-brand-navy hover:shadow-md">
             <div class="mb-sm flex items-center gap-xs"><x-icone nom="egg" class="text-[20px] text-brand-gold" /><h2 class="text-xs font-bold text-brand-navy">Couveuse</h2></div>
             <div class="grid grid-cols-2 gap-sm text-xs">
                 <div><p class="text-outline">Cycles en cours</p><p class="text-section-title font-bold" data-couveuse="cycles">{{ $couveuse['cycles_en_cours'] }}</p></div>
@@ -53,7 +53,7 @@
                 </div>
                 <p class="mb-sm text-caption text-outline">{{ $texte }}</p>
                 @if ($peutParametrer)
-                    <a href="/parametres/generaux" class="w-fit text-caption font-bold text-brand-navy underline">Activer depuis Paramètres →</a>
+                    <a wire:navigate.hover href="/parametres/generaux" class="w-fit text-caption font-bold text-brand-navy underline">Activer depuis Paramètres →</a>
                 @endif
             </div>
         @endforeach
@@ -84,7 +84,7 @@
             <h2 class="mb-md flex items-center gap-xs text-xs font-bold text-brand-navy"><x-icone nom="event_repeat" class="text-[18px] text-info-blue" />Rappels Vétérinaires à Venir</h2>
             @forelse ($rappels as $r)
                 @php($retard = \App\Support\RetardDeSoin::estEnRetard($r, $aujourdhui))
-                <a href="/elevage/soins" data-rappel="{{ $r->id }}" class="mb-sm flex items-center justify-between rounded-lg p-sm {{ $retard ? 'bg-error-container' : 'bg-surface-zebra hover:bg-brand-navy/5' }}">
+                <a wire:navigate.hover href="/elevage/soins" data-rappel="{{ $r->id }}" class="mb-sm flex items-center justify-between rounded-lg p-sm {{ $retard ? 'bg-error-container' : 'bg-surface-zebra hover:bg-brand-navy/5' }}">
                     <span>
                         <span class="block text-xs font-bold {{ $retard ? 'text-error-deep' : 'text-brand-navy' }}">{{ $r->type_soin }} — {{ $libellesEspeces[$r->espece] ?? $r->espece }}@if ($retard) (En retard)@endif</span>
                         <span class="block text-caption {{ $retard ? 'text-error-deep' : 'text-outline' }}">Prévu le {{ $r->date_prevue->format('d/m/Y') }}</span>
@@ -101,7 +101,7 @@
         <section class="rounded-lg border border-outline-variant bg-white p-md shadow-sm" data-panneau="alertes">
             <h2 class="mb-md flex items-center gap-xs text-xs font-bold text-brand-navy"><x-icone nom="coronavirus" class="text-[18px] text-error-deep" />Alertes Sanitaires du Jour</h2>
             @forelse ($alertes as $a)
-                <a href="/elevage/soins" data-alerte="{{ $a->id }}" class="mb-sm flex items-start gap-sm rounded-lg bg-error-container p-sm hover:bg-error-container/70">
+                <a wire:navigate.hover href="/elevage/soins" data-alerte="{{ $a->id }}" class="mb-sm flex items-start gap-sm rounded-lg bg-error-container p-sm hover:bg-error-container/70">
                     <x-icone nom="medical_information" class="text-[18px] text-error-deep" />
                     <p class="text-xs text-error-deep">{{ $a->type_soin }} — {{ $libellesEspeces[$a->espece] ?? $a->espece }} (En Retard, prévu le {{ $a->date_prevue->format('d/m/Y') }})</p>
                 </a>

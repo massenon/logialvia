@@ -42,12 +42,12 @@
             </div>
             <div class="flex w-full flex-col items-stretch gap-xs sm:w-auto sm:flex-row sm:items-center">
                 @if ($voirVentes)
-                    <a href="/ventes" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
+                    <a wire:navigate.hover href="/ventes" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
                         <x-icone nom="point_of_sale" class="text-[16px]" />Enregistrer une Vente
                     </a>
                 @endif
                 @if ($voirElevage)
-                    <a href="/elevage/dashboard" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full border border-outline-variant bg-white px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
+                    <a wire:navigate.hover href="/elevage/dashboard" class="flex items-center justify-center gap-xs whitespace-nowrap rounded-full border border-outline-variant bg-white px-md py-sm text-xs font-bold text-brand-navy shadow-sm hover:bg-surface-zebra">
                         <x-icone nom="monitoring" class="text-[16px]" />Dashboard Élevage
                     </a>
                 @endif
@@ -214,7 +214,7 @@
     @if (count($filieres) || $couveuse !== null)
         <div id="tour-species-cards" class="mb-lg grid grid-cols-1 gap-md md:grid-cols-3" data-bloc="filieres">
             @foreach ($filieres as $f)
-                <a href="{{ $f['route'] }}" class="{{ $carte }} block hover:bg-surface-zebra" data-filiere="{{ $f['code'] }}">
+                <a wire:navigate.hover href="{{ $f['route'] }}" class="{{ $carte }} block hover:bg-surface-zebra" data-filiere="{{ $f['code'] }}">
                     <div class="mb-sm flex items-center gap-xs"><x-icone nom="pets" class="text-brand-navy" /><h3 class="text-xs font-bold">{{ $f['nom'] }}</h3></div>
                     <div class="grid grid-cols-2 gap-sm text-xs">
                         <div><p class="text-outline">Effectif</p><p class="text-section-title font-bold">{{ $nb($f['effectif']) }}</p></div>
@@ -270,7 +270,7 @@
             <section class="{{ $carte }}" data-bloc="recentes">
                 <div class="mb-md flex items-center justify-between">
                     <h3 class="flex items-center gap-xs text-xs font-bold text-on-surface"><x-icone nom="receipt" class="text-[18px] text-brand-navy" />Transactions Récentes</h3>
-                    <a href="/ventes" class="text-caption font-bold text-brand-navy hover:underline">Voir tout</a>
+                    <a wire:navigate.hover href="/ventes" class="text-caption font-bold text-brand-navy hover:underline">Voir tout</a>
                 </div>
                 <div class="mb-sm flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
                     @foreach ([['ventes', 'Vente'], ['achats', 'Achat'], ['depenses', 'Dépenses']] as [$cle, $libelle])

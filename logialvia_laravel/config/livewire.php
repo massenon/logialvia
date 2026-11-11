@@ -8,4 +8,14 @@ return [
      * Les vues declarent @livewireStyles et @livewireScriptConfig.
      */
     'inject_assets' => false,
+
+    /*
+     * Navigation sans rechargement (`wire:navigate`, liens internes des vues) : la page suivante est prechargee au
+     * survol, puis le contenu est echange sans recharger le CSS, le JS ni les polices. Barre de progression doree
+     * si la reponse du serveur tarde.
+     */
+    'navigate' => [
+        'show_progress_bar' => true,
+        'progress_bar_color' => '#B58B2A',
+    ],
 ];

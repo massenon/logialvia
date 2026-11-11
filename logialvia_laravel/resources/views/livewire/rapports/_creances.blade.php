@@ -41,7 +41,7 @@
                                 <td class="px-sm py-sm text-center"><span class="rounded-full px-sm py-xs text-caption font-bold {{ $l['en_retard'] ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-brand-navy' }}" data-statut>{{ $l['statut'] }}</span></td>
                                 <td class="px-sm py-sm text-right">
                                     @if ($peutVoirClients)
-                                        <a href="/clients" class="text-info-blue hover:underline" data-action="encaissement">Saisir l'encaissement</a>
+                                        <a wire:navigate.hover href="/clients" class="text-info-blue hover:underline" data-action="encaissement">Saisir l'encaissement</a>
                                     @endif
                                 </td>
                             </tr>
@@ -59,7 +59,7 @@
                         <p><span class="rounded-full px-sm py-xs text-caption font-bold {{ $l['en_retard'] ? 'bg-error-container text-error-deep' : 'bg-surface-zebra text-brand-navy' }}">{{ $l['statut'] }}</span>
                             @if ($l['en_retard']) <span class="font-bold text-error-deep">{{ $l['retard'] }}j de retard</span> @endif</p>
                         @if ($peutVoirClients)
-                            <a href="/clients" class="text-info-blue hover:underline">Saisir l'encaissement</a>
+                            <a wire:navigate.hover href="/clients" class="text-info-blue hover:underline">Saisir l'encaissement</a>
                         @endif
                     </article>
                 @endforeach

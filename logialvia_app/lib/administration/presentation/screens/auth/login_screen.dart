@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               padding: EdgeInsets.all(large ? 48 : 24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
+                constraints: const BoxConstraints(maxWidth: 560),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -228,10 +228,10 @@ class _LoginScreenState extends State<LoginScreen> {
           label: 'Se connecter',
           icon: Symbols.lock_open,
           fullWidth: true,
-          height: 44, // `h-11`
+          height: 52,
           uppercase: true,
           letterSpacing: 0.6, // `tracking-wider`
-          fontSize: AppTypography.textXs,
+          fontSize: 16, // `text-section-title`
           onPressed: actionsBloquees ? null : _soumettre,
         ),
       ],
@@ -350,14 +350,14 @@ class _EnTeteMarque extends StatelessWidget {
         const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Symbols.egg, size: 38, color: AppColors.brandNavy),
+            Icon(Symbols.egg, size: 48, color: AppColors.brandNavy),
             SizedBox(width: 8), // `gap-2`
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 MarqueLogiAlvia(
-                  fontSize: 22,
+                  fontSize: 30,
                   fontWeight: FontWeight.w900, // `font-black`
                   couleurBase: AppColors.brandNavy,
                   letterSpacing: -0.5, // `tracking-tight`
@@ -368,7 +368,7 @@ class _EnTeteMarque extends StatelessWidget {
                   'ALLMANY ET COMPAGNIE',
                   style: TextStyle(
                     fontFamily: AppTypography.fontFamily,
-                    fontSize: 9,
+                    fontSize: AppTypography.textXs,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.9, // `tracking-widest`
                     color: AppColors.brandNavy,
@@ -394,9 +394,9 @@ class _EnTeteMarque extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: AppTypography.fontFamily,
-              fontSize: 12,
+              fontSize: AppTypography.textXs,
               fontWeight: FontWeight.w700,
-              letterSpacing: 12 * 0.15, // `tracking-[0.15em]`
+              letterSpacing: AppTypography.textXs * 0.15, // `tracking-[0.15em]`
               color: AppColors.brandNavy,
             ),
           ),
@@ -418,7 +418,7 @@ class _Accroche extends StatelessWidget {
           'Bienvenue !',
           style: TextStyle(
             fontFamily: AppTypography.fontFamily,
-            fontSize: 20, // `text-xl`
+            fontSize: 24, // `text-kpi-value`
             fontWeight: FontWeight.w700,
             height: 1.25, // `leading-tight`
             color: AppColors.brandNavy,
@@ -448,7 +448,7 @@ class _PiedDePage extends StatelessWidget {
       textAlign: TextAlign.center,
       style: TextStyle(
         fontFamily: AppTypography.fontFamily,
-        fontSize: 12,
+        fontSize: AppTypography.textXs,
         color: AppColors.outline,
       ),
     );

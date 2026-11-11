@@ -54,7 +54,7 @@
             <div class="border-b border-white/10 px-md py-lg">
                 <div class="flex items-center gap-xs">
                     <x-icone nom="egg" class="text-[26px] text-brand-gold" />
-                    <a href="/dashboard" class="text-section-title font-extrabold text-white">Logi<span class="text-brand-gold">ALVIA</span></a>
+                    <a wire:navigate.hover href="/dashboard" class="text-section-title font-extrabold text-white">Logi<span class="text-brand-gold">ALVIA</span></a>
                 </div>
                 <p class="mt-xs text-caption uppercase tracking-wider text-white/50">ALLMANY ET COMPAGNIE</p>
             </div>
@@ -65,7 +65,7 @@
                     <div class="mb-sm space-y-xs">
                         @foreach ($groupe['entrees'] as $entree)
                             @php($actif = $chemin === $entree['route'])
-                            <a href="{{ $entree['route'] }}" @if ($actif) aria-current="page" @endif
+                            <a wire:navigate.hover href="{{ $entree['route'] }}" @if ($actif) aria-current="page" @endif
                                class="flex items-center gap-sm rounded-lg px-sm py-xs transition-colors {{ $actif ? 'bg-white/[0.12] text-white' : 'text-white/90 hover:bg-white/10' }}">
                                 <x-icone :nom="$entree['icone']" :class="$actif ? 'text-[20px] text-brand-gold' : 'text-[20px]'" />
                                 <span class="text-[15px] {{ $actif ? 'font-bold' : '' }}">{{ $entree['libelle'] }}</span>
@@ -78,7 +78,7 @@
                     <div class="mb-sm space-y-xs">
                         @foreach ([['postes', '/parametres/postes', 'devices', 'Postes & Appairage'], ['audit', '/parametres/audit', 'history', 'Journal d\'Audit']] as [$nom, $route, $icone, $libelle])
                             @php($actif = $chemin === $route)
-                            <a href="{{ route($nom) }}" @if ($actif) aria-current="page" @endif
+                            <a wire:navigate.hover href="{{ route($nom) }}" @if ($actif) aria-current="page" @endif
                                class="flex items-center gap-sm rounded-lg px-sm py-xs transition-colors {{ $actif ? 'bg-white/[0.12] text-white' : 'text-white/90 hover:bg-white/10' }}">
                                 <x-icone :nom="$icone" :class="$actif ? 'text-[20px] text-brand-gold' : 'text-[20px]'" />
                                 <span class="text-[15px] {{ $actif ? 'font-bold' : '' }}">{{ $libelle }}</span>
@@ -140,7 +140,7 @@
                             </div>
                             <div x-show="resultats.length" x-cloak class="absolute right-0 z-50 mt-sm w-full overflow-hidden rounded-lg border border-outline-variant bg-white shadow-lg">
                                 <template x-for="e in resultats" :key="e.route">
-                                    <a :href="e.route" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><span x-text="e.libelle"></span></a>
+                                    <a wire:navigate.hover :href="e.route" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><span x-text="e.libelle"></span></a>
                                 </template>
                             </div>
                         </div>
@@ -162,7 +162,7 @@
                                 <div class="border-b border-outline-variant px-md py-sm text-xs font-bold text-brand-navy">Notifications</div>
                                 <div class="max-h-64 overflow-y-auto">
                                     @forelse ($alertesBarre as $alerte)
-                                        <a href="{{ $alerte['route'] ?? '/dashboard' }}" class="block border-b border-outline-variant px-md py-sm last:border-b-0 hover:bg-surface-zebra">
+                                        <a wire:navigate.hover href="{{ $alerte['route'] ?? '/dashboard' }}" class="block border-b border-outline-variant px-md py-sm last:border-b-0 hover:bg-surface-zebra">
                                             <p class="text-xs font-semibold {{ ($alerte['niveau'] ?? '') === 'critique' ? 'text-error-deep' : 'text-brand-navy' }}">{{ $alerte['texte'] }}</p>
                                         </a>
                                     @empty
@@ -178,11 +178,11 @@
                                 <x-icone nom="account_circle" class="text-[24px]" /><span class="hidden md:inline">{{ $utilisateur->name }}</span><x-icone nom="expand_more" class="text-[16px]" />
                             </summary>
                             <div class="absolute right-0 z-50 mt-sm w-52 overflow-hidden rounded-lg border border-outline-variant bg-white shadow-lg">
-                                <a href="/profil" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="person" class="text-[16px]" />Mon Profil</a>
-                                <a href="/aide" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="help" class="text-[16px]" />Aide &amp; À Propos</a>
-                                <a href="/contact" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="support_agent" class="text-[16px]" />Contactez l'Éditeur</a>
+                                <a wire:navigate.hover href="/profil" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="person" class="text-[16px]" />Mon Profil</a>
+                                <a wire:navigate.hover href="/aide" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="help" class="text-[16px]" />Aide &amp; À Propos</a>
+                                <a wire:navigate.hover href="/contact" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="support_agent" class="text-[16px]" />Contactez l'Éditeur</a>
                                 @if (Navigation::droitPour($utilisateur, '/parametres/generaux'))
-                                    <a href="/parametres/generaux" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="settings" class="text-[16px]" />Paramètres</a>
+                                    <a wire:navigate.hover href="/parametres/generaux" class="flex items-center gap-xs px-md py-sm text-xs hover:bg-surface-zebra"><x-icone nom="settings" class="text-[16px]" />Paramètres</a>
                                 @endif
                                 <form method="POST" action="{{ route('deconnexion') }}" class="border-t border-outline-variant">
                                     @csrf
@@ -203,7 +203,7 @@
         @if (count($barreBas))
             <nav aria-label="Raccourcis" class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-stretch border-t border-outline-variant bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.06)] lg:hidden print:hidden">
                 @foreach ($barreBas as [$libelle, $icone, $route])
-                    <a href="{{ $route }}" class="flex flex-1 flex-col items-center justify-center gap-0.5 {{ $chemin === $route ? 'text-brand-navy' : 'text-outline' }}">
+                    <a wire:navigate.hover href="{{ $route }}" class="flex flex-1 flex-col items-center justify-center gap-0.5 {{ $chemin === $route ? 'text-brand-navy' : 'text-outline' }}">
                         <x-icone :nom="$icone" class="text-[22px]" />
                         <span class="text-caption font-bold">{{ $libelle }}</span>
                     </a>
@@ -229,7 +229,7 @@
                         @if ($a === null)
                             <div class="my-xs border-t border-outline-variant"></div>
                         @else
-                            <a href="{{ $a[2] }}" class="flex items-center gap-sm rounded-lg px-sm py-sm text-on-surface transition-colors hover:bg-surface-zebra">
+                            <a wire:navigate.hover href="{{ $a[2] }}" class="flex items-center gap-sm rounded-lg px-sm py-sm text-on-surface transition-colors hover:bg-surface-zebra">
                                 <x-icone :nom="$a[1]" class="text-[22px] text-brand-navy" /><span class="text-[15px] font-semibold">{{ $a[0] }}</span>
                             </a>
                         @endif

@@ -23,7 +23,7 @@
                  class="absolute inset-0 h-full w-full object-contain">
         </div>
         <main class="flex min-h-screen flex-1 items-center justify-center bg-white p-6 lg:p-12">
-            <div class="w-full max-w-[460px]">
+            <div class="w-full max-w-[560px]">
                 {{ $slot }}
             </div>
         </main>

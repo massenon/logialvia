@@ -1,6 +1,6 @@
 <div>
     @can('view-parametres')
-        <p class="mb-xs text-xs"><a href="/parametres/generaux" class="font-semibold text-brand-navy underline">← Paramètres Généraux</a></p>
+        <p class="mb-xs text-xs"><a wire:navigate.hover href="/parametres/generaux" class="font-semibold text-brand-navy underline">← Paramètres Généraux</a></p>
     @endcan
     <h1 class="mb-xs text-page-title font-bold">Postes &amp; Appairage</h1>
     <p class="mb-md text-xs text-outline">
