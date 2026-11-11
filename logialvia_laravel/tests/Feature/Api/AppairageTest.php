@@ -365,6 +365,25 @@ class AppairageTest extends TestCase
             ->assertJsonPath('code', 'poste_different_du_jeton');
     }
 
+    public function test_une_lecture_au_nom_d_un_autre_poste_est_refusee_mais_l_absence_est_tolere(): void
+    {
+        $this->compte();
+        $poste = (string) Str::uuid();
+        $jeton = $this->connexion('marie', $poste)->json('token');
+        $autre = (string) Str::uuid();
+
+        foreach (['/api/sync/pull', '/api/sync/demande'] as $route) {
+            $this->avecJeton($jeton)->getJson("$route?device_id=$autre")
+                ->assertStatus(403)->assertJsonPath('code', 'poste_different_du_jeton');
+            $this->avecJeton($jeton)->getJson("$route?device_id=$poste")->assertOk();
+            $this->avecJeton($jeton)->getJson($route)->assertOk(); // ancien poste : pas de device_id
+        }
+        $this->avecJeton($jeton)->postJson('/api/sync/resynchronisation/acquittement', ['device_id' => $autre])
+            ->assertStatus(403);
+        $this->avecJeton($jeton)->postJson('/api/sync/resynchronisation/acquittement', ['device_id' => $poste])
+            ->assertOk();
+    }
+
     public function test_le_push_de_son_propre_poste_passe_le_garde_fou(): void
     {
         $this->compte();

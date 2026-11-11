@@ -343,10 +343,15 @@ class MoteurSynchronisationPoste {
     if (adresse == null || jeton == null || jeton.isEmpty) {
       return const ReponseDemande(IssueSynchronisation.nonAppairee);
     }
+    final idPoste = await preferences.identifiantPoste();
     final resultat = await _appeler(
       adresse,
-      (c, base) =>
-          c.get(Uri.parse('$base/api/sync/demande'), headers: _entetes(jeton)),
+      (c, base) => c.get(
+        Uri.parse(
+          '$base/api/sync/demande',
+        ).replace(queryParameters: {'device_id': idPoste}),
+        headers: _entetes(jeton),
+      ),
     );
     final arret = await _verifier(resultat);
     if (arret != null) return ReponseDemande(arret.issue);
@@ -364,11 +369,13 @@ class MoteurSynchronisationPoste {
     final adresse = await preferences.adresseServeur();
     final jeton = await depot.lire();
     if (adresse == null || jeton == null || jeton.isEmpty) return false;
+    final idPoste = await preferences.identifiantPoste();
     final reponse = (await _appeler(
       adresse,
       (c, base) => c.post(
         Uri.parse('$base/api/sync/resynchronisation/acquittement'),
         headers: _entetes(jeton),
+        body: jsonEncode({'device_id': idPoste}),
       ),
     )).reponse;
     return reponse != null &&
@@ -510,6 +517,7 @@ class MoteurSynchronisationPoste {
               'since': ?since,
               'until': ?borne,
               'page': '$page',
+              'device_id': s.idPoste,
             },
           ),
           headers: _entetes(s.jeton),

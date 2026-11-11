@@ -12,7 +12,7 @@ Contrôles bloquants : version `x.y.z+n` lue dans `pubspec.yaml` (les versions `
 
 ## Différences voulues avec LogiAgriERP
 - `AppId` propre à LogiALVIA (GUID `EE2E70A6-4A58-4AE4-A58E-8F86599040EB`) : **ne jamais le changer** après la première livraison.
-- **Pas de `--dart-define` d'environnement** : l'adresse du serveur est saisie au poste, à l'appairage (`preferences_poste`), il n'y a pas d'adresse par défaut à compiler. L'environnement ne sert ici qu'à nommer l'installateur. (À ajouter si le client veut une adresse préremplie.)
+- **Environnement transmis au poste** : `build_windows.bat` passe `--dart-define=LOGIALVIA_ENV=<env>` ; en **production** l'appairage propose `https://logialvia.digitonpro.com` (modifiable), en recette et en développement aucune adresse n'est proposée (`core/sync/environnement.dart`). Le nom de l'installateur suit toujours l'environnement.
 - Données du poste : `%APPDATA%\ALLMANY ET COMPAGNIE\LogiALVIA` (dérivé de `CompanyName`/`ProductName` de `Runner.rc`, à ne plus changer) ; sauvegardes applicatives : `Documents\LogiALVIA\Sauvegardes`.
 - Une mise à jour ne touche pas aux données. La désinstallation demande confirmation avant de supprimer la base, propose une copie dans `Documents\LogiALVIA-Sauvegarde-<date>`, et ne supprime jamais rien en mode silencieux.
 

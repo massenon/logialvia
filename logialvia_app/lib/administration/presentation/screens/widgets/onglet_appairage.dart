@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/formatage/formats.dart';
 import '../../../../core/sync/moteur_synchronisation.dart';
 import '../../../../core/sync/droits_poste.dart';
+import '../../../../core/sync/environnement.dart';
 import '../../../../core/sync/service_appairage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -48,6 +49,8 @@ class OngletAppairage extends StatelessWidget {
       children: [
         _BandeauEtat(etat: etat),
         const SizedBox(height: AppSpacing.md),
+        const _CarteEnvironnement(),
+        const SizedBox(height: AppSpacing.md),
         CarteSection(
           titre: 'Ce poste',
           icone: Symbols.computer,
@@ -83,7 +86,11 @@ class OngletAppairage extends StatelessWidget {
         if (etat.appaire)
           _CarteAppaire(vm: vm)
         else
-          _FormulaireAppairage(vm: vm, adresseInitiale: etat.adresse ?? ''),
+          _FormulaireAppairage(
+            vm: vm,
+            adresseInitiale:
+                etat.adresse ?? Environnement.courant.adresseProposee ?? '',
+          ),
         if (vm.dernierRapport != null) ...[
           const SizedBox(height: AppSpacing.md),
           _MessageSynchro(rapport: vm.dernierRapport!),
@@ -93,6 +100,32 @@ class OngletAppairage extends StatelessWidget {
           _Message(resultat: vm.dernierResultat!),
         ],
       ],
+    );
+  }
+}
+
+/// Environnement de cette construction du logiciel (`Environnement`) et
+/// adresse proposée à l'appairage.
+class _CarteEnvironnement extends StatelessWidget {
+  const _CarteEnvironnement();
+
+  @override
+  Widget build(BuildContext context) {
+    final env = Environnement.courant;
+
+    return CarteSection(
+      titre: 'Environnement',
+      icone: Symbols.public,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Ligne('Environnement', env.libelle),
+          _Ligne(
+            'Adresse par défaut',
+            env.adresseProposee ?? 'Aucune : à saisir à l\'appairage',
+          ),
+        ],
+      ),
     );
   }
 }

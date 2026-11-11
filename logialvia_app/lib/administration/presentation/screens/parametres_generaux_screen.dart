@@ -24,7 +24,11 @@ import '../../domain/repositories/parametres_repository.dart';
 import '../../../commercial/domain/services/transmission_mecef.dart';
 import '../../../core/sync/planificateur_synchronisation.dart';
 import '../../../core/sync/service_appairage.dart';
+import '../../../core/sync/depot_etat_synchronisation.dart';
+import '../../../core/sync/depot_journal_synchronisation.dart';
 import '../viewmodels/appairage_view_model.dart';
+import '../viewmodels/synchronisation_view_model.dart';
+import 'widgets/onglet_synchronisation.dart';
 import '../viewmodels/modules_actifs_view_model.dart';
 import '../viewmodels/parametres_generaux_view_model.dart';
 import '../../data/seed/seed_demonstration.dart';
@@ -80,6 +84,19 @@ class PageParametresGeneraux extends StatelessWidget {
             ),
           )..charger(),
         ),
+        // Synchronisation : journal des tentatives, refuses, coherence locale.
+        ChangeNotifierProvider<SynchronisationViewModel>(
+          create: (context) => SynchronisationViewModel(
+            context.read<PlanificateurSynchronisation>(),
+            DepotJournalSynchronisation(context.read<AppDatabase>()),
+            DepotEtatSynchronisation(context.read<AppDatabase>()),
+            Directory(
+              '${context.read<DossierDocuments>().dossier.path}'
+              '${Platform.pathSeparator}LogiALVIA'
+              '${Platform.pathSeparator}Journal',
+            ),
+          )..charger(),
+        ),
         // Appairage : a son propre ViewModel (reseau + coffre du systeme).
         ChangeNotifierProvider<AppairageViewModel>(
           create: (context) => AppairageViewModel(
@@ -111,6 +128,7 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
     'Gestion Utilisateurs',
     'Modes de Paiement',
     'Appairage',
+    'Synchronisation',
     'Sauvegardes',
     'Corbeille',
     'Données de Test',
@@ -161,8 +179,9 @@ class _ParametresGenerauxScreenState extends State<ParametresGenerauxScreen> {
             2 => _OngletUtilisateurs(vm: vm),
             3 => const _OngletModesPaiement(),
             4 => const OngletAppairage(),
-            5 => const OngletSauvegardes(),
-            6 => const OngletCorbeille(),
+            5 => const OngletSynchronisation(),
+            6 => const OngletSauvegardes(),
+            7 => const OngletCorbeille(),
             _ => const OngletDonneesTest(),
           },
         ],

@@ -88,7 +88,7 @@ if "%SANS_TESTS%"=="1" (
 
 echo.
 echo [5/6] flutter build windows --release
-call flutter build windows --release || goto echec
+call flutter build windows --release "--dart-define=LOGIALVIA_ENV=%ENV%" || goto echec
 set "REL=build\windows\x64\runner\Release"
 if not exist "%REL%\logialvia_app.exe" ( echo [ERREUR] %REL%\logialvia_app.exe introuvable. & goto echec )
 

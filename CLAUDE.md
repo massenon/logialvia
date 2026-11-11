@@ -84,7 +84,7 @@ Chaque contexte suit `data/` (tables Drift, repositories `*_drift.dart`, seeders
 - **État** : `provider`. Tout ViewModel partagé entre écrans/modales est enregistré
   globalement dans `main.dart` (Doc K4 §5).
 - **Persistance** : Drift/SQLite, une seule `AppDatabase` (`core/database/app_database.dart`,
-  `versionSchema = 51`, migrations idempotentes testées). `app_database.g.dart` est généré
+  `versionSchema = 52`, migrations idempotentes testées). `app_database.g.dart` est généré
   et versionné.
 - **Navigation** : `go_router`, 3 routes publiques (`/`, `/welcome`, `/login`) puis un
   `ShellRoute` (sidebar/topbar) ; accès contrôlé par `PermissionService` (RBAC 3 rôles, Doc I1)
