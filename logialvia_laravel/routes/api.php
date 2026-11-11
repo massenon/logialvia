@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Route;
 | API des postes. Un jeton Sanctum par poste, nomme d'apres son identifiant (UUID).
 */
 
-// Appairage = connexion (5 par minute et par identifiant/adresse).
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:connexion-api');
+// Appairage = connexion. Aucune limite d'essais (decision du client : pas de blocage de connexion).
+Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum', 'compte.actif', 'contact.poste'])->group(function () {
     // Autorises meme avec un mot de passe temporaire.

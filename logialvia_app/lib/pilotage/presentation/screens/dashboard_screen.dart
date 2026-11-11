@@ -210,7 +210,7 @@ class ModulesActifsSeederEspeces {
     'cuniculture': 'lapins',
     'aviculture_classique': 'poulets',
     'heliciculture': 'escargots',
-    'bovins': 'bovins',
+    'ovins': 'ovins',
   };
 }
 

@@ -7,11 +7,11 @@
     </p>
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Total Débits (Soldes Finaux)</p>
             <p class="text-page-title font-bold" data-kpi="debits">{{ $f::montant($totaux['final_debit']) }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Total Crédits (Soldes Finaux)</p>
             <p class="text-page-title font-bold" data-kpi="credits">{{ $f::montant($totaux['final_credit']) }}</p>
         </div>

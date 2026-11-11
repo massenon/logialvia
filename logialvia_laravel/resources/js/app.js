@@ -23,15 +23,7 @@ document.addEventListener('focusout', (e) => {
 });
 document.addEventListener('submit', (e) => pousserSaisiesEnAttente(e.target), true);
 
-// Menu replie sur telephone : le bouton « Menu » montre/cache la navigation (le CSS la garde toujours visible des `md`).
-document.addEventListener('click', (e) => {
-    const bouton = e.target.closest('[data-menu-bascule]');
-    if (!bouton) return;
-    const menu = document.getElementById(bouton.getAttribute('aria-controls'));
-    const ouvert = bouton.getAttribute('aria-expanded') === 'true';
-    bouton.setAttribute('aria-expanded', ouvert ? 'false' : 'true');
-    menu.classList.toggle('hidden', ouvert);
-});
+// Menu sur telephone : la barre laterale est un tiroir pilote par Alpine (layouts/app.blade.php, bouton [data-menu-bascule]).
 
 /*
  * Reseau et session (47n_). Livewire 3.1 laisse l'utilisateur sans nouvelle quand le reseau tombe (statut 503, aucun

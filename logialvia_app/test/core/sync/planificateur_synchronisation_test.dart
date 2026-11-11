@@ -332,7 +332,7 @@ void main() {
   test(
     'après chaque synchronisation, le rapport est transmis (ex. rechargement des modules)',
     () async {
-      serveur.ajouterModule('bovins', actif: true, espece: 'bovins');
+      serveur.ajouterModule('ovins', actif: true, espece: 'ovins');
       await appairer();
       await planificateur.demarrer();
 

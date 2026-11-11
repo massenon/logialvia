@@ -53,7 +53,7 @@ php artisan migrate:fresh --seed --force > "$LV_DOSSIER/migrate.log" 2>&1 \
 cat > "$LV_DOSSIER/comptes.php" <<'PHP'
 foreach (range(1, 150) as $i) { $u = App\Models\User::query()->create(['name' => 'Admin '.$i, 'username' => 'admin'.$i, 'password' => 'EssaiPoste-2026!', 'is_active' => true, 'must_change_password' => false]); $u->assignRole('admin'); }
 foreach (['caissier' => 'caissier', 'comptable' => 'comptable', 'animalier' => 'animalier'] as $n => $r) { $u = App\Models\User::query()->create(['name' => ucfirst($n), 'username' => $n.'1', 'password' => 'EssaiPoste-2026!', 'is_active' => true, 'must_change_password' => false]); $u->assignRole($r); }
-App\Models\ModuleActif::where('module_id', 'bovins')->update(['is_actif' => true]);
+App\Models\ModuleActif::where('module_id', 'ovins')->update(['is_actif' => true]);
 App\Models\ParametresEntreprise::query()->update(['raison_sociale' => 'ALLMANY SARL (web)', 'prefixe_bac' => 'BC']);
 PHP
 php artisan tinker --execute="$(cat "$LV_DOSSIER/comptes.php")" > "$LV_DOSSIER/comptes.log" 2>&1 \

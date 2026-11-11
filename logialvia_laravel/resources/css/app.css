@@ -14,11 +14,71 @@
     font-display: swap;
 }
 
+/* Material Symbols Outlined (la police du poste), reduite aux icones utilisees : voir public/fonts. */
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    src: url('/fonts/MaterialSymbolsOutlined-LogiALVIA.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+    /* Icone Material Symbols : s'ecrit avec le point de code, ex. <span class="icone">&#xe899;</span>. */
+    .icone {
+        font-family: 'Material Symbols Outlined';
+        font-weight: 400;
+        font-style: normal;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+    }
+
+    /* Barre laterale : degrade vertical bleu marine (Dart `FondDegradeMarque(angleDegres: 180)`). */
+    .sidebar-gradient {
+        background: linear-gradient(180deg, theme('colors.brand-navy') 0%, theme('colors.brand-navy-dark') 100%);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    /* Fond de l'ecran de connexion : login.html (degrade 165deg + grain 26 px a 6 % x 0,5), comme FondDegradeMarque. */
+    .fond-marque {
+        position: relative;
+        min-height: 100vh;
+        background: linear-gradient(165deg, theme('colors.brand-navy') 0%, theme('colors.brand-navy-dark') 100%);
+    }
+
+    .fond-marque::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+}
+
 @layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         @apply bg-surface-bg font-sans text-body text-on-surface;
     }
@@ -40,6 +100,22 @@
 
     body {
         background: #fff !important;
+    }
+
+    /* La coque a hauteur d'ecran (contenu qui defile dans <main>) devient un flux normal : toute la page s'imprime. */
+    body > div {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    body > div > div {
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    main {
+        overflow: visible !important;
     }
 
     main {

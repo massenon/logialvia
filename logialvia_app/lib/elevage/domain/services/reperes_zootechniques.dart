@@ -120,7 +120,7 @@ class ReperesZootechniques {
   ///
   /// Repères : poussin de poule ≈ 40 g, coq Goliath adulte ≤ 6 kg, pintade adulte
   /// ≤ 2,8 kg, lapin ≤ 7 kg (géant), clarias de 0,2 g (alevin) à 15 kg, achatine ≤ 250 g,
-  /// bovin de 15 kg (veau) à 1,1 t.
+  /// ovin de 2 kg (agneau) à 120 kg (repère générique, à valider par l'animalier).
   static ({int min, int max}) poidsMoyenPlausibleG(String espece) =>
       switch (espece) {
         'goliaths' => (min: 30, max: 6000),
@@ -130,7 +130,7 @@ class ReperesZootechniques {
         'pondeuses' => (min: 30, max: 4000),
         'poissons-chats' => (min: 0, max: 15000),
         'escargots' => (min: 0, max: 250),
-        'bovins' => (min: 15000, max: 1100000),
+        'ovins' => (min: 2000, max: 120000),
         _ => (min: 0, max: 2000000),
       };
 

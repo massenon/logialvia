@@ -116,7 +116,7 @@ class ParametresEntreprise extends Table {
   TextColumn get prefixeBac =>
       text().withDefault(const Constant('BAC')).withLength(max: 4)();
 
-  /// Prefixe des parcs — Elevage bovin (Bovins), DV-17. Apercu « PARC1, PARC2 ».
+  /// Prefixe des parcs — Elevage ovin (Ovins), DV-17. Apercu « PARC1, PARC2 ».
   /// Ajoute en v29.
   TextColumn get prefixeParc =>
       text().withDefault(const Constant('PARC')).withLength(max: 4)();

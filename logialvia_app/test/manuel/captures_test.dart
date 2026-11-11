@@ -436,11 +436,11 @@ void main() {
     timeout: _large,
   );
   testWidgets(
-    '07c fiche bovins',
+    '07c fiche ovins',
     (t) => capturer(
       t,
-      const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
-      '07c-fiche-bovins',
+      const PageFicheEspece(configuration: ConfigurationsEspeces.ovins),
+      '07c-fiche-ovins',
     ),
     timeout: _large,
   );

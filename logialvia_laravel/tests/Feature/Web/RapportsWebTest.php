@@ -341,7 +341,7 @@ class RapportsWebTest extends TestCase
         foreach (glob(resource_path('views/livewire/rapports/*.blade.php')) as $fichier) {
             $source = preg_replace('/\{\{--.*?--\}\}/s', '', file_get_contents($fichier));
             $this->assertSame(0, preg_match('/#[0-9a-fA-F]{3,8}\b|rgb\(|style="[^"]*color/', $source), basename($fichier).' : couleur en dur');
-            $this->assertSame(0, preg_match('/(?:bg|text|border)-\[/', $source), basename($fichier).' : valeur arbitraire');
+            $this->assertSame(0, preg_match('/(?:bg|border)-\[|text-\[(?!\d+px\])/', $source), basename($fichier).' : valeur arbitraire');
             preg_match_all('/\b(?:bg|text|border)-(brand-[a-z-]+|surface-[a-z]+|outline(?:-variant)?|on-surface|error-[a-z]+|success-[a-z]+|info-blue|white|transparent)\b/', $source, $m);
             foreach (array_unique($m[1]) as $couleur) {
                 $this->assertContains($couleur, $tokens, basename($fichier).' : jeton inconnu '.$couleur);

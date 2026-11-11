@@ -54,7 +54,7 @@ class FicheEspece extends Component
         '/elevage/lapins' => ['lapins'],
         '/elevage/poissons-chats' => ['poissons-chats'],
         '/elevage/escargots' => ['escargots'],
-        '/elevage/bovins' => ['bovins'],
+        '/elevage/ovins' => ['ovins'],
         '/elevage/poulets-pondeuses' => ['poulets', 'pondeuses'],
     ];
 
@@ -542,7 +542,14 @@ class FicheEspece extends Component
             'libelle_mature' => count($categories) > 2 ? $categories[2][0] : 'Matures',
             'libelle_immature' => count($categories) > 1 ? $categories[1][0] : 'Immatures',
             'a_des_donnees' => $saisies->isNotEmpty(),
+            'naissances' => (int) $saisies->sum(fn (array $j) => $j['ne']),
+            'taux_ponte' => null,
+            'stock_plateaux' => 0,
         ];
+        // Poulets : « Poulettes + Poussins » = les deux premieres categories (maquette).
+        if ($this->espece === 'poulets') {
+            $kpi['immatures'] = ($derniere['effectifs'][0] ?? 0) + ($derniere['effectifs'][1] ?? 0);
+        }
         $effectifReport = 0;
         if ($saisies->isNotEmpty()) {
             $p = $saisies->first();
@@ -555,6 +562,21 @@ class FicheEspece extends Component
             ) ?? 0.0;
         }
         $kpi['niveau_mortalite'] = ReperesZootechniques::niveauMortaliteCumul($kpi['mortalite']);
+
+        // Pondeuses : taux de ponte moyen (oeufs pondus / effectif de la veille, moyenne des jours saisis)
+        // et stock de plateaux entiers de la derniere journee saisie.
+        if ($this->espece === 'pondeuses' && $saisies->isNotEmpty()) {
+            $taux = [];
+            $precedent = $effectifReport;
+            foreach ($saisies as $j) {
+                if ($precedent > 0 && $j['oeufs_pondus'] !== null) {
+                    $taux[] = $j['oeufs_pondus'] / $precedent * 100;
+                }
+                $precedent = $j['effectif'];
+            }
+            $kpi['taux_ponte'] = $taux === [] ? null : array_sum($taux) / count($taux);
+            $kpi['stock_plateaux'] = intdiv((int) ($derniere['stock_final_oeufs'] ?? 0), CalculFicheJournaliere::OEUFS_PAR_PLATEAU);
+        }
 
         // Totaux en direct du formulaire (le Dart : `calculerEnDirect`).
         $veille = $service->veille($this->jour);

@@ -81,7 +81,7 @@ void main() {
             'une Dose », dont le selecteur #administrer-dose-form n\'existe '
             'dans aucun fichier — plus 17 redigees pour les 12 ecrans que le '
             'prototype laissait sans visite, plus 6 pour les fiches Escargots '
-            'et Bovins ajoutees apres lui.',
+            'et Ovins ajoutees apres lui.',
       );
     });
 
@@ -119,7 +119,7 @@ void main() {
 
     test('les deux filières ajoutées ont leur visite, sur les cibles de la fiche',
         () {
-      for (final route in const ['/elevage/escargots', '/elevage/bovins']) {
+      for (final route in const ['/elevage/escargots', '/elevage/ovins']) {
         final cibles = ScenariosTour.pour(route).map((e) => e.cible).toList();
         expect(cibles, [
           'saisie-journaliere',

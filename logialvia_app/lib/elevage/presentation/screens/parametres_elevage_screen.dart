@@ -345,7 +345,7 @@ class _OngletRationnement extends StatelessWidget {
 /// « Taux de ration par classe de poids » — DV-17.
 ///
 /// Un ruminant se rationne en % de son poids vif : la provende de la fiche
-/// Bovins vaut `pesée du lot × taux de la classe du poids moyen`. Ce tableau
+/// Ovins vaut `pesée du lot × taux de la classe du poids moyen`. Ce tableau
 /// est la configuration de ce calcul.
 class _CarteTauxPoids extends StatelessWidget {
   const _CarteTauxPoids({required this.vm});
@@ -370,7 +370,7 @@ class _CarteTauxPoids extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Pour les filières rationnées sur le poids vif (bovins, en matière '
+            'Pour les filières rationnées sur le poids vif (ovins, en matière '
             'sèche ; poissons-chats, en biomasse) : la provende du jour = '
             'pesée totale du lot × taux de la classe du poids moyen. Sans '
             'pesée, la fiche retombe sur la ration par tête du tableau '
@@ -486,7 +486,7 @@ String _poidsVersTexte(int? grammes, int grammesParUnite) {
       : valeur.toString().replaceAll('.', ',');
 }
 
-/// Unité de saisie des bornes (`kg` bovins, `g` poissons) et son facteur.
+/// Unité de saisie des bornes (`kg` ovins, `g` poissons) et son facteur.
 String _uniteClasse(String espece) =>
     ConfigurationsEspeces.parIdentifiant[espece]?.uniteClassePoids ?? 'kg';
 int _facteurClasse(String espece) =>
@@ -2128,8 +2128,8 @@ class _OngletNumerotation extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _GroupeNumerotation(
-                  titre: 'Élevage bovin (Bovins)',
-                  icone: Symbols.agriculture,
+                  titre: 'Élevage ovin (Ovins)',
+                  icone: Symbols.grass,
                   champs: [
                     _ChampPrefixe(
                       libelle: 'Préfixe Parc',

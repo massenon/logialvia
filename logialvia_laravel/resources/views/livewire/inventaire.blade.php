@@ -58,7 +58,7 @@
                 <p class="text-caption">{{ $detail }}</p>
             </div>
         @endforeach
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm" data-kpi="animaux">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm" data-kpi="animaux">
             <p class="text-caption uppercase text-outline">Animaux sur Pied</p>
             <p class="text-kpi-value font-bold">{{ $effectifTotal }}</p>
             <p class="text-caption text-outline">Comptés, non valorisés</p>

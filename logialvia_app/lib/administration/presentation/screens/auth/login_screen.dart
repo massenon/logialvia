@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/seed/admin_seeder.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -181,12 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
           label: 'NOM D\'UTILISATEUR OU EMAIL',
           controller: _identifiantController,
           iconePrefixe: Symbols.person,
-          // ECART_DELIBERE : le prototype affiche `gerante@allmany.bj`
-          // (login.html l.87), mais le compte reellement cree par le seeder est
-          // `admin` (Doc K4 §8). Garder l'e-mail du prototype induisait en
-          // erreur sur l'identifiant a saisir — le placeholder montre donc le
-          // vrai identifiant du compte semeur.
-          placeholder: 'admin',
+          // DECISION CLIENT (2026-11-11) : aucun identifiant ni mot de passe suggere (ni `admin`, ni le
+          // mot de passe initial) ; le texte guide seulement.
+          placeholder: 'Entrez votre nom d\'utilisateur',
           erreur: vm.erreurIdentifiant,
           autofocus: true,
         ),
@@ -196,12 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _motDePasseController,
           focusNode: _focusMotDePasse,
           iconePrefixe: Symbols.lock,
-          // ⚠️ Ce placeholder ne doit jamais suggerer un mot de passe qui ne
-          // fonctionne pas : l'utilisatrice le recopierait et se verrait
-          // refuser l'acces, sans comprendre pourquoi. Il suit donc le mot de
-          // passe reellement pose par le seeder — voir
-          // `AdminSeeder.motDePasseInitialAdmin`.
-          placeholder: AdminSeeder.motDePasseInitialAdmin,
+          placeholder: 'Entrez votre mot de passe',
           erreur: vm.erreurMotDePasse,
           masque: vm.motDePasseMasque,
           onSubmitted: actionsBloquees ? null : (_) => _soumettre(),

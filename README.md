@@ -2,7 +2,7 @@
 
 # LogiALVIA
 
-**Gestion intégrée d'ALLMANY ET COMPAGNIE**
+**Gestion et Suivi Avicole Intégré**
 de l'œuf mis en couveuse jusqu'au bilan de fin d'exercice.
 
 `Hors ligne` · `8 filières d'élevage` · `Ventes & caisse` · `Stocks & achats` · `Comptabilité SYSCOHADA` · `e-MECeF` · `Windows & web`
@@ -70,7 +70,7 @@ Cycles d'incubation, mirages, taux d'éclosion et de perte, éclosions attendues
 
 ### Fiches des filières
 
-Huit filières, chacune avec sa fiche journalière, ses repères et ses règles : Goliaths, pintades, lapins, poissons-chats, poulets, pondeuses, escargots, bovins. La saisie du jour reprend automatiquement les ventes de la caisse et recalcule l'effectif réel.
+Huit filières, chacune avec sa fiche journalière, ses repères et ses règles : Goliaths, pintades, lapins, poissons-chats, poulets, pondeuses, escargots, ovins. La saisie du jour reprend automatiquement les ventes de la caisse et recalcule l'effectif réel.
 
 <img src="docs/manuel/captures/05-fiche-goliaths.png" alt="Fiche Goliaths" width="900">
 
@@ -80,7 +80,7 @@ Huit filières, chacune avec sa fiche journalière, ses repères et ses règles 
 
 <img src="docs/manuel/captures/07b-fiche-escargots.png" alt="Fiche escargots" width="900">
 
-<img src="docs/manuel/captures/07c-fiche-bovins.png" alt="Fiche bovins" width="900">
+<img src="docs/manuel/captures/07c-fiche-ovins.png" alt="Fiche ovins" width="900">
 
 <img src="docs/manuel/captures/08-fiche-poissons-chats.png" alt="Fiche poissons-chats" width="900">
 

@@ -115,11 +115,11 @@ class ParametresGenerauxWebTest extends TestCase
 
     public function test_les_modules_montrent_leur_etat_et_les_deux_filieres_fixes(): void
     {
-        ModuleActif::query()->where('module_id', 'bovins')->update(['is_actif' => true]);
+        ModuleActif::query()->where('module_id', 'ovins')->update(['is_actif' => true]);
 
         Livewire::actingAs($this->admin())->test(ParametresGeneraux::class)
             ->assertSee('Goliaths')->assertSee('Pintades')->assertSee('toujours actif')
-            ->assertSeeHtml('data-module="bovins"')->assertSee('Poulets / Pondeuses')
+            ->assertSeeHtml('data-module="ovins"')->assertSee('Poulets / Pondeuses')
             ->assertSeeHtml('data-module-fixe="Goliaths"')
             ->assertSee('Mode « Données de Test »')->assertSee('Désactivé — l\'onglet Données de Test est verrouillé');
     }
@@ -146,14 +146,14 @@ class ParametresGenerauxWebTest extends TestCase
 
     public function test_desactiver_un_module_conserve_les_donnees_et_le_dit(): void
     {
-        ModuleActif::query()->where('module_id', 'bovins')->update(['is_actif' => true]);
+        ModuleActif::query()->where('module_id', 'ovins')->update(['is_actif' => true]);
         $this->travel(5)->seconds();
 
         Livewire::actingAs($this->admin())->test(ParametresGeneraux::class)
-            ->call('basculerModule', 'bovins', false)
-            ->assertSee('Bovins désactivée. Les données historiques sont conservées.');
+            ->call('basculerModule', 'ovins', false)
+            ->assertSee('Ovins désactivée. Les données historiques sont conservées.');
 
-        $this->assertFalse(ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        $this->assertFalse(ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
     }
 
     public function test_un_module_inconnu_n_ecrit_rien(): void
@@ -177,14 +177,14 @@ class ParametresGenerauxWebTest extends TestCase
     public function test_une_modification_plus_recente_du_serveur_est_refusee_avec_le_message_du_serveur(): void
     {
         // Le serveur a decide dans le futur proche : la saisie web (maintenant) est plus ancienne.
-        ModuleActif::query()->where('module_id', 'bovins')->get()->each(fn ($m) => $m->forceFill(['updated_at' => now()->addHour()])->save());
+        ModuleActif::query()->where('module_id', 'ovins')->get()->each(fn ($m) => $m->forceFill(['updated_at' => now()->addHour()])->save());
 
         Livewire::actingAs($this->admin())->test(ParametresGeneraux::class)
-            ->call('basculerModule', 'bovins', true)
+            ->call('basculerModule', 'ovins', true)
             ->assertSet('erreur', 'Une modification plus récente existe sur le serveur : elle vous sera envoyée.')
             ->assertDontSee('activée — sa fiche');
 
-        $this->assertFalse(ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        $this->assertFalse(ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
     }
 
     public function test_sans_manage_modules_les_interrupteurs_sont_absents(): void
@@ -195,7 +195,7 @@ class ParametresGenerauxWebTest extends TestCase
 
         Livewire::actingAs($u)->test(ParametresGeneraux::class)
             ->assertDontSeeHtml('role="switch"')->assertSee('Lecture seule : seul l\'administrateur peut activer', false);
-        Livewire::actingAs($u)->test(ParametresGeneraux::class)->call('basculerModule', 'bovins', true)->assertForbidden();
+        Livewire::actingAs($u)->test(ParametresGeneraux::class)->call('basculerModule', 'ovins', true)->assertForbidden();
         $this->assertSame(0, DemandeReferentiel::query()->count());
     }
 
@@ -490,7 +490,7 @@ class ParametresGenerauxWebTest extends TestCase
 
         $appel('enregistrer');
         $appel('basculerMecef');
-        $appel('basculerModule', ['bovins', true]);
+        $appel('basculerModule', ['ovins', true]);
 
         $this->assertSame(0, DemandeReferentiel::query()->count());
         $this->assertSame('ALLMANY ET COMPAGNIE', ParametresEntreprise::courant()->raison_sociale);
@@ -503,8 +503,8 @@ class ParametresGenerauxWebTest extends TestCase
         $u->givePermissionTo('manage-modules');
         $this->travel(5)->seconds();
 
-        Livewire::actingAs($u)->test(ParametresGeneraux::class)->call('basculerModule', 'bovins', true)->assertSet('erreur', null);
-        $this->assertTrue(ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        Livewire::actingAs($u)->test(ParametresGeneraux::class)->call('basculerModule', 'ovins', true)->assertSet('erreur', null);
+        $this->assertTrue(ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
         Livewire::actingAs($u)->test(ParametresGeneraux::class)->call('enregistrer')->assertForbidden();
     }
 }

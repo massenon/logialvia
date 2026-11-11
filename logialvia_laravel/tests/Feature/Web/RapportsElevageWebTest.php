@@ -103,11 +103,11 @@ class RapportsElevageWebTest extends TestCase
         // Pondeuses : 4 categories (le `4` existe).
         $this->fiche('pondeuses', '2026-11-05', 100, [10, 20, 30, 40], ['mort_cat1' => 1, 'mort_cat2' => 1, 'mort_cat3' => 1, 'mort_cat4' => 2, 'don_cat4' => 1]);
 
-        // Bovins rationnes sur le poids vif : 2 500 kg pour 10 tetes = 250 kg en moyenne.
-        $this->fiche('bovins', '2026-11-12', 10, [2, 3, 5], ['poids_general_g' => 2500000]);
-        $this->taux('bovins', 0, 200000, 3.0);
-        $this->taux('bovins', 200000, null, 2.5);
-        $this->taux('bovins', 150000, null, 99.0, '2026-11-01 00:00:00');   // archive : ignore (sinon il passerait devant la 2e classe)
+        // Ovins rationnes sur le poids vif : 2 500 kg pour 10 tetes = 250 kg en moyenne.
+        $this->fiche('ovins', '2026-11-12', 10, [2, 3, 5], ['poids_general_g' => 2500000]);
+        $this->taux('ovins', 0, 200000, 3.0);
+        $this->taux('ovins', 200000, null, 2.5);
+        $this->taux('ovins', 150000, null, 99.0, '2026-11-01 00:00:00');   // archive : ignore (sinon il passerait devant la 2e classe)
 
         // Poissons-chats rationnes sur le poids vif mais SANS pesee : repli par tete.
         $this->fiche('poissons-chats', '2026-11-03', 1000, [500, 300, 200]);
@@ -116,7 +116,7 @@ class RapportsElevageWebTest extends TestCase
         $this->bareme('pondeuses', 'Poulette', 100);
         $this->bareme('pondeuses', 'Pondeuse', 999, '2026-11-01 00:00:00');
         $this->bareme('goliaths', 'Mature', 999, '2026-11-01 00:00:00');
-        // Actifs mais d'une AUTRE espece : ni le stade « Poulette » ni la classe 0+ des goliaths ne touchent les pondeuses et les bovins.
+        // Actifs mais d'une AUTRE espece : ni le stade « Poulette » ni la classe 0+ des goliaths ne touchent les pondeuses et les ovins.
         $this->bareme('goliaths', 'Poulette', 999);
         $this->taux('goliaths', 0, null, 50.0);
 
@@ -185,7 +185,7 @@ class RapportsElevageWebTest extends TestCase
         // Ordre des filieres du Dart ; derniere journee de la periode ; geniteurs = derniere categorie ; jeunes = les autres.
         $this->assertSame([
             ['Goliaths', '95', '30', '65', '6', '4', '2'],
-            ['Bovins', '10', '5', '5', '0', '0', '0'],
+            ['Ovins', '10', '5', '5', '0', '0', '0'],
             ['Poissons-Chats', '1000', '200', '800', '0', '0', '0'],
             ['Pondeuses', '100', '40', '60', '5', '1', '1'],
         ], $this->lignes($c, "//table[@data-table='recensement']/tbody/tr"));
@@ -198,7 +198,7 @@ class RapportsElevageWebTest extends TestCase
 
         $this->assertSame([
             ['Goliaths', '5', '20 000', '95', 'Vermifuge', '3 sujet(s) — Diarrhée, Boiterie, Fièvre', '6 150'],
-            ['Bovins', '0', '—', '10', 'Aucun traitement administré', 'Aucun signe observé', '62 500'],
+            ['Ovins', '0', '—', '10', 'Aucun traitement administré', 'Aucun signe observé', '62 500'],
             ['Poissons-Chats', '0', '—', '1000', 'Aucun traitement administré', 'Aucun signe observé', '3 000'],
             ['Pondeuses', '0', '—', '100', 'Vaccination (Gumboro)', 'Aucun signe observé', '8 900'],
         ], $this->lignes($c, "//table[@data-table='mouvements']/tbody/tr"));
@@ -290,28 +290,28 @@ class RapportsElevageWebTest extends TestCase
 
     public function test_provende_sur_le_poids_vif_bornes_des_classes_et_replis(): void
     {
-        $cat = $this->categories('bovins');   // 1 500 / 7 000 / 9 000 g par tete
-        $taux = [$this->classe(0, 200000, 3.0), $this->classe(200000, null, 2.5)];
-        $parTete = 2 * 1500 + 3 * 7000 + 5 * 9000;   // 69 000
+        $cat = $this->categories('ovins');   // 300 / 600 / 800 g par tete
+        $taux = [$this->classe(0, 20000, 3.0), $this->classe(20000, null, 2.5)];
+        $parTete = 2 * 300 + 3 * 600 + 5 * 800;   // 6 400
 
-        // 250 kg de moyenne : 2e classe a 2,5 % de la pesee.
-        $this->assertSame(62500, RapportElevage::provende('bovins', $cat, [2, 3, 5], 2500000, [], $taux));
-        // Moyenne EXACTEMENT 200 kg : minimum inclus, maximum exclu -> 2e classe (2,5 %).
-        $this->assertSame(50000, RapportElevage::provende('bovins', $cat, [2, 3, 5], 2000000, [], $taux));
-        // Juste en dessous : 1re classe a 3 % (59 999,97 arrondi).
-        $this->assertSame(60000, RapportElevage::provende('bovins', $cat, [2, 3, 5], 1999999, [], $taux));
+        // 25 kg de moyenne : 2e classe a 2,5 % de la pesee.
+        $this->assertSame(6250, RapportElevage::provende('ovins', $cat, [2, 3, 5], 250000, [], $taux));
+        // Moyenne EXACTEMENT 20 kg : minimum inclus, maximum exclu -> 2e classe (2,5 %).
+        $this->assertSame(5000, RapportElevage::provende('ovins', $cat, [2, 3, 5], 200000, [], $taux));
+        // Juste en dessous : 1re classe a 3 % (5 999,97 arrondi).
+        $this->assertSame(6000, RapportElevage::provende('ovins', $cat, [2, 3, 5], 199999, [], $taux));
         // Replis par tete : pas de pesee, pesee nulle, effectif nul, aucune classe pour ce poids moyen.
-        $this->assertSame($parTete, RapportElevage::provende('bovins', $cat, [2, 3, 5], null, [], $taux));
-        $this->assertSame($parTete, RapportElevage::provende('bovins', $cat, [2, 3, 5], 0, [], $taux));
-        $this->assertSame(0, RapportElevage::provende('bovins', $cat, [0, 0, 0], 100000, [], $taux));
-        $this->assertSame($parTete, RapportElevage::provende('bovins', $cat, [2, 3, 5], 2500000, [], [$this->classe(0, 100000, 3.0)]));
+        $this->assertSame($parTete, RapportElevage::provende('ovins', $cat, [2, 3, 5], null, [], $taux));
+        $this->assertSame($parTete, RapportElevage::provende('ovins', $cat, [2, 3, 5], 0, [], $taux));
+        $this->assertSame(0, RapportElevage::provende('ovins', $cat, [0, 0, 0], 10000, [], $taux));
+        $this->assertSame($parTete, RapportElevage::provende('ovins', $cat, [2, 3, 5], 250000, [], [$this->classe(0, 10000, 3.0)]));
         // Arrondi a l'entier comme le Dart (2,5 -> 3).
-        $this->assertSame(3, RapportElevage::provende('bovins', $cat, [1, 0, 0], 100, [], [$this->classe(0, null, 2.5)]));
+        $this->assertSame(3, RapportElevage::provende('ovins', $cat, [1, 0, 0], 100, [], [$this->classe(0, null, 2.5)]));
     }
 
     public function test_ordre_des_filieres_du_dart_pour_le_rapport(): void
     {
-        $this->assertSame(['goliaths', 'pintades', 'lapins', 'escargots', 'bovins', 'poissons-chats', 'poulets', 'pondeuses'], RapportElevage::ORDRE);
+        $this->assertSame(['goliaths', 'pintades', 'lapins', 'escargots', 'ovins', 'poissons-chats', 'poulets', 'pondeuses'], RapportElevage::ORDRE);
         $this->assertEqualsCanonicalizing(FilieresElevage::identifiants(), RapportElevage::ORDRE);
     }
 }

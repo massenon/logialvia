@@ -532,7 +532,7 @@ class ElevageExpertWebTest extends TestCase
         $this->assertNull($r::gmqGrammesParJour(1, 2, 0));
         $this->assertEqualsWithDelta(2.0, $r::indiceConsommation(3000, 1500), 1e-9);
         $this->assertNull($r::indiceConsommation(3000, 0));
-        $this->assertSame(['min' => 15000, 'max' => 1100000], $r::poidsMoyenPlausibleG('bovins'));
+        $this->assertSame(['min' => 2000, 'max' => 120000], $r::poidsMoyenPlausibleG('ovins'));
     }
 
     public function test_les_semaines_comptent_les_entrees_dans_l_effectif_expose(): void
@@ -575,7 +575,7 @@ class ElevageExpertWebTest extends TestCase
         $this->journee('goliaths', '2026-11-08', ['effectif' => 97, 'poids_general_g' => 180000]);
 
         Livewire::actingAs($this->utilisateur('animalier', 'eleveur'))->test(\App\Livewire\DashboardElevage::class)
-            ->assertSeeHtml('data-gmq="goliaths"')->assertSee('Goliaths : 56,5 g/j (500 g → 1856 g en 24 j)');
+            ->assertSeeHtml('data-gmq="goliaths"')->assertSee('Goliaths : 56,5 g/j')->assertSee('500 g → 1856 g en 24 j');
     }
 
     public function test_sans_deux_pesees_le_gmq_est_declare_absent(): void

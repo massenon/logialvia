@@ -225,11 +225,11 @@ void main() {
       ),
     );
     testWidgets(
-      'Fiche Bovins',
+      'Fiche Ovins',
       (t) => verifier(
         t,
-        const PageFicheEspece(configuration: ConfigurationsEspeces.bovins),
-        'Fiche Bovins',
+        const PageFicheEspece(configuration: ConfigurationsEspeces.ovins),
+        'Fiche Ovins',
       ),
     );
     testWidgets(
@@ -264,20 +264,20 @@ void main() {
       // Champs du formulaire, dans l'ordre : designation, tarif, tarif haut,
       // cout, unite, stock, seuil.
       final champs = find.byType(TextField);
-      await t.enterText(champs.at(dejaLa), 'Bovin d\'embouche (tête)');
+      await t.enterText(champs.at(dejaLa), 'Ovin d\'embouche (tête)');
       await t.enterText(champs.at(dejaLa + 1), '350000');
       await t.enterText(champs.at(dejaLa + 5), '4');
 
       await t.tap(find.byType(DropdownButtonFormField<String>).first);
       await t.pumpAndSettle();
-      expect(find.text('Élevage bovin'), findsWidgets);
-      await t.tap(find.text('Élevage bovin').last);
+      expect(find.text('Élevage ovin'), findsWidgets);
+      await t.tap(find.text('Élevage ovin').last);
       await t.pumpAndSettle();
 
       await t.ensureVisible(find.byKey(const ValueKey('champ-filiere')));
       await t.tap(find.byKey(const ValueKey('champ-filiere')));
       await t.pumpAndSettle();
-      await t.tap(find.text('Bovins').last);
+      await t.tap(find.text('Ovins').last);
       await t.pumpAndSettle();
 
       await t.ensureVisible(find.text('Enregistrer'));
@@ -287,9 +287,9 @@ void main() {
 
       final produit = await (db.select(
         db.produitsVendables,
-      )..where((p) => p.name.equals('Bovin d\'embouche (tête)'))).getSingle();
-      expect(produit.espece, 'bovins');
-      expect(produit.cat, 'Élevage bovin');
+      )..where((p) => p.name.equals('Ovin d\'embouche (tête)'))).getSingle();
+      expect(produit.espece, 'ovins');
+      expect(produit.cat, 'Élevage ovin');
       expect(produit.stock, 4);
     });
   });
@@ -299,9 +299,9 @@ void main() {
         '« à valider » à « validé »', (t) async {
       await afficher(t, const PageParametresElevage());
 
-      // Premiere ligne : les barèmes sont tries par espece, donc les bovins.
+      // Premiere ligne : les barèmes sont tries par espece, donc les escargots.
       final avant = (await db.select(db.baremesRation).get()).singleWhere(
-        (b) => b.espece == 'bovins' && b.stade == 'Veau',
+        (b) => b.espece == 'escargots' && b.stade == 'Naissain',
       );
       expect(avant.confirme, isFalse);
 
@@ -314,7 +314,7 @@ void main() {
       expect(t.takeException(), isNull);
 
       final apres = (await db.select(db.baremesRation).get()).singleWhere(
-        (b) => b.espece == 'bovins' && b.stade == 'Veau',
+        (b) => b.espece == 'escargots' && b.stade == 'Naissain',
       );
       expect(apres.confirme, isTrue);
       expect(apres.rationGrammesParJour, avant.rationGrammesParJour);

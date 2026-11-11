@@ -94,13 +94,13 @@ void main() {
       'une valeur de SEMIS du serveur n\'écrase pas le choix de la Gérante',
       () async {
         await (db.update(db.modulesActifs)
-              ..where((m) => m.moduleId.equals('bovins')))
+              ..where((m) => m.moduleId.equals('ovins')))
             .write(const ModulesActifsCompanion(isActif: Value(true)));
-        serveur.ajouterModule('bovins', actif: false, decide: false);
+        serveur.ajouterModule('ovins', actif: false, decide: false);
 
         final r = await moteur.synchroniser();
 
-        expect(await actif('bovins'), isTrue);
+        expect(await actif('ovins'), isTrue);
         expect(r.referentielsMisAJour, 0);
         expect(r.conserveesLocalement, 1);
       },
@@ -123,19 +123,19 @@ void main() {
     test(
       'une valeur incohérente (is_actif = "oui") est refusée, pas devinée',
       () async {
-        serveur.ajouterModule('bovins', actif: true);
-        serveur.modules['bovins']!['is_actif'] = 'oui';
+        serveur.ajouterModule('ovins', actif: true);
+        serveur.modules['ovins']!['is_actif'] = 'oui';
 
         final r = await moteur.synchroniser();
 
         expect(r.refuseesALaReception, 1);
-        expect(await actif('bovins'), isFalse);
+        expect(await actif('ovins'), isFalse);
       },
     );
 
     test('le poste n\'envoie JAMAIS un référentiel', () async {
       await (db.update(db.modulesActifs)
-            ..where((m) => m.moduleId.equals('bovins')))
+            ..where((m) => m.moduleId.equals('ovins')))
           .write(const ModulesActifsCompanion(isActif: Value(true)));
       await moteur.synchroniser();
       for (final envoi in serveur.envois) {
@@ -147,7 +147,7 @@ void main() {
     });
 
     test('rejouer le même tirage ne change plus rien', () async {
-      serveur.ajouterModule('bovins', actif: true);
+      serveur.ajouterModule('ovins', actif: true);
       await moteur.synchroniser();
       await preferences.definirCurseurTirage(null);
 
@@ -304,15 +304,15 @@ void main() {
   test(
     'une remise à zéro du serveur préserve les référentiels du poste',
     () async {
-      serveur.ajouterModule('bovins', actif: true);
+      serveur.ajouterModule('ovins', actif: true);
       await moteur.synchroniser();
-      expect(await actif('bovins'), isTrue);
+      expect(await actif('ovins'), isTrue);
 
       serveur.remettreAZero();
       final r = await moteur.synchroniser();
 
       expect(r.remiseAZero, isTrue);
-      expect(await actif('bovins'), isTrue);
+      expect(await actif('ovins'), isTrue);
     },
   );
 }

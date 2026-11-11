@@ -35,15 +35,15 @@
             Sélectionnez un compte ci-dessus pour afficher ses écritures et son solde progressif.</p>
     @else
         <div class="mb-md grid grid-cols-2 gap-md lg:grid-cols-4">
-            <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+            <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
                 <p class="text-caption uppercase text-outline">Solde d'Ouverture</p>
                 <p class="font-bold" data-kpi="ouverture">{{ $f::montant($ouverture) }}</p>
             </div>
-            <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+            <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
                 <p class="text-caption uppercase text-outline">Total Débit Période</p>
                 <p class="font-bold text-success-deep" data-kpi="debit">{{ $f::montant($debit) }}</p>
             </div>
-            <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+            <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
                 <p class="text-caption uppercase text-outline">Total Crédit Période</p>
                 <p class="font-bold text-error-deep" data-kpi="credit">{{ $f::montant($credit) }}</p>
             </div>

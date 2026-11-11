@@ -93,7 +93,7 @@ void main() {
     );
     await db.customStatement(
       "INSERT INTO taux_ration_poids (id, espece, poids_min_g, poids_max_g, taux_pourcent, confirme) VALUES "
-      "(3, 'bovins', 0, 150000, 3.5, 0), (7, 'bovins', 150000, NULL, 3.0, 1)",
+      "(3, 'ovins', 0, 150000, 3.5, 0), (7, 'ovins', 150000, NULL, 3.0, 1)",
     );
     await db.customStatement(
       "INSERT INTO calendrier_prophylaxie (id, espece, jour_cycle, traitement, produit, remanence_jours, dose) VALUES "
@@ -125,7 +125,7 @@ void main() {
           'baremes_ration',
           {
             'id': 30,
-            'espece': 'bovins',
+            'espece': 'ovins',
             'stade': 'Veau',
             'ration_grammes_par_jour': 1500,
             'confirme': 0,
@@ -135,7 +135,7 @@ void main() {
           'taux_ration_poids',
           {
             'id': 31,
-            'espece': 'bovins',
+            'espece': 'ovins',
             'poids_min_g': 300000,
             'poids_max_g': null,
             'taux_pourcent': 2.5,
@@ -257,7 +257,7 @@ void main() {
       );
       expect(
         t.single['id'],
-        IdentifiantsParametresElevage.taux('bovins', 150000),
+        IdentifiantsParametresElevage.taux('ovins', 150000),
       );
       final e = await lire(
         db,
@@ -363,14 +363,14 @@ void main() {
           db,
           "SELECT id FROM baremes_ration WHERE stade = 'Veau'",
         )).single['id'],
-        IdentifiantsParametresElevage.bareme('bovins', 'Veau'),
+        IdentifiantsParametresElevage.bareme('ovins', 'Veau'),
       );
       expect(
         (await lire(
           db,
           'SELECT id FROM taux_ration_poids WHERE poids_min_g = 300000',
         )).single['id'],
-        IdentifiantsParametresElevage.taux('bovins', 300000),
+        IdentifiantsParametresElevage.taux('ovins', 300000),
       );
       expect(
         (await lire(

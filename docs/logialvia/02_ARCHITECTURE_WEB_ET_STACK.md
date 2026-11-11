@@ -54,7 +54,7 @@ T5. ROUTES ET DROITS. `routes/web.php` : `Route::get('/x', Composant::class)->na
 T6. NAVIGATION SANS RECHARGEMENT. Applique la section 4 (wire:navigate, persist, progression, pièges).
 T7. FRONT LOCAL. Applique la section 7 (polices, icônes, jetons). `npm run build` ne doit référencer aucune URL externe.
 T8. SÉCURITÉ ET HÉBERGEMENT. Applique les sections 8 et 9 (limiteurs, en-têtes, sessions, .htaccess, cron, .env).
-T9. SYNCHRO (squelette). `routes/api.php` : `POST /api/auth/login` (throttle 5/min), puis groupe `auth:sanctum` :
+T9. SYNCHRO (squelette). `routes/api.php` : `POST /api/auth/login` (sans limite d'essais, décision du client), puis groupe `auth:sanctum` :
     `/api/auth/logout`, `/api/auth/me`, `GET /api/sync/pull?since=…`, `POST /api/sync/push` ; contrôleur mince,
     toute la logique dans Actions/Services (même appelées depuis les composants Livewire). Détail : 43_APPAIRAGE_…
     et `agrierp_laravel/CLAUDE.md` « Offline sync ».

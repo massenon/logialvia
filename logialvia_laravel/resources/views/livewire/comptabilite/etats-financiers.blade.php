@@ -16,7 +16,7 @@
     <div class="mb-md flex flex-wrap gap-xs border-b border-outline-variant" role="tablist" data-onglets>
         @foreach ($onglets as $cle => $libelleOnglet)
             <button type="button" role="tab" wire:click="choisir('{{ $cle }}')" aria-selected="{{ $onglet === $cle ? 'true' : 'false' }}" data-onglet="{{ $cle }}"
-                    class="px-md py-sm text-xs font-bold {{ $onglet === $cle ? 'border-b-2 border-brand-navy text-brand-navy' : 'text-outline' }}">{{ $libelleOnglet }}</button>
+                    class="px-md py-2.5 text-xs font-bold {{ $onglet === $cle ? 'border-b-2 border-brand-navy text-brand-navy' : 'text-outline' }}">{{ $libelleOnglet }}</button>
         @endforeach
     </div>
 

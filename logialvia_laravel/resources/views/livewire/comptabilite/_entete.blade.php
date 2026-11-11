@@ -2,7 +2,11 @@
 {{-- Vue IMPRIMABLE (le poste exporte un PDF) : en impression, la navigation et les boutons disparaissent. --}}
 <p class="mb-sm hidden text-xs text-outline print:block" data-entete-impression>ALLMANY ET COMPAGNIE — {{ $titre }} — exercice {{ $annee }} — imprimé le {{ now(config('logialvia.fuseau'))->format('d/m/Y') }}</p>
 <div class="mb-xs flex flex-wrap items-center justify-between gap-sm">
-    <h1 class="text-page-title font-bold">{{ $titre }}</h1>
+    @php
+    $iconesTitres = ['Comptabilité' => 'account_balance', 'Plan Comptable' => 'list_alt', 'Journal Comptable' => 'menu_book', 'Grand Livre' => 'import_contacts', 'Balance Générale' => 'balance', 'États Financiers' => 'description', 'Bilan de l\'Entreprise' => 'account_balance', 'Clôture d\'Exercice' => 'event_repeat', 'Comptabilité Analytique' => 'insights', 'Saisie des Dépenses' => 'request_page'];
+    $iconeEntete = $icone ?? ($iconesTitres[$titre] ?? null);
+@endphp
+    <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy">@if ($iconeEntete)<x-icone :nom="$iconeEntete" class="text-[24px]" />@endif{{ $titre }}</h1>
     <div class="flex items-center gap-sm text-xs print:hidden">
         @if (method_exists($this, 'exporter'))
             <button type="button" wire:click="exporter" data-action="exporter"

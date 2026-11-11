@@ -67,10 +67,10 @@ class _DashboardElevageScreenState extends State<DashboardElevageScreen> {
       texte: 'Filière Héliciculture disponible — non activée pour le moment.',
     ),
     (
-      moduleId: 'bovins',
-      titre: 'Bovins',
-      icone: Symbols.agriculture,
-      texte: 'Filière Bovins disponible — non activée pour le moment.',
+      moduleId: 'ovins',
+      titre: 'Ovins',
+      icone: Symbols.grass,
+      texte: 'Filière Ovins disponible — non activée pour le moment.',
     ),
   ];
 

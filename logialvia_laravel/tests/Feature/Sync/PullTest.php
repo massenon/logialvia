@@ -88,11 +88,11 @@ class PullTest extends TestCase
         $curseur = $this->avecJeton($poste['jeton'])->getJson('/api/sync/pull')->json('server_time');
         $this->travel(5)->seconds();
 
-        ModuleActif::query()->where('module_id', 'bovins')->update(['is_actif' => true]);
+        ModuleActif::query()->where('module_id', 'ovins')->update(['is_actif' => true]);
 
         $modules = $this->avecJeton($poste['jeton'])->getJson('/api/sync/pull?since='.urlencode($curseur))->json('tables.modules_actifs');
         $this->assertCount(1, $modules);
-        $this->assertSame('bovins', $modules[0]['module_id']);
+        $this->assertSame('ovins', $modules[0]['module_id']);
         $this->assertTrue($modules[0]['is_actif']);
     }
 

@@ -4,10 +4,10 @@
             @include('livewire.rapports._carte', [
                 'kpi' => 'compte-'.\Illuminate\Support\Str::slug($lib), 'libelle' => $lib === 'Caisse' ? 'Caisse Espèces' : $lib,
                 'valeur' => $f::montant($x['clotures'][$lib]), 'detail' => 'Solde au '.$d($finPeriode),
-                'accent' => $lib === 'Caisse' ? 'border-brand-navy' : 'border-brand-gold',
+                'accent' => $lib === 'Caisse' ? 'border-brand-navy' : 'border-brand-gold', 'icone' => $lib === 'Caisse' ? 'payments' : 'smartphone',
             ])
         @endforeach
-        @include('livewire.rapports._carte', ['kpi' => 'tresorerie-nette', 'libelle' => 'Trésorerie Nette Globale', 'valeur' => $f::montant($x['nette']), 'detail' => 'Cumul de tous les comptes de classe 5', 'accent' => 'border-success-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'tresorerie-nette', 'icone' => 'account_balance_wallet', 'libelle' => 'Trésorerie Nette Globale', 'valeur' => $f::montant($x['nette']), 'detail' => 'Cumul de tous les comptes de classe 5', 'accent' => 'border-success-deep'])
     </div>
 
     <section class="mb-md rounded-lg border border-outline-variant bg-surface-card p-md">

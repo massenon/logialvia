@@ -250,7 +250,7 @@ class CorbeilleWebTest extends TestCase
     public function test_restaurer_un_taux_et_une_echeance(): void
     {
         $taux = (new TauxRationPoids)->forceFill([
-            'id' => (string) Str::uuid(), 'espece' => 'Bovins', 'poids_min_g' => 0, 'poids_max_g' => 100000, 'taux_pourcent' => 2.5, 'confirme' => false,
+            'id' => (string) Str::uuid(), 'espece' => 'Ovins', 'poids_min_g' => 0, 'poids_max_g' => 100000, 'taux_pourcent' => 2.5, 'confirme' => false,
             'saisi_le' => self::ANCIEN, 'archive_le' => self::ANCIEN,
         ]);
         $taux->save();
@@ -260,7 +260,7 @@ class CorbeilleWebTest extends TestCase
         ]);
         $echeance->save();
 
-        $c = $this->composant($this->admin())->assertSee('Bovins — à partir de 0 g')->assertSee('Goliath — J7 Vaccin');
+        $c = $this->composant($this->admin())->assertSee('Ovins — à partir de 0 g')->assertSee('Goliath — J7 Vaccin');
         $c->call('restaurer', 'taux', $taux->id)->assertSet('erreur', null);
         $c->call('restaurer', 'echeances', $echeance->id)->assertSet('erreur', null);
         $this->assertNull($taux->fresh()->archive_le);

@@ -168,6 +168,10 @@ class MoteurSynchronisation
             $ligne = (array) $ligne;
             $table->reinitialiserCodeRefus();
 
+            // Alias herites (DV-22) : un poste ancien peut envoyer `bovins` ; l'accuse reprend SON identifiant.
+            $identifiantEnvoye = $ligne['id'] ?? null;
+            $ligne = AliasHerites::normaliserLigne($table->nom(), $ligne, $deviceId);
+
             // Garde d'horloge (`47g_`), pour TOUTE table, avant son absorbeur propre.
             if (($motif = GardeHorloge::controler($ligne)) !== null) {
                 $code = GardeHorloge::CODE;
@@ -177,9 +181,9 @@ class MoteurSynchronisation
             }
 
             if ($motif === null) {
-                $resultat['accepted'][] = $ligne['id'];
+                $resultat['accepted'][] = $identifiantEnvoye;
             } else {
-                $resultat['rejected'][] = ['id' => $this->identifiant($ligne), 'motif' => $motif] + ($code !== null ? ['code' => $code] : []);
+                $resultat['rejected'][] = ['id' => $this->identifiant(['id' => $identifiantEnvoye]), 'motif' => $motif] + ($code !== null ? ['code' => $code] : []);
             }
         }
 

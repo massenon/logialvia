@@ -21,7 +21,7 @@ class BaremeRation {
 
   /// Filières ajoutées après le prototype (DV-16, DV-17) : leurs barèmes ne
   /// sont pas une reprise de l'aviculture, ce sont des repères à valider.
-  static const Set<String> _especesAjoutees = {'escargots', 'bovins'};
+  static const Set<String> _especesAjoutees = {'escargots', 'ovins'};
 
   String get badge {
     // Le libelle du prototype ne vaut que pour les lapins, seuls barèmes qu'il
@@ -133,7 +133,7 @@ class FormatsNumerotation {
   final String bande;
   final String bassin;
 
-  /// Bacs des escargots (DV-16) et parcs des bovins (DV-17).
+  /// Bacs des escargots (DV-16) et parcs des ovins (DV-17).
   final String bac;
   final String parc;
 
@@ -208,7 +208,7 @@ class TypeProvende {
 }
 
 /// Les 6 espèces proposées par les filtres et le sélecteur de prophylaxie
-/// (les 4 d'origine, plus escargots et bovins).
+/// (les 4 d'origine, plus escargots et ovins).
 class EspecesParametrables {
   EspecesParametrables._();
 
@@ -220,7 +220,7 @@ class EspecesParametrables {
     (id: 'lapins', libelle: 'Lapins', emoji: '🐰'),
     (id: 'poissons-chats', libelle: 'Poissons-Chats', emoji: '🐟'),
     (id: 'escargots', libelle: 'Escargots', emoji: '🐌'),
-    (id: 'bovins', libelle: 'Bovins', emoji: '🐄'),
+    (id: 'ovins', libelle: 'Ovins', emoji: '🐑'),
   ];
 
   static String libelle(String identifiant) {

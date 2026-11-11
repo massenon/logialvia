@@ -151,8 +151,8 @@ class VentesWebTest extends TestCase
         $this->vente(['reference' => 'V-RECENT', 'client' => 'Kofi', 'total' => 12345]);
 
         Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
-            ->assertSeeHtmlInOrder(['data-vente="V-RECENT"', 'V-RECENT', '09/11/2026', 'Kofi', '12 345', 'Payée', 'data-vente="V-ANCIEN"', '04/11/2026'])
-            ->assertSee('Référence')->assertSee('Montant')->assertSee('Statut');
+            ->assertSeeHtmlInOrder(['data-vente="V-RECENT"', 'V-RECENT', 'Kofi', '09/11/2026', '12 345', 'Payée', 'data-vente="V-ANCIEN"', '04/11/2026'])
+            ->assertSee('Référence')->assertSee('Total')->assertSee('Statut');
     }
 
     public function test_la_liste_vide_affiche_le_message_du_poste(): void
@@ -241,11 +241,36 @@ class VentesWebTest extends TestCase
         $avant = [Vente::query()->count(), LigneVente::query()->count(), $v->fresh()->getAttributes()];
 
         Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Ventes::class)
-            ->assertSee('exige le droit de gérer les ventes')->assertDontSee('Encaisser la Vente')
+            ->assertSee('exige le droit de gérer les ventes')->assertDontSee('Valider la Vente')
             ->set('onglet', 'historique')->assertDontSeeHtml('data-action="annuler-vente"')->assertDontSeeHtml('data-action="modifier-vente"')
             ->set('recherche', 'x')->set('statut', 'Avance')->set('statut', '')->set('recherche', '')
             ->call('ouvrir', $v->id)->call('fermer');
 
         $this->assertSame($avant, [Vente::query()->count(), LigneVente::query()->count(), $v->fresh()->getAttributes()]);
+    }
+
+    public function test_l_historique_se_filtre_par_mode_et_par_client(): void
+    {
+        $this->vente(['reference' => 'V-ESP', 'client' => 'Kofi', 'mode' => 'Espèces']);
+        $this->vente(['reference' => 'V-MOMO', 'client' => 'Ama', 'mode' => 'Mobile Money']);
+
+        $c = Livewire::actingAs($this->caissier())->test(Ventes::class)->set('onglet', 'historique')
+            ->assertSeeHtml('data-filtre="mode"')->assertSeeHtml('data-filtre="client"')
+            ->assertSeeHtml('data-vente="V-ESP"')->assertSeeHtml('data-vente="V-MOMO"');
+
+        $c->set('modeFiltre', 'Mobile Money')->assertSeeHtml('data-vente="V-MOMO"')->assertDontSeeHtml('data-vente="V-ESP"');
+        $c->set('modeFiltre', '')->set('clientFiltre', 'Kofi')->assertSeeHtml('data-vente="V-ESP"')->assertDontSeeHtml('data-vente="V-MOMO"');
+        // Une valeur hors liste ne filtre rien (jamais une page vide par une URL trafiquée).
+        $c->set('clientFiltre', '')->set('modeFiltre', 'Cheque')->assertSeeHtml('data-vente="V-ESP"')->assertSeeHtml('data-vente="V-MOMO"');
+    }
+
+    public function test_le_panier_propose_un_selecteur_de_client_deroulant(): void
+    {
+        $client = \App\Models\Client::query()->create(['nom' => 'Ferme du Lac', 'updated_at' => now(), 'serveur_modifie_le' => now()]);
+
+        Livewire::actingAs($this->caissier())->test(Ventes::class)
+            ->assertSeeHtml('data-champ="client-liste"')->assertSee('Client Comptant')->assertSee('Ferme du Lac')
+            ->call('choisirClientListe', $client->id)->assertSet('client', 'Ferme du Lac')->assertSet('clientId', $client->id)
+            ->call('choisirClientListe', '')->assertSet('client', '')->assertSet('clientId', null);
     }
 }

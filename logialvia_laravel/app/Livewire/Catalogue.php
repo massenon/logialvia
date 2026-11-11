@@ -29,7 +29,7 @@ class Catalogue extends Component
     public const POSTE_WEB = '00000000-0000-0000-0000-000000000000';
 
     /** Categories du poste (`ProduitVendable.categories`). */
-    public const CATEGORIES = ['Avicole', 'Commerce Annexe', 'Cuniculture', 'Héliciculture', 'Élevage bovin', 'Pisciculture'];
+    public const CATEGORIES = ['Avicole', 'Commerce Annexe', 'Cuniculture', 'Héliciculture', 'Élevage ovin', 'Pisciculture'];
 
     public string $recherche = '';
 

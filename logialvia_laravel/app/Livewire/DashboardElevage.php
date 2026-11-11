@@ -7,6 +7,7 @@ use App\Models\LigneVente;
 use App\Models\ModuleActif;
 use App\Models\CycleCouveuse;
 use App\Models\SoinCalendrier;
+use App\Services\TableauBordService;
 use App\Support\FilieresElevage;
 use App\Support\SuiviIncubation;
 use App\Support\ReperesZootechniques;
@@ -44,7 +45,7 @@ class DashboardElevage extends Component
         'pintades' => 'Pintadaux',
         'lapins' => 'Lapereaux',
         'escargots' => 'Naissains',
-        'bovins' => 'Veaux',
+        'ovins' => 'Agneaux',
         'poulets' => 'Poulettes',
         'pondeuses' => 'Poulettes',
         'poissons-chats' => 'Juvéniles',
@@ -56,7 +57,7 @@ class DashboardElevage extends Component
         'aviculture_classique' => ['Poulets / Pondeuses', 'Filière aviculture classique disponible — non activée pour le moment.'],
         'pisciculture' => ['Poissons-Chats', 'Filière Pisciculture disponible — non activée pour le moment.'],
         'heliciculture' => ['Escargots', 'Filière Héliciculture disponible — non activée pour le moment.'],
-        'bovins' => ['Bovins', 'Filière Bovins disponible — non activée pour le moment.'],
+        'ovins' => ['Ovins', 'Filière Ovins disponible — non activée pour le moment.'],
     ];
 
     private function maintenant(): CarbonImmutable
@@ -91,39 +92,7 @@ class DashboardElevage extends Component
      */
     private function recensement(string $espece): array
     {
-        $config = FilieresElevage::configuration($espece);
-        $base = [
-            'espece' => $espece, 'libelle' => $config['libelle'], 'route' => $config['route'],
-            'libelle_jeunes' => self::LIBELLE_JEUNES[$espece] ?? 'Jeunes',
-            'effectif' => 0, 'matures' => 0, 'jeunes' => 0, 'mortalite' => 0.0, 'niveau_mortalite' => 'normal', 'a_des_donnees' => false,
-        ];
-
-        $derniere = FicheJournee::query()->where('espece', $espece)->where('is_recorded', true)->orderByDesc('date')->first();
-        if ($derniere === null) {
-            return $base;
-        }
-
-        $debutMois = $this->maintenant()->startOfMonth()->format('Y-m-d');
-        $jours = FicheJournee::query()->where('espece', $espece)->where('is_recorded', true)
-            ->where('date', '>=', $debutMois)->orderBy('date')->get();
-
-        $mortalite = 0.0;
-        if ($jours->isNotEmpty()) {
-            $morts = fn (FicheJournee $j): int => $j->mort_cat1 + $j->mort_cat2 + $j->mort_cat3 + ($j->mort_cat4 ?? 0);
-            $dons = fn (FicheJournee $j): int => $j->don_cat1 + $j->don_cat2 + $j->don_cat3 + ($j->don_cat4 ?? 0);
-            $premier = $jours->first();
-            // Effectif EXPOSE (`47e_`) : effectif de debut de mois (reconstitue du 1er jour saisi) +
-            // toutes les entrees du mois ; ignorer les entrees faisait depasser 100 %.
-            $debutDeMois = $premier->effectif - $premier->achat - $premier->ne + $morts($premier) + $premier->vente + $dons($premier);
-            $mortalite = ReperesZootechniques::tauxMortaliteCumule(
-                (int) $jours->sum($morts), $debutDeMois, (int) $jours->sum(fn (FicheJournee $j) => $j->achat + $j->ne),
-            ) ?? 0.0;
-        }
-
-        return [
-            'effectif' => $derniere->effectif, 'matures' => $derniere->eff_cat3_day,
-            'jeunes' => $derniere->eff_cat2_day, 'mortalite' => $mortalite, 'niveau_mortalite' => ReperesZootechniques::niveauMortaliteCumul($mortalite), 'a_des_donnees' => true,
-        ] + $base;
+        return app(TableauBordService::class)->recensement($espece, $this->maintenant());
     }
 
     /**

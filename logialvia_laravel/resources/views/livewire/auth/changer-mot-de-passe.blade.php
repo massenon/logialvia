@@ -7,7 +7,7 @@
         <div>
             <label for="{{ $champ }}" class="mb-xs block text-caption font-semibold uppercase text-outline">{{ $libelle }}</label>
             <input id="{{ $champ }}" type="password" wire:model="{{ $champ }}" autocomplete="{{ $auto }}"
-                   class="w-full rounded-lg border-outline-variant text-body focus:border-brand-navy focus:ring-brand-navy">
+                   class="w-full rounded-lg border-outline-variant text-xs focus:border-brand-navy focus:ring-brand-navy">
         </div>
     @endforeach
 
@@ -16,7 +16,7 @@
     @endif
 
     <button type="submit"
-            class="rounded-lg bg-brand-navy px-md py-sm text-body font-semibold text-white hover:bg-brand-navy-dark">
+            class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
         Enregistrer
     </button>
 </form>

@@ -21,7 +21,7 @@ class ModulesActifsSeeder {
   static const String cuniculture = 'cuniculture';
   static const String avicultureClassique = 'aviculture_classique';
   static const String heliciculture = 'heliciculture';
-  static const String bovins = 'bovins';
+  static const String ovins = 'ovins';
 
   /// Correspondance module basculable -> espece de la fiche associee.
   static const Map<String, String> especeParModule = {
@@ -29,10 +29,10 @@ class ModulesActifsSeeder {
     cuniculture: 'lapins',
     avicultureClassique: 'poulets',
     heliciculture: 'escargots',
-    bovins: 'bovins',
+    ovins: 'ovins',
   };
 
-  /// Migration v27 : ajoute les modules manquants (heliciculture, bovins) a
+  /// Migration v27 : ajoute les modules manquants (heliciculture, ovins) a
   /// une base en service, **desactives** comme les autres. Un module deja
   /// present est laisse tel quel : son etat est un choix de la Gerante.
   static Future<void> ajouterModulesManquants(AppDatabase db) async {

@@ -12,7 +12,7 @@ import 'package:logialvia_app/elevage/domain/entities/configuration_espece.dart'
 import 'package:logialvia_app/elevage/domain/entities/parametres_elevage.dart';
 import 'package:logialvia_app/elevage/presentation/viewmodels/parametres_elevage_view_model.dart';
 
-/// Filières **escargots** et **bovins** (DV-16, DV-17) et colonne `dose` du
+/// Filières **escargots** et **ovins** (DV-16, DV-17) et colonne `dose` du
 /// calendrier de prophylaxie (schéma v27).
 ///
 /// Ces filières n'existaient pas dans le prototype : leurs valeurs sont des
@@ -28,14 +28,14 @@ void main() {
         same(ConfigurationsEspeces.escargots),
       );
       expect(
-        ConfigurationsEspeces.parIdentifiant['bovins'],
-        same(ConfigurationsEspeces.bovins),
+        ConfigurationsEspeces.parIdentifiant['ovins'],
+        same(ConfigurationsEspeces.ovins),
       );
     });
 
     for (final config in [
       ConfigurationsEspeces.escargots,
-      ConfigurationsEspeces.bovins,
+      ConfigurationsEspeces.ovins,
     ]) {
       test(
         '${config.libelle} : 3 catégories, une jeune, une commercialisée',
@@ -61,14 +61,14 @@ void main() {
         ConfigurationsEspeces.escargots.libelleNaissances,
         'Nés (Éclosions)',
       );
-      expect(ConfigurationsEspeces.bovins.libelleNaissances, 'Nés (Vêlage)');
+      expect(ConfigurationsEspeces.ovins.libelleNaissances, 'Nés (Agnelage)');
       expect(ConfigurationsEspeces.escargots.categories.map((c) => c.libelle), [
         'Naissain',
         'Marchand',
         'Reproducteur',
       ]);
-      expect(ConfigurationsEspeces.bovins.categories.map((c) => c.libelle), [
-        'Veau',
+      expect(ConfigurationsEspeces.ovins.categories.map((c) => c.libelle), [
+        'Agneau',
         'Embouche',
         'Reproducteur',
       ]);
@@ -80,7 +80,7 @@ void main() {
 
     for (final (route, module) in const [
       ('/elevage/escargots', 'heliciculture'),
-      ('/elevage/bovins', 'bovins'),
+      ('/elevage/ovins', 'ovins'),
     ]) {
       test('$route est au menu, derrière le module « $module »', () {
         final entree = entrees.singleWhere((e) => e.route == route);
@@ -112,7 +112,7 @@ void main() {
       final baremes = await repository.chargerBaremes();
       for (final (espece, rations) in const [
         ('escargots', {'Naissain': 1, 'Marchand': 5, 'Reproducteur': 8}),
-        ('bovins', {'Veau': 1500, 'Embouche': 7000, 'Reproducteur': 9000}),
+        ('ovins', {'Agneau': 300, 'Embouche': 600, 'Reproducteur': 800}),
       ]) {
         final lignes = baremes.where((b) => b.espece == espece).toList();
         expect(lignes, hasLength(3), reason: espece);
@@ -128,7 +128,7 @@ void main() {
       final baremes = await repository.chargerBaremes();
       for (final config in [
         ConfigurationsEspeces.escargots,
-        ConfigurationsEspeces.bovins,
+        ConfigurationsEspeces.ovins,
       ]) {
         final stades = baremes
             .where((b) => b.espece == config.identifiant)
@@ -138,14 +138,14 @@ void main() {
       }
     });
 
-    test('21 échéances escargots et 9 bovins, toutes avec une dose', () async {
+    test('21 échéances escargots et 9 ovins, toutes avec une dose', () async {
       final echeances = await repository.chargerProphylaxie();
       final escargots = echeances.where((e) => e.espece == 'escargots');
-      final bovins = echeances.where((e) => e.espece == 'bovins');
+      final ovins = echeances.where((e) => e.espece == 'ovins');
 
       expect(escargots, hasLength(21));
-      expect(bovins, hasLength(9));
-      for (final e in [...escargots, ...bovins]) {
+      expect(ovins, hasLength(9));
+      for (final e in [...escargots, ...ovins]) {
         expect(e.dose, isNotNull, reason: '${e.espece} ${e.libelleJour}');
         expect(e.dose!.trim(), isNotEmpty);
         expect(e.jourCycle, inInclusiveRange(1, 365));
@@ -155,33 +155,33 @@ void main() {
 
     test('les échéances d\'avant la v27 n\'ont pas de dose inventée', () async {
       final anciennes = (await repository.chargerProphylaxie()).where(
-        (e) => e.espece != 'escargots' && e.espece != 'bovins',
+        (e) => e.espece != 'escargots' && e.espece != 'ovins',
       );
       expect(anciennes, hasLength(11));
       expect(anciennes.every((e) => e.dose == null), isTrue);
     });
 
     test(
-      'rémanences bovines prudentes : ivermectine 35 j, albendazole 14 j',
+      'rémanences ovines prudentes : ivermectine 35 j, albendazole 14 j',
       () async {
-        final bovins = (await repository.chargerProphylaxie())
-            .where((e) => e.espece == 'bovins')
+        final ovins = (await repository.chargerProphylaxie())
+            .where((e) => e.espece == 'ovins')
             .toList();
         expect(
-          bovins
+          ovins
               .singleWhere((e) => e.produit == 'Ivermectine 1 %')
               .remanenceJours,
           35,
         );
         expect(
-          bovins
+          ovins
               .where((e) => e.produit == 'Albendazole')
               .map((e) => e.remanenceJours),
           everyElement(14),
         );
         // Les vaccins n'imposent pas de delai de commercialisation.
         expect(
-          bovins
+          ovins
               .where((e) => e.traitement.toLowerCase().contains('vaccin'))
               .map((e) => e.remanenceJours),
           everyElement(0),
@@ -193,7 +193,7 @@ void main() {
       'l\'étiquette d\'un barème ajouté ne parle pas d\'aviculture',
       () async {
         final baremes = await repository.chargerBaremes();
-        for (final espece in ['escargots', 'bovins']) {
+        for (final espece in ['escargots', 'ovins']) {
           for (final b in baremes.where((b) => b.espece == espece)) {
             expect(b.badge, 'Repère à valider', reason: '$espece ${b.stade}');
           }
@@ -210,13 +210,13 @@ void main() {
       await ModulesActifsSeeder(db).executer();
       final modules = await db.select(db.modulesActifs).get();
       final nouveaux = modules.where(
-        (m) => m.moduleId == 'heliciculture' || m.moduleId == 'bovins',
+        (m) => m.moduleId == 'heliciculture' || m.moduleId == 'ovins',
       );
       expect(nouveaux, hasLength(2));
       expect(nouveaux.every((m) => !m.isActif), isTrue);
       expect(
         {for (final m in nouveaux) m.moduleId: m.espece},
-        {'heliciculture': 'escargots', 'bovins': 'bovins'},
+        {'heliciculture': 'escargots', 'ovins': 'ovins'},
       );
     });
   });
@@ -232,7 +232,7 @@ void main() {
       repository = ParametresElevageRepositoryDrift(db);
       vm = ParametresElevageViewModel(repository);
       await vm.charger();
-      vm.changerEspeceProphylaxie('bovins');
+      vm.changerEspeceProphylaxie('ovins');
     });
 
     tearDown(() async => db.close());
@@ -248,7 +248,7 @@ void main() {
       expect(resultat, isA<Succes<void>>());
 
       final ajoutee = (await repository.chargerProphylaxie()).singleWhere(
-        (e) => e.espece == 'bovins' && e.jourCycle == 120,
+        (e) => e.espece == 'ovins' && e.jourCycle == 120,
       );
       expect(ajoutee.dose, 'Dilution selon la notice');
     });
@@ -262,7 +262,7 @@ void main() {
         dose: '   ',
       );
       final ajoutee = (await repository.chargerProphylaxie()).singleWhere(
-        (e) => e.espece == 'bovins' && e.jourCycle == 121,
+        (e) => e.espece == 'ovins' && e.jourCycle == 121,
       );
       expect(ajoutee.dose, isNull);
     });
@@ -297,10 +297,10 @@ void main() {
       expect(relue.dose, isNull);
     });
 
-    test('le sélecteur propose escargots et bovins', () {
+    test('le sélecteur propose escargots et ovins', () {
       expect(
         EspecesParametrables.toutes.map((e) => e.id),
-        containsAll(['escargots', 'bovins']),
+        containsAll(['escargots', 'ovins']),
       );
     });
   });
@@ -316,7 +316,7 @@ void main() {
       if (dossier.existsSync()) dossier.deleteSync(recursive: true);
     });
 
-    /// Une base **telle qu'elle était en v26** : sans escargots ni bovins, sans
+    /// Une base **telle qu'elle était en v26** : sans escargots ni ovins, sans
     /// colonne `dose`, estampillée 26.
     Future<File> baseV26({
       Future<void> Function(AppDatabase db)? avantDegradation,
@@ -334,8 +334,8 @@ void main() {
       ]) {
         final colonne = table == 'modules_actifs' ? 'module_id' : 'espece';
         final valeurs = table == 'modules_actifs'
-            ? "('heliciculture','bovins')"
-            : "('escargots','bovins')";
+            ? "('heliciculture','ovins')"
+            : "('escargots','ovins')";
         await db.customStatement(
           'DELETE FROM $table WHERE $colonne IN $valeurs',
         );
@@ -360,37 +360,37 @@ void main() {
         final echeances = await repository.chargerProphylaxie();
         expect(echeances, hasLength(41));
         expect(
-          echeances.where((e) => e.espece == 'bovins' && e.dose != null),
+          echeances.where((e) => e.espece == 'ovins' && e.dose != null),
           hasLength(9),
         );
         // Les 11 echeances d'avant gardent une dose vide.
         expect(
           echeances
-              .where((e) => e.espece != 'escargots' && e.espece != 'bovins')
+              .where((e) => e.espece != 'escargots' && e.espece != 'ovins')
               .every((e) => e.dose == null),
           isTrue,
         );
         expect(await repository.chargerBaremes(), hasLength(18));
         expect(
           (await db.select(db.modulesActifs).get()).map((m) => m.moduleId),
-          containsAll(['heliciculture', 'bovins']),
+          containsAll(['heliciculture', 'ovins']),
         );
       },
     );
 
     test('ne touche pas à ce que l\'animalier a déjà configuré', () async {
       // Une base deja passee a la main : un module active, une ration changee
-      // et une echeance supprimee sur la filiere bovins.
+      // et une echeance supprimee sur la filiere ovins.
       final fichier = File('${dossier.path}/logialvia.db');
       final prepa = AppDatabase.pourFichier(fichier);
       await ModulesActifsSeeder(prepa).executer();
       await ParametresElevageSeeder(prepa).executer();
       await prepa.customStatement(
-        "UPDATE modules_actifs SET is_actif = 1 WHERE module_id = 'bovins'",
+        "UPDATE modules_actifs SET is_actif = 1 WHERE module_id = 'ovins'",
       );
       await prepa.customStatement(
         "UPDATE baremes_ration SET ration_grammes_par_jour = 8000 "
-        "WHERE espece = 'bovins' AND stade = 'Embouche'",
+        "WHERE espece = 'ovins' AND stade = 'Embouche'",
       );
       // Les escargots n'ont aucune echeance : pour la migration c'est une
       // filiere nouvelle, elle recoit son calendrier.
@@ -407,14 +407,14 @@ void main() {
       addTearDown(db.close);
 
       // Module deja actif : conserve son etat.
-      final bovins = (await db.select(db.modulesActifs).get()).singleWhere(
-        (m) => m.moduleId == 'bovins',
+      final ovins = (await db.select(db.modulesActifs).get()).singleWhere(
+        (m) => m.moduleId == 'ovins',
       );
-      expect(bovins.isActif, isTrue);
+      expect(ovins.isActif, isTrue);
 
       // Ration modifiee : conservee, pas de doublon.
       final rations = (await db.select(db.baremesRation).get()).where(
-        (b) => b.espece == 'bovins',
+        (b) => b.espece == 'ovins',
       );
       expect(rations, hasLength(3));
       expect(
@@ -422,10 +422,10 @@ void main() {
         8000,
       );
 
-      // Les bovins gardent leurs 9 echeances, sans doublon ; les escargots, sans
+      // Les ovins gardent leurs 9 echeances, sans doublon ; les escargots, sans
       // calendrier, recoivent le leur.
       final echeances = await db.select(db.calendrierProphylaxie).get();
-      expect(echeances.where((e) => e.espece == 'bovins'), hasLength(9));
+      expect(echeances.where((e) => e.espece == 'ovins'), hasLength(9));
       expect(echeances.where((e) => e.espece == 'escargots'), hasLength(21));
     });
 
@@ -503,21 +503,21 @@ void main() {
     BaremeRation ration(String espece, String stade) =>
         vm.baremes.firstWhere((b) => b.espece == espece && b.stade == stade);
 
-    test('le plafond de ration dépend de l\'espèce : un bovin mange plus de '
-        '5 kg', () async {
-      final embouche = ration('bovins', 'Embouche');
-      expect(embouche.rationGrammesParJour, 7000);
+    test('le plafond de ration dépend de l\'espèce : 4 kg pour un ovin, '
+        '5 kg pour les autres', () async {
+      final embouche = ration('ovins', 'Embouche');
+      expect(embouche.rationGrammesParJour, 600);
 
-      // Modifier la ration d'un bovin a 8 kg doit etre possible...
+      // Modifier la ration d'un ovin a 2 kg doit etre possible...
       expect(
-        await vm.modifierRation(bareme: embouche, ration: '8000'),
+        await vm.modifierRation(bareme: embouche, ration: '2000'),
         isA<Succes<void>>(),
       );
-      // ...mais pas a 25 kg, qui est une faute de frappe.
+      // ...mais pas a 5 kg, qui est une faute de frappe (plafond 4 kg).
       expect(
         await vm.modifierRation(
-          bareme: ration('bovins', 'Embouche'),
-          ration: '25000',
+          bareme: ration('ovins', 'Embouche'),
+          ration: '5000',
         ),
         isA<Echec<void>>(),
       );
@@ -531,9 +531,9 @@ void main() {
       );
       expect(
         await vm.ajouterBareme(
-          espece: 'bovins',
-          stade: 'Taurillon',
-          ration: '12000',
+          espece: 'ovins',
+          stade: 'Antenais',
+          ration: '3500',
         ),
         isA<Succes<void>>(),
       );
@@ -566,7 +566,7 @@ void main() {
     });
 
     test('Valider passe une ration de « à valider » à « validé »', () async {
-      final avant = ration('bovins', 'Embouche');
+      final avant = ration('ovins', 'Embouche');
       expect(avant.confirme, isFalse);
       expect(avant.badge, 'Repère à valider');
 
@@ -579,7 +579,7 @@ void main() {
         isA<Succes<void>>(),
       );
 
-      final apres = ration('bovins', 'Embouche');
+      final apres = ration('ovins', 'Embouche');
       expect(apres.confirme, isTrue);
       expect(apres.badge, 'Validé');
       expect(apres.rationGrammesParJour, avant.rationGrammesParJour);
@@ -643,20 +643,20 @@ void main() {
       }) => vm.enregistrerTauxPoids(
         existant: t,
         espece: t.espece,
-        poidsMin: '${t.poidsMinG / (t.espece == 'bovins' ? 1000 : 1)}',
+        poidsMin: '${t.poidsMinG / (t.espece == 'ovins' ? 1000 : 1)}',
         poidsMax: t.poidsMaxG == null
             ? ''
-            : '${t.poidsMaxG! / (t.espece == 'bovins' ? 1000 : 1)}',
+            : '${t.poidsMaxG! / (t.espece == 'ovins' ? 1000 : 1)}',
         taux: taux ?? '${t.tauxPourcent}',
         valider: valider,
       );
 
-      test('Valider confirme une classe de bovins', () async {
-        final avant = classe('bovins', 150000);
+      test('Valider confirme une classe ovine', () async {
+        final avant = classe('ovins', 15000);
         expect(avant.confirme, isFalse);
 
         expect(await enregistrer(avant, valider: true), isA<Succes<void>>());
-        expect(classe('bovins', 150000).confirme, isTrue);
+        expect(classe('ovins', 15000).confirme, isTrue);
       });
 
       test(
@@ -672,32 +672,32 @@ void main() {
       );
 
       test('modifier une classe validée la ramène à « à valider »', () async {
-        await enregistrer(classe('bovins', 0), valider: true);
-        expect(classe('bovins', 0).confirme, isTrue);
+        await enregistrer(classe('ovins', 0), valider: true);
+        expect(classe('ovins', 0).confirme, isTrue);
 
-        await enregistrer(classe('bovins', 0), taux: '3,2');
-        expect(classe('bovins', 0).confirme, isFalse);
+        await enregistrer(classe('ovins', 0), taux: '3,2');
+        expect(classe('ovins', 0).confirme, isFalse);
       });
 
       test('réenregistrer sans changement garde le statut', () async {
-        await enregistrer(classe('bovins', 0), valider: true);
-        await enregistrer(classe('bovins', 0));
-        expect(classe('bovins', 0).confirme, isTrue);
+        await enregistrer(classe('ovins', 0), valider: true);
+        await enregistrer(classe('ovins', 0));
+        expect(classe('ovins', 0).confirme, isTrue);
       });
 
       test('une saisie invalide ne valide rien', () async {
-        final avant = classe('bovins', 150000);
-        // Chevauche la classe 300+ : refusee, donc ni valeur ni statut.
+        final avant = classe('ovins', 15000);
+        // Chevauche la classe 30+ : refusee, donc ni valeur ni statut.
         final resultat = await vm.enregistrerTauxPoids(
           existant: avant,
-          espece: 'bovins',
-          poidsMin: '150',
-          poidsMax: '400',
+          espece: 'ovins',
+          poidsMin: '15',
+          poidsMax: '40',
           taux: '3',
           valider: true,
         );
         expect(resultat, isA<Echec<void>>());
-        expect(classe('bovins', 150000).confirme, isFalse);
+        expect(classe('ovins', 15000).confirme, isFalse);
       });
     });
   });

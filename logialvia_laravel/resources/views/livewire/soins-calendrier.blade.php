@@ -1,10 +1,13 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Soins &amp; Calendrier</h1>
+        <div>
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="vaccines" class="text-[24px]" />Soins &amp; Calendrier</h1>
+            <p class="mt-xs text-xs text-outline">Registre des soins, calendrier de prophylaxie et suivi des sujets isolés. Le stock vétérinaire se décrémente sur le poste.</p>
+        </div>
         @if ($peutGerer)
             <button type="button" wire:click="nouveauSoin"
-                    class="rounded-lg bg-brand-navy px-md py-sm text-xs font-semibold text-white hover:bg-brand-navy-dark">
-                Nouveau Soin
+                    class="flex items-center gap-xs rounded-full bg-brand-navy px-md py-sm text-xs font-bold text-white shadow-sm hover:bg-brand-navy-dark">
+                <x-icone nom="add_circle" class="text-[18px]" />Nouveau Soin
             </button>
         @endif
     </div>
@@ -14,20 +17,20 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Doses Administrées (Mois)</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Doses Administrées (Mois)</span><x-icone nom="vaccines" class="text-[18px] text-brand-navy" /></div>
             <p class="text-page-title font-bold" data-kpi="doses">{{ $kpi['doses'] }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Planifiées à Venir</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Planifiées à Venir</span><x-icone nom="event_upcoming" class="text-[18px] text-brand-gold" /></div>
             <p class="text-page-title font-bold" data-kpi="planifiees">{{ $kpi['planifiees'] }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-info-blue bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">En Quarantaine / Traitement</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-info-blue bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">En Quarantaine / Traitement</span><x-icone nom="medication" class="text-[18px] text-info-blue" /></div>
             <p class="text-page-title font-bold" data-kpi="quarantaine">{{ $kpi['quarantaine'] }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Coût Vétérinaire (Mois)</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Coût Vétérinaire (Mois)</span><x-icone nom="payments" class="text-[18px] text-success-deep" /></div>
             <p class="text-page-title font-bold" data-kpi="cout">{{ number_format($kpi['cout'], 0, ',', ' ') }} <span class="text-xs font-normal text-outline">FCFA</span></p>
         </div>
     </div>
@@ -43,17 +46,17 @@
     @endif
 
     <div class="mb-md flex gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
-        @foreach (['registre' => 'Registre des Soins', 'calendrier' => 'Calendrier des Doses', 'infirmerie' => 'Suivi Infirmerie'] as $cle => $libelle)
+        @foreach (['registre' => ['Registre des Soins', 'medical_information'], 'calendrier' => ['Calendrier des Doses', 'event_repeat'], 'infirmerie' => ['Suivi Infirmerie', 'monitor_heart']] as $cle => [$libelle, $iconeOnglet])
             <button type="button" role="tab" wire:click="choisirOnglet('{{ $cle }}')" aria-selected="{{ $onglet === $cle ? 'true' : 'false' }}"
-                    class="whitespace-nowrap border-b-2 px-md py-sm text-xs font-bold {{ $onglet === $cle ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
-                {{ $libelle }}
+                    class="flex items-center gap-1 whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold {{ $onglet === $cle ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
+                <x-icone :nom="$iconeOnglet" class="text-[16px]" />{{ $libelle }}
             </button>
         @endforeach
     </div>
 
     {{-- ------------------------------------------------------- Registre --}}
     @if ($onglet === 'registre')
-        <div class="mb-md flex flex-col gap-sm sm:flex-row">
+        <div class="mb-md flex flex-col gap-sm rounded-lg border border-outline-variant bg-white p-md sm:flex-row sm:items-center">
             <select wire:model.live="filtreType" aria-label="Catégorie" class="rounded-lg border border-outline-variant bg-surface-card px-md py-sm text-xs">
                 <option value="">Toutes catégories</option>
                 @foreach ($types as $t)<option value="{{ $t }}">{{ $t }}</option>@endforeach
@@ -133,6 +136,12 @@
             @endif
         </div>
 
+        <div class="mb-md flex flex-wrap items-center gap-lg text-caption" data-legende>
+            @foreach ([['Effectué', 'bg-success-deep'], ['Planifié', 'bg-brand-gold'], ['En retard', 'bg-error-deep'], ['Traitement en cours', 'bg-info-blue']] as [$lib, $coul])
+                <span class="flex items-center gap-xs"><span class="inline-block h-3 w-3 rounded-full {{ $coul }}"></span>{{ $lib }}</span>
+            @endforeach
+        </div>
+
         @if ($lignes->isEmpty())
             <p class="rounded-lg bg-surface-card p-md text-center text-xs text-outline">Aucune intervention programmée ce mois-ci. Le calendrier se remplira dès la première planification.</p>
         @else
@@ -155,7 +164,7 @@
                                         @if (isset($parJour[$j]))
                                             @php($s = $parJour[$j]->first())
                                             <span title="{{ $s->type_soin }} — {{ $s->statut }}" data-jour="{{ $j }}"
-                                                  class="inline-block h-3 w-3 rounded-full {{ match ($s->statut) { 'Effectué' => 'bg-success-deep', 'En retard' => 'bg-error-deep', 'Traitement en cours' => 'bg-info-blue', default => 'bg-brand-gold' } }}"></span>
+                                                  class="mx-auto flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm {{ match ($s->statut) { 'Effectué' => 'bg-success-deep', 'En retard' => 'bg-error-deep', 'Traitement en cours' => 'bg-info-blue', default => 'bg-brand-gold' } }}"><x-icone nom="vaccines" class="text-[16px]" /></span>
                                         @endif
                                     </td>
                                 @endfor

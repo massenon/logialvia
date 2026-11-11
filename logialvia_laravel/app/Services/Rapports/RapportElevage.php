@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
 final class RapportElevage
 {
     /** Ordre des filieres du Dart (`_filieres`) : il differe de celui des fiches. */
-    public const ORDRE = ['goliaths', 'pintades', 'lapins', 'escargots', 'bovins', 'poissons-chats', 'poulets', 'pondeuses'];
+    public const ORDRE = ['goliaths', 'pintades', 'lapins', 'escargots', 'ovins', 'poissons-chats', 'poulets', 'pondeuses'];
 
     public const SOIN_EFFECTUE = 'Effectué';
 
@@ -200,7 +200,7 @@ final class RapportElevage
     /**
      * Provende servie, en g/jour (Dart : `CalculFicheJournaliere.provendeTotaleGrammes`). Rations par categorie
      * = bareme actif du stade, sinon ration par defaut de la filiere. Filiere rationnee sur le poids vif
-     * (bovins, poissons-chats) : poids moyen = pesee / effectif, classe qui le contient, provende = pesee x taux ;
+     * (ovins, poissons-chats) : poids moyen = pesee / effectif, classe qui le contient, provende = pesee x taux ;
      * REPLI sur la ration par tete sans pesee, sans effectif ou sans classe.
      *
      * @param  list<array{0: string, 1: int, 2: bool, 3: bool}>  $categories

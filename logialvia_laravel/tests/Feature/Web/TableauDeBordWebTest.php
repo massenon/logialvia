@@ -280,7 +280,7 @@ class TableauDeBordWebTest extends TestCase
             ->assertSeeHtml('data-mois="2026-11" data-ca="500"')
             ->assertDontSeeHtml('data-mois="2026-05"')
             ->assertSeeHtmlInOrder(['>Jun<', '>Jul<', '>Aoû<', '>Sep<', '>Oct<', '>Nov<'])
-            ->assertSee('Les dépenses ne sont pas connues du serveur');
+            ->assertDontSee('Les dépenses ne sont pas connues du serveur');
     }
 
     public function test_la_courbe_ignore_le_filtre_de_periode(): void
@@ -311,7 +311,7 @@ class TableauDeBordWebTest extends TestCase
         $this->tableau()
             ->assertSeeHtmlInOrder(['data-meilleure="Riz"', 'data-meilleure="Poulet"', 'data-meilleure="D"', 'data-meilleure="C"', 'data-meilleure="B"'])
             ->assertDontSeeHtml('data-meilleure="A"')->assertDontSeeHtml('data-meilleure="Z"')
-            ->assertSeeInOrder(['Riz', 'Commerce', '9 000 F', 'Poulet', 'Avicole', '3', '3 000 F']);
+            ->assertSeeInOrder(['Riz', '9 000 F', 'Commerce', 'Poulet', '3 000 F', 'Avicole']);
     }
 
     public function test_transactions_recentes_les_trois_dernieres_avance_montre_le_paye(): void
@@ -356,10 +356,10 @@ class TableauDeBordWebTest extends TestCase
             ->assertDontSee('V-SECRETE')->assertDontSee('4 321')->assertDontSee('777 000')
             ->assertDontSee('654 000')->assertDontSee('Poulet secret')->assertDontSee('Client secret')
             ->assertDontSee('Période invalide')->assertDontSee('Enregistrer une Vente')
-            ->assertSeeHtml('data-carte-poste="Effectif Cheptel"')
-            ->assertSeeHtml('data-carte-poste="Cycles Couveuse en Cours"')
-            ->assertDontSeeHtml('data-carte-poste="Trésorerie"')
-            ->assertDontSeeHtml('data-carte-poste="Dépenses"')
+            ->assertSeeHtml('data-carte="cheptel"')
+            ->assertSeeHtml('data-carte="couveuse"')
+            ->assertDontSeeHtml('data-carte="tresorerie"')
+            ->assertDontSeeHtml('data-carte="depenses"')
             ->assertDontSeeHtml('data-carte-poste="Stock Critique"')
             ->assertSee('Dashboard Élevage');
     }
@@ -376,15 +376,15 @@ class TableauDeBordWebTest extends TestCase
             ->assertSee('Enregistrer une Vente')->assertDontSee('Dashboard Élevage');
     }
 
-    public function test_un_comptable_voit_ventes_dettes_et_les_cartes_comptables_grisees(): void
+    public function test_un_comptable_voit_ventes_dettes_et_les_cartes_comptables(): void
     {
         $this->tableau('comptable')
             ->assertSeeHtml('data-carte="ca"')->assertSeeHtml('data-carte="dettes"')
-            ->assertSeeHtml('data-carte-poste="Trésorerie"')->assertSeeHtml('data-carte-poste="Dépenses"')
-            ->assertSeeHtml('data-carte-poste="Résultat Net"')
+            ->assertSeeHtml('data-carte="tresorerie"')->assertSeeHtml('data-carte="depenses"')
+            ->assertSeeHtml('data-carte="resultat"')
             ->assertDontSeeHtml('data-carte-poste="Stock Critique"')
-            ->assertDontSeeHtml('data-carte-poste="Effectif Cheptel"')
-            ->assertDontSeeHtml('data-carte-poste="Cycles Couveuse en Cours"');
+            ->assertDontSeeHtml('data-carte="cheptel"')
+            ->assertDontSeeHtml('data-carte="couveuse"');
     }
 
     public function test_l_administrateur_voit_toutes_les_cartes(): void
@@ -393,34 +393,32 @@ class TableauDeBordWebTest extends TestCase
         foreach (['ca', 'encours', 'clients', 'dettes'] as $carte) {
             $t->assertSeeHtml('data-carte="'.$carte.'"');
         }
-        foreach (['Trésorerie', 'Dépenses', 'Résultat Net', 'Stock Critique', 'Effectif Cheptel', 'Cycles Couveuse en Cours'] as $carte) {
-            $t->assertSeeHtml('data-carte-poste="'.$carte.'"');
+        foreach (['tresorerie', 'depenses', 'resultat', 'cheptel', 'couveuse'] as $carte) {
+            $t->assertSeeHtml('data-carte="'.$carte.'"');
         }
+        // Seule carte que le serveur ne peut pas calculer : le stock reste propre à chaque poste.
+        $t->assertSeeHtml('data-carte-poste="Stock Critique"');
     }
 
     // --------------------------------------------------------- Cartes « sur le poste »
 
-    public function test_les_cartes_absentes_du_serveur_sont_grisees_sans_aucun_chiffre(): void
+    public function test_la_carte_stock_critique_est_grisee_sans_aucun_chiffre(): void
     {
         $html = $this->tableau('admin')->html();
 
-        $this->assertSame(6, substr_count($html, 'data-carte-poste='));
-        $this->assertSame(6, substr_count($html, 'Disponible sur le poste</p>'));
-        preg_match_all('#data-carte-poste="[^"]+".*?</div>#s', $html, $cartes);
-        $this->assertCount(6, $cartes[0]);
-        foreach ($cartes[0] as $carte) {
-            $this->assertStringContainsString('>—</p>', $carte);
-            $this->assertDoesNotMatchRegularExpression('/\d/', html_entity_decode(strip_tags(preg_replace('/data-carte-poste="[^"]*"/', '', $carte))));
-        }
-        $this->assertSame(6, substr_count($html, 'border-outline-variant bg-surface-zebra p-md text-outline" data-carte-poste='));
+        $this->assertSame(1, substr_count($html, 'data-carte-poste='));
+        $this->assertSame(1, preg_match('#data-carte-poste="Stock Critique".*?Le stock est propre à chaque poste\.</p>#s', $html, $m));
+        $carte = $m[0];
+        $this->assertStringContainsString('Disponible sur le poste', $carte);
+        $this->assertStringContainsString('>—</span>', $carte);
+        $this->assertDoesNotMatchRegularExpression('/\d/', html_entity_decode(strip_tags(preg_replace('/data-carte-poste="[^"]*"/', '', $carte))));
     }
 
-    public function test_l_ecran_declare_ses_ecarts_avec_le_poste(): void
+    public function test_les_autres_comptes_n_ont_pas_de_carte_stock(): void
     {
-        $this->tableau('admin')
-            ->assertSeeHtml('data-bloc="ecarts"')
-            ->assertSee('Restent au poste')
-            ->assertSee('cycles de couveuse')->assertSee('rappels de prophylaxie')->assertSee('export d\'état', false);
+        foreach (['caissier', 'animalier'] as $role) {
+            $this->tableau($role)->assertDontSeeHtml('data-carte-poste=');
+        }
     }
 
     public function test_l_ecran_est_en_lecture_seule(): void

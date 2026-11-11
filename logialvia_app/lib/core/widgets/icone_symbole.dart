@@ -28,6 +28,7 @@ class IconeSymbole {
     'eco': Symbols.eco,
     'egg': Symbols.egg,
     'egg_alt': Symbols.egg_alt,
+    'grass': Symbols.grass,
     'event_repeat': Symbols.event_repeat,
     'footprint': Symbols.footprint,
     'inventory_2': Symbols.inventory_2,

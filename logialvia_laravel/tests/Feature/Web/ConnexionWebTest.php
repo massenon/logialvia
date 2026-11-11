@@ -9,7 +9,6 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -25,7 +24,6 @@ class ConnexionWebTest extends TestCase
         parent::setUp();
         $this->withoutVite();
         $this->seed(RolesAndPermissionsSeeder::class);
-        RateLimiter::clear('');
     }
 
     private function compte(array $attributs = []): User
@@ -57,6 +55,46 @@ class ConnexionWebTest extends TestCase
         $this->assertAuthenticatedAs($utilisateur);
         $this->assertNotNull($utilisateur->fresh()->last_login_at);
         $this->assertSame(1, AuditLog::query()->where('action', 'web.login')->count());
+    }
+
+    public function test_la_page_reprend_la_maquette_login_html(): void
+    {
+        $this->get('/login')->assertOk()
+            ->assertSee('Gestion et Suivi Avicole Intégré')
+            ->assertSee('ALLMANY ET COMPAGNIE')
+            ->assertSee("NOM D'UTILISATEUR OU EMAIL", false)
+            ->assertSee('MOT DE PASSE')
+            ->assertSee('Se souvenir de moi')
+            ->assertSee('Mot de passe oublié ?')
+            ->assertSee("Projet d'Appui à l'Entrepreneuriat au Bénin (PAEB)", false);
+    }
+
+    public function test_se_souvenir_de_moi_retient_l_identifiant_apres_une_connexion_reussie(): void
+    {
+        $this->compte();
+
+        Livewire::test(Connexion::class)
+            ->set('identifiant', 'marie')
+            ->set('password', self::MOT_DE_PASSE)
+            ->set('souvenir', true)
+            ->call('connecter')
+            ->assertRedirect('/');
+
+        $this->assertTrue(\Illuminate\Support\Facades\Cookie::hasQueued('lv_identifiant'));
+        $this->assertSame('marie', \Illuminate\Support\Facades\Cookie::queued('lv_identifiant')->getValue());
+    }
+
+    public function test_un_identifiant_refuse_n_est_jamais_retenu(): void
+    {
+        $this->compte();
+
+        Livewire::test(Connexion::class)
+            ->set('identifiant', 'marie')
+            ->set('password', 'faux')
+            ->set('souvenir', true)
+            ->call('connecter');
+
+        $this->assertFalse(\Illuminate\Support\Facades\Cookie::hasQueued('lv_identifiant'));
     }
 
     public function test_un_mauvais_mot_de_passe_affiche_le_meme_message_que_l_api(): void
@@ -94,20 +132,18 @@ class ConnexionWebTest extends TestCase
             ->assertSee('Le mot de passe est obligatoire.');
     }
 
-    public function test_la_connexion_web_est_limitee_a_cinq_par_minute(): void
+    public function test_la_connexion_web_n_est_jamais_bloquee_apres_des_echecs(): void
     {
         $this->compte();
         $page = Livewire::test(Connexion::class)->set('identifiant', 'marie');
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 12; $i++) {
             $page->set('password', 'faux-'.$i)->call('connecter');
+            $this->assertSame('Identifiant ou mot de passe incorrect.', $page->get('erreur'));
         }
 
-        $page->set('password', self::MOT_DE_PASSE)->call('connecter');
-
-        $this->assertStringContainsString('Trop de tentatives', $page->get('erreur'));
-        // Meme avec le BON mot de passe : la limite protege la devinette.
-        $this->assertGuest();
+        $page->set('password', self::MOT_DE_PASSE)->call('connecter')->assertRedirect('/');
+        $this->assertAuthenticated();
     }
 
     public function test_un_connecte_n_est_plus_renvoye_vers_la_connexion(): void

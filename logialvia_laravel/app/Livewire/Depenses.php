@@ -281,6 +281,7 @@ class Depenses extends Component
 
         return $this->communes($annee) + [
             'titre' => 'Saisie des Dépenses',
+            'icone' => 'request_page',
             'description' => 'Charges d\'exploitation courantes de la ferme (SYSCOHADA Classe 6) — hors achats d\'intrants, déjà couverts par Achats & Commandes.',
             'depenses' => $filtrees,
             'aucuneDepense' => $toutes === [],

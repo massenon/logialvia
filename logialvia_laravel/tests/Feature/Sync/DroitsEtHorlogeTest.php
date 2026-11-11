@@ -61,7 +61,7 @@ class DroitsEtHorlogeTest extends TestCase
             'id' => $id ?? (string) Str::uuid(),
             'type' => 'module_actif',
             'saisi_le' => $saisi ?? $this->instant(),
-            'donnees' => ['module_id' => 'bovins', 'is_actif' => true],
+            'donnees' => ['module_id' => 'ovins', 'is_actif' => true],
         ];
     }
 
@@ -175,11 +175,11 @@ class DroitsEtHorlogeTest extends TestCase
             ->assertJsonPath('rejected.0.code', 'droit_insuffisant')
             ->assertJsonPath('rejected.0.id', $d['id']);
         $this->assertDatabaseCount('demandes_referentiel', 0);
-        $this->assertFalse((bool) ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        $this->assertFalse((bool) ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
 
         // La MEME demande (meme UUID), renvoyee par une session qui a le droit : jugee de nouveau, acceptee.
         $this->demander($admin, [$d])->assertOk()->assertJson(['accepted' => [$d['id']], 'rejected' => []]);
-        $this->assertTrue((bool) ModuleActif::query()->where('module_id', 'bovins')->value('is_actif'));
+        $this->assertTrue((bool) ModuleActif::query()->where('module_id', 'ovins')->value('is_actif'));
         $this->assertSame('acceptee', DemandeReferentiel::query()->find($d['id'])->statut);
     }
 

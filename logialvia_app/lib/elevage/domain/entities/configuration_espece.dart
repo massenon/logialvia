@@ -111,14 +111,14 @@ class ConfigurationEspece {
   final bool rationEnPourcentagePoidsVif;
 
   /// Unité dans laquelle on saisit les bornes des classes de poids : `'kg'`
-  /// pour un bovin, `'g'` pour un poisson (classes de 5, 20, 100 g). Les poids
+  /// pour un ovin, `'g'` pour un poisson (classes de 5, 20, 100 g). Les poids
   /// sont toujours **stockés en grammes**.
   final String uniteClassePoids;
 
   /// Ration par tête au-delà de laquelle la saisie est une faute de frappe :
   /// 5 kg par jour pour une volaille, un lapin, un poisson ou un escargot, mais
-  /// un bovin adulte mange près de 10 kg de matière sèche par jour (plafond
-  /// 20 kg).
+  /// un ovin adulte ne mange guère plus de 1 à 2 kg de matière sèche par jour
+  /// (plafond 4 kg).
   final int rationMaxGrammesParJour;
 
   /// Taux de ration au-delà duquel la saisie est une faute de frappe : un
@@ -138,7 +138,7 @@ class ConfigurationEspece {
       categories.indexWhere((c) => c.deduiteDesVentes);
 }
 
-/// Referentiel des fiches (6 d'origine, plus escargots et bovins) — Doc 05 §3 (table de correspondance des
+/// Referentiel des fiches (6 d'origine, plus escargots et ovins) — Doc 05 §3 (table de correspondance des
 /// categories) et Doc F3.
 ///
 /// Les rations proviennent du tableau de rationnement reel de chaque fiche
@@ -363,35 +363,36 @@ class ConfigurationsEspeces {
     libelleNaissances: 'Nés (Éclosions)',
   );
 
-  /// Bovins — filière ajoutée après le prototype (DV-17).
+  /// Ovins — filière ajoutée après le prototype (DV-17), devenue Ovins à la
+  /// demande du client (DV-22, remplace Bovins).
   ///
   /// ⚠️ Un ruminant se rationne en % de son poids vif (matière sèche), pas en
   /// grammes fixes par tête : la provende suit le tableau par classe de poids
   /// ([rationEnPourcentagePoidsVif]). Les rations ci-dessous (complément seul :
-  /// 1,5 / 7 / 9 kg de matière sèche) ne servent que de repli quand aucune
+  /// 0,3 / 0,6 / 0,8 kg) ne servent que de repli quand aucune
   /// pesée n'est saisie. Vente à la tête, après embouche.
-  static const ConfigurationEspece bovins = ConfigurationEspece(
-    identifiant: 'bovins',
-    libelle: 'Bovins',
-    icone: 'agriculture',
-    route: '/elevage/bovins',
+  static const ConfigurationEspece ovins = ConfigurationEspece(
+    identifiant: 'ovins',
+    libelle: 'Ovins',
+    icone: 'grass',
+    route: '/elevage/ovins',
     categories: [
       CategorieEspece(
-        libelle: 'Veau',
-        rationGrammesParJour: 1500,
+        libelle: 'Agneau',
+        rationGrammesParJour: 300,
         recoitAchatEtNaissances: true,
       ),
       CategorieEspece(
         libelle: 'Embouche',
-        rationGrammesParJour: 7000,
+        rationGrammesParJour: 600,
         deduiteDesVentes: true,
       ),
-      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 9000),
+      CategorieEspece(libelle: 'Reproducteur', rationGrammesParJour: 800),
     ],
     etapesCycle: [
-      'Naissance (vêlage)',
-      'Veau (0 → 6 mois)',
-      'Embouche (≥ 250 kg ou 24 mois) — Éligible à la Vente',
+      'Naissance (agnelage)',
+      'Agneau (0 → 3 mois)',
+      'Embouche (≥ 35 kg ou 12 mois) — Éligible à la Vente',
       'Reproducteur',
     ],
     noteRationnement:
@@ -399,11 +400,11 @@ class ConfigurationsEspeces {
         'pesée est saisie, d\'après le tableau par classe de poids de '
         'Paramètres Élevage. Sans pesée : ration indicative par tête. Repères à '
         'valider par l\'animalier.',
-    poidsMaturiteGrammes: 250000,
-    ageMaturiteJours: 730,
-    libelleNaissances: 'Nés (Vêlage)',
+    poidsMaturiteGrammes: 35000,
+    ageMaturiteJours: 365,
+    libelleNaissances: 'Nés (Agnelage)',
     rationEnPourcentagePoidsVif: true,
-    rationMaxGrammesParJour: 20000,
+    rationMaxGrammesParJour: 4000,
   );
 
   static const Map<String, ConfigurationEspece> parIdentifiant = {
@@ -414,6 +415,6 @@ class ConfigurationsEspeces {
     'poulets': poulets,
     'pondeuses': pondeuses,
     'escargots': escargots,
-    'bovins': bovins,
+    'ovins': ovins,
   };
 }

@@ -115,8 +115,8 @@ class CommerceWebTest extends TestCase
         $this->get('/ventes')->assertRedirect(route('login'));
         $this->actingAs($this->utilisateurAvecRole('animalier', 'koffi'))->get('/ventes')->assertForbidden();
         $this->actingAs($this->caissier())->get('/ventes')->assertOk()
-            ->assertSee('Enregistrer Vente')->assertSee('Historique des Ventes')->assertSee('Retours et Avoirs')
-            ->assertSee('Encaisser la Vente');
+            ->assertSee('Point de Vente')->assertSee('Historique des Ventes')->assertSee('Retours et Avoirs')
+            ->assertSee('Valider la Vente');
         $this->caisse()->assertSet('onglet', 'caisse')->call('choisirOnglet', 'retours')->assertSet('onglet', 'retours')
             ->call('choisirOnglet', 'inconnu')->assertSet('onglet', 'retours');
     }
@@ -125,7 +125,7 @@ class CommerceWebTest extends TestCase
     {
         $v = $this->venteDePoste();
         $c = $this->comptable();
-        Livewire::actingAs($c)->test(Ventes::class)->assertDontSee('Encaisser la Vente')->assertSeeHtml('data-lecture-seule');
+        Livewire::actingAs($c)->test(Ventes::class)->assertDontSee('Valider la Vente')->assertSeeHtml('data-lecture-seule');
 
         $appels = [
             'choisirProduit' => ['x'], 'modifierLigne' => [0], 'annulerAjout' => null, 'validerAjout' => [], 'retirerLigne' => [0], 'viderPanier' => [],

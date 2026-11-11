@@ -25,7 +25,7 @@
             <p class="text-caption uppercase text-outline">Résultat Provisoire</p>
             <p class="text-page-title font-bold" data-kpi="resultat">{{ $f::montant($resultat) }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-info-blue bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-info-blue bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Comptes de Gestion à Solder</p>
             <p class="text-page-title font-bold" data-kpi="comptes-gestion">{{ $comptesDeGestion }}</p>
         </div>

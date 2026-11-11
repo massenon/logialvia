@@ -836,7 +836,7 @@ class _TableauRationnement extends StatelessWidget {
   final List<int> effectifs;
   final int provendeTotaleG;
 
-  /// Mode de calcul : sur le poids vif (bovins, avec pesée) ou par tête.
+  /// Mode de calcul : sur le poids vif (ovins, avec pesée) ou par tête.
   final ProvendeJour provende;
 
   @override

@@ -65,7 +65,7 @@ lib/
   core/                # transverse : database (Drift), router, theme, widgets, pdf, events, saisie, tour
   administration/      # auth, utilisateurs/rôles, paramètres, sauvegardes, corbeille
   elevage/             # fiches par filière (8 : goliaths, pintades, lapins, poissons-chats, poulets,
-                       #   pondeuses, escargots, bovins), couveuse, soins/prophylaxie
+                       #   pondeuses, escargots, ovins), couveuse, soins/prophylaxie
   commercial/          # ventes/POS, clients, devis, factures e-MECeF
   approvisionnement/   # intrants, achats, fournisseurs, provende
   comptabilite/        # moteur comptable, journal, grand livre, balance, états financiers, clôture
@@ -80,7 +80,7 @@ Chaque contexte suit `data/` (tables Drift, repositories `*_drift.dart`, seeders
 - **État** : `provider`. Tout ViewModel partagé entre écrans/modales est enregistré
   globalement dans `main.dart` (Doc K4 §5).
 - **Persistance** : Drift/SQLite, une seule `AppDatabase` (`core/database/app_database.dart`,
-  `versionSchema = 50`, migrations idempotentes testées). `app_database.g.dart` est généré
+  `versionSchema = 51`, migrations idempotentes testées). `app_database.g.dart` est généré
   et versionné.
 - **Navigation** : `go_router`, 3 routes publiques (`/`, `/welcome`, `/login`) puis un
   `ShellRoute` (sidebar/topbar) ; accès contrôlé par `PermissionService` (RBAC 3 rôles, Doc I1)

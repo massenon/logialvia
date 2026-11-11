@@ -1,9 +1,9 @@
 <div data-onglet-actif="elevage">
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
-        @include('livewire.rapports._carte', ['kpi' => 'effectif-total', 'libelle' => 'Effectif Total', 'valeur' => (string) $x['effectif_total'], 'detail' => 'Toutes filières suivies', 'accent' => 'border-brand-navy'])
-        @include('livewire.rapports._carte', ['kpi' => 'sujets-malades', 'libelle' => 'Sujets Malades', 'valeur' => (string) $x['malades'], 'detail' => 'Infirmerie active', 'accent' => $x['malades'] > 0 ? 'border-error-deep' : 'border-success-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'taux-eclosion', 'libelle' => 'Taux Éclosion Moyen', 'valeur' => $x['taux_eclosion'] === null ? '—' : $f::pourcentage($x['taux_eclosion']), 'detail' => $x['taux_eclosion'] === null ? 'Aucun cycle éclos à ce jour' : 'Sur les cycles éclos', 'accent' => 'border-brand-gold'])
-        @include('livewire.rapports._carte', ['kpi' => 'cycles-en-cours', 'libelle' => 'Cycles en Cours', 'valeur' => (string) $x['cycles_en_cours'], 'detail' => 'Couveuse active', 'accent' => 'border-info-blue'])
+        @include('livewire.rapports._carte', ['kpi' => 'effectif-total', 'icone' => 'pets', 'libelle' => 'Effectif Total', 'valeur' => (string) $x['effectif_total'], 'detail' => 'Toutes filières suivies', 'accent' => 'border-brand-navy'])
+        @include('livewire.rapports._carte', ['kpi' => 'sujets-malades', 'icone' => 'coronavirus', 'libelle' => 'Sujets Malades', 'valeur' => (string) $x['malades'], 'detail' => 'Infirmerie active', 'accent' => $x['malades'] > 0 ? 'border-error-deep' : 'border-success-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'taux-eclosion', 'icone' => 'egg', 'libelle' => 'Taux Éclosion Moyen', 'valeur' => $x['taux_eclosion'] === null ? '—' : $f::pourcentage($x['taux_eclosion']), 'detail' => $x['taux_eclosion'] === null ? 'Aucun cycle éclos à ce jour' : 'Sur les cycles éclos', 'accent' => 'border-brand-gold'])
+        @include('livewire.rapports._carte', ['kpi' => 'cycles-en-cours', 'icone' => 'event_repeat', 'libelle' => 'Cycles en Cours', 'valeur' => (string) $x['cycles_en_cours'], 'detail' => 'Couveuse active', 'accent' => 'border-info-blue'])
     </div>
 
     {{-- Tableau 1 --}}

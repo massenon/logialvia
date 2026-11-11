@@ -79,10 +79,10 @@ class CalendrierProphylaxie extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Taux de ration par classe de poids vif — DV-17 (bovins), DV-01 (poissons).
+/// Taux de ration par classe de poids vif — DV-17 (ovins), DV-01 (poissons).
 ///
 /// Un ruminant se rationne en **pourcentage de son poids vif**, pas en grammes
-/// fixes par tête : un veau de 100 kg et un bœuf de 350 kg n'ont pas le même
+/// fixes par tête : un agneau de 10 kg et un bélier de 60 kg n'ont pas le même
 /// appétit, et `BAREMES_RATION` n'a qu'une valeur par stade. Cette table donne,
 /// par classe de poids moyen, le taux de matière sèche journalier.
 ///

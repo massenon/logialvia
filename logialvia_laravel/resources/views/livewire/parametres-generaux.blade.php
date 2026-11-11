@@ -1,6 +1,9 @@
 <div>
     <div class="mb-md flex flex-wrap items-center justify-between gap-sm">
-        <h1 class="text-page-title font-bold">Paramètres Généraux</h1>
+        <div>
+            <h1 class="flex items-center gap-xs text-page-title font-bold text-brand-navy"><x-icone nom="settings" class="text-[24px]" />Paramètres Généraux</h1>
+            <p class="mt-xs text-xs text-outline">Modules actifs, données de l'entreprise, utilisateurs, modes de paiement et sécurité du poste.</p>
+        </div>
         @can('manage-users')
             <div class="flex gap-sm">
                 <a href="{{ route('audit') }}" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold hover:bg-surface-zebra">
@@ -20,10 +23,10 @@
         <p role="alert" class="mb-md rounded-lg bg-error-container p-sm text-xs text-error-deep">{{ $erreur }}</p>
     @endif
 
-    <div class="mb-md flex flex-wrap border-b border-outline-variant" role="tablist" aria-label="Sections des paramètres">
+    <div class="mb-md flex flex-wrap items-center gap-xs border-b border-outline-variant" role="tablist" aria-label="Sections des paramètres">
         @foreach ($onglets as $i => $libelle)
             <button type="button" role="tab" wire:click="choisirOnglet({{ $i }})" aria-selected="{{ $i === $onglet ? 'true' : 'false' }}"
-                    class="whitespace-nowrap border-b-2 px-md py-sm text-xs font-bold {{ $i === $onglet ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold {{ $i === $onglet ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline' }}">
                 {{ $libelle }}
             </button>
         @endforeach
