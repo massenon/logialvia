@@ -45,6 +45,14 @@ class Achats extends Component
 
     public string $statut = '';
 
+    /** « Mode : Tous » (chaine vide) ou un mode de reglement. */
+    public string $modeFiltre = '';
+
+    /** Bornes de dates de la liste (AAAA-MM-JJ) ; vides = pas de borne. */
+    public string $debut = '';
+
+    public string $fin = '';
+
     /** Achat dont le detail des lignes est deplie. */
     public ?string $ouvert = null;
 
@@ -296,6 +304,9 @@ class Achats extends Component
 
         return Achat::query()
             ->when(in_array($this->statut, AchatsTable::STATUTS, true), fn ($q) => $q->where('statut', $this->statut))
+            ->when(in_array($this->modeFiltre, ['Espèces', 'Mobile Money'], true), fn ($q) => $q->where('mode', $this->modeFiltre))
+            ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->debut) === 1, fn ($q) => $q->where('date_achat', '>=', CarbonImmutable::parse($this->debut, config('logialvia.fuseau'))->startOfDay()->utc()->format('Y-m-d H:i:s')))
+            ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->fin) === 1, fn ($q) => $q->where('date_achat', '<=', CarbonImmutable::parse($this->fin, config('logialvia.fuseau'))->endOfDay()->utc()->format('Y-m-d H:i:s')))
             ->when($terme !== '', function ($q) use ($terme, $noms) {
                 $ids = $noms->filter(fn (string $nom) => mb_stripos($nom, $terme) !== false)->keys();
                 $q->where(fn ($w) => $w->where('reference', 'like', "%$terme%")->orWhereIn('fournisseur_id', $ids));

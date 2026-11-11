@@ -902,4 +902,12 @@ class InventaireWebTest extends TestCase
         $this->actingAs($this->admin())->get('/inventaire')
             ->assertOk()->assertSeeLivewire(Inventaire::class)->assertSee('Écarts avec le poste');
     }
+
+    public function test_les_sections_sont_rangees_en_quatre_onglets(): void
+    {
+        $this->ecran()
+            ->assertSeeHtml('data-onglet-inventaire="stocks"')->assertSeeHtml('data-onglet-inventaire="animaux"')
+            ->assertSeeHtml('data-onglet-inventaire="journaux"')->assertSeeHtml('data-onglet-inventaire="ecarts"')
+            ->assertSeeHtml('data-panneau-inventaire="stocks"');
+    }
 }

@@ -72,6 +72,15 @@
     </div>
 
     {{-- ===== Intrants ===== --}}
+    <div x-data="{ o: 'stocks' }">
+    <div class="mb-md flex items-center gap-xs overflow-x-auto border-b border-outline-variant" role="tablist">
+        @foreach (['stocks' => 'Intrants & Produits', 'animaux' => 'Animaux sur Pied', 'journaux' => 'Journaux de la Période', 'ecarts' => 'Écarts avec le Poste'] as $cle => $lib)
+            <button type="button" role="tab" data-onglet-inventaire="{{ $cle }}" x-on:click="o = '{{ $cle }}'" x-bind:aria-selected="o === '{{ $cle }}' ? 'true' : 'false'"
+                    x-bind:class="o === '{{ $cle }}' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-outline'"
+                    class="whitespace-nowrap border-b-2 px-md py-2.5 text-xs font-bold">{{ $lib }}</button>
+        @endforeach
+    </div>
+    <div x-show="o === 'stocks'" data-panneau-inventaire="stocks">
     <section class="mb-lg" data-section="intrants">
         <h2 class="mb-sm text-section-title font-bold">Intrants — mouvements de la période</h2>
         <div class="mb-sm rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-sm text-outline" data-carte-poste="intrants">
@@ -176,6 +185,8 @@
     </section>
 
     {{-- ===== Animaux sur pied ===== --}}
+    </div>
+    <div x-show="o === 'animaux'" x-cloak data-panneau-inventaire="animaux">
     <section class="mb-lg" data-section="effectifs">
         <h2 class="mb-sm text-section-title font-bold">Animaux sur pied — comptés, non valorisés</h2>
         <div class="hidden overflow-x-auto rounded-lg border border-outline-variant bg-surface-card sm:block">
@@ -216,6 +227,8 @@
     </section>
 
     {{-- ===== Journaux ===== --}}
+    </div>
+    <div x-show="o === 'journaux'" x-cloak data-panneau-inventaire="journaux">
     <section class="mb-lg" data-section="journal-intrants">
         <h2 class="mb-sm text-section-title font-bold">Journal des mouvements d'intrants de la période</h2>
         <p class="mb-sm text-xs text-outline">
@@ -321,6 +334,8 @@
         </div>
     </section>
 
+    </div>
+    <div x-show="o === 'ecarts'" x-cloak data-panneau-inventaire="ecarts">
     <section class="rounded-lg border border-dashed border-outline-variant bg-surface-zebra p-md" data-bloc="ecarts">
         <h2 class="mb-xs text-section-title font-bold">Écarts avec le poste</h2>
         <ul class="list-disc space-y-xs pl-lg text-xs text-outline">
@@ -334,4 +349,6 @@
             <li>Animaux sur pied : dernier effectif <strong>réellement saisi</strong> jusqu'à la fin de la période, par filière. Œufs en incubation : lots <em>En Incubation</em> (statut actuel) à cette date, moins mirages ; le poste compare le statut avec une casse différente (« En incubation ») qui n'existe pas en base — le web utilise le statut réel.</li>
         </ul>
     </section>
+    </div>
+    </div>
 </div>

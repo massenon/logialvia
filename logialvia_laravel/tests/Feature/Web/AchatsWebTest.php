@@ -275,4 +275,14 @@ class AchatsWebTest extends TestCase
         $this->assertSame(1, Achat::query()->count());
         $this->assertSame(1, LigneAchat::query()->count());
     }
+
+    public function test_la_liste_a_ses_onglets_et_ses_filtres_mode_et_dates(): void
+    {
+        Livewire::actingAs($this->utilisateur('comptable', 'compta'))->test(Achats::class)
+            ->assertSeeHtml('data-onglet-achat="enregistrer"')->assertSeeHtml('data-onglet-achat="liste"')
+            ->assertSee('Enregistrer un Achat')->assertSee('Liste des Achats')
+            ->assertSeeHtml('data-filtre="mode"')->assertSeeHtml('data-champ="debut"')->assertSeeHtml('data-champ="fin"')
+            ->set('modeFiltre', 'Mobile Money')->assertSet('modeFiltre', 'Mobile Money')
+            ->set('debut', '2026-01-01')->set('fin', '2026-12-31')->assertHasNoErrors();
+    }
 }

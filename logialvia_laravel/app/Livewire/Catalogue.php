@@ -6,6 +6,7 @@ use App\Models\MouvementProduit;
 use App\Models\ProduitVendable;
 use App\Services\Commerce\CorrectionsStockWeb;
 use App\Services\PosteDeStock;
+use App\Support\FilieresElevage;
 use App\Sync\DemandesReferentiel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -52,6 +53,9 @@ class Catalogue extends Component
     public string $coutRevient = '';
 
     public string $seuil = '0';
+
+    /** Filiere (espece) du produit : sert aux compteurs de ventes du jour des fiches d'elevage ; vide = marchandise. */
+    public string $espece = '';
 
     public ?string $erreur = null;
 
@@ -109,6 +113,7 @@ class Catalogue extends Component
         $this->unite = $produit->unit;
         $this->coutRevient = $produit->cout_revient === null ? '' : (string) $produit->cout_revient;
         $this->seuil = (string) $produit->threshold;
+        $this->espece = (string) ($produit->espece ?? '');
         $this->formulaire = true;
     }
 
@@ -182,7 +187,7 @@ class Catalogue extends Component
             'cout_revient' => $this->nombre($this->coutRevient),
             'groupe_taxe' => $existant?->groupe_taxe ?? 'A',
             'threshold' => is_numeric($this->seuil) ? (int) $this->seuil : 0,
-            'espece' => $existant?->espece,
+            'espece' => array_key_exists($this->espece, FilieresElevage::LIBELLES) ? $this->espece : null,
         ];
 
         $motif = $this->proposer($donnees);
@@ -195,6 +200,31 @@ class Catalogue extends Component
         $this->message = $existant === null ? "Produit « {$donnees['name']} » ajouté." : "Produit « {$donnees['name']} » modifié.";
         $this->formulaire = false;
         $this->erreur = null;
+    }
+
+    /** Seuil d'alerte modifie depuis l'onglet « Seuils d'Alerte » : meme demande de referentiel que le formulaire. */
+    public function majSeuil(string $id, string $valeur): void
+    {
+        $this->verifierDroitDeGerer();
+        $produit = ProduitVendable::query()->whereNull('archive_le')->find($id);
+        if ($produit === null || ! is_numeric($valeur) || (float) $valeur < 0) {
+            $this->erreur = 'Seuil invalide : saisissez un nombre positif ou nul.';
+
+            return;
+        }
+        $motif = $this->proposer([
+            'id' => $produit->id, 'sku' => $produit->sku, 'name' => $produit->name, 'cat' => $produit->cat,
+            'price' => (float) $produit->price, 'price_max' => $produit->price_max, 'unit' => $produit->unit,
+            'icon' => $produit->icon, 'cout_revient' => $produit->cout_revient, 'groupe_taxe' => $produit->groupe_taxe,
+            'threshold' => (int) $valeur, 'espece' => $produit->espece,
+        ]);
+        if ($motif !== null) {
+            $this->erreur = $motif;
+
+            return;
+        }
+        $this->erreur = null;
+        $this->message = "Seuil d'alerte de « {$produit->name} » mis à jour.";
     }
 
     public function demanderSuppression(string $id): void
@@ -256,7 +286,7 @@ class Catalogue extends Component
 
     private function reinitialiser(): void
     {
-        $this->reset(['produitId', 'nom', 'cat', 'prix', 'prixMax', 'unite', 'coutRevient', 'erreur', 'message']);
+        $this->reset(['produitId', 'nom', 'cat', 'prix', 'prixMax', 'unite', 'coutRevient', 'espece', 'erreur', 'message']);
         $this->seuil = '0';
         $this->cat = self::CATEGORIES[0];
     }
@@ -278,6 +308,7 @@ class Catalogue extends Component
             'produits' => $produits,
             'nombre' => (clone $tous)->count(),
             'nombreCategories' => (clone $tous)->distinct()->count('cat'),
+            'especes' => FilieresElevage::LIBELLES,
             'categories' => collect(self::CATEGORIES)->merge(ProduitVendable::query()->distinct()->pluck('cat'))->unique()->values(),
             'peutGerer' => Auth::user()?->can('manage-ventes') ?? false,
             'aConfirmer' => $this->aSupprimer ? ProduitVendable::query()->find($this->aSupprimer) : null,
