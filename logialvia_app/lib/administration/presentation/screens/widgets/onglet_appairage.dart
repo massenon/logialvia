@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/carte_section.dart';
+import '../../../data/repositories/preferences_poste_repository.dart';
 import '../../viewmodels/appairage_view_model.dart';
 
 const TextStyle _texte = TextStyle(
@@ -75,6 +76,8 @@ class OngletAppairage extends StatelessWidget {
         if (etat.appaire) ...[
           const SizedBox(height: AppSpacing.md),
           _CarteDroits(vm: vm, etat: etat),
+          const SizedBox(height: AppSpacing.md),
+          _CarteSynchroAuto(vm: vm),
         ],
         const SizedBox(height: AppSpacing.md),
         if (etat.appaire)
@@ -90,6 +93,63 @@ class OngletAppairage extends StatelessWidget {
           _Message(resultat: vm.dernierResultat!),
         ],
       ],
+    );
+  }
+}
+
+/// « Synchro automatique » : à quel rythme le poste reçoit ce que les autres
+/// postes ont saisi (la routine). Les autres déclencheurs ne changent pas : à
+/// l'ouverture, 3 s après une saisie, à la fermeture, et toutes les 30 s pour
+/// savoir si le web a demandé une synchronisation.
+class _CarteSynchroAuto extends StatelessWidget {
+  const _CarteSynchroAuto({required this.vm});
+
+  final AppairageViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    return CarteSection(
+      titre: 'Synchro automatique',
+      icone: Symbols.schedule,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Synchroniser toutes les'),
+              const SizedBox(width: AppSpacing.sm),
+              DropdownButton<int>(
+                key: const Key('intervalle-synchronisation'),
+                value: vm.intervalleMinutes,
+                items: [
+                  for (final minutes
+                      in PreferencesPosteRepository.intervallesSynchroMinutes)
+                    DropdownMenuItem(
+                      value: minutes,
+                      child: Text(
+                        minutes == 1 ? '1 minute' : '$minutes minutes',
+                      ),
+                    ),
+                ],
+                onChanged: (minutes) {
+                  if (minutes != null) vm.definirIntervalleMinutes(minutes);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            'Une saisie est envoyée 3 secondes après, à la fermeture du '
+            'logiciel et sur « Synchroniser maintenant » : ce réglage ne '
+            'concerne que la réception de ce que les autres postes ont saisi.',
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              fontSize: 11,
+              color: AppColors.outline,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

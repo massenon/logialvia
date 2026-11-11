@@ -279,7 +279,11 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
   void initState() {
     super.initState();
     // Sans effet (aucun minuteur) tant que le poste n'est pas appaire.
-    _planificateur.demarrer();
+    // Synchro automatique : l'intervalle choisi dans Paramètres > Appairage.
+    _preferencesPoste.intervalleSynchroMinutes().then((minutes) {
+      _planificateur.changerIntervalleRoutine(Duration(minutes: minutes));
+      _planificateur.demarrer();
+    });
     // La fermeture passe par nous : une derniere synchronisation, bornee a 4 s.
     windowManager.addListener(this);
     unawaited(windowManager.setPreventClose(true));

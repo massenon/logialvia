@@ -26,14 +26,17 @@ class PlanificateurSynchronisation extends ChangeNotifier {
   PlanificateurSynchronisation({
     required this.moteur,
     this.intervalleDemande = const Duration(seconds: 30),
-    this.intervalleRoutine = const Duration(minutes: 5),
+    Duration intervalleRoutine = const Duration(minutes: 5),
     this.delaiGeste = const Duration(seconds: 3),
     this.apresSynchronisation,
-  });
+  }) : _routine = intervalleRoutine;
 
   final MoteurSynchronisationPoste moteur;
   final Duration intervalleDemande;
-  final Duration intervalleRoutine;
+  Duration _routine;
+
+  /// Intervalle de la routine (5 min par défaut) ; réglable : [changerIntervalleRoutine].
+  Duration get intervalleRoutine => _routine;
   final Duration delaiGeste;
 
   /// Appelé après chaque synchronisation (ex. recharger les modules actifs).
@@ -91,7 +94,19 @@ class PlanificateurSynchronisation extends ChangeNotifier {
       intervalleDemande,
       (_) => _surTickDemande(),
     );
-    _tickRoutine ??= Timer.periodic(intervalleRoutine, (_) => _lancer());
+    _tickRoutine ??= Timer.periodic(_routine, (_) => _lancer());
+  }
+
+  /// Change l'intervalle de la routine (réglage « Synchro automatique » de
+  /// l'onglet Appairage). Prend effet tout de suite si les minuteurs tournent.
+  void changerIntervalleRoutine(Duration intervalle) {
+    if (_ferme || intervalle <= Duration.zero || intervalle == _routine) return;
+    _routine = intervalle;
+    if (_tickRoutine != null) {
+      _tickRoutine!.cancel();
+      _tickRoutine = Timer.periodic(_routine, (_) => _lancer());
+    }
+    notifyListeners();
   }
 
   void _desarmer() {
