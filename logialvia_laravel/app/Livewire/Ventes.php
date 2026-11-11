@@ -88,6 +88,12 @@ class Ventes extends Component
     /** Chaine vide = « Tous statuts ». */
     public string $statut = '';
 
+    /** Chaine vide = « Mode : Tous ». */
+    public string $modeFiltre = '';
+
+    /** Nom exact d'un client des ventes ; chaine vide = « Client : Tous ». */
+    public string $clientFiltre = '';
+
     public ?string $venteId = null;
 
     public ?string $annulationId = null;
@@ -219,6 +225,19 @@ class Ventes extends Component
         $this->verifierDroitDeGerer();
         $this->reset(['panier', 'client', 'clientId', 'mode', 'condition', 'montantRecu', 'echeance', 'livraisonActive',
             'livraisonMode', 'livraisonFrais', 'livraisonAdresse', 'livraisonContact', 'erreur']);
+    }
+
+    /** Sélecteur de client déroulant du panier : « Client Comptant » (vide) ou un client enregistré. */
+    public function choisirClientListe(string $id): void
+    {
+        $this->verifierDroitDeGerer();
+        if ($id === '') {
+            $this->client = '';
+            $this->clientId = null;
+
+            return;
+        }
+        $this->choisirClient($id);
     }
 
     public function choisirClient(string $id): void
@@ -417,6 +436,8 @@ class Ventes extends Component
 
         return Vente::query()
             ->when(in_array($this->statut, self::STATUTS, true), fn ($q) => $q->where('status', $this->statut))
+            ->when(in_array($this->modeFiltre, VentesWeb::MODES, true), fn ($q) => $q->where('mode', $this->modeFiltre))
+            ->when($this->clientFiltre !== '', fn ($q) => $q->where('client', $this->clientFiltre))
             ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client'], $terme))
             ->orderByDesc('date_vente')->orderBy('reference')->get();
     }
@@ -489,6 +510,8 @@ class Ventes extends Component
             'ouverte' => $ouverte,
             'fuseau' => config('logialvia.fuseau'),
             'statuts' => self::STATUTS,
+            'clientsListe' => Client::query()->whereNull('supprime_le')->orderBy('nom')->get(['id', 'nom']),
+            'clientsDesVentes' => Vente::query()->distinct()->orderBy('client')->pluck('client'),
             'peutGerer' => $peutGerer,
             'peutExporter' => Auth::user()?->can('export-ventes') ?? false,
             'produits' => $produits,

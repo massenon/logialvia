@@ -16,17 +16,17 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Dépenses du Mois</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Dépenses du Mois</span><x-icone nom="payments" class="text-[18px] text-brand-navy" /></div>
             <p class="text-page-title font-bold" data-kpi="mois">{{ $f::montant($depensesDuMois) }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Charges Fixes</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Charges Fixes</span><x-icone nom="event_repeat" class="text-[18px] text-brand-navy" /></div>
             <p class="text-page-title font-bold" data-kpi="fixes">{{ $f::montant($chargesFixes) }}</p>
             <p class="text-caption text-outline">Comptes {{ implode(' et ', \App\Support\PlanSyscohada::COMPTES_CHARGES_FIXES) }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
-            <p class="text-caption uppercase text-outline">Charges Variables</p>
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
+            <div class="flex items-start justify-between"><span class="text-caption font-bold uppercase text-outline">Charges Variables</span><x-icone nom="trending_down" class="text-[18px] text-success-deep" /></div>
             <p class="text-page-title font-bold" data-kpi="variables">{{ $f::montant($chargesVariables) }}</p>
             <p class="text-caption text-outline">Autres comptes de charge</p>
         </div>
@@ -34,7 +34,7 @@
 
     @if ($peutGerer)
         <section class="mb-md rounded-lg border border-outline-variant bg-surface-card p-lg shadow-sm" data-formulaire="depense">
-            <h2 class="mb-xs text-section-title font-bold">Nouvelle Dépense</h2>
+            <h2 class="mb-xs flex items-center gap-xs text-section-title font-bold text-brand-navy"><x-icone nom="add_circle" class="text-[20px]" />Nouvelle Dépense</h2>
             <p class="mb-md text-xs text-outline">Enregistrez une charge d'exploitation de trésorerie directe. L'écriture comptable part immédiatement au Journal : compte de charge au débit, compte de trésorerie au crédit.</p>
 
             @if ($planIncomplet)

@@ -23,19 +23,19 @@
     @endif
 
     <div class="mb-lg grid grid-cols-2 gap-md lg:grid-cols-4">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Total Actif (Bilan)</p>
             <p class="text-page-title font-bold" data-kpi="total-actif">{{ $f::nombre($totalActif) }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Trésorerie (Journal)</p>
             <p class="text-page-title font-bold" data-kpi="tresorerie">{{ $f::nombre($tresorerie) }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Résultat Cumulé</p>
             <p class="text-page-title font-bold {{ $resultat < 0 ? 'text-error-deep' : '' }}" data-kpi="resultat">{{ $f::nombre($resultat) }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Marge Nette (Analytique)</p>
             <p class="text-page-title font-bold" data-kpi="marge">
                 @if ($margeNette === null) — @else {{ str_replace('-0', '0', number_format($margeNette, 0, ',', ' ')) }} <span class="text-xs font-normal">%</span> @endif

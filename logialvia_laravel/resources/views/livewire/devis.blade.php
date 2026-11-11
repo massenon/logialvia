@@ -22,16 +22,16 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Devis Émis</p>
             <p class="text-page-title font-bold" data-kpi="nombre">{{ $nombre }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">En Attente de Réponse</p>
             <p class="text-page-title font-bold" data-kpi="en-attente">{{ $enAttente }}</p>
             <p class="text-caption text-outline">Émis et encore valables</p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Montant Accepté</p>
             <p class="text-page-title font-bold" data-kpi="accepte">{{ number_format($accepte, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>

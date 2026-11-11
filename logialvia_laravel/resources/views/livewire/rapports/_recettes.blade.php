@@ -1,9 +1,9 @@
 <div data-onglet-actif="recettes">
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
-        @include('livewire.rapports._carte', ['kpi' => 'total-recettes', 'libelle' => 'Total Recettes', 'valeur' => $f::montant($x['total_recettes']), 'detail' => 'Avicole + Commerce Annexe', 'accent' => 'border-success-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'total-depenses', 'libelle' => 'Total Dépenses', 'valeur' => $f::montant($x['total_depenses']), 'detail' => 'Intrants + Charges diverses', 'accent' => 'border-error-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'resultat-net', 'libelle' => 'Résultat Net', 'valeur' => $f::montant($x['resultat_net']), 'detail' => 'Recettes − Dépenses', 'accent' => 'border-brand-gold', 'couleur' => $x['resultat_net'] < 0 ? 'text-error-deep' : 'text-brand-navy'])
-        @include('livewire.rapports._carte', ['kpi' => 'taux-marge', 'libelle' => 'Taux de Marge Brute', 'valeur' => $x['taux_marge'] === null ? '—' : $f::pourcentage($x['taux_marge']), 'detail' => 'Résultat Net / Total Recettes', 'accent' => 'border-info-blue'])
+        @include('livewire.rapports._carte', ['kpi' => 'total-recettes', 'icone' => 'trending_up', 'libelle' => 'Total Recettes', 'valeur' => $f::montant($x['total_recettes']), 'detail' => 'Avicole + Commerce Annexe', 'accent' => 'border-success-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'total-depenses', 'icone' => 'trending_down', 'libelle' => 'Total Dépenses', 'valeur' => $f::montant($x['total_depenses']), 'detail' => 'Intrants + Charges diverses', 'accent' => 'border-error-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'resultat-net', 'icone' => 'calculate', 'libelle' => 'Résultat Net', 'valeur' => $f::montant($x['resultat_net']), 'detail' => 'Recettes − Dépenses', 'accent' => 'border-brand-gold', 'couleur' => $x['resultat_net'] < 0 ? 'text-error-deep' : 'text-brand-navy'])
+        @include('livewire.rapports._carte', ['kpi' => 'taux-marge', 'icone' => 'percent', 'libelle' => 'Taux de Marge Brute', 'valeur' => $x['taux_marge'] === null ? '—' : $f::pourcentage($x['taux_marge']), 'detail' => 'Résultat Net / Total Recettes', 'accent' => 'border-info-blue'])
     </div>
 
     <section class="mb-md rounded-lg border border-outline-variant bg-surface-card p-md" data-bloc="comparatif">

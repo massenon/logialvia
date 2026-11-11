@@ -35,9 +35,13 @@ class ImpressionsCommerce extends Controller
         $statuts = ['Payée', 'Avance', 'Annulée'];
         $statut = request()->query('statut', '');
         $terme = trim((string) request()->query('recherche', ''));
+        $mode = (string) request()->query('mode', '');
+        $client = (string) request()->query('client', '');
 
         $ventes = Vente::query()
             ->when(in_array($statut, $statuts, true), fn ($q) => $q->where('status', $statut))
+            ->when(in_array($mode, \App\Services\Commerce\VentesWeb::MODES, true), fn ($q) => $q->where('mode', $mode))
+            ->when($client !== '', fn ($q) => $q->where('client', $client))
             ->tap(fn ($q) => \App\Support\RechercheLike::appliquer($q, ['reference', 'client'], $terme))
             ->orderByDesc('date_vente')->orderBy('reference')->get();
 
@@ -48,7 +52,7 @@ class ImpressionsCommerce extends Controller
         return view('impression.historique-ventes', [
             'ventes' => $ventes, 'entreprise' => $this->entreprise(), 'fuseau' => config('logialvia.fuseau'),
             'chiffreAffaires' => $chiffreAffaires, 'encaisse' => $encaisse,
-            'filtre' => trim(($statut !== '' ? "statut « $statut »" : '').($terme !== '' ? ' recherche « '.$terme.' »' : '')),
+            'filtre' => trim(($statut !== '' ? "statut « $statut »" : '').($terme !== '' ? ' recherche « '.$terme.' »' : '').($mode !== '' ? " mode « $mode »" : '').($client !== '' ? " client « $client »" : '')),
         ]);
     }
 

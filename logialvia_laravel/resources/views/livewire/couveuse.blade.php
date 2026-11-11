@@ -24,30 +24,30 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Cycles en Cours</p>
             <p class="text-page-title font-bold" data-kpi="en-cours">{{ $cyclesEnCours }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Poussins Attendus</p>
             <p class="text-page-title font-bold" data-kpi="attendus">{{ $tauxBrut === null ? '—' : $poussinsAttendus }}</p>
             @if ($tauxBrut === null)
                 <p class="text-caption text-outline">Nécessite au moins une éclosion enregistrée</p>
             @endif
         </div>
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Œufs en Incubation</p>
             <p class="text-page-title font-bold" data-kpi="oeufs">{{ $oeufsEnIncubation }}</p>
             @if ($machines->isNotEmpty())
                 <p class="text-caption text-outline">{{ $machines->count() }} incubateur(s)</p>
             @endif
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Taux d'Éclosion Réel</p>
             <p class="text-page-title font-bold" data-kpi="reel">{{ \App\Support\SuiviIncubation::pourcentage($tauxReel) }}</p>
             <p class="text-caption text-outline">Après retrait des œufs clairs et gâtés</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Taux Brut Moyen</p>
             <p class="text-page-title font-bold" data-kpi="brut">{{ \App\Support\SuiviIncubation::pourcentage($tauxBrut) }}</p>
             <p class="text-caption text-outline">Rapporté aux œufs chargés</p>

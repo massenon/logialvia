@@ -26,22 +26,22 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Facturé Net</p>
             <p class="text-page-title font-bold" data-kpi="net">{{ number_format($factureNet, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
             <p class="text-caption text-outline">Factures de vente moins avoirs</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">À Transmettre</p>
             <p class="text-page-title font-bold" data-kpi="a-transmettre">{{ $aTransmettre }}</p>
             <p class="text-caption text-outline">Non encore normalisées</p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Normalisées</p>
             <p class="text-page-title font-bold" data-kpi="normalisees">{{ $normalisees }}</p>
             <p class="text-caption text-outline">Code MeCeF reçu de la DGI</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Rejetées</p>
             <p class="text-page-title font-bold" data-kpi="rejetees">{{ $rejetees }}</p>
             <p class="text-caption text-outline">Transmission refusée</p>

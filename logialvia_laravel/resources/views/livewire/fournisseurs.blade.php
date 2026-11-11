@@ -20,19 +20,19 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Fournisseurs Actifs</p>
             <p class="text-page-title font-bold" data-kpi="actifs">{{ $nombre }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Dette Totale</p>
             <p class="text-page-title font-bold" data-kpi="dette">{{ number_format($detteTotale, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Achats Cumulés (Mois)</p>
             <p class="text-page-title font-bold" data-kpi="achats-mois">{{ number_format($achatsDuMois, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Dettes Soldées (Mois)</p>
             <p class="text-page-title font-bold" data-kpi="soldees-mois">{{ $dettesSoldeesMois }}</p>
         </div>

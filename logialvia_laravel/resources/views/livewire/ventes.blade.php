@@ -112,6 +112,10 @@
                     @endforelse
 
                     <label class="mb-sm mt-sm block text-caption font-bold uppercase text-brand-navy">Client
+                        <select wire:change="choisirClientListe($event.target.value)" aria-label="Choisir un client" data-champ="client-liste" class="mt-xs w-full rounded-lg border border-outline-variant bg-white px-sm py-sm text-xs font-normal normal-case text-black">
+                            <option value="">Client Comptant</option>
+                            @foreach ($clientsListe as $cl)<option value="{{ $cl->id }}" @selected($clientId === $cl->id)>{{ $cl->nom }}</option>@endforeach
+                        </select>
                         <input type="text" wire:model.live.debounce.300ms="client" placeholder="Client Comptant" class="mt-xs w-full rounded-lg border border-outline-variant px-sm py-sm"></label>
                     @foreach ($suggestions as $c)
                         <button type="button" wire:click="choisirClient('{{ $c->id }}')" class="mb-xs block w-full rounded-lg border border-outline-variant px-sm py-xs text-left text-xs" data-suggestion="{{ $c->nom }}">{{ $c->nom }} <span class="text-outline">{{ $c->telephone ?: 'Sans téléphone' }}</span></button>
@@ -222,9 +226,17 @@
                 <option value="">Statut : Tous</option>
                 @foreach ($statuts as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
             </select>
+            <select wire:model.live="modeFiltre" aria-label="Filtrer par mode" data-filtre="mode" class="rounded-lg border border-outline-variant bg-white px-sm py-sm text-xs">
+                <option value="">Mode : Tous</option>
+                @foreach ($modes as $m)<option value="{{ $m }}">{{ $m }}</option>@endforeach
+            </select>
+            <select wire:model.live="clientFiltre" aria-label="Filtrer par client" data-filtre="client" class="rounded-lg border border-outline-variant bg-white px-sm py-sm text-xs">
+                <option value="">Client : Tous</option>
+                @foreach ($clientsDesVentes as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach
+            </select>
             @if ($peutExporter)
                 <button type="button" wire:click="exporterHistorique" data-action="exporter-historique" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Exporter (XLSX)</button>
-                <a href="{{ route('ventes.historique.imprimer', ['recherche' => $recherche, 'statut' => $statut]) }}" target="_blank" data-lien="imprimer-historique" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Imprimer / PDF</a>
+                <a href="{{ route('ventes.historique.imprimer', ['recherche' => $recherche, 'statut' => $statut, 'mode' => $modeFiltre, 'client' => $clientFiltre]) }}" target="_blank" data-lien="imprimer-historique" class="rounded-lg border border-outline-variant px-md py-sm text-xs font-semibold">Imprimer / PDF</a>
             @endif
         </div>
 

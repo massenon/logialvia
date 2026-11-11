@@ -20,11 +20,11 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Total Débit (Période)</p>
             <p class="text-page-title font-bold" data-kpi="debit">{{ $f::montant($totalDebit) }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Total Crédit (Période)</p>
             <p class="text-page-title font-bold" data-kpi="credit">{{ $f::montant($totalCredit) }}</p>
         </div>

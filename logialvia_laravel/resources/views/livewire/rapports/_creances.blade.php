@@ -1,9 +1,9 @@
 <div data-onglet-actif="creances">
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
-        @include('livewire.rapports._carte', ['kpi' => 'creances-en-cours', 'libelle' => 'Créances En Cours', 'valeur' => $f::montant($x['en_cours']), 'detail' => 'Toutes créances actives', 'accent' => 'border-error-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'creances-en-retard', 'libelle' => 'Créances en Retard', 'valeur' => $f::montant($x['en_retard']), 'detail' => 'Échéance dépassée', 'accent' => 'border-error-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'clients-debiteurs', 'libelle' => 'Clients Débiteurs', 'valeur' => (string) $x['clients'], 'detail' => 'Sur la clientèle active', 'accent' => 'border-brand-gold'])
-        @include('livewire.rapports._carte', ['kpi' => 'taux-recouvrement', 'libelle' => 'Taux de Recouvrement', 'valeur' => $x['taux'] === null ? '—' : $f::pourcentage($x['taux']), 'detail' => 'Acomptes / Montant Initial', 'accent' => 'border-info-blue'])
+        @include('livewire.rapports._carte', ['kpi' => 'creances-en-cours', 'icone' => 'request_quote', 'libelle' => 'Créances En Cours', 'valeur' => $f::montant($x['en_cours']), 'detail' => 'Toutes créances actives', 'accent' => 'border-error-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'creances-en-retard', 'icone' => 'schedule', 'libelle' => 'Créances en Retard', 'valeur' => $f::montant($x['en_retard']), 'detail' => 'Échéance dépassée', 'accent' => 'border-error-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'clients-debiteurs', 'icone' => 'group', 'libelle' => 'Clients Débiteurs', 'valeur' => (string) $x['clients'], 'detail' => 'Sur la clientèle active', 'accent' => 'border-brand-gold'])
+        @include('livewire.rapports._carte', ['kpi' => 'taux-recouvrement', 'icone' => 'percent', 'libelle' => 'Taux de Recouvrement', 'valeur' => $x['taux'] === null ? '—' : $f::pourcentage($x['taux']), 'detail' => 'Acomptes / Montant Initial', 'accent' => 'border-info-blue'])
     </div>
 
     <section class="mb-md rounded-lg border border-outline-variant bg-surface-card p-md">

@@ -1,8 +1,8 @@
 <div data-onglet-actif="dettes">
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-3">
-        @include('livewire.rapports._carte', ['kpi' => 'total-dettes', 'libelle' => 'Total Dettes Fournisseurs', 'valeur' => $f::montant($x['total']), 'detail' => 'Toutes dettes actives', 'accent' => 'border-error-deep'])
-        @include('livewire.rapports._carte', ['kpi' => 'dettes-urgentes', 'libelle' => 'Dettes Urgentes', 'valeur' => $f::montant($x['urgentes']), 'detail' => 'Échéance dépassée', 'accent' => 'border-brand-gold'])
-        @include('livewire.rapports._carte', ['kpi' => 'fournisseurs-crediteurs', 'libelle' => 'Fournisseurs Créditeurs', 'valeur' => (string) $x['fournisseurs'], 'detail' => 'Sur la base fournisseurs', 'accent' => 'border-info-blue'])
+        @include('livewire.rapports._carte', ['kpi' => 'total-dettes', 'icone' => 'local_shipping', 'libelle' => 'Total Dettes Fournisseurs', 'valeur' => $f::montant($x['total']), 'detail' => 'Toutes dettes actives', 'accent' => 'border-error-deep'])
+        @include('livewire.rapports._carte', ['kpi' => 'dettes-urgentes', 'icone' => 'priority_high', 'libelle' => 'Dettes Urgentes', 'valeur' => $f::montant($x['urgentes']), 'detail' => 'Échéance dépassée', 'accent' => 'border-brand-gold'])
+        @include('livewire.rapports._carte', ['kpi' => 'fournisseurs-crediteurs', 'icone' => 'store', 'libelle' => 'Fournisseurs Créditeurs', 'valeur' => (string) $x['fournisseurs'], 'detail' => 'Sur la base fournisseurs', 'accent' => 'border-info-blue'])
     </div>
 
     <section class="mb-md rounded-lg border border-outline-variant bg-surface-card p-md">

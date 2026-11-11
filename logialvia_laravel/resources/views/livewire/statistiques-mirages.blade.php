@@ -19,32 +19,32 @@
     <p class="mb-md text-xs text-outline">Le mirage sépare ce que le taux d'éclosion confond : un œuf clair n'a jamais été fécondé, un œuf gâté a démarré puis s'est arrêté. Le premier accuse les reproducteurs, le second la conduite de la machine.</p>
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" data-bloc="kpi">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Œufs Chargés</p>
             <p class="text-page-title font-bold" data-kpi="charges">{{ $agregat['charges'] }}</p>
             <p class="text-caption text-outline">{{ $agregat['lots'] }} lot(s)</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Clairs (J+7)</p>
             <p class="text-page-title font-bold" data-kpi="clairs">{{ $agregat['clairs'] }}</p>
             <p class="text-caption text-outline">Infertilité {{ \App\Support\SuiviIncubation::pourcentage($agregat['infertilite']) }} — reproducteurs</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Gâtés (J+14)</p>
             <p class="text-page-title font-bold" data-kpi="gates">{{ $agregat['gates'] }}</p>
             <p class="text-caption text-outline">Mortalité embryonnaire {{ \App\Support\SuiviIncubation::pourcentage($agregat['mortalite']) }} — conduite</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Œufs Retenus</p>
             <p class="text-page-title font-bold" data-kpi="retenus">{{ $agregat['retenus'] }}</p>
             <p class="text-caption text-outline">Après les deux mirages</p>
         </div>
-        <div class="rounded-lg border-l-4 border-success-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-success-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Taux d'Éclosion Réel</p>
             <p class="text-page-title font-bold" data-kpi="ter">{{ \App\Support\SuiviIncubation::pourcentage($agregat['ter']) }}</p>
             <p class="text-caption text-outline">Éclos ÷ œufs retenus</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Perte Totale</p>
             <p class="text-page-title font-bold" data-kpi="perte">{{ \App\Support\SuiviIncubation::pourcentage($agregat['perte']) }}</p>
             <p class="text-caption text-outline">Sur les lots clôturés seulement</p>

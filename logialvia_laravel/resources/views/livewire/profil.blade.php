@@ -1,11 +1,11 @@
 <div>
     <div class="mb-md border-b border-outline-variant pb-md">
-        <h1 class="text-page-title font-bold">Mon Profil</h1>
-        <p class="text-xs text-outline">Informations de session et sécurité du compte.</p>
+        <h1 class="flex items-center gap-xs text-page-title font-bold"><x-icone nom="person" class="text-[26px] text-brand-navy" />Mon Profil</h1>
+        <p class="mt-xs text-xs text-outline">Informations de session, sécurité et journal d'activité personnel.</p>
     </div>
 
     <div class="grid grid-cols-1 gap-md lg:grid-cols-[35%_1fr]">
-        <section class="rounded-lg border border-outline-variant bg-surface-card p-lg" data-carte="identite">
+        <section class="rounded-lg border border-outline-variant bg-white p-lg" data-carte="identite">
             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-navy text-section-title font-extrabold text-white" aria-hidden="true">{{ $initiales }}</div>
             <p class="mt-md text-center text-xs font-bold text-brand-navy" data-profil="nom">{{ $nom }}</p>
             <p class="text-center text-xs text-outline" data-profil="identifiant">{{ $identifiant }}</p>
@@ -27,8 +27,8 @@
             </p>
         </section>
 
-        <section class="rounded-lg border border-outline-variant bg-surface-card p-lg" data-carte="mot-de-passe">
-            <h2 class="mb-md text-section-title font-bold">Modifier le Mot de Passe</h2>
+        <section class="rounded-lg border border-outline-variant bg-white p-lg" data-carte="mot-de-passe">
+            <h2 class="mb-md flex items-center gap-xs text-xs font-bold uppercase text-brand-navy"><x-icone nom="lock" class="text-[18px]" />Modifier le Mot de Passe</h2>
             <form wire:submit="enregistrer" class="flex flex-col gap-md" novalidate>
                 @foreach ([['actuel', 'Ancien mot de passe *', 'current-password'], ['nouveau', 'Nouveau mot de passe *', 'new-password'], ['confirmation', 'Confirmer le nouveau mot de passe *', 'new-password']] as [$champ, $libelle, $auto])
                     <div>
@@ -52,7 +52,7 @@
             </p>
         </section>
 
-        <section class="rounded-lg border border-outline-variant bg-surface-card p-lg lg:col-start-2" data-carte="journal">
+        <section class="rounded-lg border border-outline-variant bg-white p-lg lg:col-start-2" data-carte="journal">
             <h2 class="mb-md text-section-title font-bold">Journal d'Audit — Dernières Actions</h2>
             @forelse ($journal as $l)
                 <div class="flex flex-wrap justify-between gap-sm border-b border-outline-variant py-sm text-xs" data-ligne-journal="{{ $l->action }}">

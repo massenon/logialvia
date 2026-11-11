@@ -14,19 +14,19 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Clients Enregistrés</p>
             <p class="text-page-title font-bold" data-kpi="clients">{{ $nombre }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-error-deep bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-error-deep bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Solde Total Restant Dû</p>
             <p class="text-page-title font-bold" data-kpi="solde">{{ number_format($soldeTotal, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Soldes Anciens (&gt;10j)</p>
             <p class="text-page-title font-bold" data-kpi="anciens">{{ $anciens }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-info-blue bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-info-blue bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Événements CRM (7j)</p>
             <p class="text-page-title font-bold" data-kpi="crm">{{ $evenements->count() }}</p>
         </div>

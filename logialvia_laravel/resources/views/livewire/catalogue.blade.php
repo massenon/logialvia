@@ -20,11 +20,11 @@
     @endif
 
     <div class="mb-md grid grid-cols-1 gap-md sm:grid-cols-2">
-        <div class="rounded-lg border-l-4 border-brand-navy bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-navy bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Produits au catalogue</p>
             <p class="text-page-title font-bold" data-kpi="produits">{{ $nombre }}</p>
         </div>
-        <div class="rounded-lg border-l-4 border-brand-gold bg-surface-card p-md shadow-sm">
+        <div class="rounded-lg border border-outline-variant border-l-4 border-l-brand-gold bg-white p-md shadow-sm">
             <p class="text-caption uppercase text-outline">Catégories</p>
             <p class="text-page-title font-bold" data-kpi="categories">{{ $nombreCategories }}</p>
         </div>
