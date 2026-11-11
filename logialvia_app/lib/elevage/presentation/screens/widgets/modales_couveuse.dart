@@ -1,5 +1,5 @@
 import '../../../../core/widgets/auteur_courant.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatage/formats.dart';

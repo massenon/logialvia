@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logialvia_app/core/tour/scenarios_tour.dart';
 import 'package:logialvia_app/core/tour/tour_guide.dart';
