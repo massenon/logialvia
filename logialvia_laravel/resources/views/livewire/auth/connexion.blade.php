@@ -1,4 +1,4 @@
-{{-- Ecran de connexion : transcrit de login.html et de login_screen.dart (memes tailles, memes icones). --}}
+{{-- Ecran de connexion : visuel a gauche (layouts/connexion), formulaire a droite ; plus de bandeau d'icones de modules. --}}
 <div x-data="{ voir: false, oubli: false }" @keydown.escape.window="oubli = false">
     {{-- Langue + version (login.html l.31-34) : informatifs, comme au poste. --}}
     <div class="mb-4 flex items-center justify-end gap-2 text-xs text-outline">
@@ -8,7 +8,7 @@
         <span class="px-2 font-bold tracking-wider">{{ $version }}</span>
     </div>
 
-    <div class="space-y-5">
+    <div class="space-y-8">
         {{-- Marque --}}
         <div class="flex flex-col items-center gap-1 text-center">
             <div class="flex items-center gap-2">
@@ -19,13 +19,6 @@
                 </div>
             </div>
             <p class="w-full border-t border-brand-navy/10 pt-1 text-caption font-bold uppercase tracking-[0.15em] text-brand-navy">Gestion et Suivi Avicole Intégré</p>
-        </div>
-
-        {{-- Bandeau des 7 modules (login.html l.62-70, ordre exact) --}}
-        <div class="grid grid-cols-7 gap-1 border-y border-outline-variant py-3 text-center text-outline" aria-hidden="true">
-            @foreach (['&#xeacc;', '&#xe1a1;', '&#xf17e;', '&#xe8b0;', '&#xe138;', '&#xef49;', '&#xe84f;'] as $icone)
-                <div><span class="icone text-[16px]">{!! $icone !!}</span></div>
-            @endforeach
         </div>
 
         <div>
