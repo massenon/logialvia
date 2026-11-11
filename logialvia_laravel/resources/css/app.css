@@ -14,11 +14,57 @@
     font-display: swap;
 }
 
+/* Material Symbols Outlined (la police du poste), reduite aux icones utilisees : voir public/fonts. */
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    src: url('/fonts/MaterialSymbolsOutlined-LogiALVIA.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+    /* Icone Material Symbols : s'ecrit avec le point de code, ex. <span class="icone">&#xe899;</span>. */
+    .icone {
+        font-family: 'Material Symbols Outlined';
+        font-weight: 400;
+        font-style: normal;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+    }
+
+    /* Fond de l'ecran de connexion : login.html (degrade 165deg + grain 26 px a 6 % x 0,5), comme FondDegradeMarque. */
+    .fond-marque {
+        position: relative;
+        min-height: 100vh;
+        background: linear-gradient(165deg, theme('colors.brand-navy') 0%, theme('colors.brand-navy-dark') 100%);
+    }
+
+    .fond-marque::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+}
+
 @layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         @apply bg-surface-bg font-sans text-body text-on-surface;
     }

@@ -1,0 +1,3 @@
+MaterialSymbolsOutlined-LogiALVIA.woff : sous-ensemble (15 icones) de la police « Material Symbols Outlined »
+(Google), telle que distribuee par le paquet Dart material_symbols_icons 4.2960.0 que le poste utilise deja.
+Licence : Apache License, Version 2.0 — https://www.apache.org/licenses/LICENSE-2.0

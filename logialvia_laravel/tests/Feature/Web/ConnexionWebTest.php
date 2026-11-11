@@ -59,6 +59,46 @@ class ConnexionWebTest extends TestCase
         $this->assertSame(1, AuditLog::query()->where('action', 'web.login')->count());
     }
 
+    public function test_la_page_reprend_la_maquette_login_html(): void
+    {
+        $this->get('/login')->assertOk()
+            ->assertSee('Gestion et Suivi Avicole Intégré')
+            ->assertSee('ALLMANY ET COMPAGNIE')
+            ->assertSee("NOM D'UTILISATEUR OU EMAIL", false)
+            ->assertSee('MOT DE PASSE')
+            ->assertSee('Se souvenir de moi')
+            ->assertSee('Mot de passe oublié ?')
+            ->assertSee("Projet d'Appui à l'Entrepreneuriat au Bénin (PAEB)", false);
+    }
+
+    public function test_se_souvenir_de_moi_retient_l_identifiant_apres_une_connexion_reussie(): void
+    {
+        $this->compte();
+
+        Livewire::test(Connexion::class)
+            ->set('identifiant', 'marie')
+            ->set('password', self::MOT_DE_PASSE)
+            ->set('souvenir', true)
+            ->call('connecter')
+            ->assertRedirect('/');
+
+        $this->assertTrue(\Illuminate\Support\Facades\Cookie::hasQueued('lv_identifiant'));
+        $this->assertSame('marie', \Illuminate\Support\Facades\Cookie::queued('lv_identifiant')->getValue());
+    }
+
+    public function test_un_identifiant_refuse_n_est_jamais_retenu(): void
+    {
+        $this->compte();
+
+        Livewire::test(Connexion::class)
+            ->set('identifiant', 'marie')
+            ->set('password', 'faux')
+            ->set('souvenir', true)
+            ->call('connecter');
+
+        $this->assertFalse(\Illuminate\Support\Facades\Cookie::hasQueued('lv_identifiant'));
+    }
+
     public function test_un_mauvais_mot_de_passe_affiche_le_meme_message_que_l_api(): void
     {
         $this->compte();
