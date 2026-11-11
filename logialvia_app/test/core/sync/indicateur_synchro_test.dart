@@ -116,7 +116,7 @@ void main() {
 
     expect(icone(t).icon, Symbols.cloud_done);
     expect(infobulle(t), startsWith('Synchronisé à '));
-    expect(infobulle(t), contains('Cliquer pour synchroniser maintenant'));
+    expect(infobulle(t), contains('Cliquer pour le détail de la synchronisation'));
   });
 
   testWidgets(
@@ -162,20 +162,55 @@ void main() {
     expect(infobulle(t), contains('Erreur interne'));
   });
 
-  testWidgets('un clic lance une synchronisation', (t) async {
+  testWidgets(
+    'un clic ouvre le modal ; « Synchroniser maintenant » lance un cycle',
+    (t) async {
+      await t.runAsync(() async {
+        await appairer();
+        await planificateur.demarrer();
+      });
+      await afficher(t);
+      final avant = serveur.journal.where((j) => j.contains('pull')).length;
+
+      // Le clic seul ne synchronise plus : il ouvre le détail.
+      await t.tap(find.byKey(const Key('indicateur-synchro')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('synchro-modale-etat')), findsOneWidget);
+      expect(find.byKey(const Key('synchro-modale-resume')), findsOneWidget);
+      expect(serveur.journal.where((j) => j.contains('pull')).length, avant);
+
+      await t.runAsync(() async {
+        await t.tap(find.byKey(const Key('synchro-maintenant')));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await t.pumpAndSettle();
+
+      expect(
+        serveur.journal.where((j) => j.contains('pull')).length,
+        avant + 1,
+      );
+      expect(find.byKey(const Key('synchro-modale-etat')), findsNothing);
+    },
+  );
+
+  testWidgets('le modal dit l\'état du dernier cycle et se ferme', (t) async {
     await t.runAsync(() async {
       await appairer();
-      await planificateur.demarrer();
+      await planificateur.synchroniserMaintenant();
     });
     await afficher(t);
-    final avant = serveur.journal.where((j) => j.contains('pull')).length;
 
-    await t.runAsync(() async {
-      await t.tap(find.byKey(const Key('indicateur-synchro')));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    });
+    await t.tap(find.byKey(const Key('indicateur-synchro')));
+    await t.pumpAndSettle();
 
-    expect(serveur.journal.where((j) => j.contains('pull')).length, avant + 1);
+    expect(find.text('Synchronisation'), findsWidgets);
+    expect(find.textContaining('Dernière tentative à'), findsOneWidget);
+    expect(find.text('Envoyées au serveur'), findsOneWidget);
+    expect(find.text('Reçues des autres postes'), findsOneWidget);
+
+    await t.tap(find.text('Fermer'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('synchro-modale-etat')), findsNothing);
   });
 
   testWidgets(
@@ -199,7 +234,7 @@ void main() {
         find.textContaining('corrigez la date et l\'heure du poste'),
         findsWidgets,
       );
-      await t.tap(find.text('Compris'));
+      await t.tap(find.text('Fermer'));
       await t.pumpAndSettle();
       expect(find.byKey(const Key('synchro-modale-horloge')), findsNothing);
     },

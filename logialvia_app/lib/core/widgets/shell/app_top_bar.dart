@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -180,40 +182,137 @@ class IndicateurSynchro extends StatelessWidget {
 
     return IconButton(
       key: const Key('indicateur-synchro'),
-      tooltip: '$texte\nCliquer pour synchroniser maintenant.',
-      onPressed: planificateur.enCours
-          ? null
-          : () async {
-              final r = await planificateur.synchroniserMaintenant();
-              // `47g_` : une horloge à corriger est dite dans la modale de synchronisation.
-              final alerte = r?.horloge?.message;
-              if (alerte == null || !context.mounted) return;
-              await AppModal.show<void>(
-                context,
-                title: 'Synchronisation : horloge du poste',
-                maxWidth: 480,
-                child: Text(
-                  alerte,
-                  key: const Key('synchro-modale-horloge'),
-                  style: const TextStyle(
-                    fontFamily: AppTypography.fontFamily,
-                    fontSize: AppTypography.textXs,
-                    color: AppColors.errorDeep,
-                    fontWeight: FontWeight.w600,
-                    height: 1.5,
-                  ),
-                ),
-                actions: [
-                  Builder(
-                    builder: (ctx) => AppButton(
-                      label: 'Compris',
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ),
-                ],
-              );
-            },
+      tooltip: '$texte\nCliquer pour le détail de la synchronisation.',
+      onPressed: () => _ouvrirModaleEtat(
+        context,
+        planificateur: planificateur,
+        texte: texte,
+        couleur: couleur,
+      ),
       icon: Icon(icone, color: couleur, size: 22),
+    );
+  }
+
+  /// Modale de l'icône de synchronisation : l'état en clair, ce que le dernier cycle a fait, l'horloge, et le geste
+  /// « Synchroniser maintenant » (l'ancien clic direct). Maquette : pastille « en attente » de la barre du haut.
+  static Future<void> _ouvrirModaleEtat(
+    BuildContext context, {
+    required PlanificateurSynchronisation planificateur,
+    required String texte,
+    required Color couleur,
+  }) {
+    final rapport = planificateur.dernierRapport;
+    final quand = planificateur.derniereTentative;
+    final lignes = <(String, int)>[
+      if (rapport != null) ...[
+        ('Envoyées au serveur', rapport.envoyees),
+        ('Acceptées', rapport.acceptees),
+        ('Refusées', rapport.refusees),
+        ('En attente de droit', rapport.enAttenteDeDroit),
+        ('Reçues des autres postes', rapport.recues),
+        ('Référentiels mis à jour', rapport.referentielsMisAJour),
+        ('Conservées localement', rapport.conserveesLocalement),
+      ],
+    ];
+    const style = TextStyle(
+      fontFamily: AppTypography.fontFamily,
+      fontSize: AppTypography.textXs,
+      color: AppColors.outline,
+      height: 1.5,
+    );
+
+    return AppModal.show<void>(
+      context,
+      title: 'Synchronisation',
+      maxWidth: 480,
+      child: Column(
+        key: const Key('synchro-modale-etat'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceZebra,
+              borderRadius: AppRadius.cardRadius,
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            child: Text(
+              texte,
+              key: const Key('synchro-modale-resume'),
+              style: TextStyle(
+                fontFamily: AppTypography.fontFamily,
+                fontSize: AppTypography.textXs,
+                fontWeight: FontWeight.w700,
+                color: couleur,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            quand == null
+                ? 'Aucune synchronisation depuis le démarrage.'
+                : 'Dernière tentative à ${Formats.heure(quand)}.',
+            style: style,
+          ),
+          if (lignes.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            for (final (libelle, valeur) in lignes)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(libelle, style: style),
+                    Text(
+                      '$valeur',
+                      style: style.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.brandNavy,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (rapport?.horloge?.message case final alerte?) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              alerte,
+              key: const Key('synchro-modale-horloge'),
+              style: const TextStyle(
+                fontFamily: AppTypography.fontFamily,
+                fontSize: AppTypography.textXs,
+                color: AppColors.errorDeep,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        Builder(
+          builder: (ctx) => AppButton(
+            label: 'Fermer',
+            variant: AppButtonVariant.outline,
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+        ),
+        Builder(
+          builder: (ctx) => AppButton(
+            key: const Key('synchro-maintenant'),
+            label: 'Synchroniser maintenant',
+            icon: Symbols.sync,
+            onPressed: planificateur.enCours
+                ? null
+                : () {
+                    Navigator.of(ctx).pop();
+                    unawaited(planificateur.synchroniserMaintenant());
+                  },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -299,16 +398,21 @@ class _MenuProfil extends StatelessWidget {
   const _MenuProfil();
 
   /// Entrees du menu profil — `dashboard.html` l.79-85, ordre exact.
-  static const List<({String libelle, IconData icone, String route})> _entrees = [
-    (libelle: 'Mon Profil', icone: Symbols.person, route: '/profil'),
-    (libelle: 'Aide & À Propos', icone: Symbols.help, route: '/aide'),
-    (
-      libelle: 'Contactez l\'Éditeur',
-      icone: Symbols.support_agent,
-      route: '/contact',
-    ),
-    (libelle: 'Paramètres', icone: Symbols.settings, route: '/parametres/generaux'),
-  ];
+  static const List<({String libelle, IconData icone, String route})> _entrees =
+      [
+        (libelle: 'Mon Profil', icone: Symbols.person, route: '/profil'),
+        (libelle: 'Aide & À Propos', icone: Symbols.help, route: '/aide'),
+        (
+          libelle: 'Contactez l\'Éditeur',
+          icone: Symbols.support_agent,
+          route: '/contact',
+        ),
+        (
+          libelle: 'Paramètres',
+          icone: Symbols.settings,
+          route: '/parametres/generaux',
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
