@@ -16,7 +16,7 @@ Principe retenu : **l'image sert d'ambiance et de décor ; le texte exact doit �
 | Vert | `#3A7D44` (`success-deep`) et fond `#E1F0E3` (`success-container`) | idem. **Le design system n'a pas de jeton « vert foncé » de marque** : `success-deep` est le plus proche |
 | Fond neutre / texte | `#F2F2F2` fond général, `#1A1D23` texte principal | idem |
 | Police de l'interface | Roboto | `docs/01_DESIGN_SYSTEM.md` (ligne 63 : `fontFamily.sans: ['Roboto', …]`) |
-| Logo officiel | `logo/logo_logialvia.png` (médaillon + mot-symbole + baseline + raison sociale) ; icône `logo/app_icon_apercu.png` | `logo/`, `logialvia_app/outils/generer_icone.py` |
+| Logo officiel | `logo/logo_logialvia.png` (médaillon + mot-symbole + baseline + raison sociale) ; icône (embleme ALLMANY) `logo/app_icon_apercu.png`, logo ALLMANY `logo/logo_allmany.png` | `logo/`, `logialvia_app/outils/generer_icone.py` |
 | Raison sociale | ALLMANY ET COMPAGNIE | `Runner.rc`, `README.md` |
 | Fuseau et pays de l'exploitation | Benin (fuseau `Africa/Porto-Novo`, exploitation à Natitingou) | `logialvia_laravel/config/logialvia.php`, `app/Services/Comptabilite/Verrous.php` |
 
