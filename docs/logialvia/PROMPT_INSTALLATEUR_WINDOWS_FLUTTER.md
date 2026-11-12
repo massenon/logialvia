@@ -30,7 +30,7 @@ Choix de conception relevés dans les fichiers :
 | Visual Studio 2022, charge de travail « Développement Desktop en C++ » | en-tête de `build_windows.bat` |
 | Inno Setup 6 : `ISCC.exe` cherché dans `%ProgramFiles(x86)%\Inno Setup 6\`, puis `%ProgramFiles%\Inno Setup 6\`, puis `where ISCC.exe` | `build_windows.bat` |
 | Pack de langue `French.isl` fourni avec Inno Setup (`compiler:Languages\French.isl`) | `[Languages]` du `.iss` |
-| Icône `windows\runner\resources\app_icon.ico` (sinon erreur 3 ; la générer : `py outils\generer_icone.py`, depuis `logo\logo_logialvia.png`, Pillow requis) | `build_windows.bat`, `outils/generer_icone.py` |
+| Icône `windows\runner\resources\app_icon.ico` (sinon erreur 3 ; la générer : `py outils\generer_icone.py`, depuis `logo\logo_allmany.png`, Pillow requis) | `build_windows.bat`, `outils/generer_icone.py` |
 | Runtime Visual C++ 2015-2022 x64 présent dans `%SystemRoot%\System32` (DLL `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) | `build_windows.bat` |
 | `version:` de `pubspec.yaml` au format strict `x.y.z+n` (actuellement `1.0.0+1`) | `build_windows.bat` |
 

@@ -1,99 +1,100 @@
 # -*- coding: utf-8 -*-
-"""Fabrique l'icone Windows de LogiALVIA depuis le logo fourni.
+"""Fabrique les icones de LogiALVIA depuis le logo ALLMANY ET COMPAGNIE (logo/logo_allmany.png).
 
     python outils/generer_icone.py
 
-## Pourquoi le medaillon seul, et pas le logo entier
+Sorties (toutes derivees du meme embleme, un seul reechantillonnage par taille) :
+  - poste : windows/runner/resources/app_icon.ico (icone de l'installateur, de la fenetre
+    et de la barre des taches) + logo/app_icon_apercu.png (planche de controle) ;
+  - web   : logialvia_laravel/public/favicon.ico, icons/favicon-32.png, apple-touch-icon.png,
+    icon-192.png, icon-512.png, icon-maskable-512.png.
 
-Le fichier fourni est un verrouillage complet : medaillon, mot-symbole
-« LogiALVIA », baseline et raison sociale. Dans la barre des taches, l'icone
-mesure 16 px de cote ; a cette taille le mot-symbole fait moins d'un pixel de
-hauteur par lettre. Une icone qu'on ne peut pas distinguer ne remplit pas son
-role -- reconnaitre l'application d'un coup d'oeil parmi vingt autres.
+## Pourquoi l'embleme seul, sur une pastille blanche
 
-L'icone est donc batie sur le **medaillon**, decoupe dans le logo lui-meme :
-meme dessin, meme marine, mais lisible de 16 a 256 px. Le logo complet reste
-utilise la ou il a la place de s'exprimer : ecran d'accueil, documents, en-tete
-des PDF.
+Le fichier fourni est un verrouillage complet : embleme (le « A » et sa feuille verte), mot
+« ALLMANY » et « ET COMPAGNIE ». A 16 px (barre des taches, onglet du navigateur) le texte
+est illisible : l'icone est batie sur l'**embleme**, decoupe dans le logo lui-meme, pose sur
+une pastille blanche arrondie (le marine du logo disparaitrait sur une barre sombre). Le logo
+complet reste utilise la ou il a la place de s'exprimer.
 """
 import os
 import sys
 
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageDraw
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJET = os.path.dirname(RACINE)
 
-SOURCE = os.path.join(PROJET, 'logo', 'logo_logialvia.png')
+SOURCE = os.path.join(PROJET, 'logo', 'logo_allmany.png')
 ICONE = os.path.join(RACINE, 'windows', 'runner', 'resources', 'app_icon.ico')
 APERCU = os.path.join(PROJET, 'logo', 'app_icon_apercu.png')
+WEB = os.path.join(PROJET, 'logialvia_laravel', 'public')
 
-# Les tailles que Windows pioche selon le contexte : barre des taches, titre de
-# fenetre, explorateur en grandes icones, panneau de configuration.
+# Tailles que Windows pioche : barre des taches, titre, explorateur, panneau de config.
 TAILLES = [16, 24, 32, 48, 64, 128, 256]
+BLANC = (255, 255, 255, 255)
 
 
-def boite_du_medaillon(im):
-    """Trouve le cercle clair dans le tiers superieur de l'image."""
-    largeur, hauteur = im.size
-    px = im.convert('RGB').load()
-    xs, ys = [], []
-    # On s'arrete avant le mot-symbole, dont le « Logi » est blanc lui aussi.
-    limite = int(hauteur * 0.42)
-    for y in range(limite):
-        for x in range(largeur):
-            r, v, b = px[x, y]
-            if r > 200 and v > 200 and b > 200:
-                xs.append(x)
-                ys.append(y)
-    if not xs:
-        raise SystemExit('Medaillon introuvable dans %s' % SOURCE)
+def embleme(logo):
+    """Decoupe l'embleme : le premier bloc de colonnes non blanches, a gauche du mot-symbole."""
+    a = np.array(logo.convert('RGB')).astype(int)
+    non_blanc = (255 * 3 - a.sum(2)) > 60
+    colonnes = np.where(non_blanc.any(0))[0]
+    fin = colonnes[0]
+    for c in colonnes:
+        if c - fin > 3:
+            break
+        fin = c
+    bloc = non_blanc[:, colonnes[0]:fin + 1]
+    lignes = np.where(bloc.any(1))[0]
+    boite = (int(colonnes[0]), int(lignes.min()), int(fin) + 1, int(lignes.max()) + 1)
+    return logo.convert('RGBA').crop(boite)
 
-    cx = (min(xs) + max(xs)) / 2
-    cy = (min(ys) + max(ys)) / 2
-    rayon = max(max(xs) - min(xs), max(ys) - min(ys)) / 2
-    # Une marge de 18 % : le cercle ne doit pas toucher le bord de l'icone.
-    demi = rayon * 1.18
-    return (
-        int(round(cx - demi)),
-        int(round(cy - demi)),
-        int(round(cx + demi)),
-        int(round(cy + demi)),
-    )
+
+def pastille(em, taille, remplissage=0.70, arrondi=0.22, plein=False):
+    """Embleme centre (remplissage = part de la pastille) sur fond blanc arrondi ou plein."""
+    s = taille * 4  # sur-echantillonne : bords arrondis propres
+    fond = Image.new('RGBA', (s, s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(fond)
+    if plein:
+        d.rectangle((0, 0, s, s), fill=BLANC)
+    else:
+        d.rounded_rectangle((0, 0, s - 1, s - 1), radius=int(s * arrondi), fill=BLANC)
+    largeur = s * remplissage
+    ratio = largeur / max(em.size)
+    e = em.resize((max(1, round(em.width * ratio)), max(1, round(em.height * ratio))), Image.LANCZOS)
+    fond.alpha_composite(e, ((s - e.width) // 2, (s - e.height) // 2))
+    return fond.resize((taille, taille), Image.LANCZOS)
 
 
 def main():
     if not os.path.exists(SOURCE):
         raise SystemExit('Logo introuvable : %s' % SOURCE)
+    em = embleme(Image.open(SOURCE))
 
-    logo = Image.open(SOURCE).convert('RGBA')
-    boite = boite_du_medaillon(logo)
-    medaillon = logo.crop(boite)
-
-    # Carre parfait, quitte a rogner d'un pixel : une icone etiree se voit.
-    cote = min(medaillon.size)
-    medaillon = medaillon.crop((0, 0, cote, cote))
-
-    # Un seul reechantillonnage depuis la source vers chaque taille, plutot
-    # qu'une cascade : chaque reduction intermediaire coute de la nettete.
-    calques = [
-        medaillon.resize((t, t), Image.LANCZOS) for t in TAILLES
-    ]
-
+    calques = [pastille(em, t) for t in TAILLES]
     calques[-1].save(ICONE, format='ICO', sizes=[(t, t) for t in TAILLES])
 
-    # Une planche de controle : c'est a 16 px qu'une icone se juge.
-    apercu = Image.new('RGBA', (sum(TAILLES) + 20 * len(TAILLES), 280),
-                       (255, 255, 255, 255))
+    apercu = Image.new('RGBA', (sum(TAILLES) + 20 * len(TAILLES), 280), (60, 60, 70, 255))
     x = 10
     for calque, taille in zip(calques, TAILLES):
-        apercu.paste(calque, (x, (280 - taille) // 2), calque)
+        apercu.alpha_composite(calque, (x, (280 - taille) // 2))
         x += taille + 20
     apercu.save(APERCU)
 
-    print('Icone ecrite : %s' % ICONE)
-    print('Tailles : %s' % ', '.join('%dx%d' % (t, t) for t in TAILLES))
-    print('Apercu : %s' % APERCU)
+    os.makedirs(os.path.join(WEB, 'icons'), exist_ok=True)
+    pastille(em, 256).save(os.path.join(WEB, 'favicon.ico'), format='ICO', sizes=[(16, 16), (32, 32), (48, 48)])
+    pastille(em, 32).save(os.path.join(WEB, 'icons', 'favicon-32.png'))
+    pastille(em, 180, remplissage=0.74, plein=True).save(os.path.join(WEB, 'icons', 'apple-touch-icon.png'))
+    pastille(em, 192).save(os.path.join(WEB, 'icons', 'icon-192.png'))
+    pastille(em, 512).save(os.path.join(WEB, 'icons', 'icon-512.png'))
+    # Maskable : fond plein, embleme dans la zone sure (80 % central, ici 56 %).
+    pastille(em, 512, remplissage=0.56, plein=True).save(os.path.join(WEB, 'icons', 'icon-maskable-512.png'))
+
+    print('Icone poste : %s (%s)' % (ICONE, ', '.join('%d' % t for t in TAILLES)))
+    print('Icones web  : %s' % WEB)
+    print('Apercu      : %s' % APERCU)
     return 0
 
 
