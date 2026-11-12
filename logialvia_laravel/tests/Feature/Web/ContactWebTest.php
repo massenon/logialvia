@@ -5,6 +5,7 @@ namespace Tests\Feature\Web;
 use App\Livewire\Catalogue;
 use App\Livewire\Contact;
 use App\Livewire\CorbeilleWeb;
+use App\Mail\MessageEditeurMail;
 use App\Models\AuditLog;
 use App\Models\DemandeReferentiel;
 use App\Models\MessageEditeur;
@@ -12,6 +13,7 @@ use App\Models\User;
 use Database\Seeders\ModulesActifsSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -52,6 +54,79 @@ class ContactWebTest extends TestCase
         $m->save();
 
         return $m;
+    }
+
+    // --------------------------------------------------------- E-mail au support
+
+    private function transportReel(?string $support = 'support@example.test'): void
+    {
+        config(['logialvia.support_mail' => $support, 'mail.default' => 'smtp']);
+    }
+
+    public function test_un_message_est_envoye_au_support_quand_le_transport_est_reel(): void
+    {
+        Mail::fake();
+        $this->transportReel();
+        $u = $this->utilisateur('comptable', 'awa');
+        $u->forceFill(['email' => 'awa@example.test'])->save();
+
+        $this->composant($u)->set('objet', 'Question compta')->set('message', 'Comment clôturer ?')->call('enregistrer')
+            ->assertSet('erreur', null)->assertSee('enregistré et envoyé au support')->assertSeeHtml('data-envoi="support"');
+
+        Mail::assertSent(MessageEditeurMail::class, fn (MessageEditeurMail $m) => $m->hasTo('support@example.test')
+            && $m->hasReplyTo('awa@example.test')
+            && str_contains($m->envelope()->subject, 'Question compta')
+            && str_contains($m->render(), 'Comment clôturer ?'));
+        $this->assertSame(1, AuditLog::query()->where('action', 'message_editeur.email_envoye')->count());
+    }
+
+    public function test_un_signalement_porte_le_module_et_les_etapes(): void
+    {
+        Mail::fake();
+        $this->transportReel();
+
+        $this->composant()->call('choisirType', 'bug')->set('module', 'Comptabilité')->set('message', 'Le solde est faux')
+            ->set('etapes', '1. Ouvrir la balance')->call('enregistrer')->assertSet('erreur', null);
+
+        Mail::assertSent(MessageEditeurMail::class, fn (MessageEditeurMail $m) => str_contains($m->envelope()->subject, 'Signalement de problème')
+            && str_contains($m->render(), 'Module concerné : Comptabilité') && str_contains($m->render(), '1. Ouvrir la balance'));
+    }
+
+    public function test_aucun_envoi_sans_support_ni_avec_un_transport_log(): void
+    {
+        Mail::fake();
+        $this->transportReel(null);
+        $u = $this->utilisateur('caissier', 'amina');
+        $this->composant($u)->set('objet', 'Q1')->set('message', 'm')->call('enregistrer')->assertSee('Aucun e-mail n\'est envoyé');
+
+        // `log` : Mail::send « reussit » sans rien envoyer ; l'ecran ne doit pas pretendre le contraire.
+        config(['logialvia.support_mail' => 'support@example.test', 'mail.default' => 'log']);
+        $this->composant($u)->set('objet', 'Q2')->set('message', 'm')->call('enregistrer')->assertSee('Aucun e-mail n\'est envoyé')
+            ->assertSeeHtml('data-ecart="aucun-envoi"');
+
+        Mail::assertNothingSent();
+        $this->assertSame(2, MessageEditeur::query()->count());
+    }
+
+    public function test_un_echec_d_envoi_ne_perd_pas_le_message(): void
+    {
+        $this->transportReel();
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('SMTP injoignable'));
+
+        $this->composant()->set('objet', 'Q')->set('message', 'Texte')->call('enregistrer')
+            ->assertSet('erreur', null)->assertSee('l\'e-mail n\'a pas pu partir')->assertSeeHtml('data-texte-a-copier');
+
+        $this->assertSame(1, MessageEditeur::query()->where('message', 'Texte')->count());
+        $this->assertSame(1, AuditLog::query()->where('action', 'message_editeur.email_echec')->count());
+    }
+
+    public function test_une_adresse_de_support_invalide_n_envoie_rien(): void
+    {
+        Mail::fake();
+        $this->transportReel('pas-une-adresse');
+
+        $this->composant()->set('objet', 'Q')->set('message', 'm')->call('enregistrer')->assertSee('Aucun e-mail n\'est envoyé');
+        Mail::assertNothingSent();
     }
 
     // ------------------------------------------------------------------- Acces

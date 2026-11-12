@@ -204,6 +204,12 @@ return [
     'fuseau' => 'Africa/Porto-Novo',
 
     /*
+    | Destinataire du support de l'editeur (`SUPPORT_MAIL`) : « Contactez l'Editeur » lui envoie chaque message
+    | enregistre au web. Vide, ou transport `log`/`array` : rien n'est envoye (le message reste enregistre).
+    */
+    'support_mail' => env('SUPPORT_MAIL'),
+
+    /*
     | Duree de vie du jeton d'un poste (blueprint : 90 jours).
     */
     'jeton_duree_jours' => (int) env('SANCTUM_EXPIRATION_JOURS', 90),

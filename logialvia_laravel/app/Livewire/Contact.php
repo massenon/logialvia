@@ -2,11 +2,14 @@
 
 namespace App\Livewire;
 
+use App\Mail\MessageEditeurMail;
 use App\Models\MessageEditeur;
 use App\Models\User;
 use App\Support\Audit;
 use App\Sync\Tables\MessagesEditeurTable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -19,9 +22,11 @@ use Livewire\Component;
  * apparait sur les postes, et inversement. Ecriture par `MessagesEditeurTable::absorber` (memes
  * validations que pour un poste), poste « web » = UUID nul.
  *
- * ECART DECLARE : AUCUN e-mail n'est envoye (ni par le poste, ni par le serveur : pas de transport,
- * pas de secret SMTP). Le message est ENREGISTRE ; l'utilisateur le transmet lui-meme (texte a
- * copier), puis le marque « Transmis ». Meme principe honnete que le poste (Master Prompt §2.3).
+ * E-MAIL : si `SUPPORT_MAIL` est renseigne ET que le transport est reel (ni `log` ni `array` : avec `log`,
+ * `Mail::send` « reussit » sans rien envoyer), chaque message ecrit AU WEB est envoye au support. Le message
+ * est TOUJOURS enregistre d'abord ; un echec d'envoi ne le perd pas (l'ecran le dit, texte a copier). Sans
+ * support configure : aucun e-mail, l'utilisateur transmet lui-meme le texte puis le marque « Transmis »
+ * (le poste n'envoie jamais d'e-mail ; Master Prompt §2.3).
  * Ouvert a tout compte connecte, comme le poste ; la capture d'ecran de la maquette n'existe pas.
  */
 #[Layout('components.layouts.app')]
@@ -145,7 +150,43 @@ class Contact extends Component
         Audit::enregistrer('message_editeur.cree', $acteur, ['id' => $id, 'type' => $this->type]);
         $this->objet = $this->module = $this->message = $this->etapes = '';
         $this->texteAffiche = $id;
-        $this->information = ($estBug ? 'Rapport' : 'Message')." enregistré. Aucun e-mail n'est envoyé : copiez le texte ci-dessous et transmettez-le vous-même au ".self::TELEPHONES[0].'.';
+        $quoi = $estBug ? 'Rapport' : 'Message';
+        $copie = 'copiez le texte ci-dessous et transmettez-le vous-même au '.self::TELEPHONES[0].'.';
+        $this->information = match ($this->envoyerAuSupport($id, $acteur)) {
+            true => "$quoi enregistré et envoyé au support de l'éditeur.",
+            false => "$quoi enregistré, mais l'e-mail n'a pas pu partir : $copie",
+            null => "$quoi enregistré. Aucun e-mail n'est envoyé : $copie",
+        };
+    }
+
+    /** Le support recevra-t-il un e-mail ? Adresse renseignee ET transport reel (jamais `log`/`array`). */
+    public static function envoiActif(): bool
+    {
+        $support = trim((string) config('logialvia.support_mail'));
+
+        return $support !== '' && filter_var($support, FILTER_VALIDATE_EMAIL) !== false
+            && ! in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
+    /** @return bool|null true : envoye ; false : echec (journalise) ; null : envoi non configure. */
+    private function envoyerAuSupport(string $id, User $acteur): ?bool
+    {
+        if (! self::envoiActif()) {
+            return null;
+        }
+        $repondreA = filter_var((string) $acteur->email, FILTER_VALIDATE_EMAIL) ?: null;
+        try {
+            $message = MessageEditeur::query()->whereKey($id)->firstOrFail();
+            Mail::to(trim((string) config('logialvia.support_mail')))->send(new MessageEditeurMail($message, $repondreA));
+        } catch (\Throwable $e) {
+            Log::warning('Message editeur : e-mail au support non envoye.', ['id' => $id, 'erreur' => $e->getMessage()]);
+            Audit::enregistrer('message_editeur.email_echec', $acteur, ['id' => $id]);
+
+            return false;
+        }
+        Audit::enregistrer('message_editeur.email_envoye', $acteur, ['id' => $id]);
+
+        return true;
     }
 
     public function montrerTexte(string $id): void
@@ -233,7 +274,7 @@ class Contact extends Component
     }
 
     /** Texte pret a coller (Dart : `MessageEditeur.texteAEnvoyer`). */
-    private static function texteAEnvoyer(MessageEditeur $m): string
+    public static function texteAEnvoyer(MessageEditeur $m): string
     {
         $lignes = [
             $m->estBug() ? 'LogiALVIA '.Aide::VERSION.' — Signalement de problème' : 'LogiALVIA '.Aide::VERSION.' — Question',
@@ -269,6 +310,7 @@ class Contact extends Component
             'messageAffiche' => ($affiche = $this->texteAffiche ? $messages->firstWhere('id', $this->texteAffiche) : null),
             'texteACopier' => $affiche ? self::texteAEnvoyer($affiche) : null,
             'aConfirmer' => $this->messageAConfirmer ? $messages->firstWhere('id', $this->messageAConfirmer) : null,
+            'envoiActif' => self::envoiActif(),
             'fuseau' => config('logialvia.fuseau'),
         ])->title('Contactez l\'Éditeur');
     }
