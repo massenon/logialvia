@@ -59,6 +59,11 @@ dependencies:
   # de passe SMTP (voir PARAMETRES_ENTREPRISE).
   flutter_secure_storage: ^9.2.2
 
+  # Material et Cupertino ne sont plus dans le SDK a partir de Flutter 3.50 : paquets a part
+  # (compatibles avec 3.47 comme avec 3.50).
+  material_ui: ^1.11.0
+  cupertino_ui: ^1.1.6
+
   # NOTE : printing/pdf (Doc K3 §3) ne sont pas encore declares — ils seront ajoutes
   # avec le module qui les utilise reellement (Doc E9), pour ne pas embarquer de
   # dependance inutilisee (Strict Avoid §9).

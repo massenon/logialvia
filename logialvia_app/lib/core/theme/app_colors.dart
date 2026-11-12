@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Couleurs officielles LogiALVIA — Doc 01 §1.
 /// Ne jamais approximer ces valeurs : elles proviennent de

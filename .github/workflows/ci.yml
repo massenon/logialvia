@@ -14,9 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Version FIGEE : celle avec laquelle le projet est verifie (CLAUDE.md). Avec « stable » seul, une nouvelle
-      # version du SDK (Material deplace dans `material_ui`, ~300 avertissements `deprecated_member_use`) fait
-      # echouer `flutter analyze` sans qu'aucune ligne du depot n'ait change. Migrer, puis relever cette version.
+      # Version FIGEE pour que la CI ne change pas sans qu'un commit l'ait voulu. Le code (Material via `material_ui`,
+      # depuis Flutter 3.50) est verifie avec 3.47.9 ET 3.50.0 : relever cette version est sans risque connu.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
