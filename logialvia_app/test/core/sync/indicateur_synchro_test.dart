@@ -9,6 +9,7 @@ import 'package:logialvia_app/core/sync/identifiant_poste.dart';
 import 'package:logialvia_app/core/sync/moteur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/planificateur_synchronisation.dart';
 import 'package:logialvia_app/core/sync/service_appairage.dart';
+import 'package:logialvia_app/core/widgets/app_button.dart';
 import 'package:logialvia_app/core/widgets/shell/app_top_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -97,12 +98,28 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('poste jamais appairé : rien (il fonctionne seul, hors ligne)', (
+  testWidgets('poste jamais appairé : visible, il le dit (hors ligne)', (
     t,
   ) async {
     await t.runAsync(planificateur.demarrer);
     await afficher(t);
-    expect(find.byKey(const Key('indicateur-synchro')), findsNothing);
+    expect(find.byKey(const Key('indicateur-synchro')), findsOneWidget);
+    expect(icone(t).icon, Symbols.link_off);
+    expect(infobulle(t), contains('Poste non appairé'));
+    expect(infobulle(t), contains('Paramètres > Appairage'));
+
+    // Le modal s'ouvre, dit la même chose, et « Synchroniser maintenant » est inactif.
+    await t.tap(find.byKey(const Key('indicateur-synchro')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('synchro-modale-etat')), findsOneWidget);
+    expect(
+      t.widget<Text>(find.byKey(const Key('synchro-modale-resume'))).data,
+      contains('Poste non appairé'),
+    );
+    final bouton = t.widget<AppButton>(
+      find.byKey(const Key('synchro-maintenant')),
+    );
+    expect(bouton.onPressed, isNull);
   });
 
   testWidgets('synchronisé : nuage coché, heure de la synchronisation', (
@@ -116,7 +133,10 @@ void main() {
 
     expect(icone(t).icon, Symbols.cloud_done);
     expect(infobulle(t), startsWith('Synchronisé à '));
-    expect(infobulle(t), contains('Cliquer pour le détail de la synchronisation'));
+    expect(
+      infobulle(t),
+      contains('Cliquer pour le détail de la synchronisation'),
+    );
   });
 
   testWidgets(
