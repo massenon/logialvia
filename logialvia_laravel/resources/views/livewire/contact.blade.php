@@ -70,11 +70,19 @@
         </form>
     </section>
 
-    <p class="mt-md max-w-2xl rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="aucun-envoi">
-        Cette page n'envoie aucun e-mail : le serveur n'a pas de transport de messagerie. Le message est enregistré (et visible sur les postes
-        après leur synchronisation) ; copiez son texte et transmettez-le vous-même par WhatsApp ou par e-mail à l'éditeur, puis marquez-le
-        « Transmis ». Précisez la version ({{ $version }}) et le module concerné. La capture d'écran de la maquette n'existe pas.
-    </p>
+    @if ($envoiActif)
+        <p class="mt-md max-w-2xl rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-envoi="support">
+            Chaque message est enregistré (et visible sur les postes après leur synchronisation) puis envoyé par e-mail au support de l'éditeur.
+            Si l'envoi échoue, le message reste enregistré : copiez son texte et transmettez-le vous-même, puis marquez-le « Transmis ».
+            Précisez la version ({{ $version }}) et le module concerné. La capture d'écran de la maquette n'existe pas.
+        </p>
+    @else
+        <p class="mt-md max-w-2xl rounded-lg bg-surface-zebra p-sm text-xs text-outline" data-ecart="aucun-envoi">
+            Cette page n'envoie aucun e-mail : le serveur n'a pas de transport de messagerie. Le message est enregistré (et visible sur les postes
+            après leur synchronisation) ; copiez son texte et transmettez-le vous-même par WhatsApp ou par e-mail à l'éditeur, puis marquez-le
+            « Transmis ». Précisez la version ({{ $version }}) et le module concerné. La capture d'écran de la maquette n'existe pas.
+        </p>
+    @endif
 
     <section class="mt-md max-w-2xl rounded-lg border border-outline-variant bg-surface-card p-lg" data-section="messages">
         <h2 class="mb-sm text-section-title font-bold">Messages enregistrés ({{ $messages->count() }})</h2>

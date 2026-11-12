@@ -124,7 +124,8 @@ php artisan key:generate --force
 | `SESSION_LIFETIME` | `120` (minutes, défaut) | `.env.example:31` |
 | `QUEUE_CONNECTION` | `database` (déjà la valeur par défaut ; aucune file à traiter, voir `LISTE_DES_CRON_JOBS_CPANEL.md`) | `.env.example:38` |
 | `CACHE_STORE` | `database` (défaut) ; table `cache` créée par la migration `…000001_create_cache_table.php` | `.env.example:40` |
-| `MAIL_MAILER` | laisser `log` : aucun code n'envoie d'e-mail | aucun `Mail::` dans `app/` |
+| `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_*` | `smtp` + le SMTP du domaine (voir `.env.production.example`). Avec `log` ou `array`, **aucun e-mail ne part** | `app/Livewire/Contact.php` (seul envoi : « Contactez l'Éditeur ») |
+| `SUPPORT_MAIL` | adresse du support de l'éditeur : chaque message écrit au web lui est envoyé. Vide ou transport `log` : aucun envoi, le message reste enregistré | `config/logialvia.php` (`support_mail`), `app/Mail/MessageEditeurMail.php` |
 | `ADMIN_INITIAL_USERNAME` | `admin` (défaut) | `.env.example:69` ; `config/logialvia.php` |
 | `ADMIN_INITIAL_PASSWORD` | un mot de passe fort, **retiré du `.env` après le premier `db:seed`** (voir §6) | `.env.example:70` ; `database/seeders/AdminSeeder.php` |
 | `REMISE_A_ZERO_ACTIVEE` | **absente ou `false`** en exploitation | `config/logialvia.php:136-139` (défaut `false`) ; voir `ESSAIS_EN_PRODUCTION_ET_REINITIALISATION.md` |
