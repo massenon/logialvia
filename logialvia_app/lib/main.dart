@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
-import 'package:cupertino_ui/cupertino_ui.dart' show GlobalCupertinoLocalizations;
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show GlobalCupertinoLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalCupertinoLocalizations, GlobalMaterialLocalizations;
 import 'package:go_router/go_router.dart';
@@ -64,6 +66,7 @@ import 'core/sync/moteur_synchronisation.dart';
 import 'core/sync/depot_journal_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
 import 'core/sync/service_appairage.dart';
+import 'core/widgets/barre_titre_fenetre.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +78,10 @@ Future<void> main() async {
     minimumSize: Size(1024, 700), // breakpoint lg
     center: true,
     title: 'LogiALVIA — ALLMANY ET COMPAGNIE',
+    // Cadre natif retire sur Windows : la barre de titre est celle de LogiALVIA
+    // (BarreTitreFenetre) ; bords de redimensionnement et accrochage restent natifs.
+    titleBarStyle: TitleBarStyle.hidden,
+    windowButtonVisibility: false,
   );
   await windowManager.waitUntilReadyToShow(optionsFenetre, () async {
     // Fenetre MAXIMISEE (et non plein ecran) : elle occupe tout le bureau mais laisse
@@ -368,6 +375,14 @@ class _LogiALVIAAppState extends State<LogiALVIAApp> with WindowListener {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         routerConfig: _routeur,
+        builder: (context, child) => BarreTitreFenetre.active
+            ? Column(
+                children: [
+                  const BarreTitreFenetre(),
+                  Expanded(child: child ?? const SizedBox.shrink()),
+                ],
+              )
+            : (child ?? const SizedBox.shrink()),
         // Interface integralement en francais (Doc A1 §5) : les composants
         // Material (selecteur de date, menus) doivent l'etre aussi.
         locale: const Locale('fr'),

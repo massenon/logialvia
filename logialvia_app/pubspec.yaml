@@ -110,3 +110,5 @@ flutter:
     - assets/fonts/Roboto-Bold.ttf
     # Visuel de la page de connexion (deux volets, grands ecrans).
     - assets/images/login_visuel.webp
+    # Logo ALLMANY de la barre de titre (genere par outils/generer_icone.py).
+    - assets/images/icone_barre_titre.png
