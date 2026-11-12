@@ -92,6 +92,8 @@ def main():
     # Maskable : fond plein, embleme dans la zone sure (80 % central, ici 56 %).
     pastille(em, 512, remplissage=0.56, plein=True).save(os.path.join(WEB, 'icons', 'icon-maskable-512.png'))
 
+    pastille(em, 64).save(os.path.join(RACINE, 'assets', 'images', 'icone_barre_titre.png'))
+
     print('Icone poste : %s (%s)' % (ICONE, ', '.join('%d' % t for t in TAILLES)))
     print('Icones web  : %s' % WEB)
     print('Apercu      : %s' % APERCU)
