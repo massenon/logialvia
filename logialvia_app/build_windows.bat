@@ -74,7 +74,8 @@ if "%RAPIDE%"=="1" (
 echo [3/6] flutter analyze
 call flutter analyze > "%TEMP%\logialvia_analyze.txt" 2>&1
 type "%TEMP%\logialvia_analyze.txt"
-findstr /c:"No issues found!" "%TEMP%\logialvia_analyze.txt" >nul
+rem Pas de "!" dans le motif : avec EnableDelayedExpansion il est supprime et la recherche echoue toujours.
+findstr /c:"No issues found" "%TEMP%\logialvia_analyze.txt" >nul
 if errorlevel 1 ( echo [ERREUR] flutter analyze doit finir par "No issues found!". & goto echec )
 :apres_analyze
 

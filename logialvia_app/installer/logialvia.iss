@@ -27,7 +27,7 @@
 AppId={{EE2E70A6-4A58-4AE4-A58E-8F86599040EB}
 AppName={#NomApp}
 AppVersion={#Version}
-AppPublisher=ALLMANY ET COMPAGNIE
+AppPublisher=Dr MASSENON Rhodes
 DefaultDirName={autopf}\{#NomApp}
 DefaultGroupName={#NomApp}
 DisableProgramGroupPage=yes

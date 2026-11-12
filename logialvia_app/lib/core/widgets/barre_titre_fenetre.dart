@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'geometrie_fenetre.dart';
 
 /// Barre de titre du poste Windows, aux couleurs LogiALVIA (remplace le cadre natif).
 ///
@@ -46,7 +47,14 @@ class _BarreTitreFenetreState extends State<BarreTitreFenetre>
   void onWindowMaximize() => setState(() => _maximisee = true);
 
   @override
-  void onWindowUnmaximize() => setState(() => _maximisee = false);
+  void onWindowUnmaximize() {
+    setState(() => _maximisee = false);
+    // Restauration : ramene la fenetre dans le bureau (barre de titre visible).
+    unawaited(garderFenetreDansEcran());
+  }
+
+  @override
+  void onWindowResized() => unawaited(garderFenetreDansEcran());
 
   @override
   void dispose() {

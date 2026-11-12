@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:cupertino_ui/cupertino_ui.dart'
@@ -67,15 +68,27 @@ import 'core/sync/depot_journal_synchronisation.dart';
 import 'core/sync/planificateur_synchronisation.dart';
 import 'core/sync/service_appairage.dart';
 import 'core/widgets/barre_titre_fenetre.dart';
+import 'core/widgets/geometrie_fenetre.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Doc K3 §5 : aucun appel d'initialisation SQLite specifique n'est requis ici.
   await windowManager.ensureInitialized();
-  const optionsFenetre = WindowOptions(
-    size: Size(1440, 900), // breakpoint xl du prototype
-    minimumSize: Size(1024, 700), // breakpoint lg
+  // Taille restauree adaptee a la zone de travail reelle : sur un petit bureau (ou une
+  // forte mise a l'echelle) 1440 x 900 deborde et la barre de titre sort de l'ecran.
+  final zoneTravail = await zoneTravailEcran();
+  final rectRestaure = zoneTravail == null
+      ? null
+      : rectangleFenetreRestauree(zoneTravail);
+  final optionsFenetre = WindowOptions(
+    size: rectRestaure?.size ?? tailleFenetreSouhaitee,
+    minimumSize: zoneTravail == null
+        ? tailleFenetreMinimale
+        : Size(
+            math.min(tailleFenetreMinimale.width, zoneTravail.width),
+            math.min(tailleFenetreMinimale.height, zoneTravail.height),
+          ),
     center: true,
     title: 'LogiALVIA — ALLMANY ET COMPAGNIE',
     // Cadre natif retire sur Windows : la barre de titre est celle de LogiALVIA
@@ -93,6 +106,13 @@ Future<void> main() async {
     await windowManager.maximize();
     await windowManager.show();
     await windowManager.focus();
+    // `maximize()` poste un message asynchrone : si la fenetre n'est pas encore
+    // agrandie une fois affichee (fenetre 1440x900 plus haute que le bureau, barre de
+    // titre hors ecran), on reessaie.
+    if (!await windowManager.isMaximized()) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await windowManager.maximize();
+    }
   });
 
   // MESURE REELLE (ecran 3456x2160 a 250 %, devicePixelRatio 2,5) :
