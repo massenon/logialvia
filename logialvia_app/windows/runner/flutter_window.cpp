@@ -51,6 +51,24 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // Fenetre MAXIMISEE sans cadre natif (barre de titre LogiALVIA, voir
+  // `BarreTitreFenetre`) : Windows etend alors la fenetre au-dela de l'ecran
+  // d'une bordure invisible. Le plugin window_manager ne compense que 8 px, quelle
+  // que soit l'echelle d'affichage : a 150-250 % la barre de titre sortait par le
+  // haut de l'ecran (boutons reduire / agrandir / fermer introuvables). On pose donc
+  // la zone cliente EXACTEMENT sur la zone de travail du moniteur (barre des taches
+  // visible, rien de cache). Hors maximisation, le plugin garde la main.
+  if (message == WM_NCCALCSIZE && wparam != 0 && ::IsZoomed(hwnd)) {
+    NCCALCSIZE_PARAMS* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+    MONITORINFO info = {};
+    info.cbSize = sizeof(info);
+    if (::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+                         &info)) {
+      params->rgrc[0] = info.rcWork;
+      return 0;
+    }
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

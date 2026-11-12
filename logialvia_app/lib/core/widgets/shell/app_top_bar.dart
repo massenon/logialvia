@@ -25,9 +25,9 @@ import 'recherche_globale.dart';
 /// ELEMENTS VOLONTAIREMENT NON REPRODUITS, et pourquoi :
 /// - Badge « 3 en attente » du prototype : le nombre est ecrit en dur dans le
 ///   HTML. Le reproduire serait un indicateur mensonger (Master Prompt §2.3).
-///   Il est REMPLACE par un indicateur reel ([IndicateurSynchro]) : visible
-///   seulement quand le poste est appaire, il dit l'etat de la derniere
-///   synchronisation (en cours, a jour, hors ligne, a verifier).
+///   Il est REMPLACE par un indicateur reel ([IndicateurSynchro]) : toujours
+///   visible, il dit l'etat de la derniere synchronisation (en cours, a jour,
+///   hors ligne, a verifier) ou que le poste n'est pas encore appaire.
 /// - Les 2 boutons dont le `title` commence par « Démonstration — forcer
 ///   l'affichage… » : ce sont des outils de test du prototype, pas des
 ///   fonctionnalites de production — meme statut que le selecteur de role RBAC
@@ -124,9 +124,10 @@ class _FilDAriane extends StatelessWidget {
 
 /// L'état réel de la synchronisation — jamais un compteur écrit en dur.
 ///
-/// Absent tant que le poste n'est pas appairé (il fonctionne seul, hors ligne,
-/// par conception : rien à indiquer). `watch<…?>` : sans planificateur dans
-/// l'arbre, rien ne s'affiche au lieu de lever une erreur.
+/// Toujours présent (avec son modal) tant qu'un planificateur existe : un poste
+/// pas encore appairé le dit (« Poste non appairé : il travaille hors ligne »)
+/// au lieu de laisser croire que la synchronisation n'existe pas. `watch<…?>` :
+/// sans planificateur dans l'arbre, rien ne s'affiche au lieu de lever une erreur.
 class IndicateurSynchro extends StatelessWidget {
   const IndicateurSynchro({super.key});
 
@@ -137,13 +138,19 @@ class IndicateurSynchro extends StatelessWidget {
 
     final rapport = planificateur.dernierRapport;
     final revoque = rapport?.issue == IssueSynchronisation.revoque;
-    // Suspendu sans révocation = poste jamais appairé : rien à montrer.
-    if (planificateur.suspendu && !revoque) return const SizedBox.shrink();
+    // Suspendu sans révocation = poste jamais appairé : on le dit, sans alarme.
+    final nonAppaire = planificateur.suspendu && !revoque;
 
     final IconData icone;
     final Color couleur;
     final String texte;
-    if (planificateur.enCours) {
+    if (nonAppaire) {
+      icone = Symbols.link_off;
+      couleur = AppColors.outline;
+      texte =
+          'Poste non appairé : il travaille hors ligne. Appairez-le dans '
+          'Paramètres > Appairage pour synchroniser avec le serveur.';
+    } else if (planificateur.enCours) {
       icone = Symbols.sync;
       couleur = AppColors.brandNavy;
       texte = 'Synchronisation en cours…';
@@ -304,7 +311,7 @@ class IndicateurSynchro extends StatelessWidget {
             key: const Key('synchro-maintenant'),
             label: 'Synchroniser maintenant',
             icon: Symbols.sync,
-            onPressed: planificateur.enCours
+            onPressed: planificateur.enCours || planificateur.suspendu
                 ? null
                 : () {
                     Navigator.of(ctx).pop();
