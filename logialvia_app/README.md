@@ -6,7 +6,7 @@ rapports et administration. Interface entièrement en français. Cible principal
 
 ## Prérequis
 
-- Flutter `>= 3.41` (Dart `^3.12.2`) — vérifié avec Flutter 3.47.9
+- Flutter `>= 3.47` (Dart `^3.13.0`) — vérifié avec Flutter 3.47.9
 - Windows : Visual Studio 2022 avec la charge « Développement Desktop en C++ »
 
 ## Démarrage

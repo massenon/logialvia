@@ -26,7 +26,7 @@ dart run build_runner build --delete-conflicting-outputs   # après toute modif 
 flutter build windows --release
 ```
 
-SDK : Dart `^3.12.2` / Flutter `>=3.41` (vérifié avec Flutter 3.47.9 et 3.50.0 ; la CI est figée à 3.47.9).
+SDK : Dart `^3.13.0` / Flutter `>=3.47` (vérifié avec Flutter 3.47.9 et 3.50.0 ; la CI est figée à 3.47.9).
 Material et Cupertino viennent des paquets `material_ui` et `cupertino_ui` (Flutter 3.50 les sort du SDK) : importer
 `package:material_ui/material_ui.dart`, jamais `package:flutter/material.dart` (déprécié, fait échouer `flutter analyze` en 3.50).
 
